@@ -14,8 +14,8 @@
   "r2_buckets": [{ "binding": "R2", "bucket_name": "mozari" }],
   "vars": {
     // Equipo de Access, por ejemplo "r360.cloudflareaccess.com"
-    "ACCESS_EQUIPO": "",
+    "ACCESS_EQUIPO": "amarpreciado93.cloudflareaccess.com",
     // "Application Audience (AUD) Tag" de la aplicación de Access
-    "ACCESS_AUD": ""
+    "ACCESS_AUD": "6ad428ceb189607274435ac15d8d6d2f84835c5a58512cedc9a55c1650e69ec0"
   }
 }
