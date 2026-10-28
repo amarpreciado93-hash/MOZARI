@@ -71,3 +71,4 @@
 | 2026-10-28 | El estudio exige token válido de Cloudflare Access (firma, AUD, vencimiento, emisor); sin configuración no deja entrar a nadie | Seguro por defecto |
 | 2026-10-28 | "Publicar" copia el borrador a `publicado/<id>/proyecto.json`; el público nunca ve el borrador | Editar sin romper el tour que ya está en manos del cliente |
 | 2026-10-28 | Despliegue automático conectando el repo de GitHub a Cloudflare (Workers Builds); cada Push origin publica | Sin comandos ni pasos manuales |
+| 2026-10-28 | En línea en Cloudflare: estudio en mozari-estudio.amarpreciado93.workers.dev (protegido con Access, solo miembros de la cuenta) y tours en mozari-tours.amarpreciado93.workers.dev; ambos se publican solos con cada Push | Mozari ya vive en la nube de R360 |
