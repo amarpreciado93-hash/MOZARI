@@ -282,9 +282,9 @@
   .cp-texto.con-fondo { text-shadow: none; }
   .hs { width: 0; height: 0; pointer-events: auto; }
   .hs-boton { position: absolute; left: -24px; top: -24px; width: 48px; height: 48px; border: 0; padding: 0; border-radius: 50%; cursor: pointer; background: transparent; display: grid; place-items: center; }
-  .hs-nucleo { width: 34px; height: 34px; border-radius: 50%; background: var(--mz-lima); color: var(--mz-negro); display: grid; place-items: center; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45); animation: respira 2.4s ease-in-out infinite; }
+  .hs-nucleo { width: 34px; height: 34px; border-radius: 50%; background: var(--hs-color, var(--mz-lima)); color: var(--hs-sobre, var(--mz-negro)); display: grid; place-items: center; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45); animation: respira 2.4s ease-in-out infinite; }
   .hs-nucleo svg { width: 16px; height: 16px; }
-  .hs-boton::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--mz-lima); opacity: 0; animation: onda 2.4s ease-out infinite; }
+  .hs-boton::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--hs-color, var(--mz-lima)); opacity: 0; animation: onda 2.4s ease-out infinite; }
   .hs-boton img { width: 48px; height: 48px; object-fit: contain; }
   .hs-boton.con-icono::before, .hs-boton.con-icono .hs-nucleo { display: none; }
   .hs-boton:hover .hs-nucleo { animation-play-state: paused; transform: scale(1.12); }
@@ -781,8 +781,8 @@
     if (g && g.proyecto && g.escenas) est = g;
   } catch (e) { /* sin almacenamiento */ }
   const SKIN_DEF = {
-    plantilla: "cine", acento: LIMA, panel: NEGRO, opacidad: 0.72, radio: 14,
-    logo: { tipo: "mozari", img: "" }, nombre: true,
+    plantilla: "cine", acento: "#FFFFFF", panel: "#111111", opacidad: 0.6, radio: 14,
+    logo: { tipo: "ninguno", img: "" }, nombre: true,
     cta: { mostrar: true, texto: "Agendar visita", enlace: "" },
     extra: { numero: true, brujula: true, ruta: true },
     botones: { pantalla: true, musica: true, zoom: false, piloto: true },
@@ -794,7 +794,10 @@
     return out;
   }
   function normalizar() {
+    // Los tours usan colores neutros por defecto; el verde lima es solo del software
+    if (est.skin && !est.skin.neutro) { est.skin.acento = "#FFFFFF"; est.skin.panel = "#111111"; est.skin.opacidad = 0.6; if (est.skin.logo && est.skin.logo.tipo === "mozari") est.skin.logo.tipo = "ninguno"; }
     est.skin = mezclar(SKIN_DEF, est.skin);
+    est.skin.neutro = true;
     est.escenas = est.escenas.filter((e) => meta[e.id]);
     est.escenas.forEach((e) => {
       est.capas[e.id] = est.capas[e.id] || [];
@@ -1878,7 +1881,7 @@
     const btn = (k, etq, cls) => '<button class="sk-btn ' + cls + '" data-sk="' + k + '" aria-label="' + etq + '">' + ICO_SK[k] + "</button>";
     const c = {
       sk, vertical, escenas: est.escenas,
-      logo: '<span class="sk-logo">' + (sk.logo.tipo === "propio" && sk.logo.img ? '<img src="' + sk.logo.img + '" alt="">' : '<svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg>') + "</span>",
+      logo: sk.logo.tipo === "propio" && sk.logo.img ? '<span class="sk-logo"><img src="' + sk.logo.img + '" alt=""></span>' : sk.logo.tipo === "mozari" ? '<span class="sk-logo"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg></span>' : "",
       botones: (cls) => (sk.botones.musica && o.hayMusica ? btn("musica", "Silenciar música", cls) : "") + (sk.botones.zoom ? btn("menos", "Alejar", cls) + btn("mas", "Acercar", cls) : "") + (sk.botones.pantalla ? btn("pantalla", "Pantalla completa", cls) : ""),
       cerrar: (cls) => (o.cerrable ? btn("cerrar", "Cerrar vista previa", cls) : ""),
       cta: (cls) => {
@@ -1941,7 +1944,10 @@
         alFin: () => api.piloto(false),
       });
     }
-    const pintar = (orientacion) => { api = renderSkin(ui, Object.assign({}, o, { orientacion, motor: () => motor })); if (actualId) api.escena(actualId); if (motor) api.vista(motor.view()); };
+    const pintar = (orientacion) => {
+      stage.style.setProperty("--hs-color", est.skin.acento);
+      stage.style.setProperty("--hs-sobre", textoSobre(est.skin.acento));
+      api = renderSkin(ui, Object.assign({}, o, { orientacion, motor: () => motor })); if (actualId) api.escena(actualId); if (motor) api.vista(motor.view()); };
     pintar(o.orientacion);
     motor = crearMotor(stage, {
       editable: false,
@@ -2004,23 +2010,23 @@
     return '<svg viewBox="0 0 160 96" aria-hidden="true">' + defs + fondo + dib[id] + "</svg>";
   }
 
-  const SK_MUESTRAS = [LIMA, BLANCO, "#3DA9FC", "#FF5A4E", "#FFB020", "#9B7BFF"];
+  const SK_MUESTRAS = [BLANCO, "#E9E1D3", "#C9A55C", "#2F6BFF", "#127A5E", "#C4553B"];
   const seg = (k, val, opciones) => '<div class="seg" role="group">' + opciones.map(([v, n]) => '<button data-sk-k="' + k + '" data-v="' + v + '" aria-pressed="' + (String(val) === String(v)) + '">' + n + "</button>").join("") + "</div>";
   const tgl = (k, on, etq) => '<label class="interruptor"><span style="font-size:12px">' + etq + '</span><input type="checkbox" class="toggle" data-sk-k="' + k + '"' + (on ? " checked" : "") + "></label>";
   function pintarPanelSkin() {
     const sk = SK(), T = sk.plantilla;
-    const logoMuestra = sk.logo.tipo === "propio" && sk.logo.img ? '<img src="' + sk.logo.img + '" alt="Logo del cliente">' : '<svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg>';
+    const logoMuestra = sk.logo.tipo === "propio" && sk.logo.img ? '<img src="' + sk.logo.img + '" alt="Logo del cliente">' : sk.logo.tipo === "mozari" ? '<svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg>' : '<span style="font-size:11px;color:var(--mz-tenue)">—</span>';
     $("sk-panel").innerHTML =
       '<div class="grupo"><b>Plantilla base</b><div class="plantillas">' +
       Object.entries(PLANTILLAS).map(([id, p]) => '<button class="plantilla" data-sk-k="plantilla" data-v="' + id + '" aria-pressed="' + (id === T) + '">' + miniPlantilla(id, sk.acento) + "<b>" + p.nombre + "</b><span>" + p.desc + "</span></button>").join("") +
       "</div></div>" +
       '<div class="grupo"><b>Marca</b>' +
-      '<div class="logo-fila"><span class="muestra-logo">' + logoMuestra + "</span>" + seg("logo.tipo", sk.logo.tipo, [["mozari", "Mozari"], ["propio", "Logo del cliente"]]) + "</div>" +
+      '<div class="logo-fila"><span class="muestra-logo">' + logoMuestra + "</span>" + seg("logo.tipo", sk.logo.tipo, [["ninguno", "Sin logo"], ["propio", "Del cliente"], ["mozari", "Mozari"]]) + "</div>" +
       (sk.logo.tipo === "propio" ? '<label class="btn-sec" for="sk-logo-archivo" style="justify-self:start">' + (sk.logo.img ? "Cambiar logo" : "Subir logo (PNG o SVG)") + '</label><input type="file" id="sk-logo-archivo" accept="image/png,image/svg+xml,image/webp,image/jpeg" hidden>' : "") +
       tgl("nombre", sk.nombre, "Mostrar el nombre del tour") + "</div>" +
       '<div class="grupo"><b>Colores</b>' +
       campo("Acento", '<div class="color"><input type="color" data-sk-k="acento" value="' + sk.acento + '" aria-label="Color de acento">' + SK_MUESTRAS.map((m) => '<button class="muestra" style="background:' + m + '" data-sk-k="acento" data-v="' + m + '" aria-label="Usar ' + m + '"></button>').join("") + "</div>") +
-      campo("Paneles", '<div class="color"><input type="color" data-sk-k="panel" value="' + sk.panel + '" aria-label="Color de paneles">' + [NEGRO, "#1B2430", "#FFFFFF"].map((m) => '<button class="muestra" style="background:' + m + '" data-sk-k="panel" data-v="' + m + '" aria-label="Usar ' + m + '"></button>').join("") + "</div>") +
+      campo("Paneles", '<div class="color"><input type="color" data-sk-k="panel" value="' + sk.panel + '" aria-label="Color de paneles">' + ["#111111", "#1B2430", "#2B2722", "#FFFFFF"].map((m) => '<button class="muestra" style="background:' + m + '" data-sk-k="panel" data-v="' + m + '" aria-label="Usar ' + m + '"></button>').join("") + "</div>") +
       campo("Opacidad", '<div class="rango"><input type="range" data-sk-k="opacidad" min="0.3" max="1" step="0.02" value="' + sk.opacidad + '" aria-label="Opacidad de paneles"><span class="valor" id="sk-op-v">' + Math.round(sk.opacidad * 100) + "%</span></div>") +
       campo("Esquinas", '<div class="rango"><input type="range" data-sk-k="radio" min="0" max="24" step="1" value="' + sk.radio + '" aria-label="Redondeo de esquinas"><span class="valor" id="sk-radio-v">' + sk.radio + " px</span></div>") + "</div>" +
       '<div class="grupo"><b>Contacto</b>' + tgl("cta.mostrar", sk.cta.mostrar, "Botón de contacto") +

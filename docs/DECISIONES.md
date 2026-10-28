@@ -33,3 +33,5 @@
 | 2026-10-28 | Plantilla Desarrollo: menú de panoramas solo con texto grande y número, sin miniaturas | Se lee como menú de sitio de desarrollo, más limpio |
 | 2026-10-28 | Pantalla de arranque con logo Mozari y crédito "Created by R360 Team"; el crédito también aparece al pie de Mis Tours y en la vista móvil | Firma de autoría de R360 Team en el software |
 | 2026-10-28 | Crédito R360 Team rehecho en SVG (`marca/vectores/created-by-r360-team.svg`) con "Created" bien escrito | Los PNG originales dicen "Creted"; el SVG escala sin perder calidad y toma el color de la interfaz |
+| 2026-10-28 | Skins del tour con colores neutros por defecto (acento blanco, panel negro translúcido, sin logo); el lima queda solo para el software | Los tours son para cualquier cliente y público; la marca Mozari no debe teñir sus interfaces |
+| 2026-10-28 | Los hotspots toman el color de acento del skin | Todo el tour se ve de una sola pieza con la marca del cliente |
