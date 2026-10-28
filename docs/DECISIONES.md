@@ -44,3 +44,8 @@
 | 2026-10-28 | Al dibujar o ajustar puntos: mira visible y lupa ×3 con detalle real de la esfera | Precisión en esquinas de lotes |
 | 2026-10-28 | Deshacer y rehacer con Cmd/Ctrl + Z y Cmd/Ctrl + Shift + Z; cada gesto es un paso | Nadie trabaja sin deshacer |
 | 2026-10-28 | Piloto: bloque "Vista de inicio" con encuadre de celular 9:16 y selector del panorama donde empieza el tour | Elegir el inicio pensando en cómo se verá en el teléfono |
+| 2026-10-28 | En Capas y Piloto, tira vertical de panoramas a la izquierda: clic para ir, arrastrar a la esfera para conectar | Navegar sin salir del editor; conectar es un gesto, no un formulario |
+| 2026-10-28 | Conexión por arrastre crea hotspot de ida donde se suelta y de regreso atrás (yaw + 180°; exacto en esferas del mismo terreno), enlazados como par | Ida y vuelta en un solo paso, como se enseña en las rutas |
+| 2026-10-28 | "Al llegar: ver de frente": la vista de llegada se calcula del hotspot de regreso (su yaw + 180°) y conserva la inclinación y zoom de inicio de la esfera; también lo usa el piloto al pasar al siguiente panorama | Se siente que caminas hacia adelante; si se acomoda el regreso, el frente se corrige solo |
+| 2026-10-28 | Doble clic en un hotspot dentro del editor entra al panorama destino con su vista de llegada | Probar la ruta sin abrir la vista previa |
+| 2026-10-28 | Textos aplicados a varias esferas quedan siempre de frente por defecto | Su giro en 3D cambia con cada punto de vista |

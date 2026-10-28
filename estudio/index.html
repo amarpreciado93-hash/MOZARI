@@ -184,7 +184,26 @@
   .leyenda i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid; box-sizing: border-box; }
 
   /* ---------- Editor (Capas y Piloto automático) ---------- */
-  .editor { height: 100%; display: grid; grid-template-columns: 270px minmax(0, 1fr) 290px; min-height: 0; }
+  .editor { height: 100%; display: grid; grid-template-columns: 124px 252px minmax(0, 1fr) 290px; min-height: 0; }
+  /* Tira de panoramas: navegar rápido y arrastrar para conectar */
+  .ed-panos { background: var(--mz-negro); border-right: 1px solid var(--mz-linea-neutra); display: flex; flex-direction: column; min-height: 0; }
+  .ed-panos header { padding: 14px 10px 10px; }
+  .ed-panos h3 { margin: 0; font-size: 13px; font-weight: 600; }
+  .panos-tira { list-style: none; margin: 0; padding: 0 8px 8px; overflow-y: auto; flex: 1; display: grid; gap: 6px; align-content: start; }
+  .panos-tira li { cursor: grab; border-radius: 10px; padding: 4px; border: 1.5px solid transparent; display: grid; gap: 5px; }
+  .panos-tira li:hover { background: var(--mz-lima-suave); }
+  .panos-tira li[aria-current="true"] { border-color: var(--mz-lima); cursor: default; }
+  .panos-tira li.arrastrando { opacity: 0.4; }
+  .panos-tira img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 7px; display: block; pointer-events: none; }
+  .panos-tira span { font-size: 11px; display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .panos-tira span em { font-style: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .panos-tira span svg { width: 12px; height: 12px; flex: none; color: var(--mz-lima); }
+  .ed-panos .nota { padding: 10px; border-top: 1px solid var(--mz-linea-neutra); font-size: 10.5px; }
+  .lienzo.soltando::after { content: ""; position: absolute; inset: 0; z-index: 9; border: 2px dashed var(--mz-lima); pointer-events: none; }
+  .drop-fantasma { position: absolute; left: 0; top: 0; z-index: 10; pointer-events: none; display: grid; justify-items: center; gap: 8px; }
+  .drop-fantasma i { width: 40px; height: 40px; border-radius: 50%; background: var(--mz-lima); box-shadow: 0 0 0 7px rgba(213, 255, 64, 0.25), 0 6px 18px rgba(0, 0, 0, 0.5); display: grid; place-items: center; color: var(--mz-negro); }
+  .drop-fantasma i svg { width: 18px; height: 18px; }
+  .drop-fantasma b { font: 500 11px var(--mz-texto-ui); background: var(--mz-vidrio); border: 1px solid var(--mz-linea); padding: 5px 11px; border-radius: 999px; white-space: nowrap; }
   .ed-panel { background: var(--mz-superficie); border-right: 1px solid var(--mz-linea-neutra); display: flex; flex-direction: column; min-height: 0; }
   .ed-panel.der { border-right: 0; border-left: 1px solid var(--mz-linea-neutra); }
   .ed-panel header { padding: 14px; display: grid; gap: 10px; border-bottom: 1px solid var(--mz-linea-neutra); }
@@ -760,6 +779,11 @@
 
     <!-- Panoramas / Capas y Piloto automático (comparten la esfera) -->
     <section data-vista="panoramas/capas panoramas/piloto" class="editor" id="editor" hidden>
+      <aside class="ed-panos" aria-label="Panoramas del tour">
+        <header><h3>Panoramas</h3></header>
+        <ul class="panos-tira" id="panos-tira"></ul>
+        <p class="nota" id="panos-nota">Arrastra uno a la esfera para conectarlo de ida y vuelta.</p>
+      </aside>
       <aside class="ed-panel" id="izq-capas" aria-label="Capas">
         <header>
           <h3>Capas</h3>
@@ -782,10 +806,11 @@
         <div class="pie"><button class="btn-prim" id="pt-agregar" style="width:100%">+ Agregar punto con la vista actual</button></div>
       </aside>
 
-      <div class="lienzo">
+      <div class="lienzo" id="ed-lienzo">
         <div class="stage" id="ed-stage"></div>
         <div class="mira" id="mira" hidden></div>
         <div class="encuadre" id="encuadre" hidden><i></i></div>
+        <div class="drop-fantasma" id="drop-fantasma" hidden><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></i><b id="drop-nombre"></b></div>
         <div class="herr">
           <div class="grupo-h"><button class="pastilla-v" id="pt-reproducir" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><span>Reproducir recorrido</span></button></div>
           <div class="grupo-h">
@@ -1054,6 +1079,8 @@
       if (!e.piloto) e.piloto = b && b.piloto ? JSON.parse(JSON.stringify(b.piloto)) : { activo: false, puntos: [], alTerminar: "detener", siguiente: "", reanudar: 8 };
     });
     delete est.proyecto.littlePlanet;
+    // Textos aplicados a varias esferas: siempre de frente, porque su giro en 3D cambia con cada punto de vista
+    Object.values(est.capas).forEach((l) => l.forEach((c) => { if (c.tipo === "texto" && c.vinculo && c.en3d === undefined) c.en3d = false; }));
     sincronizarTerreno(false);
   }
   normalizar();
@@ -1082,6 +1109,20 @@
     const a = accionDe(c);
     if (a === "panorama") return escena(c.destino) ? "Ir a " + escena(c.destino).nombre : "Sin destino";
     return { url: "Abrir enlace", web: "Ver página", imagen: "Ver imagen" }[a] || "Información";
+  }
+  const normYaw = (y) => Math.atan2(Math.sin(y), Math.cos(y));
+  // Vista al llegar por un hotspot: "de frente" sigue la dirección del viaje. Se calcula con el
+  // hotspot de regreso: si el regreso está atrás de ti, tu frente es justo lo contrario.
+  function vistaLlegada(c, origen) {
+    const dest = c.destino, v0 = vistaDe(dest);
+    if (c.llegada !== "frente") return v0;
+    const l = est.capas[dest] || [];
+    const ret = (c.par && l.find((x) => x.id === c.par)) || l.find((x) => accionDe(x) === "panorama" && x.destino === origen);
+    return ret ? { yaw: normYaw(ret.yaw + Math.PI), pitch: v0.pitch, fov: v0.fov } : v0;
+  }
+  function vistaHacia(origen, dest) {
+    const h = (est.capas[origen] || []).find((x) => accionDe(x) === "panorama" && x.destino === dest);
+    return h ? vistaLlegada(h, origen) : undefined;
   }
   const urlSegura = (u) => { u = String(u || "").trim(); if (!u) return ""; if (!/^https?:\/\//i.test(u)) u = "https://" + u.replace(/^\/+/, ""); return /^https?:\/\/[^\s"'<>]+$/i.test(u) ? u : ""; };
   // Historial para deshacer (Cmd/Ctrl + Z) y rehacer (Cmd/Ctrl + Shift + Z).
@@ -1397,6 +1438,7 @@
             '<span class="hs-texto">' + esc(texto) + "</span>";
           const b = el.querySelector(".hs-boton");
           b.addEventListener("pointerdown", (ev) => tomar(ev, c, "mover"));
+          if (editable && opciones.alEntrar) b.addEventListener("dblclick", (ev) => { ev.stopPropagation(); if (accionDe(c) === "panorama" && escena(c.destino)) opciones.alEntrar(c, actual.id); });
           nodos.set(c.id, { el, c });
         }
         if (c.tipo !== "poligono") {
@@ -1418,7 +1460,7 @@
     // Acción al hacer clic (solo en el tour, no en el editor)
     function ejecutar(c) {
       const a = accionDe(c);
-      if (a === "panorama") { if (escena(c.destino)) motor.mostrar(c.destino); return; }
+      if (a === "panorama") { if (escena(c.destino)) motor.mostrar(c.destino, undefined, vistaLlegada(c, actual.id)); return; }
       if (opciones.alAccion) opciones.alAccion(c);
     }
 
@@ -1723,9 +1765,9 @@
     const motor = {
       modo: editable ? "capas" : "ver", elegida: null, dibujo: null, ruta: null, rutaActivo: -1,
       get actual() { return actual; },
-      mostrar(id, transicion) {
+      mostrar(id, transicion, vista) {
         actual = escenaM(id);
-        actual.view.setParameters(vistaDe(id)); // cada panorama arranca donde inicia su piloto
+        actual.view.setParameters(vista || vistaDe(id)); // arranca en su vista de inicio, o de frente si se llega por un hotspot
         actual.scene.switchTo({ transitionDuration: transicion ?? 600 });
         construir();
         if (opciones.alMostrar) opciones.alMostrar(id);
@@ -1926,7 +1968,7 @@
   const cs = () => est.capas[motorEd.actual.id];
   const buscar = (id) => cs().find((c) => c.id === id);
 
-  function abrirEditor(id, modo) {
+  function abrirEditor(id, modo, vista) {
     edPano = id;
     $("sel-pano").innerHTML = est.escenas.map((e) => '<option value="' + e.id + '"' + (e.id === id ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("");
     if (!motorEd) {
@@ -1935,6 +1977,7 @@
         alSeleccionar: (cid) => seleccionar(cid),
         alCambiar: () => cambio(),
         alSoltar: (c) => { if (c.vinculo) propagar(c, motorEd.actual.id); },
+        alEntrar: (c, origen) => { abrirEditor(c.destino, nav.sub, vistaLlegada(c, origen)); avisar("Llegaste a " + nombreDe(c.destino) + (c.llegada === "frente" ? " viendo de frente" : "")); },
         alCerrarDibujo: () => terminarDibujo(true),
         alInteractuar: () => { if (pilotoEd) detenerPilotoEd(); },
         alMoverVista: () => { if (motorEd && motorEd.modo === "piloto") marcarPuntoActual(); },
@@ -1944,8 +1987,8 @@
     detenerPilotoEd();
     const cambia = !motorEd.actual || motorEd.actual.id !== id;
     motorEd.elegida = null;
-    if (cambia) motorEd.mostrar(id, 0);
-    else motorEd.view().setParameters(vistaDe(id));
+    if (cambia) motorEd.mostrar(id, 0, vista);
+    else motorEd.view().setParameters(vista || vistaDe(id));
     // Modo
     const piloto = modo === "piloto";
     $("izq-capas").hidden = piloto; $("der-capas").hidden = piloto;
@@ -1954,6 +1997,7 @@
     $("mira").hidden = !piloto;
     $("encuadre").hidden = !piloto || !encuadreOn;
     motorEd.setModo(piloto ? "piloto" : "capas");
+    pintarTira();
     if (piloto) { pintarRecorrido(); pintarAjustes(); } else { motorEd.ruta = null; pintarCapas(); pintarProps(); }
     motorEd.render();
   }
@@ -1965,6 +2009,80 @@
     motorEd = null;
   }
   $("sel-pano").addEventListener("change", (e) => abrirEditor(e.target.value, nav.sub));
+
+  // ---------- Tira de panoramas: clic para ir, arrastrar a la esfera para conectar ----------
+  const ICO_ENLACE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-label="Conectado"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>';
+  function pintarTira() {
+    if (!motorEd || !motorEd.actual) return;
+    const aqui = motorEd.actual.id, conectadas = new Set(salidas(aqui).map((h) => h.destino));
+    $("panos-tira").innerHTML = est.escenas.map((e) =>
+      '<li draggable="' + (e.id !== aqui) + '" data-id="' + e.id + '" aria-current="' + (e.id === aqui) + '" title="' + esc(e.nombre) + '"><img src="' + thumbDe(e.id) + '" alt="" loading="lazy"><span>' +
+      (conectadas.has(e.id) ? ICO_ENLACE : "") + "<em>" + esc(e.nombre) + "</em></span></li>").join("");
+    $("panos-nota").textContent = motorEd.modo === "capas" ? "Arrastra uno a la esfera para conectarlo de ida y vuelta." : "Clic para cambiar de panorama.";
+  }
+  let panoArrastrado = null;
+  $("panos-tira").addEventListener("click", (ev) => {
+    const li = ev.target.closest("li[data-id]");
+    if (li && li.dataset.id !== motorEd.actual.id) abrirEditor(li.dataset.id, nav.sub);
+  });
+  $("panos-tira").addEventListener("dragstart", (ev) => {
+    const li = ev.target.closest("li[data-id]");
+    if (!li || motorEd.modo !== "capas" || motorEd.dibujo) { ev.preventDefault(); return; }
+    panoArrastrado = li.dataset.id;
+    li.classList.add("arrastrando");
+    ev.dataTransfer.effectAllowed = "link";
+    try { ev.dataTransfer.setData("text/plain", "mozari:" + panoArrastrado); } catch (e) { /* algunos navegadores */ }
+  });
+  $("panos-tira").addEventListener("dragend", () => {
+    panoArrastrado = null;
+    document.querySelectorAll(".panos-tira li.arrastrando").forEach((x) => x.classList.remove("arrastrando"));
+    $("ed-lienzo").classList.remove("soltando"); $("drop-fantasma").hidden = true;
+  });
+  $("ed-lienzo").addEventListener("dragover", (ev) => {
+    if (!panoArrastrado) return;
+    ev.preventDefault();
+    ev.dataTransfer.dropEffect = "link";
+    const r = $("ed-lienzo").getBoundingClientRect(), f = $("drop-fantasma");
+    $("ed-lienzo").classList.add("soltando");
+    f.hidden = false;
+    $("drop-nombre").textContent = nombreDe(motorEd.actual.id) + " ⇄ " + nombreDe(panoArrastrado);
+    f.style.transform = "translate(" + (ev.clientX - r.left) + "px," + (ev.clientY - r.top) + "px) translate(-50%, -20px)";
+  });
+  $("ed-lienzo").addEventListener("dragleave", (ev) => {
+    if (ev.relatedTarget && $("ed-lienzo").contains(ev.relatedTarget)) return;
+    $("ed-lienzo").classList.remove("soltando"); $("drop-fantasma").hidden = true;
+  });
+  $("ed-lienzo").addEventListener("drop", (ev) => {
+    if (!panoArrastrado) return;
+    ev.preventDefault();
+    const destino = panoArrastrado, k = motorEd.coords(ev);
+    $("ed-lienzo").classList.remove("soltando"); $("drop-fantasma").hidden = true;
+    panoArrastrado = null;
+    if (k) conectar(motorEd.actual.id, destino, k);
+  });
+  // Crea (o mueve) el hotspot de ida donde se soltó y el de regreso en la otra esfera.
+  // El regreso queda atrás (yaw + 180°); en esferas del mismo terreno se calcula exacto.
+  function conectar(origen, destino, k) {
+    if (origen === destino) return;
+    const A = est.capas[origen], B = (est.capas[destino] = est.capas[destino] || []);
+    const nuevo = (dest, yaw, pitch) => ({ id: nuevoId(), tipo: "hotspot", nombre: "Hotspot → " + nombreDe(dest), visible: true, yaw: +yaw.toFixed(4), pitch: +pitch.toFixed(4), destino: dest, accion: "panorama", llegada: "frente" });
+    let ida = A.find((c) => accionDe(c) === "panorama" && c.destino === destino);
+    let vuelta = B.find((c) => accionDe(c) === "panorama" && c.destino === origen);
+    const yaEstaba = !!(ida && vuelta);
+    if (ida) { ida.yaw = +k.yaw.toFixed(4); ida.pitch = +k.pitch.toFixed(4); ida.llegada = "frente"; }
+    else { ida = nuevo(destino, k.yaw, k.pitch); A.push(ida); }
+    if (!vuelta) {
+      let yaw = normYaw(k.yaw + Math.PI);
+      const exacto = trLista(origen) && trLista(destino) && transferir([0, Math.PI / 2 - 1e-4], origen, destino);
+      if (exacto) yaw = exacto[0];
+      vuelta = nuevo(origen, yaw, k.pitch);
+      B.push(vuelta);
+    } else if (!vuelta.llegada) vuelta.llegada = "frente";
+    ida.par = vuelta.id; vuelta.par = ida.id;
+    motorEd.elegida = ida.id;
+    cambio(); pintarTira();
+    avisar(yaEstaba ? "Conexión movida" : "Conectado " + nombreDe(origen) + " ⇄ " + nombreDe(destino) + ". Doble clic en el hotspot para entrar.");
+  }
   $("ed-mas").addEventListener("click", () => { const v = motorEd.view(); v.setFov(v.fov() * 0.7); });
   $("ed-menos").addEventListener("click", () => { const v = motorEd.view(); v.setFov(v.fov() * 1.4); });
 
@@ -2231,7 +2349,12 @@
     const a = accionDe(c), aqui = motorEd.actual.id;
     if (a === "panorama" && !escena(c.destino)) { const o = est.escenas.find((e) => e.id !== aqui); if (o) { c.destino = o.id; guardar(); } }
     let g = '<div class="grupo"><b>Al hacer clic</b>' + campo("Acción", '<select data-k="accion">' + ACCIONES.map(([v, n]) => '<option value="' + v + '"' + (a === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select>");
-    if (a === "panorama") g += campo("Panorama", '<select data-k="destino">' + est.escenas.filter((e) => e.id !== aqui).map((e) => '<option value="' + e.id + '"' + (c.destino === e.id ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("") + "</select>");
+    if (a === "panorama") {
+      g += campo("Panorama", '<select data-k="destino">' + est.escenas.filter((e) => e.id !== aqui).map((e) => '<option value="' + e.id + '"' + (c.destino === e.id ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("") + "</select>");
+      const fr = c.llegada === "frente";
+      g += campo("Al llegar", '<select data-k="llegada"><option value="frente"' + (fr ? " selected" : "") + '>Ver de frente</option><option value="inicio"' + (fr ? "" : " selected") + ">Su vista de inicio</option></select>");
+      if (fr) g += '<p class="nota">Llegas mirando hacia donde ibas. Se calcula con el hotspot de regreso; si lo mueves allá, el frente se ajusta solo. Doble clic en el hotspot para probarlo.</p>';
+    }
     if (a === "url" || a === "web") g += campo("Enlace", '<input type="text" inputmode="url" data-k="url" placeholder="https://…" value="' + esc(c.url || "") + '">');
     if (a === "imagen") g += '<div class="img-accion">' + (c.imagen ? '<img src="' + esc(c.imagen) + '" alt="Imagen de la acción">' : '<span class="nota">Sin imagen todavía</span>') + '<label class="mini">' + (c.imagen ? "Cambiar imagen" : "Subir imagen") + '<input type="file" accept="image/*" data-subir="imagen" hidden></label></div>';
     if (a === "web") g += '<p class="nota">Si un sitio no se deja mostrar en ventana, el tour ofrece abrirlo en otra pestaña.</p>';
@@ -2370,7 +2493,7 @@
   function cambio() {
     const c = motorEd.elegida && buscar(motorEd.elegida);
     if (c && c.vinculo) propagar(c, motorEd.actual.id);
-    guardar(); motorEd.construir(); pintarCapas(); pintarProps();
+    guardar(); motorEd.construir(); pintarCapas(); pintarProps(); pintarTira();
   }
   $("copiar").addEventListener("click", async () => {
     try { await navigator.clipboard.writeText(JSON.stringify(est, null, 2)); avisar("Datos copiados. Pégalos en el chat con Claude."); }
@@ -2746,7 +2869,7 @@
       api.piloto(activo);
       if (!activo) return;
       piloto = reproducirPiloto(motor, id, {
-        alSiguiente: (sig) => motor && motor.mostrar(sig, 900),
+        alSiguiente: (sig) => motor && motor.mostrar(sig, 900, vistaHacia(id, sig)),
         alFin: () => api.piloto(false),
       });
     }
