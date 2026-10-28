@@ -2,12 +2,12 @@
   // Mozari · ESTUDIO (privado). Protégelo con Cloudflare Access y copia aquí los dos datos que te da.
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "mozari-estudio",
-  "main": "estudio.js",
+  "main": "../estudio.js",
   "compatibility_date": "2026-10-01",
   "workers_dev": true,
   "preview_urls": false,
   "assets": {
-    "directory": "../estudio",
+    "directory": "../../estudio",
     "binding": "ASSETS",
     "run_worker_first": ["/api/*", "/t/*"]
   },

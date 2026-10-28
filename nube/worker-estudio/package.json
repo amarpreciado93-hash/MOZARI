@@ -1,0 +1,9 @@
+{
+  "name": "mozari-estudio",
+  "private": true,
+  "description": "Mozari en Cloudflare: estudio (privado) y tours (públicos)",
+  "devDependencies": {
+    "wrangler": "4.149.0"
+  },
+  "type": "module"
+}

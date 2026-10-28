@@ -1,5 +1,5 @@
 {
-  "name": "mozari-nube",
+  "name": "mozari-tours",
   "private": true,
   "description": "Mozari en Cloudflare: estudio (privado) y tours (públicos)",
   "devDependencies": {
