@@ -60,3 +60,6 @@
 | 2026-10-28 | Orientación fija por esfera y por lote: legible y nunca en espejo; cerca del dron sigue el frente de la vista de inicio, lejos apunta hacia afuera | Todos los rótulos de una vista se leen igual |
 | 2026-10-28 | Control de tamaño y giro del rótulo, rollover opcional por lote y colores de estado editables desde el panel del lote | Control total del diseño de la lotificación |
 | 2026-10-28 | Medidas dentro del lote, abajo de su borde, separadas del trazo | Se leen sin que el borde las tape |
+| 2026-10-28 | Ventanas del tour (ficha, imagen, página) centradas y medidas contra su contenedor (container queries), no contra la ventana del navegador | Se ven bien en 16:9, 9:16 y dentro del marco del editor de skin |
+| 2026-10-28 | Borrar panoramas desde Lista con confirmación en la tarjeta; se quitan sus capas, los hotspots que llevan a él y referencias (piloto, terreno, inicio); se puede deshacer; no reaparece aunque venga en el archivo del proyecto | Limpiar el tour sin romper conexiones |
+| 2026-10-28 | Rótulos y medidas de lotes en una capa propia encima de todos los rellenos (y debajo de textos y hotspots) | El relleno de un lote vecino ya no tapa las medidas |

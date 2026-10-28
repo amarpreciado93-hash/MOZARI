@@ -137,6 +137,16 @@
   .card:hover { border-color: var(--mz-linea); }
   .card .foto { position: relative; aspect-ratio: 16 / 10; background: var(--mz-negro); }
   .card .foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .card .foto .card-borrar { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--mz-vidrio); color: var(--mz-texto); cursor: pointer; opacity: 0; transition: opacity 0.15s; }
+  .card .foto .card-borrar svg { width: 16px; height: 16px; }
+  .card:hover .card-borrar, .card:focus-within .card-borrar { opacity: 1; }
+  .card .foto .card-borrar:hover { color: var(--mz-error); }
+  @media (hover: none) { .card .foto .card-borrar { opacity: 1; } }
+  .card-confirma { position: absolute; inset: 0; display: grid; align-content: center; gap: 8px; padding: 16px; background: rgba(11, 11, 11, 0.9); backdrop-filter: blur(6px); text-align: center; cursor: default; }
+  .card-confirma b { font-size: 14px; font-weight: 600; }
+  .card-confirma span { font-size: 11px; color: var(--mz-tenue); line-height: 1.45; }
+  .card-confirma div { display: flex; gap: 8px; justify-content: center; margin-top: 4px; }
+  .mini.peligro-lleno { background: var(--mz-error); border-color: var(--mz-error); color: #fff; }
   .card .badge { position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: var(--mz-pastilla); background: var(--mz-lima); color: var(--mz-negro); font-size: 10px; font-weight: 600; letter-spacing: 0.06em; }
   .card .cuerpo { padding: 12px 14px 14px; display: grid; gap: 8px; }
   .card .nombre { font-weight: 600; font-size: 14px; }
@@ -348,6 +358,7 @@
   .hs:hover .hs-texto, .editable .hs-texto { opacity: 1; }
   .cp.elegida:not(.en3d) .cp-texto, .cp.elegida:not(.en3d) .hs-nucleo { outline: 2px dashed #fff; outline-offset: 4px; }
   /* Lotes: rótulos sobre la esfera, panel de datos, ficha y tabla */
+  .capa-etq { position: absolute; inset: 0; pointer-events: none; }
   .lt-planos { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
   .lt-p { position: absolute; left: 0; top: 0; transform-origin: 0 0; white-space: nowrap; font-family: var(--mz-texto-ui); color: #fff; line-height: 1.08; text-align: center; text-shadow: 0 0 4px rgba(0, 0, 0, 0.7), 0 0 1.5px rgba(0, 0, 0, 0.9); backface-visibility: hidden; }
   .lt-p.nom { font-size: 40px; font-weight: 600; }
@@ -374,7 +385,7 @@
   .estados button i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
   .estados button:hover { color: var(--mz-texto); border-color: var(--c); }
   .estados button[aria-pressed="true"] { color: #fff; border-color: var(--c); background: color-mix(in srgb, var(--c) 28%, transparent); }
-  .pop-caja.ficha { width: min(380px, 100%); padding: 22px 22px 20px; gap: 0; display: block; background: #121212; color: #F2F2F2; }
+  .pop-caja.ficha { width: min(380px, 100%); padding: 22px 22px 20px; gap: 0; display: block; overflow-y: auto; background: #121212; color: #F2F2F2; }
   .pop-caja.ficha .pop-x { position: absolute; top: 12px; right: 12px; }
   .ficha-estado { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; background: color-mix(in srgb, var(--c) 30%, transparent); border: 1px solid var(--c); padding: 5px 11px; border-radius: 999px; }
   .ficha-estado i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
@@ -441,17 +452,19 @@
   .img-accion img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 10px; border: 1px solid var(--mz-linea-neutra); display: block; }
   .img-accion .mini { justify-self: start; }
   /* Ventanas del tour (página e imagen). Neutras: son parte del tour, no del software */
-  .pop { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; padding: 24px; background: rgba(0, 0, 0, 0.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-family: var(--mz-texto-ui); }
-  .pop-caja { position: relative; background: #0F0F0F; border-radius: 16px; overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); display: flex; flex-direction: column; max-width: 100%; max-height: 100%; }
+  /* La ventana se centra y se ajusta a la pantalla o al marco (16:9 o 9:16): los tamaños usan el contenedor, no la ventana del navegador */
+  .pop { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: clamp(14px, 4cqmin, 40px); box-sizing: border-box; container-type: size; background: rgba(0, 0, 0, 0.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-family: var(--mz-texto-ui); }
+  .pop-caja { position: relative; background: #0F0F0F; border-radius: 16px; overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); display: flex; flex-direction: column; max-width: 100%; max-height: 100%; box-sizing: border-box; }
   .pop-caja.web { width: min(1100px, 100%); height: min(760px, 100%); }
+  @container (max-aspect-ratio: 1/1) { .pop-caja.web { height: min(820px, 100%); } }
   .pop-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; font-size: 12px; color: #DDD; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
   .pop-cab a { color: #FFF; text-decoration: none; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pop-cab a:hover { opacity: 1; text-decoration: underline; }
   .pop iframe { flex: 1; width: 100%; border: 0; background: #FFF; }
   .pop-x { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.12); color: #FFF; font-size: 20px; line-height: 1; cursor: pointer; display: grid; place-items: center; }
   .pop-caja.img { background: transparent; box-shadow: none; overflow: visible; }
-  .pop-caja.img img { display: block; max-width: min(1400px, 88vw); max-height: 80vh; border-radius: 12px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); }
-  .pop-caja.img .pop-x { position: absolute; top: -14px; right: -14px; background: #FFF; color: #111; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); }
+  .pop-caja.img img { display: block; max-width: min(1400px, calc(100cqw - 2 * clamp(14px, 4cqmin, 40px))); max-height: calc(100cqh - 2 * clamp(14px, 4cqmin, 40px)); width: auto; height: auto; object-fit: contain; border-radius: 12px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); }
+  .pop-caja.img .pop-x { position: absolute; top: 10px; right: 10px; background: #FFF; color: #111; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); }
   /* Piloto: encuadre de celular para elegir la vista de inicio */
   .encuadre { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; display: grid; place-items: center; }
   .encuadre i { height: 100%; aspect-ratio: 9 / 16; border-left: 1.5px dashed rgba(255, 255, 255, 0.75); border-right: 1.5px dashed rgba(255, 255, 255, 0.75); box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.38); position: relative; }
@@ -1156,7 +1169,7 @@
   function normalizar() {
     // Panoramas nuevos del archivo del proyecto: llegan con sus capas y con los hotspots que apuntan a ellos
     base.escenas.forEach((b) => {
-      if (est.escenas.some((e) => e.id === b.id)) return;
+      if (est.escenas.some((e) => e.id === b.id) || (est.borradas || []).includes(b.id)) return;
       est.escenas.push(JSON.parse(JSON.stringify(b)));
       est.capas[b.id] = JSON.parse(JSON.stringify((base.capas || {})[b.id] || []));
       Object.keys(base.capas || {}).forEach((k) => {
@@ -1523,6 +1536,10 @@
       capasEl.innerHTML = "";
       nodos.clear();
       if (!actual) return;
+      // Rótulos y medidas de los lotes van en su propia capa, encima de todos los rellenos
+      const capaEtq = document.createElement("div"), svgEtq = document.createElementNS(SVGNS, "svg");
+      capaEtq.className = "capa-etq"; svgEtq.setAttribute("class", "cp-svg");
+      capaEtq.appendChild(svgEtq);
       lista().forEach((c) => {
         if (!editable && !c.visible) return;
         if (opciones.sinHotspots && c.tipo === "hotspot") return;
@@ -1542,8 +1559,8 @@
           let planos = null;
           if (c.lote) {
             el.classList.add("cp-lote");
-            etq = document.createElementNS(SVGNS, "g"); etq.setAttribute("class", "lote-etq"); svg.appendChild(etq);
-            if (loteDe(c).rotulo !== "frente") { planos = crearRotulosPlanos(c); el.appendChild(planos.cont); }
+            etq = document.createElementNS(SVGNS, "g"); etq.setAttribute("class", "lote-etq"); svgEtq.appendChild(etq);
+            if (loteDe(c).rotulo !== "frente") { planos = crearRotulosPlanos(c); capaEtq.appendChild(planos.cont); }
           }
           nodos.set(c.id, { el, c, svg, path, etq, planos });
           if (!editable && accionDe(c) !== "ninguna") { path.classList.add("con-accion"); path.addEventListener("click", (ev) => { ev.stopPropagation(); ejecutar(c); }); }
@@ -1574,6 +1591,8 @@
         }
         capasEl.appendChild(el);
       });
+      const pols = capasEl.querySelectorAll(".cp-poligono"), ultimo = pols[pols.length - 1];
+      capasEl.insertBefore(capaEtq, ultimo ? ultimo.nextSibling : capasEl.firstChild);
       render();
     }
     // Tamaño de textos y hotspots. En 3D se dibujan 2.5 veces más grandes y más lejos:
@@ -2117,8 +2136,10 @@
       const d = meta[e.id], cs = est.capas[e.id];
       const hs = salidas(e.id).length, pol = cs.filter((c) => c.tipo === "poligono").length;
       const pl = e.piloto.activo && e.piloto.puntos.length;
+      const confirma = borrandoPano === e.id ? '<div class="card-confirma" role="alertdialog" aria-label="Confirmar borrado"><b>¿Borrar ' + esc(e.nombre) + "?</b><span>Se quitan sus capas y los hotspots que llevan a él. Puedes deshacer con Cmd + Z.</span><div><button class=\"mini peligro-lleno\" data-si-borrar=\"" + e.id + '">Borrar</button><button class="mini" data-no-borrar>Cancelar</button></div></div>' : "";
       return '<div class="card" role="button" tabindex="0" data-abrir="' + e.id + '" aria-label="Abrir ' + esc(e.nombre) + '">' +
-        '<div class="foto"><img src="' + thumbDe(e.id) + '" alt="" loading="lazy">' + (e.id === P().escenaInicial ? '<span class="badge">INICIO</span>' : "") + "</div>" +
+        '<div class="foto"><img src="' + thumbDe(e.id) + '" alt="" loading="lazy">' + (e.id === P().escenaInicial ? '<span class="badge">INICIO</span>' : "") +
+        '<button class="card-borrar" data-borrar="' + e.id + '" aria-label="Borrar ' + esc(e.nombre) + '" title="Borrar panorama"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>' + confirma + "</div>" +
         '<div class="cuerpo"><span class="nombre">' + esc(e.nombre) + "</span>" +
         '<div class="chips"><span class="chip-dato">' + mp(d.origen.ancho, d.origen.alto) + "</span>" +
         '<span class="chip-dato' + (hs === 0 || hs > MAX_HS ? " aviso" : "") + '">' + hs + (hs === 1 ? " salida" : " salidas") + "</span>" +
@@ -2127,7 +2148,39 @@
     }).join("") +
       '<div class="hueco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir esfera</b><span class="nota">Se activa cuando conectemos el servidor (bloque Publicar). Por ahora, pásale tus esferas a Claude.</span></div>';
   }
-  $("pano-lista").addEventListener("click", (ev) => { const c = ev.target.closest("[data-abrir]"); if (c) { edPano = c.dataset.abrir; ir("panoramas", "capas"); } });
+  let borrandoPano = null;
+  $("pano-lista").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-borrar]");
+    if (b) {
+      ev.stopPropagation();
+      if (est.escenas.length < 2) { avisar("El tour necesita al menos un panorama"); return; }
+      borrandoPano = b.dataset.borrar; pintarLista(); return;
+    }
+    if (ev.target.closest("[data-no-borrar]")) { ev.stopPropagation(); borrandoPano = null; pintarLista(); return; }
+    const si = ev.target.closest("[data-si-borrar]");
+    if (si) { ev.stopPropagation(); borrarPanorama(si.dataset.siBorrar); return; }
+    if (ev.target.closest(".card-confirma")) return;
+    const c = ev.target.closest("[data-abrir]");
+    if (c) { edPano = c.dataset.abrir; ir("panoramas", "capas"); }
+  });
+  // Borra un panorama y todo lo que dependía de él (se puede deshacer con Cmd + Z)
+  function borrarPanorama(id) {
+    const nombre = nombreDe(id);
+    est.escenas = est.escenas.filter((e) => e.id !== id);
+    delete est.capas[id];
+    Object.keys(est.capas).forEach((k) => {
+      est.capas[k] = est.capas[k].filter((c) => !(c.tipo === "hotspot" && accionDe(c) === "panorama" && c.destino === id));
+      est.capas[k].forEach((c) => { if (accionDe(c) === "panorama" && c.destino === id) c.accion = "ninguna"; });
+    });
+    est.escenas.forEach((e) => { if (e.piloto && e.piloto.siguiente === id) { e.piloto.siguiente = ""; if (e.piloto.alTerminar === "siguiente") e.piloto.alTerminar = "detener"; } });
+    if (est.terreno && est.terreno.puntos[id]) { delete est.terreno.puntos[id]; if (est.terreno.base === id) est.terreno.base = Object.keys(est.terreno.puntos)[0] || null; trCache = {}; }
+    if (P().escenaInicial === id) P().escenaInicial = est.escenas[0].id;
+    est.borradas = (est.borradas || []).filter((x) => x !== id).concat(id);
+    if (edPano === id) edPano = null;
+    borrandoPano = null;
+    guardar(); pintarLista();
+    avisar(nombre + " se borró. Cmd + Z para deshacer.");
+  }
   $("pano-lista").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { const c = ev.target.closest("[data-abrir]"); if (c) { edPano = c.dataset.abrir; ir("panoramas", "capas"); } } });
 
   // =================== PANORAMAS: MAPA DE NODOS ===================
