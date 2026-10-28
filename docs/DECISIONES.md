@@ -49,3 +49,14 @@
 | 2026-10-28 | "Al llegar: ver de frente": la vista de llegada se calcula del hotspot de regreso (su yaw + 180°) y conserva la inclinación y zoom de inicio de la esfera; también lo usa el piloto al pasar al siguiente panorama | Se siente que caminas hacia adelante; si se acomoda el regreso, el frente se corrige solo |
 | 2026-10-28 | Doble clic en un hotspot dentro del editor entra al panorama destino con su vista de llegada | Probar la ruta sin abrir la vista previa |
 | 2026-10-28 | Textos aplicados a varias esferas quedan siempre de frente por defecto | Su giro en 3D cambia con cada punto de vista |
+| 2026-10-28 | Nuevo tipo de capa "Lote" (polígono lotificado): número, manzana, superficie, precio, medidas por lado con frente marcado y estado | Así se lotifica en la práctica; deja de llamarse "polígono" |
+| 2026-10-28 | Estados Disponible / Apartado / Vendido con colores editables por proyecto; el lote toma el color de su estado | El cliente ve de un vistazo qué está libre |
+| 2026-10-28 | El estado, la superficie y el precio son del lote, no de la esfera: se sincronizan por número y manzana (o por vínculo de terreno) en todas las esferas y fichas | Se cambia una vez y queda bien en todo el tour |
+| 2026-10-28 | Rótulos sobre la esfera: número y manzana al centro, superficie abajo y medida de cada lado sobre su borde; se ajustan al tamaño del lote y se ocultan si no caben | Legibles de cerca y de lejos sin tapar la imagen |
+| 2026-10-28 | Botón Lote con numeración automática (cada lote sigue al anterior en su manzana) | Lotificar rápido, lote tras lote |
+| 2026-10-28 | Panoramas → Lotes: tabla con todos los lotes, conteo por estado, % vendido, edición de superficie, precio y estado | Actualizar disponibilidad cada semana sin buscar esfera por esfera |
+| 2026-10-28 | Acción "Ficha del lote" (por defecto en lotes): ventana con estado, superficie, frente, lados, precio y botón de contacto del skin; sin precio ni botón si está vendido | Lo que el comprador necesita para decidir |
+| 2026-10-28 | Rótulo del lote "Planchado en el lote" por defecto: número, manzana, superficie y medidas se pintan sobre el suelo con la perspectiva real (homografía del piso → matrix3d); opción "Siempre de frente" | El texto no sigue a la cámara: se ve impreso en el terreno |
+| 2026-10-28 | Orientación fija por esfera y por lote: legible y nunca en espejo; cerca del dron sigue el frente de la vista de inicio, lejos apunta hacia afuera | Todos los rótulos de una vista se leen igual |
+| 2026-10-28 | Control de tamaño y giro del rótulo, rollover opcional por lote y colores de estado editables desde el panel del lote | Control total del diseño de la lotificación |
+| 2026-10-28 | Medidas dentro del lote, abajo de su borde, separadas del trazo | Se leen sin que el borde las tape |

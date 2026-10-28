@@ -6,7 +6,7 @@
 | Mié 28 oct | ✅ Visor, carga de esferas y multirresolución (adelantado el 27) |
 | Jue 29 oct | ✅ Hotspots y navegación (adelantado el 27; faltan los APNG) |
 | Vie 30 oct | ✅ Capas de texto y polígonos (adelantado el 27) |
-| Sáb 31 oct | ✅ Lotificación con puntos de referencia (adelantado el 28) |
+| Sáb 31 oct | ✅ Lotificación con puntos de referencia, estados de lote y fichas (adelantado el 28) |
 | Lun 2 nov | ✅ Piloto automático (adelantado el 28) |
 | Mar 3 nov | ✅ Skin 16:9 / 9:16 (adelantado el 28) |
 | Mié 4 nov | Publicar en internet y primer tour real |

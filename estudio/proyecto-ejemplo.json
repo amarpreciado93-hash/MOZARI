@@ -315,7 +315,7 @@
    {
     "id": "lt-a1",
     "tipo": "poligono",
-    "nombre": "Lote A-1",
+    "nombre": "Lote 1 · Mz A",
     "visible": true,
     "vinculo": "v-a1",
     "puntos": [
@@ -356,12 +356,31 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "1",
+     "manzana": "A",
+     "area": "",
+     "precio": "",
+     "lados": [
+      "",
+      "",
+      "",
+      ""
+     ],
+     "frente": 0,
+     "estado": "disponible",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "lt-a2",
     "tipo": "poligono",
-    "nombre": "Lote A-2",
+    "nombre": "Lote 2 · Mz A",
     "visible": true,
     "vinculo": "v-a2",
     "puntos": [
@@ -402,12 +421,31 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "2",
+     "manzana": "A",
+     "area": "",
+     "precio": "",
+     "lados": [
+      "",
+      "",
+      "",
+      ""
+     ],
+     "frente": 0,
+     "estado": "apartado",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "lt-a3",
     "tipo": "poligono",
-    "nombre": "Lote A-3",
+    "nombre": "Lote 3 · Mz A",
     "visible": true,
     "vinculo": "v-a3",
     "puntos": [
@@ -448,12 +486,31 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "3",
+     "manzana": "A",
+     "area": "",
+     "precio": "",
+     "lados": [
+      "",
+      "",
+      "",
+      ""
+     ],
+     "frente": 0,
+     "estado": "disponible",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "lt-a4",
     "tipo": "poligono",
-    "nombre": "Lote A-4",
+    "nombre": "Lote 4 · Mz A",
     "visible": true,
     "vinculo": "v-a4",
     "puntos": [
@@ -494,13 +551,32 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "4",
+     "manzana": "A",
+     "area": "",
+     "precio": "",
+     "lados": [
+      "",
+      "",
+      "",
+      ""
+     ],
+     "frente": 0,
+     "estado": "disponible",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "mz-a",
     "tipo": "texto",
     "nombre": "Manzana A",
-    "visible": true,
+    "visible": false,
     "vinculo": "v-mz-a",
     "yaw": -1.63585,
     "pitch": 1.06489,
@@ -516,7 +592,7 @@
    {
     "id": "lt-b1",
     "tipo": "poligono",
-    "nombre": "Lote B-1",
+    "nombre": "Lote 1 · Mz B",
     "visible": true,
     "vinculo": "v-b1",
     "puntos": [
@@ -557,12 +633,31 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "1",
+     "manzana": "B",
+     "area": "",
+     "precio": "",
+     "lados": [
+      "",
+      "",
+      "",
+      ""
+     ],
+     "frente": 0,
+     "estado": "disponible",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "lt-b2",
     "tipo": "poligono",
-    "nombre": "Lote B-2",
+    "nombre": "Lote 2 · Mz B",
     "visible": true,
     "vinculo": "v-b2",
     "puntos": [
@@ -603,12 +698,31 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "2",
+     "manzana": "B",
+     "area": "",
+     "precio": "",
+     "lados": [
+      "",
+      "",
+      "",
+      ""
+     ],
+     "frente": 0,
+     "estado": "disponible",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "lt-b3",
     "tipo": "poligono",
-    "nombre": "Lote B-3",
+    "nombre": "Lote 3 · Mz B",
     "visible": true,
     "vinculo": "v-b3",
     "puntos": [
@@ -649,12 +763,31 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "3",
+     "manzana": "B",
+     "area": "",
+     "precio": "",
+     "lados": [
+      "",
+      "",
+      "",
+      ""
+     ],
+     "frente": 0,
+     "estado": "vendido",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "lt-b4",
     "tipo": "poligono",
-    "nombre": "Lote B-4",
+    "nombre": "Lote 4 · Mz B",
     "visible": true,
     "vinculo": "v-b4",
     "puntos": [
@@ -695,12 +828,31 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "4",
+     "manzana": "B",
+     "area": "",
+     "precio": "",
+     "lados": [
+      "",
+      "",
+      "",
+      ""
+     ],
+     "frente": 0,
+     "estado": "vendido",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "lt-b5",
     "tipo": "poligono",
-    "nombre": "Lote B-5",
+    "nombre": "Lote 5 · Mz B",
     "visible": true,
     "vinculo": "v-b5",
     "puntos": [
@@ -741,12 +893,31 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "5",
+     "manzana": "B",
+     "area": "",
+     "precio": "",
+     "lados": [
+      "",
+      "",
+      "",
+      ""
+     ],
+     "frente": 0,
+     "estado": "disponible",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "lt-b6",
     "tipo": "poligono",
-    "nombre": "Lote B-6",
+    "nombre": "Lote 6 · Mz B",
     "visible": true,
     "vinculo": "v-b6",
     "puntos": [
@@ -787,12 +958,31 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "6",
+     "manzana": "B",
+     "area": "",
+     "precio": "",
+     "lados": [
+      "",
+      "",
+      "",
+      ""
+     ],
+     "frente": 0,
+     "estado": "apartado",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "lt-b7",
     "tipo": "poligono",
-    "nombre": "Lote B-7",
+    "nombre": "Lote 7 · Mz B",
     "visible": true,
     "vinculo": "v-b7",
     "puntos": [
@@ -833,12 +1023,31 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "7",
+     "manzana": "B",
+     "area": "",
+     "precio": "",
+     "lados": [
+      "",
+      "",
+      "",
+      ""
+     ],
+     "frente": 0,
+     "estado": "disponible",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "lt-b8",
     "tipo": "poligono",
-    "nombre": "Lote B-8",
+    "nombre": "Lote 8 · Mz B",
     "visible": true,
     "vinculo": "v-b8",
     "puntos": [
@@ -879,13 +1088,32 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "8",
+     "manzana": "B",
+     "area": "",
+     "precio": "",
+     "lados": [
+      "",
+      "",
+      "",
+      ""
+     ],
+     "frente": 0,
+     "estado": "disponible",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "mz-b",
     "tipo": "texto",
     "nombre": "Manzana B",
-    "visible": true,
+    "visible": false,
     "vinculo": "v-mz-b",
     "yaw": 2.99706,
     "pitch": 1.37034,
@@ -901,7 +1129,7 @@
    {
     "id": "lt-c1",
     "tipo": "poligono",
-    "nombre": "Lote C-1",
+    "nombre": "Lote 1 · Mz C",
     "visible": true,
     "vinculo": "v-c1",
     "puntos": [
@@ -942,12 +1170,31 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "1",
+     "manzana": "C",
+     "area": "",
+     "precio": "",
+     "lados": [
+      "",
+      "",
+      "",
+      ""
+     ],
+     "frente": 0,
+     "estado": "vendido",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "lt-c2",
     "tipo": "poligono",
-    "nombre": "Lote C-2",
+    "nombre": "Lote 2 · Mz C",
     "visible": true,
     "vinculo": "v-c2",
     "puntos": [
@@ -988,12 +1235,31 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "2",
+     "manzana": "C",
+     "area": "1250",
+     "precio": "",
+     "lados": [
+      "50",
+      "55",
+      "18",
+      "20"
+     ],
+     "frente": 0,
+     "estado": "disponible",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "lt-c3",
     "tipo": "poligono",
-    "nombre": "Lote C-3",
+    "nombre": "Lote 3 · Mz C",
     "visible": true,
     "vinculo": "v-c3",
     "puntos": [
@@ -1034,12 +1300,31 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "3",
+     "manzana": "C",
+     "area": "",
+     "precio": "",
+     "lados": [
+      "",
+      "",
+      "",
+      ""
+     ],
+     "frente": 0,
+     "estado": "apartado",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "lt-c4",
     "tipo": "poligono",
-    "nombre": "Lote C-4",
+    "nombre": "Lote 4 · Mz C",
     "visible": true,
     "vinculo": "v-c4",
     "puntos": [
@@ -1080,13 +1365,32 @@
       "grosor": 2.5,
       "opacidad": 1
      }
+    },
+    "lote": {
+     "numero": "4",
+     "manzana": "C",
+     "area": "",
+     "precio": "",
+     "lados": [
+      "",
+      "",
+      "",
+      ""
+     ],
+     "frente": 0,
+     "estado": "disponible",
+     "etiqueta": true,
+     "verArea": true,
+     "medidas": true,
+     "opacidad": 0.32,
+     "borde": "blanco"
     }
    },
    {
     "id": "mz-c",
     "tipo": "texto",
     "nombre": "Manzana C",
-    "visible": true,
+    "visible": false,
     "vinculo": "v-mz-c",
     "yaw": 1.96971,
     "pitch": 0.95457,
@@ -1202,5 +1506,22 @@
     ]
    ]
   }
- }
+ },
+ "lotesEstados": [
+  {
+   "id": "disponible",
+   "nombre": "Disponible",
+   "color": "#22B573"
+  },
+  {
+   "id": "apartado",
+   "nombre": "Apartado",
+   "color": "#F2A900"
+  },
+  {
+   "id": "vendido",
+   "nombre": "Vendido",
+   "color": "#E5484D"
+  }
+ ]
 }
