@@ -66,3 +66,4 @@
 | 2026-10-28 | Modo presentación en Proyecto → Presentación: si nadie toca el tour durante el tiempo elegido (10 s a 5 min, 1 min por defecto), pasa solo a la siguiente esfera; al final vuelve a la primera o se queda | Pantallas en salas de venta y ferias |
 | 2026-10-28 | Cada esfera decide: "Pasa a la siguiente", "Se queda aquí" o "Se salta"; el orden se cambia con flechas y es el mismo orden de Panoramas | Detener la presentación en la esfera clave sin apagarla |
 | 2026-10-28 | La presentación espera a que termine el piloto automático de la esfera y llega "de frente" si hay hotspot entre las dos; no corre en el editor de skin | Que no corte recorridos ni brinque raro |
+| 2026-10-28 | Medidas de lote en blanco y seminegrita con sombra fina; se corrigió un choque de nombres de estilo que las pintaba grises (parecían debajo del relleno) | Se leen sobre cualquier color y opacidad de relleno |

@@ -360,17 +360,17 @@
   /* Lotes: rótulos sobre la esfera, panel de datos, ficha y tabla */
   .capa-etq { position: absolute; inset: 0; pointer-events: none; }
   .lt-planos { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
-  .lt-p { position: absolute; left: 0; top: 0; transform-origin: 0 0; white-space: nowrap; font-family: var(--mz-texto-ui); color: #fff; line-height: 1.08; text-align: center; text-shadow: 0 0 4px rgba(0, 0, 0, 0.7), 0 0 1.5px rgba(0, 0, 0, 0.9); backface-visibility: hidden; }
+  .lt-p { position: absolute; left: 0; top: 0; transform-origin: 0 0; white-space: nowrap; font-family: var(--mz-texto-ui); color: #fff; line-height: 1.08; text-align: center; text-shadow: 0 0 2px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.45); }
   .lt-p.nom { font-size: 40px; font-weight: 600; }
   .lt-p.nom small { display: block; font-size: 0.74em; font-weight: 400; }
-  .lt-p.lado { font-size: 30px; font-weight: 500; }
+  .lt-p.lt-medida { font-size: 40px; font-weight: 600; color: #fff; }
   .estado-colores { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 11px; color: var(--mz-tenue); }
   .estado-colores label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
   .estado-colores input[type="color"] { width: 24px; height: 24px; border: 1px solid var(--mz-linea-neutra); border-radius: 50%; padding: 0; background: none; cursor: pointer; }
   .lote-etq text { pointer-events: none; font-family: var(--mz-texto-ui); fill: #fff; paint-order: stroke; stroke: rgba(0, 0, 0, 0.62); stroke-width: 3px; stroke-linejoin: round; text-anchor: middle; dominant-baseline: central; }
   .lote-etq .lt-nom { font-weight: 600; }
   .lote-etq .lt-area { font-weight: 400; }
-  .lote-etq .lt-lado { font-weight: 500; stroke-width: 2.6px; }
+  .lote-etq .lt-lado { font-weight: 600; stroke-width: 2.8px; }
   .lado-res { fill: none; stroke: var(--mz-lima); stroke-width: 4; stroke-linecap: round; filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.9)); }
   .punto-estado { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.25); }
   .lote-datos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -1645,7 +1645,7 @@
         const v = l.medidas ? fmtLado((l.lados || [])[i]) : "";
         if (!v) return null;
         const e = document.createElement("div");
-        e.className = "lt-p lado"; e.textContent = v; cont.appendChild(e);
+        e.className = "lt-p lt-medida"; e.textContent = v; cont.appendChild(e);
         return e;
       });
       return { cont, nom: l.etiqueta ? nom : null, lados, med: null };
