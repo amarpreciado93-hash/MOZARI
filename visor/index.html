@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mozari Visor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
+<style>
+  /* Layout: la esfera ocupa toda la pantalla; la interfaz flota en las orillas (marca arriba, datos a la derecha, escenas abajo). */
+  /* Tokens de marca Mozari (Guía visual de marca). Cambiar aquí cambia todo el visor. */
+  :root {
+    --mz-lima: #D5FF40;              /* color principal: acciones y estados activos */
+    --mz-negro: #0B0B0B;             /* color base */
+    --mz-vidrio: rgba(11, 11, 11, 0.72);
+    --mz-linea: rgba(213, 255, 64, 0.14);
+    --mz-texto: #F2F5EC;
+    --mz-tenue: #9CA38F;
+    --mz-lima-suave: rgba(213, 255, 64, 0.12);
+    --mz-gradiente: linear-gradient(135deg, #0B0B0B 40%, #3A4A10 80%, #D5FF40 130%);
+    --mz-titular: "Gilroy", "Poppins", system-ui, sans-serif;   /* Gilroy cuando tengamos los archivos */
+    --mz-texto-ui: "Poppins", system-ui, sans-serif;
+    --mz-radio: 14px;
+    --mz-pastilla: 999px;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body { background: var(--mz-negro); color: var(--mz-texto); font-family: var(--mz-texto-ui); overflow: hidden; }
+  #pano { position: absolute; inset: 0; }
+
+  .capa { position: absolute; z-index: 5; display: flex; gap: 10px; pointer-events: none; }
+  .capa > * { pointer-events: auto; }
+  .vidrio {
+    background: var(--mz-vidrio); border: 1px solid var(--mz-linea); border-radius: var(--mz-radio);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  }
+
+  .arriba {
+    top: calc(env(safe-area-inset-top, 0px) + 14px);
+    left: max(16px, env(safe-area-inset-left, 0px));
+    right: max(16px, env(safe-area-inset-right, 0px));
+    justify-content: space-between; align-items: flex-start;
+  }
+  .marca { display: flex; align-items: center; gap: 12px; padding: 10px 18px 10px 14px; }
+  .marca svg { width: 26px; height: 26px; color: var(--mz-lima); }
+  .marca b { font-family: var(--mz-titular); font-weight: 300; font-size: 15px; letter-spacing: 0.42em; margin-right: -0.42em; }
+  .marca span {
+    font-size: 10px; font-weight: 500; letter-spacing: 0.14em; color: var(--mz-tenue);
+    padding-left: 12px; border-left: 1px solid var(--mz-linea);
+  }
+
+  .botones { display: flex; gap: 8px; }
+  .btn {
+    width: 42px; height: 42px; display: grid; place-items: center; border-radius: var(--mz-pastilla);
+    color: var(--mz-texto); cursor: pointer; font: inherit;
+  }
+  .btn:hover { color: var(--mz-negro); background: var(--mz-lima); border-color: var(--mz-lima); }
+  .btn:focus-visible, .chip:focus-visible { outline: 2px solid var(--mz-lima); outline-offset: 2px; }
+  .btn svg { width: 18px; height: 18px; }
+
+  .datos {
+    top: calc(env(safe-area-inset-top, 0px) + 70px);
+    right: max(16px, env(safe-area-inset-right, 0px));
+    flex-direction: column;
+  }
+  .ficha { padding: 14px 16px; width: 248px; display: grid; gap: 10px; }
+  .ficha .etiqueta { margin: 0; font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mz-lima); }
+  .ficha h2 { margin: -4px 0 0; font-family: var(--mz-titular); font-weight: 600; font-size: 16px; }
+  .fila { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
+  .fila dt { color: var(--mz-tenue); }
+  .fila dd { margin: 0; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .ficha dl { margin: 0; display: grid; gap: 6px; }
+  .barra { height: 4px; border-radius: var(--mz-pastilla); background: var(--mz-linea); overflow: hidden; }
+  .barra i { display: block; height: 100%; width: 0; background: var(--mz-lima); border-radius: inherit; transition: width 0.3s; }
+  .nota { margin: 0; font-size: 11px; line-height: 1.5; color: var(--mz-tenue); }
+  .niveles { display: flex; gap: 4px; }
+  .niveles span {
+    flex: 1; text-align: center; font-size: 10px; font-weight: 500; padding: 3px 0;
+    border-radius: var(--mz-pastilla); border: 1px solid var(--mz-linea); color: var(--mz-tenue);
+    font-variant-numeric: tabular-nums;
+  }
+  .niveles span.on { border-color: var(--mz-lima); color: var(--mz-lima); }
+
+  .abajo {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    left: max(16px, env(safe-area-inset-left, 0px));
+    right: max(16px, env(safe-area-inset-right, 0px));
+    justify-content: center;
+  }
+  .escenas { display: flex; gap: 4px; padding: 5px; max-width: 100%; overflow-x: auto; border-radius: var(--mz-pastilla); }
+  .chip {
+    flex: none; display: flex; align-items: center; gap: 8px; padding: 9px 18px;
+    border: 0; border-radius: var(--mz-pastilla); background: transparent;
+    color: var(--mz-tenue); font: 500 13px var(--mz-texto-ui); cursor: pointer; white-space: nowrap;
+  }
+  .chip:hover { color: var(--mz-texto); background: var(--mz-lima-suave); }
+  .chip[aria-current="true"] { color: var(--mz-negro); background: var(--mz-lima); }
+  .chip small { font-size: 10px; font-weight: 400; opacity: 0.7; }
+
+  .aviso {
+    position: absolute; inset: 0; display: grid; place-items: center; z-index: 4;
+    padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
+    text-align: center; color: var(--mz-tenue); font-size: 14px; background: var(--mz-gradiente);
+  }
+
+  @media (max-width: 640px) {
+    .datos { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); left: max(16px, env(safe-area-inset-left, 0px)); }
+    .ficha { width: auto; flex: 1; }
+    .ficha .nota, .ficha .fila.extra { display: none; }
+    .abajo { justify-content: flex-start; }
+    .marca span { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .barra i { transition: none; } }
+</style>
+</head>
+<body>
+
+<div id="pano" role="img" aria-label="Esfera 360 interactiva"></div>
+<div class="aviso" id="aviso">Cargando esferas…</div>
+
+<div class="capa arriba">
+  <div class="marca vidrio">
+    <svg aria-hidden="true" viewBox="0 0 613 613"><path fill="currentColor" d="M89.0 540.5C52.3 536.4 19.8 511.8 6.5 478.0C3.5 470.4 0.1 453.0 0.0 445.0C-0.0 433.4 3.9 416.1 9.1 404.8C16.2 389.1 28.5 373.6 41.3 363.9C49.0 358.1 67.1 349.3 76.9 346.6C119.8 334.8 165.9 351.4 189.1 387.0C200.5 404.5 204.4 418.2 204.4 440.5C204.4 452.5 204.0 456.5 202.1 463.5C199.5 473.0 191.9 489.9 186.9 497.2C178.2 509.8 162.1 523.5 147.1 531.0C131.2 538.9 108.4 542.7 89.0 540.5ZM454.4 538.9C437.0 536.0 419.2 528.3 404.2 517.3C386.4 504.2 371.5 484.7 362.5 462.7C358.1 451.9 356.9 448.0 348.4 417.0C337.4 377.0 323.2 351.4 299.2 328.4C276.3 306.3 245.6 291.3 206.0 282.5C174.5 275.6 166.3 273.2 154.5 267.3C131.4 255.6 114.6 239.4 104.4 218.9C97.5 204.9 94.9 194.6 94.3 178.5C93.8 166.5 94.1 163.7 96.3 153.7C100.7 134.5 107.8 121.3 121.4 106.9C150.6 75.9 196.1 65.4 237.3 80.1C261.2 88.7 282.6 105.7 297.4 128.1C305.7 140.4 309.9 149.9 318.5 175.8C334.3 223.5 346.9 246.4 369.5 269.0C382.6 282.1 394.0 290.6 411.2 300.2C428.3 309.8 441.1 314.7 484.5 328.5C525.8 341.6 551.4 361.5 566.2 392.0C585.4 431.8 577.9 477.9 547.1 508.6C522.5 533.0 487.6 544.5 454.4 538.9ZM515.3 243.4C499.8 241.6 481.7 233.4 469.2 222.6C455.3 210.5 445.5 194.6 440.9 176.5C438.6 167.5 439.1 145.7 441.8 136.2C450.7 104.9 473.3 82.7 504.8 74.3C515.7 71.5 536.3 71.5 547.2 74.3C579.3 82.9 603.7 108.1 610.6 139.7C612.6 148.7 612.8 167.1 611.1 174.5C608.4 186.2 602.7 199.3 596.7 208.0C592.8 213.6 581.5 224.7 575.6 228.7C558.7 240.3 535.7 245.9 515.3 243.4Z"/></svg>
+    <b>MOZARI</b>
+    <span>VISOR v0.1</span>
+  </div>
+  <div class="botones">
+    <button class="btn vidrio" id="menos" aria-label="Alejar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></button>
+    <button class="btn vidrio" id="mas" aria-label="Acercar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button class="btn vidrio" id="pantalla" aria-label="Pantalla completa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+  </div>
+</div>
+
+<div class="capa datos">
+  <section class="ficha vidrio" aria-live="polite">
+    <p class="etiqueta">Escena activa</p>
+    <h2 id="f-nombre">—</h2>
+    <dl>
+      <div class="fila"><dt>Esfera original</dt><dd id="f-orig">—</dd></div>
+      <div class="fila extra"><dt>Cara del cubo</dt><dd id="f-cara">—</dd></div>
+      <div class="fila"><dt>Descargado</dt><dd id="f-desc">—</dd></div>
+    </dl>
+    <div class="barra"><i id="f-barra"></i></div>
+    <div class="niveles" id="f-niveles"></div>
+    <p class="nota">Solo se descargan los tiles que estás viendo. Haz zoom y mira cómo sube el nivel.</p>
+  </section>
+</div>
+
+<div class="capa abajo">
+  <nav class="escenas vidrio" id="escenas" aria-label="Escenas"></nav>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.js"></script>
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const aviso = $("aviso");
+  const mb = (b) => (b / 1048576).toFixed(1) + " MB";
+  const mp = (w, h) => Math.round((w * h) / 1e6) + " MP";
+
+  let proyecto, escenas;
+  try {
+    proyecto = await (await fetch("proyecto.json")).json();
+    escenas = await Promise.all(
+      proyecto.escenas.map((id) => fetch("escenas/" + id + "/escena.json").then((r) => r.json()))
+    );
+  } catch (e) {
+    aviso.textContent = "No se pudo leer el proyecto. Revisa que exista proyecto.json junto a esta página.";
+    return;
+  }
+
+  const viewer = new Marzipano.Viewer($("pano"), { controls: { mouseViewMode: "drag" } });
+  const descargado = {};
+
+  const creadas = escenas.map((d) => {
+    const base = "escenas/" + d.id + "/";
+    const source = Marzipano.ImageUrlSource.fromString(base + "{z}/{f}/{y}/{x}.jpg", {
+      cubeMapPreviewUrl: base + "preview.jpg",
+    });
+    const geometry = new Marzipano.CubeGeometry(d.niveles);
+    const limiter = Marzipano.RectilinearView.limit.traditional(d.cara, (110 * Math.PI) / 180);
+    const view = new Marzipano.RectilinearView(d.vista, limiter);
+    const scene = viewer.createScene({ source, geometry, view, pinFirstLevel: true });
+    descargado[d.id] = 0;
+    return { d, scene, view };
+  });
+
+  // Cuenta lo que realmente baja el navegador, por escena.
+  const contar = (entrada) => {
+    const m = entrada.name.match(/escenas\/([^/]+)\//);
+    if (m && m[1] in descargado) descargado[m[1]] += entrada.transferSize || entrada.encodedBodySize || 0;
+  };
+  try {
+    new PerformanceObserver((lista) => lista.getEntries().forEach(contar)).observe({ type: "resource", buffered: true });
+  } catch (e) { /* sin contador en navegadores viejos */ }
+
+  let actual = null;
+  function mostrar(i) {
+    actual = creadas[i];
+    actual.scene.switchTo({ transitionDuration: 700 });
+    const d = actual.d;
+    $("f-nombre").textContent = d.nombre;
+    $("f-orig").textContent = d.origen.ancho.toLocaleString("es-MX") + " px · " + mp(d.origen.ancho, d.origen.alto);
+    $("f-cara").textContent = d.cara.toLocaleString("es-MX") + " px";
+    $("f-niveles").innerHTML = d.niveles
+      .filter((n) => !n.fallbackOnly)
+      .map((n) => '<span data-s="' + n.size + '">' + (n.size >= 1024 ? n.size / 1024 + "K" : n.size) + "</span>")
+      .join("");
+    document.querySelectorAll(".chip").forEach((c, j) => c.setAttribute("aria-current", j === i ? "true" : "false"));
+  }
+
+  $("escenas").innerHTML = escenas
+    .map((d, i) => '<button class="chip" data-i="' + i + '">' + d.nombre + " <small>" + mp(d.origen.ancho, d.origen.alto) + "</small></button>")
+    .join("");
+  $("escenas").addEventListener("click", (e) => {
+    const b = e.target.closest(".chip");
+    if (b) mostrar(+b.dataset.i);
+  });
+
+  // Nivel que se está viendo según el zoom actual.
+  function nivelVisible() {
+    if (!actual) return;
+    const alto = $("pano").clientHeight * (window.devicePixelRatio || 1);
+    const necesario = (alto / actual.view.fov()) * (Math.PI / 2);
+    const sizes = actual.d.niveles.filter((n) => !n.fallbackOnly).map((n) => n.size);
+    const elegido = sizes.find((s) => s >= necesario) || sizes[sizes.length - 1];
+    document.querySelectorAll("#f-niveles span").forEach((s) => s.classList.toggle("on", +s.dataset.s <= elegido));
+    const bajado = descargado[actual.d.id];
+    $("f-desc").textContent = mb(bajado) + " de " + mb(actual.d.peso);
+    $("f-barra").style.width = Math.min(100, (bajado / actual.d.peso) * 100) + "%";
+  }
+  setInterval(nivelVisible, 400);
+
+  const zoom = (f) => actual && actual.view.setFov(actual.view.fov() * f);
+  $("mas").addEventListener("click", () => zoom(0.7));
+  $("menos").addEventListener("click", () => zoom(1.4));
+  $("pantalla").addEventListener("click", () => {
+    const el = document.documentElement;
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+    } catch (e) { /* no disponible en este dispositivo */ }
+  });
+
+  aviso.hidden = true;
+  mostrar(0);
+})();
+</script>
+</body>
+</html>

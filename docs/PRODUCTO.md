@@ -31,3 +31,8 @@ Meta final: la potencia de 3DVista con la facilidad de Kuula, diseño moderno y 
 - Alojamiento web: Vercel o Cloudflare Pages
 - Almacenamiento de esferas y tiles: Cloudflare R2 (sin costo por visualizaciones)
 - Monitoreo de errores: Sentry
+
+## Después de la v0.1 (pedidos registrados)
+- Catálogo de hotspots: elegir el estilo de cada hotspot desde una biblioteca (APNG y otros)
+- Acciones en hotspots, además de saltar de esfera (ej. abrir info, video, enlace, ficha de lote). Se definen más adelante.
+- Rutas: el mapa de nodos marca escenas fuera de la ruta, sin salida, sueltas y con demasiados hotspots (límite actual: 4, ajustable)

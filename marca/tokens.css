@@ -1,0 +1,18 @@
+/* Mozari · tokens de marca
+   Fuente: marca/Guía visual de marca MOZARI.png
+   Todo el software toma colores, tipografías y radios de aquí. */
+  :root {
+    --mz-lima: #D5FF40;              /* color principal: acciones y estados activos */
+    --mz-negro: #0B0B0B;             /* color base */
+    --mz-vidrio: rgba(11, 11, 11, 0.72);
+    --mz-linea: rgba(213, 255, 64, 0.14);
+    --mz-texto: #F2F5EC;
+    --mz-tenue: #9CA38F;
+    --mz-lima-suave: rgba(213, 255, 64, 0.12);
+    --mz-gradiente: linear-gradient(135deg, #0B0B0B 40%, #3A4A10 80%, #D5FF40 130%);
+    --mz-titular: "Poppins", system-ui, sans-serif;
+    --mz-texto-ui: "Poppins", system-ui, sans-serif;
+    --mz-radio: 14px;
+    --mz-pastilla: 999px;
+    color-scheme: dark;
+  }

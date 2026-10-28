@@ -1,0 +1,52 @@
+{
+  "nombre": "Demo Mozari",
+  "escenas": [
+    "playa-linda",
+    "fachada",
+    "interior"
+  ],
+  "nombres": [
+    [
+      "interior",
+      "Parque Industrial"
+    ]
+  ],
+  "hotspots": {
+    "playa-linda": [
+      {
+        "yaw": 2.618,
+        "pitch": 0.1745,
+        "destino": "fachada"
+      },
+      {
+        "yaw": -2.0944,
+        "pitch": 0.2094,
+        "destino": "interior"
+      }
+    ],
+    "fachada": [
+      {
+        "yaw": -2.0595,
+        "pitch": 0.0698,
+        "destino": "playa-linda"
+      },
+      {
+        "yaw": 1.7977,
+        "pitch": 0.2094,
+        "destino": "interior"
+      }
+    ],
+    "interior": [
+      {
+        "yaw": -0.9599,
+        "pitch": -0.0175,
+        "destino": "playa-linda"
+      },
+      {
+        "yaw": 1.0472,
+        "pitch": -0.0175,
+        "destino": "fachada"
+      }
+    ]
+  }
+}

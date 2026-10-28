@@ -1,0 +1,199 @@
+{
+  "version": 2,
+  "proyecto": {
+    "nombre": "Demo Mozari",
+    "escenaInicial": "playa-linda",
+    "littlePlanet": true,
+    "musica": {
+      "volumen": 0.6,
+      "repetir": true
+    }
+  },
+  "escenas": [
+    {
+      "id": "playa-linda",
+      "nombre": "Playa Linda"
+    },
+    {
+      "id": "fachada",
+      "nombre": "Fachada"
+    },
+    {
+      "id": "interior",
+      "nombre": "Parque Industrial",
+      "vista": {
+        "yaw": -0.12,
+        "pitch": 0.62,
+        "fov": 1.3
+      }
+    }
+  ],
+  "capas": {
+    "playa-linda": [
+      {
+        "id": "c1",
+        "tipo": "hotspot",
+        "nombre": "Hotspot → Fachada",
+        "visible": true,
+        "yaw": 2.618,
+        "pitch": 0.1745,
+        "destino": "fachada"
+      },
+      {
+        "id": "c2",
+        "tipo": "hotspot",
+        "nombre": "Hotspot → Parque Industrial",
+        "visible": true,
+        "yaw": -2.0944,
+        "pitch": 0.2094,
+        "destino": "interior"
+      }
+    ],
+    "fachada": [
+      {
+        "id": "c3",
+        "tipo": "hotspot",
+        "nombre": "Hotspot → Playa Linda",
+        "visible": true,
+        "yaw": -2.0595,
+        "pitch": 0.0698,
+        "destino": "playa-linda"
+      },
+      {
+        "id": "c4",
+        "tipo": "hotspot",
+        "nombre": "Hotspot → Parque Industrial",
+        "visible": true,
+        "yaw": 1.7977,
+        "pitch": 0.2094,
+        "destino": "interior"
+      }
+    ],
+    "interior": [
+      {
+        "id": "c7",
+        "tipo": "poligono",
+        "nombre": "Lote 41",
+        "visible": true,
+        "puntos": [
+          [
+            -0.2656,
+            0.702
+          ],
+          [
+            -0.1068,
+            0.713
+          ],
+          [
+            -0.1271,
+            0.8831
+          ],
+          [
+            -0.3451,
+            0.8657
+          ]
+        ],
+        "relleno": {
+          "color": "#D5FF40",
+          "opacidad": 0.45
+        },
+        "trazo": {
+          "color": "#D5FF40",
+          "grosor": 2,
+          "opacidad": 1
+        },
+        "rollover": {
+          "activo": true,
+          "relleno": {
+            "color": "#D5FF40",
+            "opacidad": 0.75
+          },
+          "trazo": {
+            "color": "#FFFFFF",
+            "grosor": 3,
+            "opacidad": 1
+          }
+        }
+      },
+      {
+        "id": "c8",
+        "tipo": "poligono",
+        "nombre": "Lote 28 (solo trazo)",
+        "visible": true,
+        "puntos": [
+          [
+            -0.1047,
+            0.713
+          ],
+          [
+            0.0581,
+            0.7102
+          ],
+          [
+            0.099,
+            0.8772
+          ],
+          [
+            -0.1258,
+            0.8831
+          ]
+        ],
+        "relleno": {
+          "color": "#D5FF40",
+          "opacidad": 0
+        },
+        "trazo": {
+          "color": "#FFFFFF",
+          "grosor": 3,
+          "opacidad": 1
+        },
+        "rollover": {
+          "activo": true,
+          "relleno": {
+            "color": "#D5FF40",
+            "opacidad": 0.35
+          },
+          "trazo": {
+            "color": "#D5FF40",
+            "grosor": 4,
+            "opacidad": 1
+          }
+        }
+      },
+      {
+        "id": "c9",
+        "tipo": "texto",
+        "nombre": "Etiqueta lote 41",
+        "visible": true,
+        "yaw": -0.2094,
+        "pitch": 0.6458,
+        "texto": "Lote 41 · 525.67 m²",
+        "tamano": 15,
+        "color": "#0B0B0B",
+        "fondo": {
+          "activo": true,
+          "color": "#D5FF40"
+        },
+        "peso": 600
+      },
+      {
+        "id": "c5",
+        "tipo": "hotspot",
+        "nombre": "Hotspot → Playa Linda",
+        "visible": true,
+        "yaw": -0.9599,
+        "pitch": -0.0175,
+        "destino": "playa-linda"
+      },
+      {
+        "id": "c6",
+        "tipo": "hotspot",
+        "nombre": "Hotspot → Fachada",
+        "visible": true,
+        "yaw": 1.0472,
+        "pitch": -0.0175,
+        "destino": "fachada"
+      }
+    ]
+  }
+}
