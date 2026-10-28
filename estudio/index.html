@@ -7,8 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
 <style>
-  /* Layout: app de escritorio. Barra lateral con ventanas (Proyecto, Panoramas, …), barra superior con
-     el nombre del proyecto y "Vista previa". Panoramas tiene Lista, Mapa de nodos y Editor de capas. */
+  /* Layout: app de escritorio con dos niveles de navegación, como 3DVista pero más claro:
+     arriba las ventanas (Mis Tours, Proyecto, Panoramas, Media, Skin, Publicar),
+     debajo las subpestañas de la ventana activa, y el contenido ocupa el resto. */
   /* Tokens de marca Mozari (marca/tokens.css). */
   :root {
     --mz-lima: #D5FF40;
@@ -36,40 +37,48 @@
   button, input, select { font-family: inherit; }
   button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--mz-lima); outline-offset: 2px; }
 
-  /* ---------- Estructura ---------- */
-  .app { height: 100%; display: grid; grid-template-columns: 76px minmax(0, 1fr); }
-  .lateral {
-    background: var(--mz-negro); border-right: 1px solid var(--mz-linea-neutra);
-    display: flex; flex-direction: column; align-items: center; gap: 6px;
-    padding-block: calc(env(safe-area-inset-top, 0px) + 16px) 16px; padding-left: env(safe-area-inset-left, 0px);
-  }
-  .lateral .logo { width: 40px; height: 40px; border-radius: 12px; background: var(--mz-lima); display: grid; place-items: center; margin-bottom: 18px; }
-  .lateral .logo svg { width: 22px; height: 22px; color: var(--mz-negro); }
-  .nav { width: 60px; display: grid; justify-items: center; gap: 4px; padding: 10px 0 8px; border: 0; border-radius: 12px; background: transparent; color: var(--mz-tenue); font-size: 10px; font-weight: 500; cursor: pointer; }
-  .nav svg { width: 20px; height: 20px; }
-  .nav:hover { color: var(--mz-texto); background: var(--mz-superficie); }
-  .nav[aria-current="page"] { color: var(--mz-negro); background: var(--mz-lima); }
-  .nav:disabled { opacity: 0.35; cursor: default; background: none; color: var(--mz-tenue); }
-  .lateral .version { margin-top: auto; font-size: 9px; color: var(--mz-tenue); letter-spacing: 0.08em; }
-
-  .principal { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; }
+  /* ---------- Estructura: dos niveles de navegación ---------- */
+  .app { height: 100%; display: grid; grid-template-rows: auto auto minmax(0, 1fr); }
   .barra {
-    display: flex; align-items: center; gap: 14px; justify-content: space-between;
-    padding-block: calc(env(safe-area-inset-top, 0px) + 12px) 12px;
-    padding-left: 24px; padding-right: max(24px, env(safe-area-inset-right, 0px));
-    border-bottom: 1px solid var(--mz-linea-neutra);
+    display: flex; align-items: center; gap: 18px;
+    padding-block: calc(env(safe-area-inset-top, 0px) + 10px) 0;
+    padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px));
+    background: var(--mz-negro); border-bottom: 2px solid var(--mz-lima);
   }
-  .migas { display: flex; align-items: center; gap: 10px; min-width: 0; }
-  .migas .proj { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .migas .sep { color: var(--mz-tenue); }
-  .migas .sec { color: var(--mz-tenue); white-space: nowrap; }
-  .barra-der { display: flex; align-items: center; gap: 12px; }
+  .marca-app { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; flex: none; }
+  .marca-app svg { width: 24px; height: 24px; color: var(--mz-lima); }
+  .marca-app b { font-weight: 300; font-size: 13px; letter-spacing: 0.42em; }
+  .nav { display: flex; align-items: flex-end; gap: 2px; min-width: 0; overflow-x: auto; flex: 1; justify-content: center; scrollbar-width: none; }
+  .nav button {
+    flex: none; border: 0; background: transparent; color: var(--mz-tenue); cursor: pointer;
+    font-size: 15px; font-weight: 400; padding: 10px 18px 12px; border-radius: 10px 10px 0 0;
+  }
+  .nav button:hover { color: var(--mz-texto); }
+  .nav button[aria-current="page"] { background: var(--mz-lima); color: var(--mz-negro); font-weight: 500; }
+  .barra-der { display: flex; align-items: center; gap: 12px; padding-bottom: 10px; flex: none; }
   .estado { font-size: 11px; color: var(--mz-tenue); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
   .estado i { width: 6px; height: 6px; border-radius: 50%; background: var(--mz-lima); }
-  .btn-prim { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: var(--mz-pastilla); background: var(--mz-lima); color: var(--mz-negro); padding: 10px 18px; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; }
-  .btn-prim svg { width: 16px; height: 16px; }
+
+  .subbarra {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px;
+    padding-block: 0; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px));
+    background: var(--mz-superficie); border-bottom: 1px solid var(--mz-linea-neutra); min-height: 48px;
+  }
+  .sub-proj { font-size: 12px; color: var(--mz-tenue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sub-proj b { color: var(--mz-texto); font-weight: 500; }
+  .subtabs { display: flex; gap: 4px; }
+  .subtabs button { border: 0; background: transparent; color: var(--mz-tenue); font-size: 14px; padding: 13px 14px; cursor: pointer; position: relative; white-space: nowrap; }
+  .subtabs button:hover { color: var(--mz-texto); }
+  .subtabs button[aria-selected="true"] { color: var(--mz-texto); font-weight: 500; }
+  .subtabs button[aria-selected="true"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 0; height: 2px; border-radius: 2px; background: var(--mz-lima); }
+  .sub-der { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+  .sel-pano { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--mz-tenue); }
+  .sel-pano select { background: var(--mz-negro); color: var(--mz-texto); border: 1px solid var(--mz-linea); border-radius: var(--mz-pastilla); padding: 7px 12px; font-size: 12px; }
+
+  .btn-prim { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: var(--mz-pastilla); background: var(--mz-lima); color: var(--mz-negro); padding: 9px 18px; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .btn-prim svg { width: 15px; height: 15px; }
   .btn-prim:hover { filter: brightness(1.06); }
-  .btn-sec { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--mz-linea); border-radius: var(--mz-pastilla); background: transparent; color: var(--mz-texto); padding: 8px 14px; font-weight: 500; font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .btn-sec { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--mz-linea); border-radius: var(--mz-pastilla); background: transparent; color: var(--mz-texto); padding: 8px 14px; font-weight: 500; font-size: 12px; cursor: pointer; white-space: nowrap; }
   .btn-sec:hover { border-color: var(--mz-lima); }
   .btn-sec[aria-pressed="true"] { background: var(--mz-lima); color: var(--mz-negro); border-color: var(--mz-lima); }
   .btn-sec svg { width: 15px; height: 15px; }
@@ -79,14 +88,13 @@
   .mini.peligro:hover { border-color: var(--mz-error); color: var(--mz-error); }
 
   .vista { min-height: 0; overflow: auto; }
-  .contenido { padding-block: 28px 40px; padding-left: 28px; padding-right: max(28px, env(safe-area-inset-right, 0px)); max-width: 1180px; }
+  .contenido { padding-block: 28px 40px; padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px)); max-width: 1180px; margin-inline: auto; }
   h1 { margin: 0 0 4px; font-size: 22px; font-weight: 600; text-wrap: balance; }
   .sub { margin: 0 0 24px; color: var(--mz-tenue); max-width: 62ch; line-height: 1.55; }
   .etiq { font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mz-tenue); }
   .nota { margin: 0; font-size: 11px; line-height: 1.5; color: var(--mz-tenue); }
 
-  /* ---------- Proyecto ---------- */
-  .proy { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+  /* ---------- Tarjetas y formularios ---------- */
   .tarjeta { background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); padding: 18px; display: grid; gap: 14px; }
   .tarjetas { display: grid; gap: 16px; }
   .tarjeta h2 { margin: 0; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
@@ -99,14 +107,11 @@
   .thumb-edit img { width: 132px; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 10px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-negro); }
   .thumb-edit .botones { display: flex; gap: 8px; flex-wrap: wrap; }
   .switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .switch label { font-size: 13px; }
   .toggle { appearance: none; width: 40px; height: 22px; border-radius: 11px; background: var(--mz-superficie-2); border: 1px solid var(--mz-linea); position: relative; cursor: pointer; flex: none; margin: 0; }
   .toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--mz-tenue); transition: transform 0.2s, background 0.2s; }
   .toggle:checked { background: var(--mz-lima); border-color: var(--mz-lima); }
   .toggle:checked::after { transform: translateX(18px); background: var(--mz-negro); }
-  .planeta-mini { display: flex; gap: 14px; align-items: center; }
-  .planeta-mini img { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 1px solid var(--mz-linea); }
-  .musica { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); }
+  .musica { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); flex-wrap: wrap; }
   .musica .play { width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--mz-lima); color: var(--mz-negro); display: grid; place-items: center; cursor: pointer; flex: none; }
   .musica .play svg { width: 16px; height: 16px; }
   .musica .play:disabled { background: var(--mz-superficie-2); color: var(--mz-tenue); cursor: default; }
@@ -116,6 +121,7 @@
   .rango { display: flex; align-items: center; gap: 10px; }
   .rango input { flex: 1; min-width: 0; accent-color: var(--mz-lima); }
   .valor { font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; font-size: 12px; }
+  .proy { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
   .resumen { position: sticky; top: 0; overflow: hidden; padding: 0; gap: 0; }
   .resumen img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; background: var(--mz-negro); }
   .resumen .cuerpo { padding: 16px 18px 18px; display: grid; gap: 14px; }
@@ -125,37 +131,36 @@
   .cifra b { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .cifra span { font-size: 10px; color: var(--mz-tenue); }
 
-  /* ---------- Panoramas ---------- */
-  .pano-cab { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
-  .pano-cab .sub { margin: 0; }
-  .pestanas { display: inline-flex; padding: 4px; border-radius: var(--mz-pastilla); background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); }
-  .pestanas button { border: 0; background: transparent; color: var(--mz-tenue); padding: 7px 16px; border-radius: var(--mz-pastilla); font-weight: 500; font-size: 12px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
-  .pestanas button svg { width: 15px; height: 15px; }
-  .pestanas button[aria-selected="true"] { background: var(--mz-lima); color: var(--mz-negro); }
+  /* ---------- Rejillas (Mis Tours, Panoramas) ---------- */
   .rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-  .esc-card { background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); overflow: hidden; display: grid; cursor: pointer; text-align: left; padding: 0; color: inherit; }
-  .esc-card:hover { border-color: var(--mz-linea); }
-  .esc-card .foto { position: relative; aspect-ratio: 16 / 10; background: var(--mz-negro); }
-  .esc-card .foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .esc-card .badge { position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: var(--mz-pastilla); background: var(--mz-lima); color: var(--mz-negro); font-size: 10px; font-weight: 600; letter-spacing: 0.06em; }
-  .esc-card .cuerpo { padding: 12px 14px 14px; display: grid; gap: 8px; }
-  .esc-card .nombre { font-weight: 600; font-size: 14px; }
+  .card { background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); overflow: hidden; display: grid; cursor: pointer; text-align: left; padding: 0; color: inherit; font: inherit; }
+  .card:hover { border-color: var(--mz-linea); }
+  .card .foto { position: relative; aspect-ratio: 16 / 10; background: var(--mz-negro); }
+  .card .foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .card .badge { position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: var(--mz-pastilla); background: var(--mz-lima); color: var(--mz-negro); font-size: 10px; font-weight: 600; letter-spacing: 0.06em; }
+  .card .cuerpo { padding: 12px 14px 14px; display: grid; gap: 8px; }
+  .card .nombre { font-weight: 600; font-size: 14px; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip-dato { font-size: 11px; color: var(--mz-tenue); padding: 3px 9px; border-radius: var(--mz-pastilla); border: 1px solid var(--mz-linea-neutra); font-variant-numeric: tabular-nums; }
   .chip-dato.aviso { color: var(--mz-aviso); border-color: rgba(255, 176, 32, 0.4); }
-  .esc-card .acciones { display: flex; gap: 6px; }
-  .subir { border: 1.5px dashed var(--mz-linea); border-radius: var(--mz-radio); display: grid; place-items: center; text-align: center; padding: 24px; color: var(--mz-tenue); gap: 6px; min-height: 220px; align-content: center; }
-  .subir svg { width: 26px; height: 26px; color: var(--mz-lima); justify-self: center; }
-  .subir b { color: var(--mz-texto); font-weight: 500; }
+  .chip-dato.ok { color: var(--mz-lima); border-color: var(--mz-linea); }
+  .hueco { border: 1.5px dashed var(--mz-linea); border-radius: var(--mz-radio); display: grid; text-align: center; padding: 24px; color: var(--mz-tenue); gap: 6px; min-height: 220px; align-content: center; justify-items: center; }
+  .hueco svg { width: 26px; height: 26px; color: var(--mz-lima); }
+  .hueco b { color: var(--mz-texto); font-weight: 500; }
+  .proximo { max-width: 560px; margin: 8vh auto 0; text-align: center; display: grid; gap: 12px; justify-items: center; }
+  .proximo .icono { width: 64px; height: 64px; border-radius: 18px; background: var(--mz-lima-suave); border: 1px solid var(--mz-linea); display: grid; place-items: center; }
+  .proximo .icono svg { width: 28px; height: 28px; color: var(--mz-lima); }
+  .proximo h1 { margin: 6px 0 0; }
+  .proximo p { margin: 0; color: var(--mz-tenue); line-height: 1.6; }
 
   /* Mapa de nodos */
-  .mapa-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; height: calc(100vh - 230px); min-height: 420px; }
+  .mapa-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; height: calc(100vh - 250px); min-height: 420px; }
   .mapa { position: relative; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); overflow: hidden; }
   #mapa-svg { width: 100%; height: 100%; display: block; cursor: grab; }
   .mapa .herr { position: absolute; top: 12px; left: 12px; display: flex; gap: 8px; }
   .mapa .ayuda { position: absolute; bottom: 12px; left: 12px; right: 12px; font-size: 11px; color: var(--mz-tenue); pointer-events: none; }
   .enlace { stroke: rgba(242, 245, 236, 0.32); stroke-width: 1.4; fill: none; transition: stroke 0.2s, opacity 0.2s; }
-  .etq-nodo { fill: var(--mz-texto); font-size: 12px; font-weight: 500; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: var(--mz-negro); stroke-width: 4px; }
+  .etq-nodo { fill: var(--mz-texto); font-size: 12px; font-weight: 500; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: var(--mz-negro); stroke-width: 4px; transition: opacity 0.2s; }
   .nodo .aro { fill: none; stroke: rgba(242, 245, 236, 0.4); stroke-width: 2; }
   .nodo.inicio .aro { stroke: var(--mz-lima); stroke-width: 3; }
   .nodo.suelta .aro { stroke: var(--mz-tenue); stroke-dasharray: 4 3; }
@@ -178,15 +183,12 @@
   .leyenda div { display: flex; align-items: center; gap: 8px; }
   .leyenda i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid; box-sizing: border-box; }
 
-  /* ---------- Editor de capas ---------- */
-  .editor { height: 100%; display: grid; grid-template-columns: 260px minmax(0, 1fr) 280px; min-height: 0; }
+  /* ---------- Editor (Capas y Piloto automático) ---------- */
+  .editor { height: 100%; display: grid; grid-template-columns: 270px minmax(0, 1fr) 290px; min-height: 0; }
   .ed-panel { background: var(--mz-superficie); border-right: 1px solid var(--mz-linea-neutra); display: flex; flex-direction: column; min-height: 0; }
   .ed-panel.der { border-right: 0; border-left: 1px solid var(--mz-linea-neutra); }
   .ed-panel header { padding: 14px; display: grid; gap: 10px; border-bottom: 1px solid var(--mz-linea-neutra); }
   .ed-panel h3 { margin: 0; font-size: 13px; font-weight: 600; }
-  .volver { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; color: var(--mz-tenue); padding: 0; cursor: pointer; font-size: 12px; justify-self: start; }
-  .volver:hover { color: var(--mz-lima); }
-  .volver svg { width: 14px; height: 14px; }
   .agregar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .agregar button { display: grid; justify-items: center; gap: 4px; padding: 8px 4px; border-radius: 10px; border: 1px solid var(--mz-linea); background: transparent; color: var(--mz-texto); font: 500 11px var(--mz-texto-ui); cursor: pointer; }
   .agregar button:hover, .agregar button[aria-pressed="true"] { border-color: var(--mz-lima); color: var(--mz-lima); }
@@ -210,20 +212,22 @@
   .lienzo .stage { position: absolute; inset: 0; }
   .lienzo .herr { position: absolute; z-index: 6; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
   .lienzo .herr > * { pointer-events: auto; }
-  .lienzo .grupo-h { display: flex; gap: 6px; }
+  .grupo-h { display: flex; gap: 6px; }
   .ico { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--mz-linea); background: var(--mz-vidrio); color: var(--mz-texto); cursor: pointer; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
   .ico:hover { background: var(--mz-lima); color: var(--mz-negro); }
   .ico svg { width: 16px; height: 16px; }
-  .pastilla-v { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--mz-pastilla); background: var(--mz-vidrio); border: 1px solid var(--mz-linea); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 12px; cursor: pointer; color: var(--mz-texto); }
+  .pastilla-v { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--mz-pastilla); background: var(--mz-vidrio); border: 1px solid var(--mz-linea); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 12px; font-weight: 500; cursor: pointer; color: var(--mz-texto); }
   .pastilla-v:hover { border-color: var(--mz-lima); }
   .pastilla-v svg { width: 14px; height: 14px; color: var(--mz-lima); }
+  .pastilla-v[aria-pressed="true"] { background: var(--mz-lima); color: var(--mz-negro); border-color: var(--mz-lima); }
+  .pastilla-v[aria-pressed="true"] svg { color: var(--mz-negro); }
   .banda { position: absolute; z-index: 7; left: 50%; transform: translateX(-50%); top: 60px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 12px; padding: 10px 12px; border-radius: 18px; font-size: 12px; width: max-content; max-width: calc(100% - 32px); text-align: center; background: var(--mz-vidrio); border: 1px solid var(--mz-linea); backdrop-filter: blur(12px); }
   .banda b { color: var(--mz-lima); font-weight: 500; }
   body.dibujando .lienzo .stage { cursor: crosshair; }
   .props { padding: 12px 14px 16px; overflow-y: auto; display: grid; gap: 16px; align-content: start; flex: 1; }
   .grupo { display: grid; gap: 8px; }
   .grupo > b, .interruptor b { font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mz-tenue); }
-  .campo { display: grid; grid-template-columns: 70px minmax(0, 1fr); align-items: center; gap: 8px; font-size: 12px; color: var(--mz-tenue); }
+  .campo { display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: center; gap: 8px; font-size: 12px; color: var(--mz-tenue); }
   .campo input[type="text"], .campo select { width: 100%; box-sizing: border-box; font-size: 12px; color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 8px; padding: 7px 8px; }
   .color { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
   .color input[type="color"] { width: 30px; height: 24px; padding: 0; border: 1px solid var(--mz-linea); border-radius: 6px; background: none; cursor: pointer; }
@@ -231,10 +235,26 @@
   .interruptor { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
   .orden { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
   .orden .mini { padding: 6px 0; font-size: 11px; }
-  .acciones { display: flex; gap: 6px; }
+  .acciones { display: flex; gap: 6px; flex-wrap: wrap; }
   .vacio { padding: 18px 14px; font-size: 12px; color: var(--mz-tenue); line-height: 1.5; margin: 0; }
 
-  /* ---------- Capas sobre la esfera (compartido por editor y vista previa) ---------- */
+  /* Recorrido del piloto automático */
+  .recorrido { list-style: none; margin: 0; padding: 10px; overflow-y: auto; flex: 1; display: grid; align-content: start; gap: 8px; }
+  .punto { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; padding: 10px; border-radius: 12px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); }
+  .punto.activo { border-color: var(--mz-lima); }
+  .punto .num { width: 26px; height: 26px; border-radius: 50%; background: var(--mz-lima); color: var(--mz-negro); display: grid; place-items: center; font-weight: 600; font-size: 12px; }
+  .punto .cab { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .punto .cab b { font-weight: 500; font-size: 13px; }
+  .punto .cab small { color: var(--mz-tenue); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .punto .tiempos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .punto label { display: grid; gap: 3px; font-size: 10px; color: var(--mz-tenue); letter-spacing: 0.06em; text-transform: uppercase; }
+  .punto input[type="number"] { width: 100%; box-sizing: border-box; background: var(--mz-superficie); color: var(--mz-texto); border: 1px solid var(--mz-linea-neutra); border-radius: 8px; padding: 6px 8px; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .punto .acciones { margin-top: 8px; }
+  .punto .acciones .mini { padding: 4px 10px; font-size: 11px; }
+  .duracion { padding: 12px 14px; border-radius: 12px; background: var(--mz-negro); display: flex; justify-content: space-between; align-items: baseline; }
+  .duracion b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* ---------- Capas sobre la esfera (editor y vista previa) ---------- */
   .capas { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
   .cp { position: absolute; left: 0; top: 0; }
   .cp.cp-poligono { inset: 0; }
@@ -242,12 +262,22 @@
   .cp-pol { pointer-events: all; cursor: pointer; stroke-linejoin: round; stroke-linecap: round; fill: var(--f); fill-opacity: var(--fo); stroke: var(--s); stroke-opacity: var(--so); stroke-width: var(--sw); transition: fill 0.2s, fill-opacity 0.2s, stroke 0.2s, stroke-width 0.2s; }
   .cp-pol:hover { fill: var(--hf); fill-opacity: var(--hfo); stroke: var(--hs); stroke-opacity: var(--hso); stroke-width: var(--hsw); }
   .editable .cp-pol, .editable .cp-texto, .editable .hs-boton { cursor: move; }
+  .solo-ver .cp, .solo-ver .cp * { pointer-events: none !important; }
+  .solo-ver .cp { opacity: 0.55; }
   .cp-sel { fill: none; stroke: #fff; stroke-width: 1; stroke-dasharray: 5 4; pointer-events: none; }
   .cp-vert { fill: var(--mz-negro); stroke: var(--mz-lima); stroke-width: 2; pointer-events: all; cursor: grab; }
   .cp-vert:hover { fill: var(--mz-lima); }
   .cp-borrador { fill: rgba(213, 255, 64, 0.18); stroke: var(--mz-lima); stroke-width: 2; stroke-dasharray: 6 4; pointer-events: none; }
   .cp-borrador-pt { fill: var(--mz-lima); pointer-events: none; }
   .cp-borrador-pt.primero { fill: var(--mz-negro); stroke: var(--mz-lima); stroke-width: 2; }
+  .ruta-linea { fill: none; stroke: var(--mz-lima); stroke-width: 2; stroke-dasharray: 2 6; stroke-linecap: round; }
+  .ruta-pt circle { fill: var(--mz-lima); stroke: var(--mz-negro); stroke-width: 2; }
+  .ruta-pt text { fill: var(--mz-negro); font-size: 12px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  .ruta-pt.activo circle { fill: #fff; }
+  .mira { position: absolute; z-index: 3; left: 50%; top: 50%; width: 26px; height: 26px; transform: translate(-50%, -50%); pointer-events: none; }
+  .mira::before, .mira::after { content: ""; position: absolute; background: rgba(255, 255, 255, 0.85); box-shadow: 0 0 4px rgba(0, 0, 0, 0.6); }
+  .mira::before { left: 12px; top: 0; width: 2px; height: 26px; }
+  .mira::after { top: 12px; left: 0; height: 2px; width: 26px; }
   .cp-texto { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); white-space: nowrap; pointer-events: auto; padding: 4px 10px; border-radius: var(--mz-pastilla); line-height: 1.3; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35); }
   .cp-texto.con-fondo { text-shadow: none; }
   .hs { width: 0; height: 0; pointer-events: auto; }
@@ -272,27 +302,76 @@
   .previa .marca { display: flex; align-items: center; gap: 12px; padding: 10px 18px 10px 14px; border-radius: var(--mz-radio); background: var(--mz-vidrio); border: 1px solid var(--mz-linea); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); min-width: 0; }
   .previa .marca svg { width: 24px; height: 24px; color: var(--mz-lima); flex: none; }
   .previa .marca b { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .previa .grupo-h { display: flex; gap: 8px; }
   .previa .ico { width: 42px; height: 42px; }
   .previa .abajo { position: absolute; z-index: 5; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); display: flex; justify-content: center; pointer-events: none; }
   .escenas { display: flex; gap: 4px; padding: 5px; max-width: 100%; overflow-x: auto; border-radius: var(--mz-pastilla); background: var(--mz-vidrio); border: 1px solid var(--mz-linea); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); pointer-events: auto; }
   .chip { flex: none; padding: 9px 18px; border: 0; border-radius: var(--mz-pastilla); background: transparent; color: var(--mz-tenue); font: 500 13px var(--mz-texto-ui); cursor: pointer; white-space: nowrap; }
   .chip:hover { color: var(--mz-texto); background: var(--mz-lima-suave); }
   .chip[aria-current="true"] { color: var(--mz-negro); background: var(--mz-lima); }
-  .intro { position: absolute; inset: 0; z-index: 8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; padding-block: 24px; box-sizing: border-box; background: radial-gradient(circle at 50% 50%, rgba(11, 11, 11, 0) 30%, rgba(11, 11, 11, 0.9) 75%), var(--mz-negro); }
-  .intro img { width: min(62vmin, 640px); aspect-ratio: 1; border-radius: 50%; object-fit: cover; transition: transform 1.6s cubic-bezier(.6, 0, .2, 1), opacity 1.2s ease 0.4s; animation: gira 60s linear infinite; }
-  .intro .entrar { display: grid; justify-items: center; gap: 12px; text-align: center; }
-  .intro .entrar h2 { margin: 0; font-size: clamp(20px, 3vw, 30px); font-weight: 600; text-wrap: balance; padding-inline: 16px; }
-  .intro.saliendo { background: transparent; pointer-events: none; transition: background 1.4s; }
-  .intro.saliendo img { transform: scale(3.2) rotate(40deg); opacity: 0; animation: none; }
-  .intro.saliendo .entrar { opacity: 0; transition: opacity 0.3s; }
-  @keyframes gira { to { rotate: 360deg; } }
+  .piloto-on { position: absolute; z-index: 5; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 20px); display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: var(--mz-pastilla); background: var(--mz-vidrio); border: 1px solid var(--mz-linea); font-size: 11px; color: var(--mz-tenue); pointer-events: none; }
+  .piloto-on i { width: 6px; height: 6px; border-radius: 50%; background: var(--mz-lima); animation: respira 1.6s ease-in-out infinite; }
   .aviso-carga { position: absolute; inset: 0; display: grid; place-items: center; z-index: 4; color: var(--mz-tenue); background: var(--mz-gradiente); }
 
   .toast { position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); padding: 9px 18px; border-radius: var(--mz-pastilla); font-size: 13px; white-space: nowrap; background: var(--mz-vidrio); border: 1px solid var(--mz-linea); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 
+  /* ---------- Skin del tour (lo usan la vista previa y el editor de skin) ---------- */
+  .sk { position: absolute; inset: 0; z-index: 5; pointer-events: none; color: #fff; font-family: var(--mz-texto-ui); }
+  .sk-panel { background: var(--sk-panel); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--sk-radio); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+  .sk-top { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 10px; }
+  .sk-marca { pointer-events: auto; display: flex; align-items: center; gap: 10px; padding: 9px 16px 9px 12px; justify-self: start; min-width: 0; max-width: 100%; }
+  .sk-marca.centro { grid-column: 2; justify-self: center; }
+  .sk-logo-iso { width: 24px; height: 24px; color: var(--sk-acento); flex: none; }
+  .sk-logo-img { height: 28px; max-width: 150px; object-fit: contain; flex: none; }
+  .sk-marca b { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sk-btns { grid-column: 3; justify-self: end; display: flex; gap: 8px; pointer-events: auto; }
+  .sk-btn { width: 42px; height: 42px; display: grid; place-items: center; border-radius: var(--sk-radio-btn); color: #fff; cursor: pointer; padding: 0; }
+  .sk-btn:hover, .sk-btn[aria-pressed="true"] { background: var(--sk-acento); color: var(--sk-sobre); }
+  .sk-btn svg { width: 17px; height: 17px; }
+  .sk-piloto { position: absolute; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 72px); display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 11px; color: rgba(255, 255, 255, 0.8); white-space: nowrap; }
+  .sk-piloto i { width: 6px; height: 6px; border-radius: 50%; background: var(--sk-acento); animation: respira 1.6s ease-in-out infinite; }
+  .sk-menu { position: absolute; pointer-events: auto; display: flex; gap: 4px; padding: 5px; overflow: auto; scrollbar-width: none; }
+  .sk-menu--abajo { left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); max-width: calc(100% - 32px); }
+  .sk--zoom .sk-menu--abajo { max-width: calc(100% - 160px); }
+  .sk-menu--izquierda { left: max(16px, env(safe-area-inset-left, 0px)); top: 50%; transform: translateY(-50%); flex-direction: column; max-height: calc(100% - 190px); }
+  .sk-item { flex: none; border: 0; background: transparent; color: rgba(255, 255, 255, 0.72); cursor: pointer; font: 500 13px var(--mz-texto-ui); border-radius: var(--sk-radio-item); padding: 9px 18px; white-space: nowrap; text-align: left; }
+  .sk-item:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+  .sk-item[aria-current="true"] { background: var(--sk-acento); color: var(--sk-sobre); }
+  .sk-menu--miniaturas .sk-item { display: grid; gap: 6px; padding: 5px 5px 8px; width: 120px; }
+  .sk-menu--miniaturas .sk-item img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: var(--sk-radio-img); display: block; }
+  .sk-menu--miniaturas .sk-item span { padding-inline: 3px; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+  .sk-zoom { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); display: grid; gap: 8px; pointer-events: auto; }
+  .sk--v .sk-menu--abajo { left: 12px; right: 12px; transform: none; max-width: none; }
+  .sk--v .sk-menu--miniaturas .sk-item { width: 96px; }
+  .sk--v .sk-zoom { bottom: calc(env(safe-area-inset-bottom, 0px) + 150px); right: 12px; }
+  .sk--v .sk-top { left: 12px; right: 12px; }
+  .sk--v .sk-marca b { font-size: 13px; }
+
+  /* ---------- Editor de skin ---------- */
+  .skin-ed { height: 100%; display: grid; grid-template-columns: 340px minmax(0, 1fr); min-height: 0; }
+  .skin-ed > aside { background: var(--mz-superficie); border-right: 1px solid var(--mz-linea-neutra); display: flex; flex-direction: column; min-height: 0; }
+  .skin-ed > aside header { padding: 16px; border-bottom: 1px solid var(--mz-linea-neutra); display: grid; gap: 4px; }
+  .skin-ed > aside header h3 { margin: 0; font-size: 14px; font-weight: 600; }
+  .seg { display: inline-flex; padding: 3px; border-radius: var(--mz-pastilla); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); }
+  .seg button { border: 0; background: transparent; color: var(--mz-tenue); padding: 6px 12px; border-radius: var(--mz-pastilla); font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .seg button[aria-pressed="true"] { background: var(--mz-lima); color: var(--mz-negro); font-weight: 500; }
+  .logo-fila { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .logo-fila .muestra-logo { height: 34px; min-width: 34px; padding: 6px 10px; border-radius: 10px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); display: grid; place-items: center; box-sizing: border-box; }
+  .logo-fila .muestra-logo img { max-height: 22px; max-width: 120px; }
+  .logo-fila .muestra-logo svg { width: 20px; height: 20px; color: var(--mz-lima); }
+  .sk-vista { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #20241c 0%, var(--mz-fondo) 70%); }
+  .sk-vista .leyenda-v { position: absolute; left: 20px; top: 16px; font-size: 12px; color: var(--mz-tenue); z-index: 2; }
+  .sk-vista .leyenda-v b { color: var(--mz-texto); font-weight: 500; }
+  .marco { position: absolute; left: 0; top: 0; transform-origin: 0 0; padding: 14px; background: #050505; border: 1px solid #2b2e27; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55); }
+  .marco--h { border-radius: 22px; }
+  .marco--v { border-radius: 58px; padding: 16px; }
+  .pantalla { position: relative; overflow: hidden; background: #000; }
+  .marco--h .pantalla { width: 1280px; height: 720px; border-radius: 10px; }
+  .marco--v .pantalla { width: 390px; height: 844px; border-radius: 44px; }
+  .pantalla .stage { position: absolute; inset: 0; }
+
   /* Pantallas chicas: el estudio es de escritorio; el teléfono muestra el proyecto y la vista previa. */
   .movil { display: none; }
+  @media (max-width: 1080px) { .nav button { padding-inline: 12px; font-size: 14px; } .marca-app b { display: none; } }
   @media (max-width: 960px) {
     .app { display: none; }
     .movil { display: grid; gap: 18px; align-content: start; height: 100%; overflow: auto; box-sizing: border-box; padding-block: calc(env(safe-area-inset-top, 0px) + 20px) 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -302,8 +381,8 @@
     .movil .tarjeta img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 10px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .cp-pol, .intro img { transition: none; }
-    .hs-nucleo, .hs-boton::before, .intro img { animation: none; }
+    .cp-pol { transition: none; }
+    .hs-nucleo, .hs-boton::before, .piloto-on i { animation: none; }
   }
 </style>
 </head>
@@ -311,107 +390,108 @@
 
 <!-- ======================= ESTUDIO ======================= -->
 <div class="app" id="app">
-  <nav class="lateral" aria-label="Ventanas">
-    <div class="logo" aria-hidden="true"><svg viewBox="0 0 613 613"><use href="#iso"/></svg></div>
-    <button class="nav" data-ventana="proyecto" aria-current="page">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>Proyecto</button>
-    <button class="nav" data-ventana="panoramas">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="3.6"/></svg>Panoramas</button>
-    <button class="nav" disabled title="Próximo bloque">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 20V9"/></svg>Skin</button>
-    <button class="nav" disabled title="Próximo bloque">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>Publicar</button>
-    <span class="version">v0.1</span>
-  </nav>
+  <header class="barra">
+    <div class="marca-app"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg><b>MOZARI</b></div>
+    <nav class="nav" id="nav" aria-label="Ventanas"></nav>
+    <div class="barra-der">
+      <span class="estado"><i></i><span id="b-estado">Guardado</span></span>
+      <button class="btn-prim" id="abrir-previa"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>Vista previa</button>
+    </div>
+  </header>
+  <div class="subbarra">
+    <span class="sub-proj">Tour: <b id="b-proj">—</b></span>
+    <div class="subtabs" id="subtabs" role="tablist"></div>
+    <div class="sub-der"><label class="sel-pano" id="sel-pano-wrap" hidden>Panorama <select id="sel-pano"></select></label></div>
+  </div>
 
-  <div class="principal">
-    <header class="barra">
-      <div class="migas"><span class="proj" id="b-proj">—</span><span class="sep">/</span><span class="sec" id="b-sec">Proyecto</span></div>
-      <div class="barra-der">
-        <span class="estado"><i></i><span id="b-estado">Guardado en este navegador</span></span>
-        <button class="btn-prim" id="abrir-previa"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>Vista previa</button>
-      </div>
-    </header>
-
-    <!-- Ventana: Proyecto -->
-    <section class="vista" id="v-proyecto">
+  <main class="vista" id="contenedor">
+    <!-- Mis Tours -->
+    <section data-vista="tours/todos" hidden>
       <div class="contenido">
-        <h1>Proyecto</h1>
-        <p class="sub">Nombre, portada, cómo arranca el tour y la música de fondo.</p>
+        <h1>Mis Tours</h1>
+        <p class="sub">Todos tus proyectos. Abre uno para trabajar en él.</p>
+        <div class="rejilla" id="tours"></div>
+      </div>
+    </section>
+
+    <!-- Proyecto / General -->
+    <section data-vista="proyecto/general" hidden>
+      <div class="contenido">
+        <h1>General</h1>
+        <p class="sub">Nombre, portada y en qué panorama arranca el tour.</p>
         <div class="proy">
           <div class="tarjetas">
             <section class="tarjeta">
               <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>Identidad</h2>
-              <label class="fila-campo"><span>Nombre del proyecto</span><input class="entrada" id="p-nombre" maxlength="60"></label>
+              <label class="fila-campo"><span>Nombre del tour</span><input class="entrada" id="p-nombre" maxlength="60"></label>
               <div class="fila-campo"><span>Thumbnail</span>
                 <div class="thumb-edit">
-                  <img id="p-thumb" alt="Thumbnail del proyecto">
+                  <img id="p-thumb" alt="Thumbnail del tour">
                   <div class="botones">
                     <label class="btn-sec" for="p-thumb-archivo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>Subir imagen</label>
                     <input type="file" id="p-thumb-archivo" accept="image/*" hidden>
-                    <button class="btn-sec" id="p-thumb-planeta">Usar Little Planet</button>
+                    <button class="btn-sec" id="p-thumb-auto">Usar el panorama inicial</button>
                   </div>
                 </div>
               </div>
             </section>
-
             <section class="tarjeta">
               <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l5.5-3.5z" fill="currentColor"/></svg>Inicio del tour</h2>
-              <label class="fila-campo"><span>Escena inicial</span><select class="entrada" id="p-inicial"></select></label>
-              <div class="fila-campo"><span>Little Planet</span>
-                <div class="planeta-mini">
-                  <img id="p-planeta" alt="Little Planet de la escena inicial">
-                  <div style="display:grid;gap:8px">
-                    <div class="switch"><label for="p-lp">Iniciar con efecto Little Planet</label><input type="checkbox" class="toggle" id="p-lp"></div>
-                    <p class="nota">El tour abre como planeta y entra a la escena inicial al tocar "Entrar".</p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section class="tarjeta">
-              <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>Música de fondo</h2>
-              <div class="musica">
-                <button class="play" id="m-play" aria-label="Escuchar" disabled><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg></button>
-                <div class="info"><b id="m-nombre">Sin música</b><small id="m-detalle">Sube un MP3, WAV o M4A</small></div>
-                <label class="btn-sec" for="m-archivo">Subir audio</label>
-                <input type="file" id="m-archivo" accept="audio/*" hidden>
-                <button class="btn-sec" id="m-quitar" hidden>Quitar</button>
-              </div>
-              <div class="fila-campo"><span>Volumen</span><div class="rango"><input type="range" id="m-vol" min="0" max="1" step="0.05" aria-label="Volumen"><span class="valor" id="m-vol-v"></span></div></div>
-              <div class="fila-campo"><span>Repetir</span><div class="switch"><label for="m-loop">Volver a empezar al terminar</label><input type="checkbox" class="toggle" id="m-loop"></div></div>
+              <label class="fila-campo"><span>Panorama inicial</span><select class="entrada" id="p-inicial"></select></label>
+              <p class="nota">Hacia dónde mira la cámara al entrar y su recorrido se definen en Panoramas → Piloto automático.</p>
             </section>
           </div>
-
-          <aside class="tarjeta resumen" aria-label="Resumen del proyecto">
+          <aside class="tarjeta resumen" aria-label="Resumen del tour">
             <img id="r-thumb" alt="">
             <div class="cuerpo">
-              <span class="etiq">Tu proyecto</span>
+              <span class="etiq">Tu tour</span>
               <h3 id="r-nombre">—</h3>
               <div class="cifras">
                 <div class="cifra"><b id="r-esc">0</b><span>Panoramas</span></div>
                 <div class="cifra"><b id="r-hs">0</b><span>Hotspots</span></div>
                 <div class="cifra"><b id="r-pol">0</b><span>Polígonos</span></div>
               </div>
-              <button class="btn-prim" id="r-previa" style="justify-content:center">Ver vista previa</button>
+              <button class="btn-prim" id="r-previa">Ver vista previa</button>
             </div>
           </aside>
         </div>
       </div>
     </section>
 
-    <!-- Ventana: Panoramas -->
-    <section class="vista" id="v-panoramas" hidden>
-      <div class="contenido" id="pano-indice" style="max-width:none">
-        <div class="pano-cab">
-          <div><h1>Panoramas</h1><p class="sub">Tus esferas y cómo se conectan. Abre una para diseñar sus capas.</p></div>
-          <div class="pestanas" role="tablist">
-            <button role="tab" aria-selected="true" data-tab="lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>Lista</button>
-            <button role="tab" aria-selected="false" data-tab="mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5.5" cy="6" r="2.5"/><circle cx="18.5" cy="8" r="2.5"/><circle cx="10" cy="18" r="2.5"/><path d="M7.8 7 16 7.8M17 10.2l-5.6 6M6.6 8.3 9 15.7"/></svg>Mapa</button>
+    <!-- Proyecto / Música -->
+    <section data-vista="proyecto/musica" hidden>
+      <div class="contenido" style="max-width:760px">
+        <h1>Música</h1>
+        <p class="sub">Música de fondo para todo el tour. Empieza al abrir la vista previa.</p>
+        <section class="tarjeta">
+          <div class="musica">
+            <button class="play" id="m-play" aria-label="Escuchar" disabled><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg></button>
+            <div class="info"><b id="m-nombre">Sin música</b><small id="m-detalle">Sube un MP3, WAV o M4A</small></div>
+            <label class="btn-sec" for="m-archivo">Subir audio</label>
+            <input type="file" id="m-archivo" accept="audio/*" hidden>
+            <button class="btn-sec" id="m-quitar" hidden>Quitar</button>
           </div>
-        </div>
-        <div id="tab-lista" class="rejilla"></div>
-        <div id="tab-mapa" class="mapa-wrap" hidden>
+          <div class="fila-campo"><span>Volumen</span><div class="rango"><input type="range" id="m-vol" min="0" max="1" step="0.05" aria-label="Volumen"><span class="valor" id="m-vol-v"></span></div></div>
+          <div class="fila-campo"><span>Repetir</span><div class="switch"><label for="m-loop">Volver a empezar al terminar</label><input type="checkbox" class="toggle" id="m-loop"></div></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- Panoramas / Lista -->
+    <section data-vista="panoramas/lista" hidden>
+      <div class="contenido" style="max-width:none">
+        <h1>Panoramas</h1>
+        <p class="sub">Tus esferas. Abre una para diseñar sus capas o su piloto automático.</p>
+        <div class="rejilla" id="pano-lista"></div>
+      </div>
+    </section>
+
+    <!-- Panoramas / Mapa -->
+    <section data-vista="panoramas/mapa" hidden>
+      <div class="contenido" style="max-width:none">
+        <h1>Mapa</h1>
+        <p class="sub">Cómo está conectado tu tour. Cada línea es un hotspot.</p>
+        <div class="mapa-wrap">
           <div class="mapa" id="mapa">
             <svg id="mapa-svg" aria-label="Mapa de conexiones del tour"></svg>
             <div class="herr"><button class="btn-sec" id="conectar" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>Conectar</button></div>
@@ -422,47 +502,78 @@
             <div id="diagnostico" style="display:grid;gap:8px"></div>
             <div class="leyenda">
               <span class="etiq">Leyenda</span>
-              <div><i style="border-color:var(--mz-lima)"></i>Escena inicial</div>
-              <div><i style="border-color:rgba(242,245,236,.4)"></i>Conectada</div>
+              <div><i style="border-color:var(--mz-lima)"></i>Panorama inicial</div>
+              <div><i style="border-color:rgba(242,245,236,.4)"></i>Conectado</div>
               <div><i style="border-color:var(--mz-aviso)"></i>Sin salida</div>
-              <div><i style="border-color:var(--mz-tenue);border-style:dashed"></i>Suelta, nadie llega</div>
+              <div><i style="border-color:var(--mz-tenue);border-style:dashed"></i>Suelto, nadie llega</div>
             </div>
           </aside>
         </div>
       </div>
+    </section>
 
-      <div class="editor" id="editor" hidden>
-        <aside class="ed-panel" aria-label="Capas">
-          <header>
-            <button class="volver" id="volver"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>Panoramas</button>
-            <h3 id="ed-nombre">—</h3>
-            <div class="agregar">
-              <button id="add-pol" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 7l9-3 7 8-5 8-10-3z"/></svg>Polígono</button>
-              <button id="add-txt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13"/></svg>Texto</button>
-              <button id="add-hs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="8.5" stroke-opacity=".5"/></svg>Hotspot</button>
-            </div>
-          </header>
-          <ul class="lista" id="lista" role="listbox" aria-label="Capas del panorama"></ul>
-          <div class="pie"><button class="mini" id="copiar">Copiar datos</button><button class="mini" id="restablecer">Restablecer demo</button></div>
-        </aside>
-        <div class="lienzo">
-          <div class="stage" id="ed-stage"></div>
-          <div class="herr">
-            <button class="pastilla-v" id="vista-inicial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Usar esta vista como inicial</button>
-            <div class="grupo-h">
-              <button class="ico" id="ed-menos" aria-label="Alejar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></button>
-              <button class="ico" id="ed-mas" aria-label="Acercar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
-            </div>
+    <!-- Panoramas / Capas y Piloto automático (comparten la esfera) -->
+    <section data-vista="panoramas/capas panoramas/piloto" class="editor" id="editor" hidden>
+      <aside class="ed-panel" id="izq-capas" aria-label="Capas">
+        <header>
+          <h3>Capas</h3>
+          <div class="agregar">
+            <button id="add-pol" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 7l9-3 7 8-5 8-10-3z"/></svg>Polígono</button>
+            <button id="add-txt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13"/></svg>Texto</button>
+            <button id="add-hs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="8.5" stroke-opacity=".5"/></svg>Hotspot</button>
           </div>
-          <div class="banda" id="banda" hidden></div>
+        </header>
+        <ul class="lista" id="lista" role="listbox" aria-label="Capas del panorama"></ul>
+        <div class="pie"><button class="mini" id="copiar">Copiar datos</button><button class="mini" id="restablecer">Restablecer demo</button></div>
+      </aside>
+      <aside class="ed-panel" id="izq-piloto" aria-label="Recorrido de cámara" hidden>
+        <header>
+          <h3>Recorrido de cámara</h3>
+          <p class="nota">El punto 1 es donde inicia la esfera. Después la cámara viaja de punto en punto.</p>
+        </header>
+        <ol class="recorrido" id="recorrido"></ol>
+        <div class="pie"><button class="btn-prim" id="pt-agregar" style="width:100%">+ Agregar punto con la vista actual</button></div>
+      </aside>
+
+      <div class="lienzo">
+        <div class="stage" id="ed-stage"></div>
+        <div class="mira" id="mira" hidden></div>
+        <div class="herr">
+          <div class="grupo-h"><button class="pastilla-v" id="pt-reproducir" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><span>Reproducir recorrido</span></button></div>
+          <div class="grupo-h">
+            <button class="ico" id="ed-menos" aria-label="Alejar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></button>
+            <button class="ico" id="ed-mas" aria-label="Acercar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
+          </div>
         </div>
-        <aside class="ed-panel der" aria-label="Propiedades">
-          <header><h3 id="props-titulo">Propiedades</h3></header>
-          <div class="props" id="props"></div>
-        </aside>
+        <div class="banda" id="banda" hidden></div>
+      </div>
+
+      <aside class="ed-panel der" id="der-capas" aria-label="Propiedades">
+        <header><h3 id="props-titulo">Propiedades</h3></header>
+        <div class="props" id="props"></div>
+      </aside>
+      <aside class="ed-panel der" id="der-piloto" aria-label="Ajustes del piloto" hidden>
+        <header><h3>Piloto automático</h3></header>
+        <div class="props" id="ajustes-piloto"></div>
+      </aside>
+    </section>
+
+    <!-- Skin (16:9 y 9:16) -->
+    <section data-vista="skin/h skin/v" class="skin-ed" id="skin-ed" hidden>
+      <aside aria-label="Ajustes del skin">
+        <header><h3>Skin del tour</h3><p class="nota">Los cambios se ven al instante a la derecha y en la Vista previa.</p></header>
+        <div class="props" id="sk-panel"></div>
+        <div class="pie"><button class="mini" id="sk-reset">Restablecer skin Mozari</button></div>
+      </aside>
+      <div class="sk-vista" id="sk-vista">
+        <p class="leyenda-v" id="sk-leyenda"></p>
+        <div class="marco" id="sk-marco"><div class="pantalla" id="sk-pantalla"><div class="stage" id="sk-stage"></div><div class="sk" id="sk-ui"></div></div></div>
       </div>
     </section>
-  </div>
+
+    <!-- Secciones por venir (se llenan desde el script) -->
+    <section data-vista="proximo" id="v-proximo" hidden><div class="contenido"><div class="proximo" id="proximo"></div></div></section>
+  </main>
 </div>
 
 <!-- ======================= MÓVIL ======================= -->
@@ -472,7 +583,7 @@
     <img id="mv-thumb" alt="">
     <h2 id="mv-nombre" style="margin:0;font-size:18px">—</h2>
     <p class="nota">El estudio de Mozari está pensado para compu. Desde aquí puedes ver el tour como lo verá tu cliente.</p>
-    <button class="btn-prim" id="mv-previa" style="justify-content:center">Ver vista previa</button>
+    <button class="btn-prim" id="mv-previa">Ver vista previa</button>
   </div>
 </div>
 
@@ -480,18 +591,7 @@
 <div class="previa" id="previa" hidden>
   <div class="stage" id="pv-stage"></div>
   <div class="aviso-carga" id="pv-carga">Cargando…</div>
-  <div class="arriba">
-    <div class="marca"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg><b id="pv-nombre">—</b></div>
-    <div class="grupo-h">
-      <button class="ico" id="pv-audio" aria-label="Silenciar música" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
-      <button class="ico" id="pv-cerrar" aria-label="Cerrar vista previa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-    </div>
-  </div>
-  <div class="abajo"><nav class="escenas" id="pv-escenas" aria-label="Escenas"></nav></div>
-  <div class="intro" id="pv-intro" hidden>
-    <img id="pv-planeta" alt="">
-    <div class="entrar"><h2 id="pv-titulo">—</h2><button class="btn-prim" id="pv-entrar">Entrar al tour</button></div>
-  </div>
+  <div class="sk" id="pv-ui"></div>
 </div>
 
 <div class="toast" id="toast" role="status" hidden></div>
@@ -510,7 +610,7 @@
   const mp = (w, h) => Math.round((w * h) / 1e6) + " MP";
   const LIMA = "#D5FF40", NEGRO = "#0B0B0B", BLANCO = "#FFFFFF";
   const SVGNS = "http://www.w3.org/2000/svg";
-  const CLAVE = "mozari-estudio-v1";
+  const CLAVE = "mozari-estudio-v2", CLAVE_V1 = "mozari-estudio-v1";
   const MAX_HS = 4; // recomendación de ruta: más hotspots por escena dispersan al usuario
 
   let tToast;
@@ -528,21 +628,42 @@
   const original = JSON.stringify({ proyecto: base.proyecto, escenas: base.escenas, capas: base.capas });
   let est = JSON.parse(original);
   try {
-    const g = JSON.parse(localStorage.getItem(CLAVE) || "null");
+    const g = JSON.parse(localStorage.getItem(CLAVE) || localStorage.getItem(CLAVE_V1) || "null");
     if (g && g.proyecto && g.escenas) est = g;
   } catch (e) { /* sin almacenamiento */ }
-  est.escenas = est.escenas.filter((e) => meta[e.id]);
-  est.escenas.forEach((e) => { est.capas[e.id] = est.capas[e.id] || []; });
+  const SKIN_DEF = {
+    acento: LIMA, panel: NEGRO, opacidad: 0.74, radio: 14,
+    logo: { tipo: "mozari", img: "", posicion: "izq" }, nombre: true,
+    menu: { mostrar: true, estilo: "miniaturas", posicion: "abajo" },
+    botones: { pantalla: true, musica: true, zoom: false, piloto: true },
+  };
+  function mezclar(def, val) {
+    if (typeof def !== "object" || def === null) return val === undefined ? def : val;
+    const out = {};
+    Object.keys(def).forEach((k) => (out[k] = mezclar(def[k], val ? val[k] : undefined)));
+    return out;
+  }
+  function normalizar() {
+    est.skin = mezclar(SKIN_DEF, est.skin);
+    est.escenas = est.escenas.filter((e) => meta[e.id]);
+    est.escenas.forEach((e) => {
+      est.capas[e.id] = est.capas[e.id] || [];
+      const b = base.escenas.find((x) => x.id === e.id);
+      if (!e.vista) e.vista = (b && b.vista) || meta[e.id].vista;
+      if (!e.piloto) e.piloto = b && b.piloto ? JSON.parse(JSON.stringify(b.piloto)) : { activo: false, puntos: [], alTerminar: "detener", siguiente: "", reanudar: 8 };
+    });
+    delete est.proyecto.littlePlanet;
+  }
+  normalizar();
   const escena = (id) => est.escenas.find((e) => e.id === id);
   const nombreDe = (id) => (escena(id) ? escena(id).nombre : "—");
   const thumbDe = (id) => "escenas/" + id + "/1/f/0/0.jpg";
   const planetaDe = (id) => "escenas/" + id + "/planeta.jpg";
-  let tGuardar;
+  const vistaDe = (id) => escena(id).vista;
   function guardar() {
-    try { localStorage.setItem(CLAVE, JSON.stringify(est)); $("b-estado").textContent = "Guardado en este navegador"; }
-    catch (e) { $("b-estado").textContent = "Sin espacio para guardar en este navegador"; }
-    clearTimeout(tGuardar);
-    tGuardar = setTimeout(pintarResumen, 50);
+    try { localStorage.setItem(CLAVE, JSON.stringify(est)); $("b-estado").textContent = "Guardado"; }
+    catch (e) { $("b-estado").textContent = "Sin espacio para guardar"; }
+    pintarResumen();
   }
   let consecutivo = Date.now() % 1e6;
   const nuevoId = () => "c" + (consecutivo++).toString(36);
@@ -559,32 +680,85 @@
   const dbPut = (k, v) => new Promise((ok) => { if (!db) return ok(false); try { const t = db.transaction("archivos", "readwrite"); t.objectStore("archivos").put(v, k); t.oncomplete = () => ok(true); t.onerror = () => ok(false); } catch (e) { ok(false); } });
   const dbGet = (k) => new Promise((ok) => { if (!db) return ok(null); try { const r = db.transaction("archivos").objectStore("archivos").get(k); r.onsuccess = () => ok(r.result || null); r.onerror = () => ok(null); } catch (e) { ok(null); } });
   const dbDel = (k) => new Promise((ok) => { if (!db) return ok(); try { const t = db.transaction("archivos", "readwrite"); t.objectStore("archivos").delete(k); t.oncomplete = () => ok(); } catch (e) { ok(); } });
-  let musica = await dbGet("musica"); // { blob, nombre }
+  let musica = await dbGet("musica");
   let musicaUrl = musica ? URL.createObjectURL(musica.blob) : null;
 
-  // =================== NAVEGACIÓN ===================
-  const NOMBRES_V = { proyecto: "Proyecto", panoramas: "Panoramas" };
-  function ventana(v) {
-    document.querySelectorAll(".nav[data-ventana]").forEach((b) => b.toggleAttribute("aria-current", false));
-    document.querySelector('.nav[data-ventana="' + v + '"]').setAttribute("aria-current", "page");
-    $("v-proyecto").hidden = v !== "proyecto";
-    $("v-panoramas").hidden = v !== "panoramas";
-    if (v !== "panoramas") cerrarEditor();
-    $("b-sec").textContent = NOMBRES_V[v];
-    if (v === "panoramas") { pintarLista(); if (!$("tab-mapa").hidden) mapa.dibujar(); }
-    if (v === "proyecto") pintarProyecto();
+  // =================== NAVEGACIÓN EN DOS NIVELES ===================
+  const SECCIONES = [
+    { id: "tours", nombre: "Mis Tours", subs: [["todos", "Todos"]] },
+    { id: "proyecto", nombre: "Proyecto", subs: [["general", "General"], ["musica", "Música"]] },
+    { id: "panoramas", nombre: "Panoramas", subs: [["lista", "Lista"], ["mapa", "Mapa"], ["capas", "Capas"], ["piloto", "Piloto automático"]] },
+    { id: "media", nombre: "Media", subs: [["fotos", "Fotos"], ["videos", "Videos"], ["planos", "Planos"], ["audios", "Audios"]] },
+    { id: "skin", nombre: "Skin", subs: [["h", "16:9"], ["v", "9:16"]] },
+    { id: "publicar", nombre: "Publicar", subs: [["web", "Web"], ["compartir", "Compartir"]] },
+  ];
+  const ICO = {
+    foto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 8"/></svg>',
+    video: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10 5-3v10l-5-3"/></svg>',
+    plano: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/></svg>',
+    audio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg>',
+    skin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 20V9"/></svg>',
+    movil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>',
+    web: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
+    compartir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="m8.2 10.8 7.6-4M8.2 13.2l7.6 4"/></svg>',
+  };
+  const PROXIMO = {
+    "media/fotos": [ICO.foto, "Fotos", "Fotos fijas para galerías y puntos de información dentro del tour: renders, fichas de lote, interiores."],
+    "media/videos": [ICO.video, "Videos", "Videos planos que se abren desde un hotspot: recorridos con dron, testimoniales, avances de obra."],
+    "media/planos": [ICO.plano, "Planos", "Planos y masterplans con la ubicación de cada panorama y un radar que muestra hacia dónde estás viendo."],
+    "media/audios": [ICO.audio, "Audios", "Narraciones y sonidos por panorama. La música de fondo del tour vive en Proyecto → Música."],
+    "publicar/web": [ICO.web, "Publicar en la web", "Tu tour con link propio y hosting en Cloudflare, sin cobro por visitas."],
+    "publicar/compartir": [ICO.compartir, "Compartir", "Link, código para insertar en sitios web y QR para impresos."],
+  };
+  const nav = { sec: "proyecto", sub: "general", ultimoSub: { panoramas: "lista" } };
+  $("nav").innerHTML = SECCIONES.map((s) => '<button data-sec="' + s.id + '">' + s.nombre + "</button>").join("");
+  $("nav").addEventListener("click", (ev) => { const b = ev.target.closest("[data-sec]"); if (b) ir(b.dataset.sec); });
+  $("subtabs").addEventListener("click", (ev) => { const b = ev.target.closest("[data-sub]"); if (b) ir(nav.sec, b.dataset.sub); });
+
+  function ir(sec, sub) {
+    const S = SECCIONES.find((s) => s.id === sec);
+    sub = sub || nav.ultimoSub[sec] || S.subs[0][0];
+    const antes = nav.sec + "/" + nav.sub;
+    nav.sec = sec; nav.sub = sub; nav.ultimoSub[sec] = sub;
+    const clave = sec + "/" + sub;
+    document.querySelectorAll("#nav [data-sec]").forEach((b) => (b.dataset.sec === sec ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
+    $("subtabs").innerHTML = S.subs.map(([id, n]) => '<button role="tab" data-sub="' + id + '" aria-selected="' + (id === sub) + '">' + n + "</button>").join("");
+    const enEditor = clave === "panoramas/capas" || clave === "panoramas/piloto";
+    if (!enEditor && (antes === "panoramas/capas" || antes === "panoramas/piloto")) cerrarEditor();
+    if (antes.startsWith("skin/") && sec !== "skin") cerrarSkin();
+    document.querySelectorAll("#contenedor > section").forEach((s) => (s.hidden = !s.dataset.vista.split(" ").includes(clave)));
+    $("sel-pano-wrap").hidden = !enEditor;
+    if (PROXIMO[clave]) {
+      const [ico, t, d] = PROXIMO[clave];
+      $("proximo").innerHTML = '<div class="icono">' + ico + "</div><span class=\"etiq\">Próximo bloque</span><h1>" + t + "</h1><p>" + d + "</p>";
+      $("v-proximo").hidden = false;
+    }
+    if (clave === "tours/todos") pintarTours();
+    if (sec === "proyecto") pintarProyecto();
+    if (clave === "panoramas/lista") pintarLista();
+    if (clave === "panoramas/mapa") requestAnimationFrame(() => mapa.dibujar());
+    if (enEditor) abrirEditor(edPano || P().escenaInicial, sub);
+    if (sec === "skin") requestAnimationFrame(() => abrirSkin(sub));
   }
-  document.querySelectorAll(".nav[data-ventana]").forEach((b) => b.addEventListener("click", () => ventana(b.dataset.ventana)));
+
+  // =================== MIS TOURS ===================
+  function pintarTours() {
+    const todas = Object.values(est.capas).flat();
+    $("tours").innerHTML =
+      '<button class="card" data-abrir-tour><div class="foto"><img src="' + thumbProyecto() + '" alt=""><span class="badge">EN EDICIÓN</span></div>' +
+      '<div class="cuerpo"><span class="nombre">' + esc(P().nombre) + '</span><div class="chips"><span class="chip-dato">' + est.escenas.length + ' panoramas</span><span class="chip-dato">' +
+      todas.filter((c) => c.tipo === "hotspot").length + " hotspots</span></div></div></button>" +
+      '<div class="hueco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><b>Nuevo tour</b><span class="nota">Se activa cuando conectemos el servidor (bloque Publicar).</span></div>';
+  }
+  $("tours").addEventListener("click", (ev) => { if (ev.target.closest("[data-abrir-tour]")) ir("proyecto", "general"); });
 
   // =================== PROYECTO ===================
   const P = () => est.proyecto;
-  function thumbProyecto() { return P().thumbnail || planetaDe(P().escenaInicial); }
+  function thumbProyecto() { return P().thumbnail || thumbDe(P().escenaInicial); }
   function pintarProyecto() {
     $("p-nombre").value = P().nombre;
     $("p-thumb").src = thumbProyecto();
     $("p-inicial").innerHTML = est.escenas.map((e) => '<option value="' + e.id + '"' + (e.id === P().escenaInicial ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("");
-    $("p-planeta").src = planetaDe(P().escenaInicial);
-    $("p-lp").checked = !!P().littlePlanet;
     $("m-vol").value = P().musica.volumen;
     $("m-vol-v").textContent = Math.round(P().musica.volumen * 100) + "%";
     $("m-loop").checked = !!P().musica.repetir;
@@ -602,16 +776,14 @@
     $("r-hs").textContent = todas.filter((c) => c.tipo === "hotspot").length;
     $("r-pol").textContent = todas.filter((c) => c.tipo === "poligono").length;
   }
-  $("p-nombre").addEventListener("input", (e) => { P().nombre = e.target.value.trim() || "Proyecto sin nombre"; guardar(); });
+  $("p-nombre").addEventListener("input", (e) => { P().nombre = e.target.value.trim() || "Tour sin nombre"; guardar(); });
   $("p-inicial").addEventListener("change", (e) => { P().escenaInicial = e.target.value; guardar(); pintarProyecto(); });
-  $("p-lp").addEventListener("change", (e) => { P().littlePlanet = e.target.checked; guardar(); avisar(e.target.checked ? "Little Planet activado" : "Little Planet desactivado"); });
-  $("p-thumb-planeta").addEventListener("click", () => { delete P().thumbnail; guardar(); pintarProyecto(); avisar("Thumbnail: Little Planet de la escena inicial"); });
+  $("p-thumb-auto").addEventListener("click", () => { delete P().thumbnail; guardar(); pintarProyecto(); avisar("Thumbnail: panorama inicial"); });
   $("p-thumb-archivo").addEventListener("change", (e) => {
     const f = e.target.files[0];
     if (!f) return;
     const img = new Image();
     img.onload = () => {
-      // Reducir a 800 px de ancho para guardarlo ligero
       const w = Math.min(800, img.naturalWidth), h = Math.round((img.naturalHeight / img.naturalWidth) * w);
       const c = document.createElement("canvas"); c.width = w; c.height = h;
       c.getContext("2d").drawImage(img, 0, 0, w, h);
@@ -623,17 +795,16 @@
     img.src = URL.createObjectURL(f);
     e.target.value = "";
   });
-
-  // Música
   const audioPrueba = new Audio();
+  const ICO_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>';
+  const ICO_PAUSA = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+  const ICO_STOP = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
   function pintarMusica() {
     $("m-nombre").textContent = musica ? musica.nombre : "Sin música";
-    $("m-detalle").textContent = musica ? (musica.blob.size / 1048576).toFixed(1) + " MB · se reproduce al entrar al tour" : "Sube un MP3, WAV o M4A";
+    $("m-detalle").textContent = musica ? (musica.blob.size / 1048576).toFixed(1) + " MB · suena al abrir el tour" : "Sube un MP3, WAV o M4A";
     $("m-play").disabled = !musica;
     $("m-quitar").hidden = !musica;
   }
-  const ICO_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>';
-  const ICO_PAUSA = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
   $("m-play").addEventListener("click", () => {
     if (!musicaUrl) return;
     if (audioPrueba.paused) { audioPrueba.src = musicaUrl; audioPrueba.volume = P().musica.volumen; audioPrueba.play().catch(() => {}); $("m-play").innerHTML = ICO_PAUSA; }
@@ -660,29 +831,28 @@
   $("m-loop").addEventListener("change", (e) => { P().musica.repetir = e.target.checked; guardar(); });
 
   // =================== MOTOR (esfera + capas) ===================
-  // Lo usan el editor (editable) y la vista previa (solo ver).
   function crearMotor(stage, opciones) {
     const editable = !!opciones.editable;
     const viewer = new Marzipano.Viewer(stage, { controls: { mouseViewMode: "drag" } });
     const capasEl = document.createElement("div");
     capasEl.className = "capas" + (editable ? " editable" : "");
     stage.appendChild(capasEl);
-    const borrador = document.createElementNS(SVGNS, "svg");
-    borrador.setAttribute("class", "cp-svg");
-    borrador.style.zIndex = 3;
-    stage.appendChild(borrador);
+    const extra = document.createElementNS(SVGNS, "svg"); // borrador de polígono y ruta del piloto
+    extra.setAttribute("class", "cp-svg");
+    extra.style.zIndex = 3;
+    stage.appendChild(extra);
     const escenasM = {};
     let actual = null;
 
     function escenaM(id) {
       if (escenasM[id]) return escenasM[id];
-      const d = meta[id], base = "escenas/" + id + "/";
-      const source = Marzipano.ImageUrlSource.fromString(base + "{z}/{f}/{y}/{x}.jpg", { cubeMapPreviewUrl: base + "preview.jpg" });
+      const d = meta[id], b = "escenas/" + id + "/";
+      const source = Marzipano.ImageUrlSource.fromString(b + "{z}/{f}/{y}/{x}.jpg", { cubeMapPreviewUrl: b + "preview.jpg" });
       const geometry = new Marzipano.CubeGeometry(d.niveles);
       const limiter = Marzipano.RectilinearView.limit.traditional(d.cara, (110 * Math.PI) / 180);
-      const view = new Marzipano.RectilinearView(escena(id).vista || d.vista, limiter);
+      const view = new Marzipano.RectilinearView(vistaDe(id), limiter);
       const scene = viewer.createScene({ source, geometry, view, pinFirstLevel: true });
-      view.addEventListener("change", () => { if (actual && actual.view === view) programar(); });
+      view.addEventListener("change", () => { if (actual && actual.view === view) { programar(); if (opciones.alMoverVista) opciones.alMoverVista(); } });
       return (escenasM[id] = { id, scene, view });
     }
 
@@ -785,7 +955,7 @@
           const d = rec.length < 3 ? "" : trazo(cam, rec, true);
           n.path.setAttribute("d", d);
           n.svg.querySelectorAll(".cp-sel, .cp-vert").forEach((x) => x.remove());
-          if (editable && id === motor.elegida && d) {
+          if (editable && motor.modo === "capas" && id === motor.elegida && d) {
             const sel = document.createElementNS(SVGNS, "path");
             sel.setAttribute("class", "cp-sel"); sel.setAttribute("d", d);
             n.svg.appendChild(sel);
@@ -805,10 +975,30 @@
           const s = aPantalla(cam, pc);
           n.el.style.visibility = "";
           n.el.style.transform = "translate(" + s.x.toFixed(1) + "px," + s.y.toFixed(1) + "px)";
-          n.el.classList.toggle("elegida", editable && id === motor.elegida);
+          n.el.classList.toggle("elegida", editable && motor.modo === "capas" && id === motor.elegida);
         }
       });
-      borrador.innerHTML = "";
+      extra.innerHTML = "";
+      // Ruta del piloto automático: línea punteada y puntos numerados
+      if (motor.ruta && motor.ruta.length) {
+        const enCam = motor.ruta.map((p) => aCamara(cam, p.yaw, p.pitch));
+        const rec = recortar(enCam, false);
+        if (rec.length > 1) {
+          const l = document.createElementNS(SVGNS, "path");
+          l.setAttribute("class", "ruta-linea"); l.setAttribute("d", trazo(cam, rec, false));
+          extra.appendChild(l);
+        }
+        motor.ruta.forEach((p, i) => {
+          if (enCam[i].z <= 0.05) return;
+          const s = aPantalla(cam, enCam[i]);
+          const g = document.createElementNS(SVGNS, "g");
+          g.setAttribute("class", "ruta-pt" + (i === motor.rutaActivo ? " activo" : ""));
+          g.setAttribute("transform", "translate(" + s.x.toFixed(1) + "," + s.y.toFixed(1) + ")");
+          g.innerHTML = '<circle r="12"></circle><text>' + (i + 1) + "</text>";
+          extra.appendChild(g);
+        });
+      }
+      // Polígono en borrador
       const dib = motor.dibujo;
       if (!dib) return;
       const pts = dib.puntos.slice();
@@ -819,7 +1009,7 @@
       if (rec.length > 1) {
         const path = document.createElementNS(SVGNS, "path");
         path.setAttribute("class", "cp-borrador"); path.setAttribute("d", trazo(cam, rec, pts.length > 2));
-        borrador.appendChild(path);
+        extra.appendChild(path);
       }
       dib.puntos.forEach((pt, i) => {
         if (enCam[i].z <= CERCA) return;
@@ -827,15 +1017,15 @@
         const k = document.createElementNS(SVGNS, "circle");
         k.setAttribute("class", "cp-borrador-pt" + (i === 0 ? " primero" : ""));
         k.setAttribute("cx", s.x); k.setAttribute("cy", s.y); k.setAttribute("r", i === 0 ? 7 : 4);
-        borrador.appendChild(k);
+        extra.appendChild(k);
       });
     }
 
-    // Arrastrar capas y vértices (solo editor)
+    // Arrastrar capas y vértices (solo en Capas)
     let arrastre = null;
     const limitarPitch = (p) => Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, p));
     function tomar(ev, c, modo, indice) {
-      if (!editable || motor.dibujo) return;
+      if (!editable || motor.modo !== "capas" || motor.dibujo) return;
       ev.stopPropagation(); ev.preventDefault();
       if (motor.elegida !== c.id) opciones.alSeleccionar(c.id);
       const inicio = coordsEn(ev);
@@ -865,11 +1055,11 @@
     function alSoltar() { if (arrastre && arrastre.movido) guardar(); arrastre = null; }
     if (editable) { window.addEventListener("pointermove", alMover); window.addEventListener("pointerup", alSoltar); }
 
-    // Toque corto en la esfera: agrega punto del polígono o quita la selección
     let toque = null;
-    stage.addEventListener("pointerdown", (ev) => { toque = { x: ev.clientX, y: ev.clientY }; });
+    stage.addEventListener("pointerdown", (ev) => { toque = { x: ev.clientX, y: ev.clientY }; if (opciones.alInteractuar) opciones.alInteractuar(); });
+    stage.addEventListener("wheel", () => { if (opciones.alInteractuar) opciones.alInteractuar(); }, { passive: true });
     stage.addEventListener("pointerup", (ev) => {
-      if (!toque || !editable) return;
+      if (!toque || !editable || motor.modo !== "capas") return;
       const mov = Math.hypot(ev.clientX - toque.x, ev.clientY - toque.y);
       toque = null;
       if (mov > 6 || !actual) return;
@@ -890,14 +1080,16 @@
     ro.observe(stage);
 
     const motor = {
-      elegida: null, dibujo: null,
+      modo: editable ? "capas" : "ver", elegida: null, dibujo: null, ruta: null, rutaActivo: -1,
       get actual() { return actual; },
       mostrar(id, transicion) {
         actual = escenaM(id);
+        actual.view.setParameters(vistaDe(id)); // cada panorama arranca donde inicia su piloto
         actual.scene.switchTo({ transitionDuration: transicion ?? 600 });
         construir();
         if (opciones.alMostrar) opciones.alMostrar(id);
       },
+      setModo(m) { motor.modo = m; capasEl.classList.toggle("solo-ver", m === "piloto"); render(); },
       construir, render: programar, estiloPoligono: (id, c) => { const n = nodos.get(id); if (n && n.path) estiloPoligono(n.path, c); },
       view: () => actual && actual.view,
       destruir() {
@@ -910,30 +1102,70 @@
     return motor;
   }
 
+  // =================== PILOTO AUTOMÁTICO (reproductor) ===================
+  // Lleva la cámara del punto 1 (inicio) por cada punto: viaja, hace pausa y sigue.
+  const suave = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  function reproducirPiloto(motor, id, o) {
+    const pl = escena(id).piloto;
+    const puntos = [vistaDe(id)].concat(pl.puntos);
+    let i = 0, raf = 0, espera = 0, vivo = true;
+    function viajar(hasta, seg, listo) {
+      const v = motor.view();
+      if (!v) return;
+      const d = { yaw: v.yaw(), pitch: v.pitch(), fov: v.fov() };
+      let dy = hasta.yaw - d.yaw;
+      dy = Math.atan2(Math.sin(dy), Math.cos(dy)); // vuelta corta
+      const t0 = performance.now(), dur = Math.max(0.3, seg) * 1000;
+      (function paso(t) {
+        if (!vivo) return;
+        const k = Math.min(1, (t - t0) / dur), e = suave(k);
+        v.setParameters({ yaw: d.yaw + dy * e, pitch: d.pitch + (hasta.pitch - d.pitch) * e, fov: d.fov + (hasta.fov - d.fov) * e });
+        if (k < 1) raf = requestAnimationFrame(paso); else listo();
+      })(t0);
+    }
+    function esperar(seg, fn) { espera = setTimeout(() => vivo && fn(), Math.max(0, seg) * 1000); }
+    function siguiente() {
+      if (!vivo) return;
+      if (i >= puntos.length - 1) {
+        if (pl.alTerminar === "repetir" && puntos.length > 1) return viajar(puntos[0], (puntos[1].viaje || 4), () => { i = 0; o.alPunto && o.alPunto(0); esperar(1, siguiente); });
+        if (pl.alTerminar === "siguiente" && pl.siguiente && escena(pl.siguiente)) return o.alSiguiente && o.alSiguiente(pl.siguiente);
+        return o.alFin && o.alFin();
+      }
+      const p = puntos[i + 1];
+      viajar(p, p.viaje, () => { i++; o.alPunto && o.alPunto(i); esperar(p.pausa, siguiente); });
+    }
+    o.alPunto && o.alPunto(0);
+    esperar(o.demoraInicial ?? 1.2, siguiente);
+    return {
+      detener() { vivo = false; cancelAnimationFrame(raf); clearTimeout(espera); },
+      // El usuario tomó el control: se pausa y retoma desde donde está después de unos segundos
+      interrumpir(reanudar) {
+        cancelAnimationFrame(raf); clearTimeout(espera);
+        if (!reanudar) { vivo = false; return; }
+        esperar(pl.reanudar || 8, siguiente);
+      },
+    };
+  }
+
   // =================== PANORAMAS: LISTA ===================
   function salidas(id) { return est.capas[id].filter((c) => c.tipo === "hotspot" && escena(c.destino) && c.destino !== id); }
   function pintarLista() {
-    $("tab-lista").innerHTML = est.escenas.map((e) => {
+    $("pano-lista").innerHTML = est.escenas.map((e) => {
       const d = meta[e.id], cs = est.capas[e.id];
       const hs = salidas(e.id).length, pol = cs.filter((c) => c.tipo === "poligono").length;
-      const ini = e.id === P().escenaInicial;
-      return '<div class="esc-card" role="button" tabindex="0" data-abrir="' + e.id + '" aria-label="Abrir ' + esc(e.nombre) + '">' +
-        '<div class="foto"><img src="' + thumbDe(e.id) + '" alt="" loading="lazy">' + (ini ? '<span class="badge">INICIO</span>' : "") + "</div>" +
+      const pl = e.piloto.activo && e.piloto.puntos.length;
+      return '<div class="card" role="button" tabindex="0" data-abrir="' + e.id + '" aria-label="Abrir ' + esc(e.nombre) + '">' +
+        '<div class="foto"><img src="' + thumbDe(e.id) + '" alt="" loading="lazy">' + (e.id === P().escenaInicial ? '<span class="badge">INICIO</span>' : "") + "</div>" +
         '<div class="cuerpo"><span class="nombre">' + esc(e.nombre) + "</span>" +
         '<div class="chips"><span class="chip-dato">' + mp(d.origen.ancho, d.origen.alto) + "</span>" +
         '<span class="chip-dato' + (hs === 0 || hs > MAX_HS ? " aviso" : "") + '">' + hs + (hs === 1 ? " salida" : " salidas") + "</span>" +
-        '<span class="chip-dato">' + pol + (pol === 1 ? " polígono" : " polígonos") + "</span></div></div></div>";
+        '<span class="chip-dato">' + pol + (pol === 1 ? " polígono" : " polígonos") + "</span>" +
+        '<span class="chip-dato' + (pl ? " ok" : "") + '">Piloto ' + (pl ? "activo" : "apagado") + "</span></div></div></div>";
     }).join("") +
-      '<div class="subir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir esfera</b><span class="nota">Se activa cuando conectemos el servidor (bloque Publicar). Por ahora, pásale tus esferas a Claude.</span></div>';
+      '<div class="hueco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir esfera</b><span class="nota">Se activa cuando conectemos el servidor (bloque Publicar). Por ahora, pásale tus esferas a Claude.</span></div>';
   }
-  $("tab-lista").addEventListener("click", (ev) => { const c = ev.target.closest("[data-abrir]"); if (c) abrirEditor(c.dataset.abrir); });
-  $("tab-lista").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { const c = ev.target.closest("[data-abrir]"); if (c) abrirEditor(c.dataset.abrir); } });
-  document.querySelectorAll(".pestanas button").forEach((b) => b.addEventListener("click", () => {
-    document.querySelectorAll(".pestanas button").forEach((x) => x.setAttribute("aria-selected", x === b ? "true" : "false"));
-    $("tab-lista").hidden = b.dataset.tab !== "lista";
-    $("tab-mapa").hidden = b.dataset.tab !== "mapa";
-    if (b.dataset.tab === "mapa") mapa.dibujar(); else pintarLista();
-  }));
+  $("pano-lista").addEventListener("click", (ev) => { const c = ev.target.closest("[data-abrir]"); if (c) { edPano = c.dataset.abrir; ir("panoramas", "capas"); } });
+  $("pano-lista").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { const c = ev.target.closest("[data-abrir]"); if (c) { edPano = c.dataset.abrir; ir("panoramas", "capas"); } } });
 
   // =================== PANORAMAS: MAPA DE NODOS ===================
   const mapa = (function () {
@@ -941,50 +1173,32 @@
     let sim = null, origen = null, conectando = false;
     const ICO_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.5 2.5L16 9.5"/></svg>';
     const ICO_AV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4 2.5 20h19z"/><path d="M12 10v4M12 17v.01"/></svg>';
-
     function grafo() {
       const nodes = est.escenas.map((e) => ({ id: e.id, nombre: e.nombre, salen: 0, entran: 0 }));
       const porId = Object.fromEntries(nodes.map((n) => [n.id, n]));
       const pares = new Map();
-      est.escenas.forEach((e) => salidas(e.id).forEach((h) => {
-        porId[e.id].salen++; porId[h.destino].entran++;
-        const k = e.id + ">" + h.destino;
-        pares.set(k, { source: e.id, target: h.destino });
-      }));
-      const links = [];
-      const vistos = new Set();
-      pares.forEach((l, k) => {
-        const inv = l.target + ">" + l.source;
-        if (vistos.has(inv)) return;
-        vistos.add(k);
-        links.push({ source: l.source, target: l.target, doble: pares.has(inv) });
-      });
-      return { nodes, links, porId };
+      est.escenas.forEach((e) => salidas(e.id).forEach((h) => { porId[e.id].salen++; porId[h.destino].entran++; pares.set(e.id + ">" + h.destino, { source: e.id, target: h.destino }); }));
+      const links = [], vistos = new Set();
+      pares.forEach((l, k) => { const inv = l.target + ">" + l.source; if (vistos.has(inv)) return; vistos.add(k); links.push({ source: l.source, target: l.target, doble: pares.has(inv) }); });
+      return { nodes, links };
     }
-
     function alcanzables() {
       const vistos = new Set([P().escenaInicial]), cola = [P().escenaInicial];
       while (cola.length) salidas(cola.shift()).forEach((h) => { if (!vistos.has(h.destino)) { vistos.add(h.destino); cola.push(h.destino); } });
       return vistos;
     }
-
     function diagnostico(g) {
       const al = alcanzables();
-      const fuera = g.nodes.filter((n) => !al.has(n.id));
-      const sinSalida = g.nodes.filter((n) => n.salen === 0);
-      const muchas = g.nodes.filter((n) => n.salen > MAX_HS);
-      const sueltas = g.nodes.filter((n) => n.salen === 0 && n.entran === 0);
-      const items = [];
+      const fuera = g.nodes.filter((n) => !al.has(n.id)), sinSalida = g.nodes.filter((n) => n.salen === 0);
+      const muchas = g.nodes.filter((n) => n.salen > MAX_HS), sueltas = g.nodes.filter((n) => n.salen === 0 && n.entran === 0);
       const lst = (a) => a.map((n) => n.nombre).join(", ");
-      items.push(["ok", "Inicio: " + nombreDe(P().escenaInicial), "Aquí arranca el usuario."]);
+      const items = [["ok", "Inicio: " + nombreDe(P().escenaInicial), "Aquí arranca el usuario."]];
       items.push(fuera.length ? ["aviso", fuera.length + " panorama" + (fuera.length > 1 ? "s" : "") + " fuera de la ruta", "Nadie llega desde el inicio: " + lst(fuera) + "."] : ["ok", "Todo se alcanza desde el inicio", g.nodes.length + " de " + g.nodes.length + " panoramas en la ruta."]);
-      items.push(sinSalida.length ? ["aviso", "Sin salida: " + lst(sinSalida), "El usuario se queda atorado ahí. Agrega un hotspot de regreso."] : ["ok", "Todas las escenas tienen salida", "Nadie se queda atorado."]);
+      items.push(sinSalida.length ? ["aviso", "Sin salida: " + lst(sinSalida), "El usuario se queda atorado ahí. Agrega un hotspot de regreso."] : ["ok", "Todos los panoramas tienen salida", "Nadie se queda atorado."]);
       if (muchas.length) items.push(["aviso", "Demasiados hotspots: " + lst(muchas), "Más de " + MAX_HS + " salidas dispersan al usuario y la ruta pierde su objetivo."]);
-      if (sueltas.length) items.push(["aviso", "Sueltas: " + lst(sueltas), "No tienen ninguna conexión."]);
+      if (sueltas.length) items.push(["aviso", "Sueltos: " + lst(sueltas), "No tienen ninguna conexión."]);
       $("diagnostico").innerHTML = items.map(([t, b, s]) => '<div class="diag ' + t + '">' + (t === "ok" ? ICO_OK : ICO_AV) + "<div><b>" + esc(b) + "</b><span>" + esc(s) + "</span></div></div>").join("");
-      return { al };
     }
-
     function dibujar() {
       const el = $("mapa"), W = el.clientWidth, H = el.clientHeight;
       if (!W) return;
@@ -993,29 +1207,20 @@
       svg.attr("viewBox", [0, 0, W, H]);
       const g = grafo();
       diagnostico(g);
-      const grado = (n) => n.salen + n.entran;
-      const radio = (n) => 26 + Math.min(5, grado(n)) * 5;
-
+      const grado = (n) => n.salen + n.entran, radio = (n) => 26 + Math.min(5, grado(n)) * 5;
       const defs = svg.append("defs");
       defs.append("marker").attr("id", "flecha").attr("viewBox", "0 -5 10 10").attr("refX", 9).attr("refY", 0).attr("markerWidth", 7).attr("markerHeight", 7).attr("orient", "auto-start-reverse")
         .append("path").attr("d", "M0,-4L9,0L0,4").attr("fill", "rgba(242,245,236,.55)");
-      g.nodes.forEach((n) => {
-        defs.append("clipPath").attr("id", "clip-" + n.id).append("circle").attr("r", radio(n));
-      });
-
+      g.nodes.forEach((n) => defs.append("clipPath").attr("id", "clip-" + n.id).append("circle").attr("r", radio(n)));
       const raiz = svg.append("g");
       svg.call(d3.zoom().scaleExtent([0.4, 3]).on("zoom", (e) => raiz.attr("transform", e.transform)));
-      // Etiquetas debajo de las líneas para que las flechas siempre se vean
       const etiquetas = raiz.append("g").selectAll("text").data(g.nodes).join("text").attr("class", "etq-nodo").text((n) => n.nombre);
-      const enlaces = raiz.append("g").selectAll("path").data(g.links).join("path").attr("class", "enlace")
-        .attr("marker-end", "url(#flecha)").attr("marker-start", (d) => (d.doble ? "url(#flecha)" : null));
+      const enlaces = raiz.append("g").selectAll("path").data(g.links).join("path").attr("class", "enlace").attr("marker-end", "url(#flecha)").attr("marker-start", (d) => (d.doble ? "url(#flecha)" : null));
       const nodos = raiz.append("g").selectAll("g").data(g.nodes).join("g")
         .attr("class", (n) => "nodo" + (n.id === P().escenaInicial ? " inicio" : "") + (grado(n) === 0 ? " suelta" : n.salen === 0 ? " sin-salida" : ""))
         .attr("tabindex", 0).attr("role", "button").attr("aria-label", (n) => n.nombre + ", " + n.salen + " salidas, " + n.entran + " entradas");
-      nodos.append("image").attr("href", (n) => planetaDe(n.id)).attr("x", (n) => -radio(n)).attr("y", (n) => -radio(n))
-        .attr("width", (n) => radio(n) * 2).attr("height", (n) => radio(n) * 2).attr("clip-path", (n) => "url(#clip-" + n.id + ")").attr("preserveAspectRatio", "xMidYMid slice");
+      nodos.append("image").attr("href", (n) => planetaDe(n.id)).attr("x", (n) => -radio(n)).attr("y", (n) => -radio(n)).attr("width", (n) => radio(n) * 2).attr("height", (n) => radio(n) * 2).attr("clip-path", (n) => "url(#clip-" + n.id + ")").attr("preserveAspectRatio", "xMidYMid slice");
       nodos.append("circle").attr("class", "aro").attr("r", radio);
-
       const vecinos = (id) => new Set(g.links.flatMap((l) => (l.source.id === id ? [l.target.id] : l.target.id === id ? [l.source.id] : [])).concat(id));
       nodos.on("mouseenter", (ev, n) => {
         const v = vecinos(n.id);
@@ -1024,16 +1229,13 @@
         etiquetas.classed("vecino", (m) => v.has(m.id));
         enlaces.classed("vecino", (l) => l.source.id === n.id || l.target.id === n.id);
       }).on("mouseleave", () => { el.classList.remove("enfoque"); nodos.classed("vecino", false); etiquetas.classed("vecino", false); enlaces.classed("vecino", false); });
-      nodos.on("click", (ev, n) => {
-        if (ev.defaultPrevented) return;
-        if (conectando) return elegirParaConectar(n);
-        abrirEditor(n.id);
-      }).on("keydown", (ev, n) => { if (ev.key === "Enter") abrirEditor(n.id); });
+      const abrir = (n) => { edPano = n.id; ir("panoramas", "capas"); };
+      nodos.on("click", (ev, n) => { if (ev.defaultPrevented) return; if (conectando) return elegirParaConectar(n); abrir(n); })
+        .on("keydown", (ev, n) => { if (ev.key === "Enter") abrir(n); });
       nodos.call(d3.drag()
         .on("start", (ev, n) => { if (!ev.active) sim.alphaTarget(0.25).restart(); n.fx = n.x; n.fy = n.y; })
         .on("drag", (ev, n) => { n.fx = ev.x; n.fy = ev.y; })
         .on("end", (ev, n) => { if (!ev.active) sim.alphaTarget(0); n.fx = null; n.fy = null; }));
-
       sim = d3.forceSimulation(g.nodes)
         .force("enlace", d3.forceLink(g.links).id((n) => n.id).distance(190).strength(0.6))
         .force("carga", d3.forceManyBody().strength(-900))
@@ -1048,21 +1250,17 @@
           nodos.attr("transform", (n) => "translate(" + n.x + "," + n.y + ")");
           etiquetas.attr("x", (n) => n.x).attr("y", (n) => n.y + radio(n) + 20);
         });
-      nodos.classed("origen", (n) => origen === n.id);
     }
-
     function elegirParaConectar(n) {
       if (!origen) { origen = n.id; $("mapa-ayuda").textContent = "Ahora elige a qué panorama lleva desde " + n.nombre + "."; d3.selectAll(".nodo").classed("origen", (m) => m.id === origen); return; }
       if (origen === n.id) { origen = null; d3.selectAll(".nodo").classed("origen", false); return; }
-      const ya = salidas(origen).some((h) => h.destino === n.id);
-      if (ya) avisar("Ya existe un hotspot de " + nombreDe(origen) + " a " + n.nombre);
+      if (salidas(origen).some((h) => h.destino === n.id)) avisar("Ya existe un hotspot de " + nombreDe(origen) + " a " + n.nombre);
       else {
-        const v = escena(origen).vista || meta[origen].vista;
+        const v = vistaDe(origen);
         est.capas[origen].push({ id: nuevoId(), tipo: "hotspot", nombre: "Hotspot → " + n.nombre, visible: true, yaw: v.yaw, pitch: Math.min(0.3, (v.pitch || 0) + 0.15), destino: n.id });
         guardar();
-        avisar("Hotspot creado: " + nombreDe(origen) + " → " + n.nombre + ". Acomódalo en el editor.");
+        avisar("Hotspot creado: " + nombreDe(origen) + " → " + n.nombre + ". Acomódalo en Capas.");
       }
-      origen = null;
       modoConectar(false);
       dibujar();
     }
@@ -1073,54 +1271,159 @@
       d3.selectAll(".nodo").classed("origen", false);
     }
     $("conectar").addEventListener("click", () => modoConectar(!conectando));
-    window.addEventListener("resize", () => { if (!$("tab-mapa").hidden && !$("v-panoramas").hidden && $("editor").hidden) dibujar(); });
+    window.addEventListener("resize", () => { if (nav.sec === "panoramas" && nav.sub === "mapa") dibujar(); });
     return { dibujar };
   })();
 
-  // =================== PANORAMAS: EDITOR ===================
-  let motorEd = null;
+  // =================== PANORAMAS: EDITOR (Capas + Piloto) ===================
+  let motorEd = null, edPano = null, pilotoEd = null;
   const cs = () => est.capas[motorEd.actual.id];
   const buscar = (id) => cs().find((c) => c.id === id);
 
-  function abrirEditor(id) {
-    $("pano-indice").hidden = true;
-    $("editor").hidden = false;
-    $("b-sec").textContent = "Panoramas / " + nombreDe(id);
-    $("ed-nombre").textContent = nombreDe(id);
+  function abrirEditor(id, modo) {
+    edPano = id;
+    $("sel-pano").innerHTML = est.escenas.map((e) => '<option value="' + e.id + '"' + (e.id === id ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("");
     if (!motorEd) {
       motorEd = crearMotor($("ed-stage"), {
         editable: true,
         alSeleccionar: (cid) => seleccionar(cid),
         alCambiar: () => cambio(),
         alCerrarDibujo: () => terminarDibujo(true),
+        alInteractuar: () => { if (pilotoEd) detenerPilotoEd(); },
+        alMoverVista: () => { if (motorEd && motorEd.modo === "piloto") marcarPuntoActual(); },
       });
     }
     if (motorEd.dibujo) terminarDibujo(false);
+    detenerPilotoEd();
+    const cambia = !motorEd.actual || motorEd.actual.id !== id;
     motorEd.elegida = null;
-    motorEd.mostrar(id, 0);
-    pintarCapas();
-    pintarProps();
+    if (cambia) motorEd.mostrar(id, 0);
+    else motorEd.view().setParameters(vistaDe(id));
+    // Modo
+    const piloto = modo === "piloto";
+    $("izq-capas").hidden = piloto; $("der-capas").hidden = piloto;
+    $("izq-piloto").hidden = !piloto; $("der-piloto").hidden = !piloto;
+    $("pt-reproducir").hidden = !piloto;
+    $("mira").hidden = !piloto;
+    motorEd.setModo(piloto ? "piloto" : "capas");
+    if (piloto) { pintarRecorrido(); pintarAjustes(); } else { motorEd.ruta = null; pintarCapas(); pintarProps(); }
+    motorEd.render();
   }
   function cerrarEditor() {
     if (!motorEd) return;
     if (motorEd.dibujo) terminarDibujo(false);
+    detenerPilotoEd();
     motorEd.destruir();
     motorEd = null;
-    $("editor").hidden = true;
-    $("pano-indice").hidden = false;
-    $("b-sec").textContent = "Panoramas";
   }
-  $("volver").addEventListener("click", () => { cerrarEditor(); if (!$("tab-mapa").hidden) mapa.dibujar(); else pintarLista(); });
+  $("sel-pano").addEventListener("change", (e) => abrirEditor(e.target.value, nav.sub));
   $("ed-mas").addEventListener("click", () => { const v = motorEd.view(); v.setFov(v.fov() * 0.7); });
   $("ed-menos").addEventListener("click", () => { const v = motorEd.view(); v.setFov(v.fov() * 1.4); });
-  $("vista-inicial").addEventListener("click", () => {
-    const v = motorEd.view();
-    escena(motorEd.actual.id).vista = { yaw: +v.yaw().toFixed(4), pitch: +v.pitch().toFixed(4), fov: +v.fov().toFixed(4) };
+
+  // ---------- Piloto automático: editor ----------
+  const PL = () => escena(motorEd.actual.id).piloto;
+  const vistaActual = () => { const v = motorEd.view(); return { yaw: +v.yaw().toFixed(4), pitch: +v.pitch().toFixed(4), fov: +v.fov().toFixed(4) }; };
+  const grados = (r) => Math.round((r * 180) / Math.PI) + "°";
+  const zoomTxt = (fov) => Math.round(((Math.PI / 2) / fov) * 100) + "%";
+  function puntosRuta() { return [vistaDe(motorEd.actual.id)].concat(PL().puntos); }
+  function pintarRecorrido() {
+    const pts = puntosRuta();
+    motorEd.ruta = pts;
+    $("recorrido").innerHTML = pts.map((p, i) => {
+      const cab = '<div class="cab"><b>' + (i === 0 ? "Inicio" : "Punto " + (i + 1)) + "</b><small>" + grados(p.yaw) + " · " + grados(-p.pitch) + " · " + zoomTxt(p.fov) + "</small></div>";
+      const tiempos = i === 0 ? "" : '<div class="tiempos"><label>Viaje (s)<input type="number" min="0.5" max="60" step="0.5" value="' + p.viaje + '" data-i="' + i + '" data-k="viaje"></label><label>Pausa (s)<input type="number" min="0" max="60" step="0.5" value="' + p.pausa + '" data-i="' + i + '" data-k="pausa"></label></div>';
+      const acc = '<div class="acciones"><button class="mini" data-acc="ver" data-i="' + i + '">Ver</button><button class="mini" data-acc="fijar" data-i="' + i + '">Usar vista actual</button>' +
+        (i === 0 ? "" : (i > 1 ? '<button class="mini" data-acc="subir" data-i="' + i + '" aria-label="Subir punto">↑</button>' : "") + (i < pts.length - 1 ? '<button class="mini" data-acc="bajar" data-i="' + i + '" aria-label="Bajar punto">↓</button>' : "") + '<button class="mini peligro" data-acc="quitar" data-i="' + i + '" aria-label="Quitar punto">✕</button>') + "</div>";
+      return '<li class="punto" data-i="' + i + '"><span class="num">' + (i + 1) + "</span><div>" + cab + tiempos + acc + "</div></li>";
+    }).join("");
+    pintarDuracion();
+    motorEd.render();
+    marcarPuntoActual();
+  }
+  function marcarPuntoActual() {
+    if (!motorEd || motorEd.modo !== "piloto") return;
+    const v = motorEd.view(); if (!v) return;
+    const pts = puntosRuta();
+    let cerca = -1;
+    pts.forEach((p, i) => { if (Math.abs(Math.atan2(Math.sin(p.yaw - v.yaw()), Math.cos(p.yaw - v.yaw()))) < 0.02 && Math.abs(p.pitch - v.pitch()) < 0.02) cerca = i; });
+    if (motorEd.rutaActivo !== cerca) { motorEd.rutaActivo = cerca; document.querySelectorAll("#recorrido .punto").forEach((li) => li.classList.toggle("activo", +li.dataset.i === cerca)); }
+  }
+  $("recorrido").addEventListener("input", (ev) => {
+    const el = ev.target; if (!el.dataset.k) return;
+    const v = Math.max(+el.min, Math.min(+el.max, +el.value || 0));
+    PL().puntos[+el.dataset.i - 1][el.dataset.k] = v;
+    guardar(); pintarDuracion();
+  });
+  $("recorrido").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-acc]"); if (!b) return;
+    const i = +b.dataset.i, pl = PL(), id = motorEd.actual.id;
+    detenerPilotoEd();
+    if (b.dataset.acc === "ver") { const p = puntosRuta()[i]; motorEd.view().setParameters({ yaw: p.yaw, pitch: p.pitch, fov: p.fov }); return; }
+    if (b.dataset.acc === "fijar") {
+      const v = vistaActual();
+      if (i === 0) { escena(id).vista = v; avisar("Inicio actualizado: la esfera arranca aquí"); }
+      else { Object.assign(pl.puntos[i - 1], v); avisar("Punto " + (i + 1) + " actualizado"); }
+    }
+    if (b.dataset.acc === "quitar") pl.puntos.splice(i - 1, 1);
+    if (b.dataset.acc === "subir" && i > 1) { const [p] = pl.puntos.splice(i - 1, 1); pl.puntos.splice(i - 2, 0, p); }
+    if (b.dataset.acc === "bajar") { const [p] = pl.puntos.splice(i - 1, 1); pl.puntos.splice(i, 0, p); }
+    guardar(); pintarRecorrido(); pintarAjustes();
+  });
+  $("pt-agregar").addEventListener("click", () => {
+    detenerPilotoEd();
+    PL().puntos.push(Object.assign(vistaActual(), { viaje: 5, pausa: 1 }));
+    if (!PL().activo) PL().activo = true;
+    guardar(); pintarRecorrido(); pintarAjustes();
+    avisar("Punto " + puntosRuta().length + " agregado. Mueve la vista y agrega el siguiente.");
+  });
+  function duracionTotal() { return PL().puntos.reduce((s, p) => s + (+p.viaje || 0) + (+p.pausa || 0), 1.2); }
+  function pintarDuracion() { const el = $("dur-total"); if (el) el.textContent = "≈ " + Math.round(duracionTotal()) + " s"; }
+  function pintarAjustes() {
+    const pl = PL(), id = motorEd.actual.id;
+    const otras = est.escenas.filter((e) => e.id !== id);
+    $("ajustes-piloto").innerHTML =
+      '<div class="grupo"><label class="interruptor"><b>Activar piloto</b><input type="checkbox" class="toggle" id="pl-activo"' + (pl.activo ? " checked" : "") + "></label>" +
+      '<p class="nota">Con el piloto activo, la cámara recorre los puntos sola al entrar a este panorama.</p></div>' +
+      '<div class="duracion"><span class="nota">Duración del recorrido</span><b id="dur-total"></b></div>' +
+      '<div class="grupo"><b>Al terminar</b>' +
+      '<div class="campo"><span>Hacer</span><select id="pl-fin"><option value="repetir"' + (pl.alTerminar === "repetir" ? " selected" : "") + '>Repetir el recorrido</option><option value="siguiente"' + (pl.alTerminar === "siguiente" ? " selected" : "") + '>Pasar a otro panorama</option><option value="detener"' + (pl.alTerminar === "detener" ? " selected" : "") + ">Quedarse quieto</option></select></div>" +
+      (pl.alTerminar === "siguiente" ? '<div class="campo"><span>Panorama</span><select id="pl-sig">' + otras.map((e) => '<option value="' + e.id + '"' + (e.id === pl.siguiente ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("") + "</select></div>" : "") +
+      "</div>" +
+      '<div class="grupo"><b>Si el usuario toma el control</b><div class="campo"><span>Retomar en</span><div class="rango"><input type="range" id="pl-reanudar" min="3" max="30" step="1" value="' + (pl.reanudar || 8) + '" aria-label="Segundos para retomar"><span class="valor" id="pl-reanudar-v">' + (pl.reanudar || 8) + " s</span></div></div>" +
+      '<p class="nota">El piloto se pausa cuando el usuario mueve la esfera y retoma solo después de ese tiempo sin tocar.</p></div>';
+    if (pl.alTerminar === "siguiente" && !escena(pl.siguiente) && otras[0]) { pl.siguiente = otras[0].id; guardar(); }
+    pintarDuracion();
+  }
+  $("ajustes-piloto").addEventListener("change", (ev) => {
+    const pl = PL();
+    if (ev.target.id === "pl-activo") { pl.activo = ev.target.checked; avisar(pl.activo ? "Piloto activado" : "Piloto apagado"); }
+    if (ev.target.id === "pl-fin") { pl.alTerminar = ev.target.value; pintarAjustes(); }
+    if (ev.target.id === "pl-sig") pl.siguiente = ev.target.value;
     guardar();
-    avisar("Vista inicial guardada para " + nombreDe(motorEd.actual.id));
+  });
+  $("ajustes-piloto").addEventListener("input", (ev) => {
+    if (ev.target.id !== "pl-reanudar") return;
+    PL().reanudar = +ev.target.value; $("pl-reanudar-v").textContent = ev.target.value + " s"; guardar();
+  });
+  const BTN_PLAY = ICO_PLAY + "<span>Reproducir recorrido</span>", BTN_STOP = ICO_STOP + "<span>Detener</span>";
+  function detenerPilotoEd() {
+    if (pilotoEd) { pilotoEd.detener(); pilotoEd = null; }
+    const b = $("pt-reproducir"); b.setAttribute("aria-pressed", "false"); b.innerHTML = BTN_PLAY;
+  }
+  $("pt-reproducir").addEventListener("click", () => {
+    if (pilotoEd) return detenerPilotoEd();
+    if (!PL().puntos.length) return avisar("Agrega al menos un punto además del inicio");
+    const id = motorEd.actual.id;
+    motorEd.view().setParameters(vistaDe(id));
+    $("pt-reproducir").setAttribute("aria-pressed", "true"); $("pt-reproducir").innerHTML = BTN_STOP;
+    pilotoEd = reproducirPiloto(motorEd, id, {
+      demoraInicial: 0.6,
+      alSiguiente: (sig) => { detenerPilotoEd(); avisar("Aquí el tour pasaría a " + nombreDe(sig)); },
+      alFin: () => { detenerPilotoEd(); avisar("Recorrido terminado"); },
+    });
   });
 
-  // Dibujo de polígonos
+  // ---------- Capas ----------
   function banda(html) { $("banda").hidden = !html; $("banda").innerHTML = html || ""; }
   function empezarDibujo() {
     motorEd.dibujo = { puntos: [], cursor: null };
@@ -1172,7 +1475,6 @@
     cs().push(c); motorEd.elegida = c.id; cambio();
   });
 
-  // Lista de capas
   const ICONOS = {
     poligono: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 7l9-3 7 8-5 8-10-3z"/></svg>',
     texto: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13"/></svg>',
@@ -1220,7 +1522,6 @@
   });
   $("lista").addEventListener("dragend", () => { arrastrandoId = null; pintarCapas(); });
 
-  // Propiedades
   const MUESTRAS = [LIMA, NEGRO, BLANCO, "#FF5A4E", "#3DA9FC", "#FFB020"];
   const pct = (v) => Math.round(v * 100) + "%";
   const px = (v) => v + " px";
@@ -1307,15 +1608,15 @@
   });
   $("restablecer").addEventListener("click", () => {
     est = JSON.parse(original);
-    est.escenas.forEach((e) => { est.capas[e.id] = est.capas[e.id] || []; });
-    try { localStorage.removeItem(CLAVE); } catch (e) { /* sin almacenamiento */ }
+    normalizar();
+    try { localStorage.removeItem(CLAVE); localStorage.removeItem(CLAVE_V1); } catch (e) { /* sin almacenamiento */ }
     const id = motorEd.actual.id;
     motorEd.elegida = null; motorEd.mostrar(id, 0); pintarCapas(); pintarProps(); guardar();
     avisar("Demo restablecida");
   });
   document.addEventListener("keydown", (ev) => {
     if (!$("previa").hidden) { if (ev.key === "Escape") cerrarPrevia(); return; }
-    if (!motorEd) return;
+    if (!motorEd || motorEd.modo !== "capas") return;
     const escribiendo = /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName);
     if (motorEd.dibujo) {
       if (ev.key === "Enter") terminarDibujo(true);
@@ -1329,74 +1630,233 @@
     if (ev.key === "Escape") seleccionar(null);
   });
 
+  // =================== SKIN DEL TOUR ===================
+  const hexRgb = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  const textoSobre = (h) => { const [r, g, b] = hexRgb(h); return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? NEGRO : BLANCO; };
+  const ICO_SK = {
+    musica: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>',
+    mudo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6M21 9l-5 6"/></svg>',
+    pantalla: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+    cerrar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+    mas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
+    menos: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>',
+  };
+
+  // Dibuja la interfaz del tour (skin) sobre una esfera. o: { orientacion, motor, cerrable, alCerrar, hayMusica, alMusica, alPantalla }
+  function renderSkin(ui, o) {
+    const sk = est.skin, vertical = o.orientacion === "v";
+    const [r, g, b] = hexRgb(sk.panel);
+    ui.className = "sk " + (vertical ? "sk--v" : "sk--h") + (sk.botones.zoom ? " sk--zoom" : "");
+    ui.style.setProperty("--sk-acento", sk.acento);
+    ui.style.setProperty("--sk-sobre", textoSobre(sk.acento));
+    ui.style.setProperty("--sk-panel", "rgba(" + r + "," + g + "," + b + "," + sk.opacidad + ")");
+    ui.style.setProperty("--sk-radio", sk.radio + "px");
+    ui.style.setProperty("--sk-radio-btn", sk.radio >= 14 ? "50%" : sk.radio + "px");
+    ui.style.setProperty("--sk-radio-item", Math.max(0, sk.radio - 5) + "px");
+    ui.style.setProperty("--sk-radio-img", Math.max(0, sk.radio - 8) + "px");
+    const logo = sk.logo.tipo === "propio" && sk.logo.img ? '<img class="sk-logo-img" src="' + sk.logo.img + '" alt="">' : '<svg class="sk-logo-iso" viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg>';
+    const marca = '<div class="sk-marca sk-panel' + (sk.logo.posicion === "centro" ? " centro" : "") + '">' + logo + (sk.nombre ? "<b>" + esc(P().nombre) + "</b>" : "") + "</div>";
+    const btn = (k, ico, etq) => '<button class="sk-btn sk-panel" data-sk="' + k + '" aria-label="' + etq + '">' + ico + "</button>";
+    let botones = "";
+    if (sk.botones.musica && o.hayMusica) botones += btn("musica", ICO_SK.musica, "Silenciar música");
+    if (sk.botones.pantalla) botones += btn("pantalla", ICO_SK.pantalla, "Pantalla completa");
+    if (o.cerrable) botones += btn("cerrar", ICO_SK.cerrar, "Cerrar vista previa");
+    const estilo = sk.menu.estilo, pos = vertical ? "abajo" : sk.menu.posicion;
+    const menu = sk.menu.mostrar ? '<nav class="sk-menu sk-panel sk-menu--' + estilo + " sk-menu--" + pos + '" aria-label="Panoramas">' +
+      est.escenas.map((e) => '<button class="sk-item" data-id="' + e.id + '">' + (estilo === "miniaturas" ? '<img src="' + thumbDe(e.id) + '" alt="">' : "") + "<span>" + esc(e.nombre) + "</span></button>").join("") + "</nav>" : "";
+    const zoom = sk.botones.zoom ? '<div class="sk-zoom">' + btn("mas", ICO_SK.mas, "Acercar") + btn("menos", ICO_SK.menos, "Alejar") + "</div>" : "";
+    const piloto = sk.botones.piloto ? '<div class="sk-piloto sk-panel" hidden><i></i>Piloto automático · toca para tomar el control</div>' : "";
+    ui.innerHTML = '<div class="sk-top">' + marca + '<div class="sk-btns">' + botones + "</div></div>" + piloto + menu + zoom;
+    ui.onclick = (ev) => {
+      const it = ev.target.closest(".sk-item");
+      if (it && o.motor()) { o.motor().mostrar(it.dataset.id); return; }
+      const bt = ev.target.closest("[data-sk]");
+      if (!bt) return;
+      const k = bt.dataset.sk, v = o.motor() && o.motor().view();
+      if (k === "mas" && v) v.setFov(v.fov() * 0.75);
+      if (k === "menos" && v) v.setFov(v.fov() * 1.33);
+      if (k === "cerrar" && o.alCerrar) o.alCerrar();
+      if (k === "pantalla") { if (o.alPantalla) o.alPantalla(); }
+      if (k === "musica" && o.alMusica) { const sonando = o.alMusica(); bt.innerHTML = sonando ? ICO_SK.musica : ICO_SK.mudo; bt.setAttribute("aria-label", sonando ? "Silenciar música" : "Reproducir música"); }
+    };
+    return {
+      escena(id) { ui.querySelectorAll(".sk-item").forEach((c) => c.setAttribute("aria-current", c.dataset.id === id ? "true" : "false")); },
+      piloto(on) { const p = ui.querySelector(".sk-piloto"); if (p) p.hidden = !on; },
+    };
+  }
+
+  // Une un motor con su skin y su piloto automático (vista previa y editor de skin)
+  function crearTour(stage, ui, o) {
+    let motor = null, piloto = null, api = null, actualId = null;
+    function arrancarPiloto(id) {
+      if (piloto) { piloto.detener(); piloto = null; }
+      const pl = escena(id).piloto, activo = pl.activo && pl.puntos.length > 0;
+      api.piloto(activo);
+      if (!activo) return;
+      piloto = reproducirPiloto(motor, id, {
+        alSiguiente: (sig) => motor && motor.mostrar(sig, 900),
+        alFin: () => api.piloto(false),
+      });
+    }
+    const pintar = (orientacion) => { api = renderSkin(ui, Object.assign({}, o, { orientacion, motor: () => motor })); if (actualId) api.escena(actualId); };
+    pintar(o.orientacion);
+    motor = crearMotor(stage, {
+      editable: false,
+      alMostrar: (id) => { actualId = id; api.escena(id); arrancarPiloto(id); },
+      alInteractuar: () => { if (piloto) piloto.interrumpir(true); },
+    });
+    motor.mostrar(o.inicio || P().escenaInicial, 0);
+    return {
+      repintar(orientacion) { pintar(orientacion); if (piloto) api.piloto(true); },
+      destruir() { if (piloto) piloto.detener(); motor.destruir(); motor = null; ui.innerHTML = ""; ui.onclick = null; },
+    };
+  }
+
+  // ---------- Editor de skin ----------
+  let tourSk = null;
+  const SK = () => est.skin;
+  function abrirSkin(sub) {
+    const v = sub === "v";
+    $("sk-marco").className = "marco " + (v ? "marco--v" : "marco--h");
+    $("sk-leyenda").innerHTML = v ? "<b>9:16</b> · Así lo ve tu cliente en el celular" : "<b>16:9</b> · Así lo ve tu cliente en compu y pantallas";
+    if (tourSk) tourSk.destruir();
+    tourSk = crearTour($("sk-stage"), $("sk-ui"), {
+      orientacion: v ? "v" : "h", hayMusica: !!musicaUrl,
+      alMusica: () => true, alPantalla: () => avisar("En el tour publicado esto abre pantalla completa"),
+    });
+    pintarPanelSkin();
+    ajustarMarco();
+  }
+  function cerrarSkin() { if (tourSk) { tourSk.destruir(); tourSk = null; } }
+  function ajustarMarco() {
+    const caja = $("sk-vista"), m = $("sk-marco");
+    if (caja.hidden || !caja.clientWidth) return;
+    const w = m.offsetWidth, h = m.offsetHeight, aw = caja.clientWidth - 48, ah = caja.clientHeight - 80;
+    const s = Math.min(aw / w, ah / h, 1);
+    m.style.transform = "scale(" + s + ")";
+    m.style.left = (caja.clientWidth - w * s) / 2 + "px";
+    m.style.top = 48 + (ah - h * s) / 2 + "px";
+  }
+  new ResizeObserver(ajustarMarco).observe($("sk-vista"));
+
+  const SK_MUESTRAS = [LIMA, BLANCO, "#3DA9FC", "#FF5A4E", "#FFB020", "#9B7BFF"];
+  const seg = (k, val, opciones) => '<div class="seg" role="group">' + opciones.map(([v, n]) => '<button data-sk-k="' + k + '" data-v="' + v + '" aria-pressed="' + (String(val) === String(v)) + '">' + n + "</button>").join("") + "</div>";
+  const tgl = (k, on, etq) => '<label class="interruptor"><span style="font-size:12px">' + etq + '</span><input type="checkbox" class="toggle" data-sk-k="' + k + '"' + (on ? " checked" : "") + "></label>";
+  function pintarPanelSkin() {
+    const sk = SK(), vertical = nav.sub === "v";
+    const logoMuestra = sk.logo.tipo === "propio" && sk.logo.img ? '<img src="' + sk.logo.img + '" alt="Logo del cliente">' : '<svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg>';
+    $("sk-panel").innerHTML =
+      '<div class="grupo"><b>Marca</b>' +
+      '<div class="logo-fila"><span class="muestra-logo">' + logoMuestra + "</span>" + seg("logo.tipo", sk.logo.tipo, [["mozari", "Mozari"], ["propio", "Logo del cliente"]]) + "</div>" +
+      (sk.logo.tipo === "propio" ? '<label class="btn-sec" for="sk-logo-archivo" style="justify-self:start">' + (sk.logo.img ? "Cambiar logo" : "Subir logo (PNG o SVG)") + '</label><input type="file" id="sk-logo-archivo" accept="image/png,image/svg+xml,image/webp,image/jpeg" hidden>' : "") +
+      campo("Posición", seg("logo.posicion", sk.logo.posicion, [["izq", "Izquierda"], ["centro", "Centro"]])) +
+      tgl("nombre", sk.nombre, "Mostrar el nombre del tour") + "</div>" +
+      '<div class="grupo"><b>Colores</b>' +
+      campo("Acento", '<div class="color"><input type="color" data-sk-k="acento" value="' + sk.acento + '" aria-label="Color de acento">' + SK_MUESTRAS.map((m) => '<button class="muestra" style="background:' + m + '" data-sk-k="acento" data-v="' + m + '" aria-label="Usar ' + m + '"></button>').join("") + "</div>") +
+      campo("Paneles", '<div class="color"><input type="color" data-sk-k="panel" value="' + sk.panel + '" aria-label="Color de paneles">' + [NEGRO, "#1B2430", "#FFFFFF"].map((m) => '<button class="muestra" style="background:' + m + '" data-sk-k="panel" data-v="' + m + '" aria-label="Usar ' + m + '"></button>').join("") + "</div>") +
+      campo("Opacidad", '<div class="rango"><input type="range" data-sk-k="opacidad" min="0.3" max="1" step="0.02" value="' + sk.opacidad + '" aria-label="Opacidad de paneles"><span class="valor" id="sk-op-v">' + Math.round(sk.opacidad * 100) + "%</span></div>") +
+      campo("Esquinas", '<div class="rango"><input type="range" data-sk-k="radio" min="0" max="24" step="1" value="' + sk.radio + '" aria-label="Redondeo de esquinas"><span class="valor" id="sk-radio-v">' + sk.radio + " px</span></div>") + "</div>" +
+      '<div class="grupo"><b>Menú de panoramas</b>' + tgl("menu.mostrar", sk.menu.mostrar, "Mostrar menú") +
+      (sk.menu.mostrar ? campo("Estilo", seg("menu.estilo", sk.menu.estilo, [["miniaturas", "Miniaturas"], ["pastillas", "Pastillas"]])) +
+        (vertical ? '<p class="nota">En 9:16 el menú va siempre abajo, para el pulgar.</p>' : campo("Posición", seg("menu.posicion", sk.menu.posicion, [["abajo", "Abajo"], ["izquierda", "Izquierda"]]))) : "") + "</div>" +
+      '<div class="grupo"><b>Botones</b>' + tgl("botones.pantalla", sk.botones.pantalla, "Pantalla completa") + tgl("botones.musica", sk.botones.musica, "Música (si el tour tiene)") +
+      tgl("botones.zoom", sk.botones.zoom, "Zoom + / −") + tgl("botones.piloto", sk.botones.piloto, "Aviso de piloto automático") + "</div>";
+  }
+  function setSk(k, v) {
+    const ks = k.split("."), u = ks.pop();
+    ks.reduce((o, x) => o[x], SK())[u] = v;
+    guardar();
+  }
+  $("sk-panel").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button[data-sk-k]");
+    if (!b) return;
+    setSk(b.dataset.skK, b.dataset.v);
+    pintarPanelSkin(); tourSk && tourSk.repintar(nav.sub === "v" ? "v" : "h");
+  });
+  $("sk-panel").addEventListener("input", (ev) => {
+    const el = ev.target, k = el.dataset.skK;
+    if (!k || el.type === "checkbox") return;
+    const v = el.type === "range" ? +el.value : el.value;
+    setSk(k, v);
+    if (k === "opacidad") $("sk-op-v").textContent = Math.round(v * 100) + "%";
+    if (k === "radio") $("sk-radio-v").textContent = v + " px";
+    tourSk && tourSk.repintar(nav.sub === "v" ? "v" : "h");
+  });
+  $("sk-panel").addEventListener("change", (ev) => {
+    const el = ev.target;
+    if (el.id === "sk-logo-archivo") return subirLogo(el);
+    if (el.type !== "checkbox" || !el.dataset.skK) return;
+    setSk(el.dataset.skK, el.checked);
+    pintarPanelSkin(); tourSk && tourSk.repintar(nav.sub === "v" ? "v" : "h");
+  });
+  function subirLogo(input) {
+    const f = input.files[0];
+    if (!f) return;
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, 480 / Math.max(img.naturalWidth || 480, 1));
+      const c = document.createElement("canvas");
+      c.width = Math.round((img.naturalWidth || 480) * s); c.height = Math.round((img.naturalHeight || 160) * s);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      setSk("logo.img", c.toDataURL("image/png"));
+      URL.revokeObjectURL(img.src);
+      pintarPanelSkin(); tourSk && tourSk.repintar(nav.sub === "v" ? "v" : "h");
+      avisar("Logo del cliente aplicado");
+    };
+    img.onerror = () => avisar("No se pudo leer ese archivo");
+    img.src = URL.createObjectURL(f);
+  }
+  $("sk-reset").addEventListener("click", () => {
+    est.skin = JSON.parse(JSON.stringify(SKIN_DEF)); guardar();
+    pintarPanelSkin(); tourSk && tourSk.repintar(nav.sub === "v" ? "v" : "h");
+    avisar("Skin Mozari restablecido");
+  });
+
   // =================== VISTA PREVIA ===================
-  let motorPv = null;
+  let tourPv = null, orientPv = "h";
   const audioTour = new Audio();
+  const orientacionPantalla = () => (window.innerWidth < window.innerHeight ? "v" : "h");
   function abrirPrevia() {
     if (motorEd && motorEd.dibujo) terminarDibujo(false);
+    detenerPilotoEd();
     $("previa").hidden = false;
     $("pv-carga").hidden = false;
-    $("pv-nombre").textContent = P().nombre;
-    $("pv-titulo").textContent = P().nombre;
-    $("pv-audio").hidden = !musicaUrl;
     audioPrueba.pause(); $("m-play").innerHTML = ICO_PLAY;
-    $("pv-escenas").innerHTML = est.escenas.map((e) => '<button class="chip" data-id="' + e.id + '">' + esc(e.nombre) + "</button>").join("");
-    motorPv = crearMotor($("pv-stage"), {
-      editable: false,
-      alMostrar: (id) => document.querySelectorAll("#pv-escenas .chip").forEach((c) => c.setAttribute("aria-current", c.dataset.id === id ? "true" : "false")),
+    orientPv = orientacionPantalla();
+    tourPv = crearTour($("pv-stage"), $("pv-ui"), {
+      orientacion: orientPv, cerrable: true, alCerrar: cerrarPrevia, hayMusica: !!musicaUrl,
+      alMusica: () => { if (audioTour.paused) { audioTour.play().catch(() => {}); return true; } audioTour.pause(); return false; },
+      alPantalla: () => {
+        const el = $("previa");
+        try { if (document.fullscreenElement) document.exitFullscreen(); else if (el.requestFullscreen) el.requestFullscreen().catch(() => {}); } catch (e) { /* no disponible */ }
+      },
     });
-    const inicio = P().escenaInicial;
-    const vistaFinal = escena(inicio).vista || meta[inicio].vista;
-    if (P().littlePlanet) {
-      $("pv-planeta").src = planetaDe(inicio);
-      $("pv-intro").hidden = false;
-      $("pv-intro").classList.remove("saliendo");
-      motorPv.mostrar(inicio, 0);
-      motorPv.view().setParameters({ yaw: vistaFinal.yaw, pitch: Math.PI / 2 - 0.02, fov: (110 * Math.PI) / 180 });
-      $("pv-entrar").focus();
-    } else {
-      $("pv-intro").hidden = true;
-      motorPv.mostrar(inicio, 0);
-      sonar();
-    }
+    sonar();
     setTimeout(() => ($("pv-carga").hidden = true), 300);
   }
+  window.addEventListener("resize", () => {
+    if (!tourPv) return;
+    const o = orientacionPantalla();
+    if (o !== orientPv) { orientPv = o; tourPv.repintar(o); }
+  });
   function sonar() {
     if (!musicaUrl) return;
     audioTour.src = musicaUrl;
     audioTour.loop = !!P().musica.repetir;
     audioTour.volume = P().musica.volumen;
     audioTour.play().catch(() => {});
-    $("pv-audio").setAttribute("aria-label", "Silenciar música");
   }
-  $("pv-entrar").addEventListener("click", () => {
-    const inicio = P().escenaInicial, fin = escena(inicio).vista || meta[inicio].vista;
-    sonar();
-    $("pv-intro").classList.add("saliendo");
-    const v = motorPv.view(), desde = { pitch: v.pitch(), fov: v.fov() }, t0 = performance.now(), dur = 1800;
-    const suave = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-    (function paso(t) {
-      const k = Math.min(1, (t - t0) / dur), e = suave(k);
-      v.setParameters({ yaw: fin.yaw - (1 - e) * 1.2, pitch: desde.pitch + (fin.pitch - desde.pitch) * e, fov: desde.fov + (fin.fov - desde.fov) * e });
-      if (k < 1 && motorPv) requestAnimationFrame(paso); else $("pv-intro").hidden = true;
-    })(t0);
-  });
-  $("pv-escenas").addEventListener("click", (ev) => { const b = ev.target.closest(".chip"); if (b && motorPv) motorPv.mostrar(b.dataset.id); });
-  $("pv-audio").addEventListener("click", () => {
-    if (audioTour.paused) { audioTour.play().catch(() => {}); $("pv-audio").setAttribute("aria-label", "Silenciar música"); }
-    else { audioTour.pause(); $("pv-audio").setAttribute("aria-label", "Reproducir música"); }
-  });
   function cerrarPrevia() {
     audioTour.pause();
-    if (motorPv) { motorPv.destruir(); motorPv = null; }
+    try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { /* nada */ }
+    if (tourPv) { tourPv.destruir(); tourPv = null; }
     $("previa").hidden = true;
   }
-  $("pv-cerrar").addEventListener("click", cerrarPrevia);
   ["abrir-previa", "r-previa", "mv-previa"].forEach((id) => $(id).addEventListener("click", abrirPrevia));
 
   // =================== ARRANQUE ===================
-  pintarProyecto();
-  pintarLista();
+  pintarResumen();
+  ir("proyecto", "general");
 })();
 </script>
 </body>

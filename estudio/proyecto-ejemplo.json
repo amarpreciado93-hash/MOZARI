@@ -3,7 +3,6 @@
   "proyecto": {
     "nombre": "Demo Mozari",
     "escenaInicial": "playa-linda",
-    "littlePlanet": true,
     "musica": {
       "volumen": 0.6,
       "repetir": true
@@ -12,11 +11,65 @@
   "escenas": [
     {
       "id": "playa-linda",
-      "nombre": "Playa Linda"
+      "nombre": "Playa Linda",
+      "piloto": {
+        "activo": true,
+        "puntos": [
+          {
+            "yaw": 1.25,
+            "pitch": 0.18,
+            "fov": 1.25,
+            "viaje": 6,
+            "pausa": 1
+          },
+          {
+            "yaw": 2.55,
+            "pitch": 0.22,
+            "fov": 1.05,
+            "viaje": 5,
+            "pausa": 2
+          }
+        ],
+        "alTerminar": "siguiente",
+        "siguiente": "interior",
+        "reanudar": 8
+      },
+      "vista": {
+        "yaw": 0,
+        "pitch": 0.05,
+        "fov": 1.45
+      }
     },
     {
       "id": "fachada",
-      "nombre": "Fachada"
+      "nombre": "Fachada",
+      "piloto": {
+        "activo": true,
+        "puntos": [
+          {
+            "yaw": 1.6,
+            "pitch": 0.05,
+            "fov": 1.3,
+            "viaje": 5,
+            "pausa": 1.5
+          },
+          {
+            "yaw": -1.9,
+            "pitch": 0.05,
+            "fov": 1.4,
+            "viaje": 7,
+            "pausa": 1.5
+          }
+        ],
+        "alTerminar": "repetir",
+        "siguiente": "",
+        "reanudar": 8
+      },
+      "vista": {
+        "yaw": 0,
+        "pitch": 0.05,
+        "fov": 1.45
+      }
     },
     {
       "id": "interior",
@@ -25,6 +78,28 @@
         "yaw": -0.12,
         "pitch": 0.62,
         "fov": 1.3
+      },
+      "piloto": {
+        "activo": true,
+        "puntos": [
+          {
+            "yaw": -0.2,
+            "pitch": 0.78,
+            "fov": 0.62,
+            "viaje": 5,
+            "pausa": 2.5
+          },
+          {
+            "yaw": 1.0,
+            "pitch": 0.32,
+            "fov": 1.35,
+            "viaje": 6,
+            "pausa": 1
+          }
+        ],
+        "alTerminar": "repetir",
+        "siguiente": "",
+        "reanudar": 8
       }
     }
   ],
