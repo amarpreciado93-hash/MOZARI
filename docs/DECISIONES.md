@@ -63,3 +63,6 @@
 | 2026-10-28 | Ventanas del tour (ficha, imagen, página) centradas y medidas contra su contenedor (container queries), no contra la ventana del navegador | Se ven bien en 16:9, 9:16 y dentro del marco del editor de skin |
 | 2026-10-28 | Borrar panoramas desde Lista con confirmación en la tarjeta; se quitan sus capas, los hotspots que llevan a él y referencias (piloto, terreno, inicio); se puede deshacer; no reaparece aunque venga en el archivo del proyecto | Limpiar el tour sin romper conexiones |
 | 2026-10-28 | Rótulos y medidas de lotes en una capa propia encima de todos los rellenos (y debajo de textos y hotspots) | El relleno de un lote vecino ya no tapa las medidas |
+| 2026-10-28 | Modo presentación en Proyecto → Presentación: si nadie toca el tour durante el tiempo elegido (10 s a 5 min, 1 min por defecto), pasa solo a la siguiente esfera; al final vuelve a la primera o se queda | Pantallas en salas de venta y ferias |
+| 2026-10-28 | Cada esfera decide: "Pasa a la siguiente", "Se queda aquí" o "Se salta"; el orden se cambia con flechas y es el mismo orden de Panoramas | Detener la presentación en la esfera clave sin apagarla |
+| 2026-10-28 | La presentación espera a que termine el piloto automático de la esfera y llega "de frente" si hay hotspot entre las dos; no corre en el editor de skin | Que no corte recorridos ni brinque raro |
