@@ -67,3 +67,7 @@
 | 2026-10-28 | Cada esfera decide: "Pasa a la siguiente", "Se queda aquí" o "Se salta"; el orden se cambia con flechas y es el mismo orden de Panoramas | Detener la presentación en la esfera clave sin apagarla |
 | 2026-10-28 | La presentación espera a que termine el piloto automático de la esfera y llega "de frente" si hay hotspot entre las dos; no corre en el editor de skin | Que no corte recorridos ni brinque raro |
 | 2026-10-28 | Medidas de lote en blanco y seminegrita con sombra fina; se corrigió un choque de nombres de estilo que las pintaba grises (parecían debajo del relleno) | Se leen sobre cualquier color y opacidad de relleno |
+| 2026-10-28 | Nube en Cloudflare con dos Workers sobre un mismo R2: `mozari-estudio` (privado, detrás de Cloudflare Access) y `mozari-tours` (público, solo lectura) | Separar lo que se edita de lo que ve el público; el público no puede escribir nada |
+| 2026-10-28 | El estudio exige token válido de Cloudflare Access (firma, AUD, vencimiento, emisor); sin configuración no deja entrar a nadie | Seguro por defecto |
+| 2026-10-28 | "Publicar" copia el borrador a `publicado/<id>/proyecto.json`; el público nunca ve el borrador | Editar sin romper el tour que ya está en manos del cliente |
+| 2026-10-28 | Despliegue automático conectando el repo de GitHub a Cloudflare (Workers Builds); cada Push origin publica | Sin comandos ni pasos manuales |

@@ -1,0 +1,5 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Tour</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0B0B0B;color:#F2F5EC;font:15px/1.5 system-ui,sans-serif;text-align:center}</style></head>
+<body><div><p>Visor público de Mozari: se conecta en el siguiente bloque.</p><pre id="d" style="color:#9CA38F"></pre></div>
+<script>fetch("proyecto.json").then(r=>r.json()).then(p=>{document.getElementById("d").textContent=p.proyecto.nombre+" · "+p.escenas.length+" panoramas";});</script></body></html>

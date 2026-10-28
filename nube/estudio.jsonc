@@ -1,0 +1,21 @@
+{
+  // Mozari · ESTUDIO (privado). Protégelo con Cloudflare Access y copia aquí los dos datos que te da.
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "mozari-estudio",
+  "main": "estudio.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "../estudio",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/t/*"]
+  },
+  "r2_buckets": [{ "binding": "R2", "bucket_name": "mozari" }],
+  "vars": {
+    // Equipo de Access, por ejemplo "r360.cloudflareaccess.com"
+    "ACCESS_EQUIPO": "",
+    // "Application Audience (AUD) Tag" de la aplicación de Access
+    "ACCESS_AUD": ""
+  }
+}
