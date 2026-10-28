@@ -315,19 +315,70 @@
   .mira::before, .mira::after { content: ""; position: absolute; background: rgba(255, 255, 255, 0.85); box-shadow: 0 0 4px rgba(0, 0, 0, 0.6); }
   .mira::before { left: 12px; top: 0; width: 2px; height: 26px; }
   .mira::after { top: 12px; left: 0; height: 2px; width: 26px; }
-  .cp-texto { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); white-space: nowrap; pointer-events: auto; padding: 4px 10px; border-radius: var(--mz-pastilla); line-height: 1.3; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35); }
+  .cp-texto { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); white-space: nowrap; pointer-events: auto; padding: 0.28em 0.7em; border-radius: var(--mz-pastilla); line-height: 1.3; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35); }
   .cp-texto.con-fondo { text-shadow: none; }
-  .hs { width: 0; height: 0; pointer-events: auto; }
-  .hs-boton { position: absolute; left: -24px; top: -24px; width: 48px; height: 48px; border: 0; padding: 0; border-radius: 50%; cursor: pointer; background: transparent; display: grid; place-items: center; }
-  .hs-nucleo { width: 34px; height: 34px; border-radius: 50%; background: var(--hs-color, var(--mz-lima)); color: var(--hs-sobre, var(--mz-negro)); display: grid; place-items: center; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45); animation: respira 2.4s ease-in-out infinite; }
-  .hs-nucleo svg { width: 16px; height: 16px; }
-  .hs-boton::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--hs-color, var(--mz-lima)); opacity: 0; animation: onda 2.4s ease-out infinite; }
-  .hs-boton img { width: 48px; height: 48px; object-fit: contain; }
+  .hs { width: 0; height: 0; pointer-events: auto; --hs-tam: 48px; }
+  .hs-boton { position: absolute; left: calc(var(--hs-tam) / -2); top: calc(var(--hs-tam) / -2); width: var(--hs-tam); height: var(--hs-tam); border: 0; padding: 0; border-radius: 50%; cursor: pointer; background: transparent; display: grid; place-items: center; }
+  .hs-nucleo { width: 70%; height: 70%; border-radius: 50%; background: var(--hs-color, var(--mz-lima)); color: var(--hs-sobre, var(--mz-negro)); display: grid; place-items: center; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45); animation: respira 2.4s ease-in-out infinite; }
+  .hs-nucleo svg { width: 46%; height: 46%; }
+  .hs-boton::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: calc(var(--hs-tam) * 0.042) solid var(--hs-color, var(--mz-lima)); opacity: 0; animation: onda 2.4s ease-out infinite; }
+  .hs-boton img { width: 100%; height: 100%; object-fit: contain; }
   .hs-boton.con-icono::before, .hs-boton.con-icono .hs-nucleo { display: none; }
   .hs-boton:hover .hs-nucleo { animation-play-state: paused; transform: scale(1.12); }
-  .hs-texto { position: absolute; left: 0; top: 30px; transform: translateX(-50%); padding: 5px 12px; border-radius: var(--mz-pastilla); white-space: nowrap; background: var(--mz-vidrio); border: 1px solid var(--mz-linea); color: var(--mz-texto); font-size: 12px; font-weight: 500; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
+  .hs-texto { position: absolute; left: 0; top: calc(var(--hs-tam) / 2 + 0.5em); transform: translateX(-50%); padding: 0.42em 1em; border-radius: var(--mz-pastilla); white-space: nowrap; background: var(--mz-vidrio); border: 1px solid var(--mz-linea); color: var(--mz-texto); font-size: 1em; font-weight: 500; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
   .hs:hover .hs-texto, .editable .hs-texto { opacity: 1; }
-  .cp.elegida .cp-texto, .cp.elegida .hs-nucleo { outline: 2px dashed #fff; outline-offset: 4px; }
+  .cp.elegida:not(.en3d) .cp-texto, .cp.elegida:not(.en3d) .hs-nucleo { outline: 2px dashed #fff; outline-offset: 4px; }
+  /* Textos y hotspots pegados a la esfera (3D) */
+  .cp.en3d { width: max-content; }
+  .cp.en3d .cp-texto { position: static; transform: none; display: block; }
+  .hs.en3d { width: var(--hs-tam); height: var(--hs-tam); }
+  .hs.en3d .hs-boton { left: 0; top: 0; }
+  .hs.en3d .hs-texto { left: 50%; top: calc(100% + 0.5em); }
+  .cp.con-accion, .cp-pol.con-accion { cursor: pointer; }
+  .inerte .cp, .inerte .cp * { pointer-events: none !important; }
+  .asas { pointer-events: none; }
+  .asa-marco { fill: none; stroke: #fff; stroke-width: 1.2; stroke-dasharray: 5 4; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)); }
+  .asa { fill: #fff; stroke: var(--mz-negro); stroke-width: 1.5; pointer-events: all; }
+  .asa-rotar { fill: var(--mz-lima); cursor: grab; }
+  .asa-escala { cursor: nwse-resize; }
+  .asa-ancho { cursor: ew-resize; }
+  .asa-alto { cursor: ns-resize; }
+  /* Precisión al dibujar: mira visible y lupa ×3 */
+  .stage.precisando, .stage.precisando * { cursor: none !important; }
+  .mira-cursor { position: absolute; left: 0; top: 0; z-index: 7; width: 0; height: 0; pointer-events: none; filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000); }
+  .mira-cursor::before, .mira-cursor::after { content: ""; position: absolute; background: linear-gradient(var(--d, 90deg), #fff 0 40%, transparent 40% 60%, #fff 60%); }
+  .mira-cursor::before { left: -16px; top: -0.75px; width: 32px; height: 1.5px; }
+  .mira-cursor::after { --d: 180deg; left: -0.75px; top: -16px; width: 1.5px; height: 32px; }
+  .mira-cursor i { position: absolute; left: -2px; top: -2px; width: 4px; height: 4px; border-radius: 50%; background: var(--mz-lima); }
+  .lupa { position: absolute; left: 0; top: 0; z-index: 8; width: 168px; height: 168px; border-radius: 50%; overflow: hidden; border: 2px solid var(--mz-lima); box-shadow: 0 12px 34px rgba(0, 0, 0, 0.6); pointer-events: none; background: #000; }
+  .lupa-stage { position: absolute; inset: 0; }
+  .lupa-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .lupa-pol { fill: none; stroke: rgba(255, 255, 255, 0.9); stroke-width: 1.2; }
+  .lupa-dib { fill: none; stroke: var(--mz-lima); stroke-width: 1.6; stroke-dasharray: 6 3; }
+  .lupa-mira { position: absolute; left: 50%; top: 50%; width: 0; height: 0; filter: drop-shadow(0 0 1px #000); }
+  .lupa-mira::before, .lupa-mira::after { content: ""; position: absolute; background: #fff; }
+  .lupa-mira::before { left: -12px; top: -0.5px; width: 24px; height: 1px; }
+  .lupa-mira::after { left: -0.5px; top: -12px; width: 1px; height: 24px; }
+  .lupa-x { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 600; letter-spacing: 0.04em; background: rgba(11, 11, 11, 0.75); padding: 2px 8px; border-radius: 999px; color: var(--mz-lima); }
+  .img-accion { display: grid; gap: 8px; }
+  .img-accion img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 10px; border: 1px solid var(--mz-linea-neutra); display: block; }
+  .img-accion .mini { justify-self: start; }
+  /* Ventanas del tour (página e imagen). Neutras: son parte del tour, no del software */
+  .pop { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; padding: 24px; background: rgba(0, 0, 0, 0.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-family: var(--mz-texto-ui); }
+  .pop-caja { position: relative; background: #0F0F0F; border-radius: 16px; overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); display: flex; flex-direction: column; max-width: 100%; max-height: 100%; }
+  .pop-caja.web { width: min(1100px, 100%); height: min(760px, 100%); }
+  .pop-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; font-size: 12px; color: #DDD; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+  .pop-cab a { color: #FFF; text-decoration: none; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pop-cab a:hover { opacity: 1; text-decoration: underline; }
+  .pop iframe { flex: 1; width: 100%; border: 0; background: #FFF; }
+  .pop-x { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.12); color: #FFF; font-size: 20px; line-height: 1; cursor: pointer; display: grid; place-items: center; }
+  .pop-caja.img { background: transparent; box-shadow: none; overflow: visible; }
+  .pop-caja.img img { display: block; max-width: min(1400px, 88vw); max-height: 80vh; border-radius: 12px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); }
+  .pop-caja.img .pop-x { position: absolute; top: -14px; right: -14px; background: #FFF; color: #111; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); }
+  /* Piloto: encuadre de celular para elegir la vista de inicio */
+  .encuadre { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; display: grid; place-items: center; }
+  .encuadre i { height: 100%; aspect-ratio: 9 / 16; border-left: 1.5px dashed rgba(255, 255, 255, 0.75); border-right: 1.5px dashed rgba(255, 255, 255, 0.75); box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.38); position: relative; }
+  .encuadre i::after { content: "Celular 9:16"; position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); font: 500 10px var(--mz-texto-ui); letter-spacing: 0.08em; text-transform: uppercase; color: #fff; background: rgba(11, 11, 11, 0.7); padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
   @keyframes respira { 0%, 100% { transform: scale(0.92); } 50% { transform: scale(1.06); } }
   @keyframes onda { 0% { transform: scale(0.7); opacity: 0.8; } 100% { transform: scale(1.5); opacity: 0; } }
 
@@ -504,6 +555,16 @@
   .plantilla b { font-size: 12px; font-weight: 600; }
   .plantilla span { font-size: 10.5px; line-height: 1.35; color: var(--mz-tenue); }
   .campo input[type="url"] { width: 100%; box-sizing: border-box; font-size: 12px; color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 8px; padding: 7px 8px; }
+  .ini-bloque { padding: 14px; display: grid; gap: 10px; border-bottom: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie-2); }
+  .ini-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .ini-cab h3 { margin: 0; font-size: 13px; font-weight: 600; }
+  .ini-cab .nota { font-variant-numeric: tabular-nums; }
+  .ini-thumb { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 10px; display: block; border: 1px solid var(--mz-linea); }
+  .ini-acc { display: flex; gap: 6px; }
+  .ini-acc .btn-prim { flex: 1; padding: 9px 12px; font-size: 12px; }
+  .ini-bloque .campo { grid-template-columns: 1fr minmax(0, 1.2fr); }
+  .punto.compacto { grid-template-columns: 26px minmax(0, 1fr); align-items: center; padding: 8px 10px; }
+  .punto.compacto .cab small { color: var(--mz-tenue); }
   .punto .mini-thumb { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 8px; display: block; margin-top: 8px; border: 1px solid var(--mz-linea-neutra); }
 
   /* ---------- Editor de skin ---------- */
@@ -712,9 +773,10 @@
         <div class="pie"><button class="mini" id="copiar">Copiar datos</button><button class="mini" id="restablecer">Restablecer demo</button></div>
       </aside>
       <aside class="ed-panel" id="izq-piloto" aria-label="Recorrido de cámara" hidden>
+        <div class="ini-bloque" id="pl-inicio"></div>
         <header>
           <h3>Recorrido de cámara</h3>
-          <p class="nota">El punto 1 es donde inicia la esfera. Después la cámara viaja de punto en punto.</p>
+          <p class="nota">Empieza en la vista de inicio y viaja de punto en punto.</p>
         </header>
         <ol class="recorrido" id="recorrido"></ol>
         <div class="pie"><button class="btn-prim" id="pt-agregar" style="width:100%">+ Agregar punto con la vista actual</button></div>
@@ -723,6 +785,7 @@
       <div class="lienzo">
         <div class="stage" id="ed-stage"></div>
         <div class="mira" id="mira" hidden></div>
+        <div class="encuadre" id="encuadre" hidden><i></i></div>
         <div class="herr">
           <div class="grupo-h"><button class="pastilla-v" id="pt-reproducir" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><span>Reproducir recorrido</span></button></div>
           <div class="grupo-h">
@@ -999,11 +1062,72 @@
   const thumbDe = (id) => (escena(id) && escena(id).thumb) || "escenas/" + id + "/1/f/0/0.jpg";
   const planetaDe = (id) => "escenas/" + id + "/planeta.jpg";
   const vistaDe = (id) => escena(id).vista;
+  // Textos y hotspots en 3D (pegados a la esfera) y acciones al hacer clic
+  const K3 = 2.5, R3 = 400 * K3;
+  const es3d = (c) => c.en3d !== false;
+  const T3_DEF = { inclinar: 0, girar: 0, rotar: 0, ancho: 1, alto: 1 };
+  const t3 = (c) => Object.assign({}, T3_DEF, c.t3d);
+  const tamHs = (c) => c.tamano || 48;
+  const accionDe = (c) => c.accion || (c.tipo === "hotspot" ? "panorama" : "ninguna");
+  const ACCIONES = [["ninguna", "Nada"], ["panorama", "Ir a un panorama"], ["url", "Abrir enlace"], ["web", "Página en ventana"], ["imagen", "Imagen en ventana"]];
+  const ICO_ACCION = {
+    panorama: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+    url: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5h5v5M19 5l-8 8M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4"/></svg>',
+    web: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M3.5 9h17"/></svg>',
+    imagen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m20.5 16-5-5-8 8"/></svg>',
+    ninguna: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 11v6M12 7.5v.01"/></svg>',
+  };
+  function textoHotspot(c) {
+    if (c.texto) return c.texto;
+    const a = accionDe(c);
+    if (a === "panorama") return escena(c.destino) ? "Ir a " + escena(c.destino).nombre : "Sin destino";
+    return { url: "Abrir enlace", web: "Ver página", imagen: "Ver imagen" }[a] || "Información";
+  }
+  const urlSegura = (u) => { u = String(u || "").trim(); if (!u) return ""; if (!/^https?:\/\//i.test(u)) u = "https://" + u.replace(/^\/+/, ""); return /^https?:\/\/[^\s"'<>]+$/i.test(u) ? u : ""; };
+  // Historial para deshacer (Cmd/Ctrl + Z) y rehacer (Cmd/Ctrl + Shift + Z).
+  // Los cambios seguidos (arrastrar, mover un control) cuentan como un solo paso.
+  let historial = [], rehechos = [], ultimoEstado = JSON.stringify(est), tHistorial = 0;
   function guardar() {
-    try { localStorage.setItem(CLAVE, JSON.stringify(est)); $("b-estado").textContent = "Guardado"; }
+    const ahora = JSON.stringify(est);
+    if (ahora !== ultimoEstado) {
+      const t = Date.now();
+      if (t - tHistorial > 600) { historial.push(ultimoEstado); if (historial.length > 60) historial.shift(); }
+      rehechos = []; tHistorial = t; ultimoEstado = ahora;
+    }
+    try { localStorage.setItem(CLAVE, ahora); $("b-estado").textContent = "Guardado"; }
     catch (e) { $("b-estado").textContent = "Sin espacio para guardar"; }
     pintarResumen();
   }
+  function viajarHistorial(atras) {
+    const de = atras ? historial : rehechos, a = atras ? rehechos : historial;
+    if (!de.length) { avisar(atras ? "No hay nada que deshacer" : "No hay nada que rehacer"); return; }
+    a.push(ultimoEstado);
+    ultimoEstado = de.pop();
+    est = JSON.parse(ultimoEstado);
+    trCache = {}; tHistorial = 0;
+    try { localStorage.setItem(CLAVE, ultimoEstado); } catch (e) { /* sin almacenamiento */ }
+    // Repinta la ventana actual conservando la capa elegida si sigue existiendo
+    const clave = nav.sec + "/" + nav.sub;
+    if (motorEd && motorEd.actual && (clave === "panoramas/capas" || clave === "panoramas/piloto")) {
+      if (motorEd.elegida && !buscar(motorEd.elegida)) motorEd.elegida = null;
+      motorEd.construir();
+      if (motorEd.modo === "piloto") { pintarRecorrido(); pintarAjustes(); } else { pintarCapas(); pintarProps(); }
+    } else if (clave === "panoramas/terreno") abrirTerreno();
+    else ir(nav.sec, nav.sub);
+    pintarResumen();
+    avisar(atras ? "Deshecho" : "Rehecho");
+  }
+  document.addEventListener("pointerdown", () => (tHistorial = 0), true); // cada gesto nuevo es un paso aparte
+  document.addEventListener("keydown", (ev) => {
+    if (!(ev.metaKey || ev.ctrlKey) || ev.altKey) return;
+    const k = ev.key.toLowerCase();
+    if (k !== "z" && k !== "y") return;
+    if (!$("previa").hidden || /INPUT|TEXTAREA/.test(document.activeElement.tagName) && document.activeElement.type !== "range" && document.activeElement.type !== "checkbox") return;
+    ev.preventDefault();
+    // Dibujando un polígono: deshacer quita el último punto
+    if (motorEd && motorEd.dibujo && k === "z" && !ev.shiftKey) { motorEd.dibujo.puntos.pop(); motorEd.render(); return; }
+    viajarHistorial(k === "z" && !ev.shiftKey);
+  });
   let consecutivo = Date.now() % 1e6;
   const nuevoId = () => "c" + (consecutivo++).toString(36);
 
@@ -1199,10 +1323,8 @@
 
     // Proyección esfera → pantalla (verificada contra Marzipano). Las rectas del mundo son
     // círculos máximos, así que basta proyectar vértices recortando lo que queda detrás.
-    function camara() {
-      const v = actual.view, W = stage.clientWidth, H = stage.clientHeight;
-      return { cy: Math.cos(v.yaw()), sy: Math.sin(v.yaw()), cp: Math.cos(v.pitch()), sp: Math.sin(v.pitch()), W, H, f: H / 2 / Math.tan(v.fov() / 2) };
-    }
+    function camaraDe(yaw, pitch, fov, W, H) { return { cy: Math.cos(yaw), sy: Math.sin(yaw), cp: Math.cos(pitch), sp: Math.sin(pitch), W, H, f: H / 2 / Math.tan(fov / 2) }; }
+    function camara() { const v = actual.view; return camaraDe(v.yaw(), v.pitch(), v.fov(), stage.clientWidth, stage.clientHeight); }
     function aCamara(c, yaw, pitch) {
       const x = Math.sin(yaw) * Math.cos(pitch), y = -Math.sin(pitch), z = Math.cos(yaw) * Math.cos(pitch);
       const x1 = x * c.cy - z * c.sy, z1 = x * c.sy + z * c.cy;
@@ -1256,32 +1378,48 @@
           el.appendChild(svg);
           path.addEventListener("pointerdown", (ev) => tomar(ev, c, "mover"));
           nodos.set(c.id, { el, c, svg, path });
+          if (!editable && accionDe(c) !== "ninguna") { path.classList.add("con-accion"); path.addEventListener("click", (ev) => { ev.stopPropagation(); ejecutar(c); }); }
         } else if (c.tipo === "texto") {
           const t = document.createElement("div");
           t.className = "cp-texto" + (c.fondo && c.fondo.activo ? " con-fondo" : "");
           t.textContent = c.texto;
-          t.style.fontSize = c.tamano + "px";
           t.style.fontWeight = c.peso || 500;
           t.style.color = c.color;
           if (c.fondo && c.fondo.activo) t.style.background = c.fondo.color;
           el.appendChild(t);
           t.addEventListener("pointerdown", (ev) => tomar(ev, c, "mover"));
-          nodos.set(c.id, { el, c });
+          nodos.set(c.id, { el, c, t });
         } else if (c.tipo === "hotspot") {
           el.classList.add("hs");
-          const dest = escena(c.destino);
-          const texto = c.texto || (dest ? "Ir a " + dest.nombre : "Sin destino");
+          const texto = textoHotspot(c);
           el.innerHTML = '<button class="hs-boton' + (c.icono ? " con-icono" : "") + '" aria-label="' + esc(texto) + '">' +
-            (c.icono ? '<img src="' + esc(c.icono) + '" alt="">' : "") + '<span class="hs-nucleo">' + FLECHA + "</span></button>" +
+            (c.icono ? '<img src="' + esc(c.icono) + '" alt="">' : "") + '<span class="hs-nucleo">' + (ICO_ACCION[accionDe(c)] || ICO_ACCION.panorama) + "</span></button>" +
             '<span class="hs-texto">' + esc(texto) + "</span>";
           const b = el.querySelector(".hs-boton");
           b.addEventListener("pointerdown", (ev) => tomar(ev, c, "mover"));
-          b.addEventListener("click", (ev) => { ev.stopPropagation(); if (!editable && dest) motor.mostrar(c.destino); });
           nodos.set(c.id, { el, c });
+        }
+        if (c.tipo !== "poligono") {
+          if (!editable && accionDe(c) !== "ninguna") { el.classList.add("con-accion"); el.addEventListener("click", (ev) => { ev.stopPropagation(); ejecutar(c); }); }
+          medir(nodos.get(c.id));
         }
         capasEl.appendChild(el);
       });
       render();
+    }
+    // Tamaño de textos y hotspots. En 3D se dibujan 2.5 veces más grandes y más lejos:
+    // se ven del mismo tamaño pero quedan nítidos al acercarse.
+    function medir(n) {
+      const c = n.c, k = es3d(c) ? K3 : 1;
+      n.el.classList.toggle("en3d", es3d(c));
+      if (c.tipo === "texto") n.t.style.fontSize = c.tamano * k + "px";
+      else { n.el.style.setProperty("--hs-tam", tamHs(c) * k + "px"); n.el.style.fontSize = 12 * k + "px"; }
+    }
+    // Acción al hacer clic (solo en el tour, no en el editor)
+    function ejecutar(c) {
+      const a = accionDe(c);
+      if (a === "panorama") { if (escena(c.destino)) motor.mostrar(c.destino); return; }
+      if (opciones.alAccion) opciones.alAccion(c);
     }
 
     let pendiente = false;
@@ -1314,13 +1452,46 @@
         } else {
           const pc = aCamara(cam, c.yaw, c.pitch);
           if (pc.z <= 0.05) { n.el.style.visibility = "hidden"; return; }
-          const s = aPantalla(cam, pc);
           n.el.style.visibility = "";
-          n.el.style.transform = "translate(" + s.x.toFixed(1) + "px," + s.y.toFixed(1) + "px)";
+          if (es3d(c)) {
+            // Pegado a la esfera: perspectiva real, crece al acercarse y se puede inclinar
+            const t = t3(c);
+            n.el.style.transform = actual.view.coordinatesToPerspectiveTransform({ yaw: c.yaw, pitch: c.pitch }, R3,
+              "rotateX(" + t.inclinar + "deg) rotateY(" + t.girar + "deg) rotateZ(" + t.rotar + "deg) scale(" + t.ancho + "," + t.alto + ")");
+          } else {
+            const s = aPantalla(cam, pc);
+            n.el.style.transform = "translate(" + s.x.toFixed(1) + "px," + s.y.toFixed(1) + "px)";
+          }
           n.el.classList.toggle("elegida", editable && motor.modo === "capas" && id === motor.elegida);
         }
       });
       extra.innerHTML = "";
+      // Asas del texto u hotspot elegido: mover, rotar, escalar y estirar
+      const ne = editable && motor.modo === "capas" && !motor.dibujo && motor.elegida && nodos.get(motor.elegida);
+      if (ne && ne.c.tipo !== "poligono" && ne.el.style.visibility !== "hidden" && !ne.el.hidden) {
+        const q = esquinas(ne.el), C = q.centro;
+        const g = document.createElementNS(SVGNS, "g");
+        g.setAttribute("class", "asas");
+        const marco = document.createElementNS(SVGNS, "path");
+        marco.setAttribute("class", "asa-marco");
+        marco.setAttribute("d", "M" + [q.a, q.b, q.c, q.d].map((p) => p.x.toFixed(1) + " " + p.y.toFixed(1)).join("L") + "Z");
+        g.appendChild(marco);
+        const arriba = q.arriba, ux = arriba.x - C.x, uy = arriba.y - C.y, ul = Math.hypot(ux, uy) || 1;
+        const giro = { x: arriba.x + (ux / ul) * 26, y: arriba.y + (uy / ul) * 26 };
+        const linea = document.createElementNS(SVGNS, "path");
+        linea.setAttribute("class", "asa-marco"); linea.setAttribute("d", "M" + arriba.x.toFixed(1) + " " + arriba.y.toFixed(1) + "L" + giro.x.toFixed(1) + " " + giro.y.toFixed(1));
+        g.appendChild(linea);
+        [["rotar", giro, "circle"], ["escala", q.c, "rect"], ["ancho", q.der, "rect"], ["alto", q.abajo, "rect"]].forEach(([h, p, forma]) => {
+          if (!es3d(ne.c) && h !== "escala") return;
+          const e = document.createElementNS(SVGNS, forma);
+          e.setAttribute("class", "asa asa-" + h);
+          e.setAttribute("data-h", h);
+          if (forma === "circle") { e.setAttribute("cx", p.x); e.setAttribute("cy", p.y); e.setAttribute("r", 6.5); }
+          else { e.setAttribute("x", p.x - 5.5); e.setAttribute("y", p.y - 5.5); e.setAttribute("width", 11); e.setAttribute("height", 11); e.setAttribute("rx", 2); }
+          g.appendChild(e);
+        });
+        extra.appendChild(g);
+      }
       // Ruta del piloto automático: línea punteada y puntos numerados
       if (motor.ruta && motor.ruta.length) {
         const enCam = motor.ruta.map((p) => aCamara(cam, p.yaw, p.pitch));
@@ -1386,16 +1557,120 @@
       if (!inicio) return;
       arrastre = { c, modo, indice, inicio, x: ev.clientX, y: ev.clientY, movido: false, base: c.tipo === "poligono" ? c.puntos.map((p) => p.slice()) : [[c.yaw, c.pitch]] };
     }
+    // Esquinas en pantalla de un texto u hotspot (sigue su transformación 3D real)
+    function esquinas(el) {
+      const r0 = stage.getBoundingClientRect();
+      if (!el.classList.contains("en3d")) {
+        const r = (el.querySelector(".cp-texto, .hs-boton") || el).getBoundingClientRect();
+        const P = (x, y) => ({ x: x - r0.left, y: y - r0.top }), mx = (r.left + r.right) / 2, my = (r.top + r.bottom) / 2;
+        return { a: P(r.left, r.top), b: P(r.right, r.top), c: P(r.right, r.bottom), d: P(r.left, r.bottom), centro: P(mx, my), arriba: P(mx, r.top), der: P(r.right, my), abajo: P(mx, r.bottom) };
+      }
+      const w = el.offsetWidth, h = el.offsetHeight;
+      const M = new DOMMatrix().translate(w / 2, h / 2).multiply(new DOMMatrix(getComputedStyle(el).transform)).translate(-w / 2, -h / 2);
+      const P = (x, y) => { const p = M.transformPoint(new DOMPoint(x, y, 0, 1)); return { x: p.x / p.w, y: p.y / p.w }; };
+      return { a: P(0, 0), b: P(w, 0), c: P(w, h), d: P(0, h), centro: P(w / 2, h / 2), arriba: P(w / 2, 0), der: P(w, h / 2), abajo: P(w / 2, h) };
+    }
+    // Asas: rotar (diagonal), escala, estirar a lo ancho y a lo alto
+    let asa = null;
+    if (editable) extra.addEventListener("pointerdown", (ev) => {
+      const h = ev.target.closest("[data-h]"), n = h && nodos.get(motor.elegida);
+      if (!n) return;
+      ev.stopPropagation(); ev.preventDefault();
+      const r = stage.getBoundingClientRect();
+      asa = { h: h.getAttribute("data-h"), c: n.c, n, x0: ev.clientX - r.left, y0: ev.clientY - r.top, tam: n.c.tipo === "texto" ? n.c.tamano : tamHs(n.c), t: t3(n.c), movido: false };
+    });
+    function moverAsa(ev) {
+      const r = stage.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+      const cam = camara(), pc = aCamara(cam, asa.c.yaw, asa.c.pitch);
+      if (pc.z <= 0.05) return;
+      const C = aPantalla(cam, pc), dx = asa.x0 - C.x, dy = asa.y0 - C.y, L = Math.hypot(dx, dy) || 1, c = asa.c;
+      asa.movido = true;
+      if (asa.h === "rotar") {
+        let a = asa.t.rotar + ((Math.atan2(y - C.y, x - C.x) - Math.atan2(dy, dx)) * 180) / Math.PI;
+        a = ((((a + 180) % 360) + 360) % 360) - 180;
+        [-180, -135, -90, -45, 0, 45, 90, 135, 180].forEach((s) => { if (Math.abs(a - s) < 3) a = s; });
+        c.t3d = Object.assign(t3(c), { rotar: Math.round(a) });
+      } else if (asa.h === "escala") {
+        const k = Math.hypot(x - C.x, y - C.y) / L;
+        c.tamano = Math.round(Math.max(c.tipo === "texto" ? 8 : 16, Math.min(c.tipo === "texto" ? 160 : 240, asa.tam * k)));
+        medir(asa.n);
+      } else {
+        const k = ((x - C.x) * dx + (y - C.y) * dy) / (L * L);
+        c.t3d = Object.assign(t3(c), { [asa.h]: +Math.max(0.2, Math.min(6, asa.t[asa.h] * k)).toFixed(2) });
+      }
+      programar();
+    }
+    // Lupa ×3 y mira visible para marcar puntos con precisión
+    const LUPA = 168;
+    let lupa = null;
+    const mira = document.createElement("div");
+    mira.className = "mira-cursor"; mira.hidden = true; mira.innerHTML = "<i></i>";
+    if (editable) stage.appendChild(mira);
+    function crearLupa() {
+      const el = document.createElement("div");
+      el.className = "lupa"; el.hidden = true;
+      el.innerHTML = '<div class="lupa-stage"></div><svg class="lupa-svg"></svg><i class="lupa-mira"></i><span class="lupa-x">×3</span>';
+      stage.appendChild(el);
+      const v = new Marzipano.Viewer(el.querySelector(".lupa-stage"), { controls: { mouseViewMode: "drag" } });
+      v.controls().disable();
+      return { el, svg: el.querySelector(".lupa-svg"), v, escenas: {}, id: null };
+    }
+    function mostrarLupa(ev) {
+      const r = stage.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+      const k = actual.view.screenToCoordinates({ x, y });
+      if (!k) return;
+      if (!lupa) lupa = crearLupa();
+      const id = actual.id;
+      if (!lupa.escenas[id]) {
+        const d = meta[id], b = "escenas/" + id + "/";
+        const view = new Marzipano.RectilinearView({ yaw: 0, pitch: 0, fov: 0.4 });
+        const scene = lupa.v.createScene({ source: Marzipano.ImageUrlSource.fromString(b + "{z}/{f}/{y}/{x}.jpg", { cubeMapPreviewUrl: b + "preview.jpg" }), geometry: new Marzipano.CubeGeometry(d.niveles), view, pinFirstLevel: true });
+        lupa.escenas[id] = { scene, view };
+      }
+      const e = lupa.escenas[id];
+      if (lupa.id !== id) { e.scene.switchTo({ transitionDuration: 0 }); lupa.id = id; }
+      const f = r.height / 2 / Math.tan(actual.view.fov() / 2), fovL = 2 * Math.atan(LUPA / (6 * f));
+      e.view.setParameters({ yaw: k.yaw, pitch: k.pitch, fov: fovL });
+      let lx = x + 28, ly = y - LUPA - 28;
+      if (lx + LUPA > r.width - 8) lx = x - 28 - LUPA;
+      if (ly < 8) ly = y + 28;
+      lupa.el.style.transform = "translate(" + lx.toFixed(0) + "px," + ly.toFixed(0) + "px)";
+      if (lupa.el.hidden) { lupa.el.hidden = false; lupa.v.updateSize(); }
+      // Bordes de los polígonos y del borrador dentro de la lupa
+      const cam = camaraDe(k.yaw, k.pitch, fovL, LUPA, LUPA);
+      let h = "";
+      nodos.forEach((n) => {
+        if (n.c.tipo !== "poligono" || n.el.hidden) return;
+        const rec = recortar(n.c.puntos.map(([a, b]) => aCamara(cam, a, b)), true);
+        if (rec.length > 2) h += '<path class="lupa-pol" d="' + trazo(cam, rec, true) + '"/>';
+      });
+      const dib = motor.dibujo;
+      if (dib && dib.puntos.length) {
+        const rec = recortar(dib.puntos.concat([[k.yaw, k.pitch]]).map(([a, b]) => aCamara(cam, a, b)), false);
+        if (rec.length > 1) h += '<path class="lupa-dib" d="' + trazo(cam, rec, false) + '"/>';
+      }
+      lupa.svg.innerHTML = h;
+    }
+    function precision(ev) {
+      const dentro = ev && stage.contains(ev.target);
+      stage.classList.toggle("precisando", !!dentro);
+      mira.hidden = !dentro;
+      if (!dentro) { if (lupa) lupa.el.hidden = true; return; }
+      const r = stage.getBoundingClientRect();
+      mira.style.transform = "translate(" + (ev.clientX - r.left).toFixed(1) + "px," + (ev.clientY - r.top).toFixed(1) + "px)";
+      mostrarLupa(ev);
+    }
     function alMover(ev) {
       if (!actual) return;
-      if (motor.dibujo) { const k = coordsEn(ev); if (k) { motor.dibujo.cursor = k; programar(); } }
+      if (asa) { moverAsa(ev); return; }
+      if (motor.dibujo) { const k = coordsEn(ev); if (k) { motor.dibujo.cursor = k; programar(); } precision(ev); }
       if (!arrastre) return;
       if (!arrastre.movido && Math.hypot(ev.clientX - arrastre.x, ev.clientY - arrastre.y) < 3) return;
       arrastre.movido = true;
       const ahora = coordsEn(ev);
       if (!ahora) return;
       const { c, modo, indice, base } = arrastre;
-      if (modo === "vertice") c.puntos[indice] = [ahora.yaw, limitarPitch(ahora.pitch)];
+      if (modo === "vertice") { c.puntos[indice] = [ahora.yaw, limitarPitch(ahora.pitch)]; precision(ev); }
       else {
         let dy = ahora.yaw - arrastre.inicio.yaw;
         if (dy > Math.PI) dy -= 2 * Math.PI;
@@ -1406,7 +1681,13 @@
       }
       programar();
     }
-    function alSoltar() { if (arrastre && arrastre.movido) { if (opciones.alSoltar) opciones.alSoltar(arrastre.c); guardar(); } arrastre = null; }
+    function alSoltar() {
+      if (asa) { const c = asa.c, mov = asa.movido; asa = null; if (mov) { if (opciones.alSoltar) opciones.alSoltar(c); opciones.alCambiar(); } return; }
+      if (arrastre && arrastre.movido) { if (opciones.alSoltar) opciones.alSoltar(arrastre.c); guardar(); }
+      if (arrastre && arrastre.modo === "vertice" && !motor.dibujo) precision(null);
+      arrastre = null;
+    }
+    if (opciones.sinAcciones) capasEl.classList.add("inerte");
     if (opciones.alTomarMarca) extra.addEventListener("pointerdown", (ev) => {
       const g = ev.target.closest(".tr-pt");
       if (!g) return;
@@ -1454,10 +1735,12 @@
       view: () => actual && actual.view,
       coords: (ev) => (actual ? coordsEn(ev) : null),
       marcas: null,
+      sinPrecision: () => precision(null),
       captura: () => viewer.stage().takeSnapshot({ quality: 92 }),
       destruir() {
         ro.disconnect();
         if (editable) { window.removeEventListener("pointermove", alMover); window.removeEventListener("pointerup", alSoltar); }
+        if (lupa) lupa.v.destroy();
         viewer.destroy();
         stage.innerHTML = "";
       },
@@ -1511,7 +1794,7 @@
   }
 
   // =================== PANORAMAS: LISTA ===================
-  function salidas(id) { return est.capas[id].filter((c) => c.tipo === "hotspot" && escena(c.destino) && c.destino !== id); }
+  function salidas(id) { return est.capas[id].filter((c) => accionDe(c) === "panorama" && escena(c.destino) && c.destino !== id); }
   function pintarLista() {
     $("pano-lista").innerHTML = est.escenas.map((e) => {
       const d = meta[e.id], cs = est.capas[e.id];
@@ -1669,6 +1952,7 @@
     $("izq-piloto").hidden = !piloto; $("der-piloto").hidden = !piloto;
     $("pt-reproducir").hidden = !piloto;
     $("mira").hidden = !piloto;
+    $("encuadre").hidden = !piloto || !encuadreOn;
     motorEd.setModo(piloto ? "piloto" : "capas");
     if (piloto) { pintarRecorrido(); pintarAjustes(); } else { motorEd.ruta = null; pintarCapas(); pintarProps(); }
     motorEd.render();
@@ -1693,7 +1977,16 @@
   function pintarRecorrido() {
     const pts = puntosRuta();
     motorEd.ruta = pts;
+    const id0 = motorEd.actual.id, v0 = pts[0];
+    $("pl-inicio").innerHTML = '<div class="ini-cab"><h3>Vista de inicio</h3><span class="nota">' + grados(v0.yaw) + " · " + grados(-v0.pitch) + " · " + zoomTxt(v0.fov) + "</span></div>" +
+      '<img class="ini-thumb" src="' + thumbDe(id0) + '" alt="Vista de inicio de ' + esc(nombreDe(id0)) + '">' +
+      '<p class="nota">Mueve la esfera hasta encuadrar lo primero que verá el usuario y fíjala.</p>' +
+      '<div class="ini-acc"><button class="btn-prim" data-acc="fijar" data-i="0">Usar esta vista como inicio</button><button class="mini" data-acc="ver" data-i="0">Ver</button></div>' +
+      '<label class="interruptor"><b>Encuadre de celular</b><input type="checkbox" class="toggle" id="pl-encuadre"' + (encuadreOn ? " checked" : "") + "></label>" +
+      '<div class="campo"><span>El tour empieza en</span><select id="pl-escena-ini">' + est.escenas.map((e) => '<option value="' + e.id + '"' + (e.id === P().escenaInicial ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("") + "</select></div>";
+    $("encuadre").hidden = !encuadreOn;
     $("recorrido").innerHTML = pts.map((p, i) => {
+      if (i === 0) return '<li class="punto compacto" data-i="0"><span class="num">1</span><div class="cab"><b>Inicio</b><small>la vista de arriba</small></div></li>';
       const cab = '<div class="cab"><b>' + (i === 0 ? "Inicio" : "Punto " + (i + 1)) + "</b><small>" + grados(p.yaw) + " · " + grados(-p.pitch) + " · " + zoomTxt(p.fov) + "</small></div>" +
         (i === 0 ? '<img class="mini-thumb" src="' + thumbDe(motorEd.actual.id) + '" alt="Miniatura del panorama">' : "");
       const tiempos = i === 0 ? "" : '<div class="tiempos"><label>Viaje (s)<input type="number" min="0.5" max="60" step="0.5" value="' + p.viaje + '" data-i="' + i + '" data-k="viaje"></label><label>Pausa (s)<input type="number" min="0" max="60" step="0.5" value="' + p.pausa + '" data-i="' + i + '" data-k="pausa"></label></div>';
@@ -1736,7 +2029,14 @@
     PL().puntos[+el.dataset.i - 1][el.dataset.k] = v;
     guardar(); pintarDuracion();
   });
-  $("recorrido").addEventListener("click", (ev) => {
+  let encuadreOn = true;
+  $("pl-inicio").addEventListener("change", (ev) => {
+    if (ev.target.id === "pl-encuadre") { encuadreOn = ev.target.checked; $("encuadre").hidden = !encuadreOn; }
+    if (ev.target.id === "pl-escena-ini") { P().escenaInicial = ev.target.value; guardar(); avisar("El tour empieza en " + nombreDe(ev.target.value)); }
+  });
+  $("pl-inicio").addEventListener("click", (ev) => accionRecorrido(ev));
+  $("recorrido").addEventListener("click", (ev) => accionRecorrido(ev));
+  function accionRecorrido(ev) {
     const b = ev.target.closest("[data-acc]"); if (!b) return;
     const i = +b.dataset.i, pl = PL(), id = motorEd.actual.id;
     detenerPilotoEd();
@@ -1750,7 +2050,7 @@
     if (b.dataset.acc === "subir" && i > 1) { const [p] = pl.puntos.splice(i - 1, 1); pl.puntos.splice(i - 2, 0, p); }
     if (b.dataset.acc === "bajar") { const [p] = pl.puntos.splice(i - 1, 1); pl.puntos.splice(i, 0, p); }
     guardar(); pintarRecorrido(); pintarAjustes();
-  });
+  }
   $("pt-agregar").addEventListener("click", () => {
     detenerPilotoEd();
     PL().puntos.push(Object.assign(vistaActual(), { viaje: 5, pausa: 1 }));
@@ -1828,7 +2128,7 @@
       motorEd.elegida = c.id;
       avisar("Polígono creado");
     }
-    if (motorEd) motorEd.dibujo = null;
+    if (motorEd) { motorEd.dibujo = null; motorEd.sinPrecision(); }
     document.body.classList.remove("dibujando");
     $("add-pol").setAttribute("aria-pressed", "false");
     banda(null);
@@ -1910,11 +2210,34 @@
   const px = (v) => v + " px";
   const campoColor = (ruta, color) => '<div class="color"><input type="color" data-k="' + ruta + '" value="' + color + '" aria-label="Elegir color">' +
     MUESTRAS.map((m) => '<button class="muestra" style="background:' + m + '" data-k="' + ruta + '" data-v="' + m + '" aria-label="Usar ' + m + '"></button>').join("") + "</div>";
-  const campoRango = (ruta, valor, min, max, paso, fmt) => '<div class="rango"><input type="range" data-k="' + ruta + '" min="' + min + '" max="' + max + '" step="' + paso + '" value="' + valor + '" aria-label="' + ruta + '"><span class="valor" data-v-de="' + ruta + '">' + fmt(valor) + "</span></div>";
+  const FMTS = {};
+  const campoRango = (ruta, valor, min, max, paso, fmt) => (FMTS[ruta] = fmt) && '<div class="rango"><input type="range" data-k="' + ruta + '" min="' + min + '" max="' + max + '" step="' + paso + '" value="' + valor + '" aria-label="' + ruta + '"><span class="valor" data-v-de="' + ruta + '">' + fmt(valor) + "</span></div>";
   const campo = (etq, html) => '<div class="campo"><span>' + etq + "</span>" + html + "</div>";
   const interruptor = (etq, ruta, on) => '<label class="interruptor"><b>' + etq + '</b><input type="checkbox" class="toggle" data-k="' + ruta + '"' + (on ? " checked" : "") + "></label>";
   const escribir = (c, ruta, v) => { const ks = ruta.split("."); const u = ks.pop(); ks.reduce((o, k) => o[k], c)[u] = v; };
 
+  const deg = (v) => Math.round(v) + "°", veces = (v) => (+v).toFixed(2) + "×";
+  function grupo3d(c) {
+    let g = '<div class="grupo">' + interruptor("Fijo en la esfera (3D)", "en3d", es3d(c));
+    if (es3d(c)) {
+      const t = t3(c);
+      g += campo("Inclinar", campoRango("t3d.inclinar", t.inclinar, -85, 85, 1, deg)) + campo("Girar", campoRango("t3d.girar", t.girar, -85, 85, 1, deg)) +
+        campo("Rotar", campoRango("t3d.rotar", t.rotar, -180, 180, 1, deg)) + campo("Ancho", campoRango("t3d.ancho", t.ancho, 0.2, 6, 0.05, veces)) + campo("Alto", campoRango("t3d.alto", t.alto, 0.2, 6, 0.05, veces)) +
+        '<div class="orden"><button class="mini" data-acc="t3d-reset">Enderezar</button></div><p class="nota">Se queda pegado a la esfera y crece al acercarte. Sobre la esfera: arrastra para mover, el círculo de arriba rota y los cuadros escalan y estiran.</p>';
+    } else g += '<p class="nota">Siempre de frente y del mismo tamaño en pantalla.</p>';
+    return g + "</div>";
+  }
+  function grupoAccion(c) {
+    const a = accionDe(c), aqui = motorEd.actual.id;
+    if (a === "panorama" && !escena(c.destino)) { const o = est.escenas.find((e) => e.id !== aqui); if (o) { c.destino = o.id; guardar(); } }
+    let g = '<div class="grupo"><b>Al hacer clic</b>' + campo("Acción", '<select data-k="accion">' + ACCIONES.map(([v, n]) => '<option value="' + v + '"' + (a === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select>");
+    if (a === "panorama") g += campo("Panorama", '<select data-k="destino">' + est.escenas.filter((e) => e.id !== aqui).map((e) => '<option value="' + e.id + '"' + (c.destino === e.id ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("") + "</select>");
+    if (a === "url" || a === "web") g += campo("Enlace", '<input type="text" inputmode="url" data-k="url" placeholder="https://…" value="' + esc(c.url || "") + '">');
+    if (a === "imagen") g += '<div class="img-accion">' + (c.imagen ? '<img src="' + esc(c.imagen) + '" alt="Imagen de la acción">' : '<span class="nota">Sin imagen todavía</span>') + '<label class="mini">' + (c.imagen ? "Cambiar imagen" : "Subir imagen") + '<input type="file" accept="image/*" data-subir="imagen" hidden></label></div>';
+    if (a === "web") g += '<p class="nota">Si un sitio no se deja mostrar en ventana, el tour ofrece abrirlo en otra pestaña.</p>';
+    if (a !== "ninguna") g += '<p class="nota">Funciona en la Vista previa y en el tour publicado.</p>';
+    return g + "</div>";
+  }
   function pintarProps() {
     const cont = $("props");
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
@@ -1928,13 +2251,16 @@
       if (c.rollover.activo) h += campo("Relleno", campoColor("rollover.relleno.color", c.rollover.relleno.color)) + campo("Opacidad", campoRango("rollover.relleno.opacidad", c.rollover.relleno.opacidad, 0, 1, 0.05, pct)) + campo("Trazo", campoColor("rollover.trazo.color", c.rollover.trazo.color)) + campo("Grosor", campoRango("rollover.trazo.grosor", c.rollover.trazo.grosor, 0, 12, 0.5, px));
       h += '<p class="nota">Arrastra el polígono para moverlo y los puntos para ajustarlo. Doble clic en un punto lo quita.</p></div>';
     } else if (c.tipo === "texto") {
-      h += '<div class="grupo"><b>Contenido</b>' + campo("Texto", '<input type="text" data-k="texto" value="' + esc(c.texto) + '">') + campo("Tamaño", campoRango("tamano", c.tamano, 10, 48, 1, px)) +
-        campo("Peso", '<select data-k="peso">' + [[300, "Light"], [400, "Regular"], [500, "Medium"], [600, "Semibold"]].map(([v, n]) => '<option value="' + v + '"' + (+c.peso === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select>") + campo("Color", campoColor("color", c.color)) + "</div>";
+      h += '<div class="grupo"><b>Contenido</b>' + campo("Texto", '<input type="text" data-k="texto" value="' + esc(c.texto) + '">') + campo("Tamaño", campoRango("tamano", c.tamano, 8, 160, 1, px)) +
+        campo("Peso", '<select data-k="peso">' + [[300, "Light"], [400, "Regular"], [500, "Medium"], [600, "Semibold"], [800, "Black"]].map(([v, n]) => '<option value="' + v + '"' + (+c.peso === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select>") + campo("Color", campoColor("color", c.color)) + "</div>";
       h += '<div class="grupo">' + interruptor("Fondo", "fondo.activo", c.fondo.activo) + (c.fondo.activo ? campo("Color", campoColor("fondo.color", c.fondo.color)) : "") + "</div>";
+      h += grupo3d(c);
     } else if (c.tipo === "hotspot") {
-      h += '<div class="grupo"><b>Acción</b>' + campo("Lleva a", '<select data-k="destino">' + est.escenas.filter((e) => e.id !== motorEd.actual.id).map((e) => '<option value="' + e.id + '"' + (c.destino === e.id ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("") + "</select>") +
-        campo("Texto", '<input type="text" data-k="texto" placeholder="Ir a…" value="' + esc(c.texto || "") + '">') + '<p class="nota">Más adelante: catálogo de hotspots y más acciones.</p></div>';
+      h += '<div class="grupo"><b>Hotspot</b>' + campo("Texto", '<input type="text" data-k="texto" placeholder="' + esc(textoHotspot(Object.assign({}, c, { texto: "" }))) + '" value="' + esc(c.texto || "") + '">') +
+        campo("Tamaño", campoRango("tamano", tamHs(c), 16, 240, 1, px)) + "</div>";
+      h += grupo3d(c);
     }
+    h += grupoAccion(c);
     if (c.tipo === "poligono" || c.tipo === "texto") {
       const aqui = motorEd.actual.id, listas = trIds().filter(trLista);
       h += '<div class="grupo"><b>Terreno</b>';
@@ -1954,9 +2280,10 @@
     if (!c || !el.dataset.k) return;
     let v = el.dataset.v !== undefined ? el.dataset.v : el.type === "checkbox" ? el.checked : el.value;
     if (el.type === "range" || el.dataset.k === "peso") v = +v;
+    if (el.dataset.k.startsWith("t3d.")) c.t3d = t3(c);
     escribir(c, el.dataset.k, v);
     const etq = document.querySelector('[data-v-de="' + el.dataset.k + '"]');
-    if (etq) etq.textContent = el.dataset.k.includes("opacidad") ? pct(v) : px(v);
+    if (etq) etq.textContent = (FMTS[el.dataset.k] || px)(v);
     if (c.vinculo) propagar(c, motorEd.actual.id);
     guardar();
     if (el.dataset.k === "nombre") { pintarCapas(); return; }
@@ -1967,8 +2294,28 @@
   $("props").addEventListener("input", (ev) => { if (ev.target.type !== "checkbox" && ev.target.tagName !== "SELECT") aplicar(ev.target, false); });
   $("props").addEventListener("change", (ev) => {
     if (ev.target.dataset.k === "_vinculo") { vincular(ev.target.checked); return; }
+    if (ev.target.dataset.subir === "imagen") { subirImagenAccion(ev.target); return; }
     if (ev.target.type === "checkbox" || ev.target.tagName === "SELECT") aplicar(ev.target, true); else if (ev.target.type === "color") pintarProps();
   });
+  // Imagen para la acción "Imagen en ventana": se reduce a 1600 px para no pesar de más
+  function subirImagenAccion(input) {
+    const f = input.files[0], c = motorEd.elegida && buscar(motorEd.elegida);
+    input.value = "";
+    if (!f || !c) return;
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+      cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+      c.imagen = cv.toDataURL("image/jpeg", 0.85);
+      URL.revokeObjectURL(img.src);
+      if (c.vinculo) propagar(c, motorEd.actual.id);
+      guardar(); pintarProps(); avisar("Imagen lista");
+    };
+    img.onerror = () => avisar("No se pudo leer esa imagen");
+    img.src = URL.createObjectURL(f);
+  }
   // Aplicar a todas las esferas del terreno (o quitarlo de las demás)
   function vincular(si) {
     const c = motorEd.elegida && buscar(motorEd.elegida), aqui = motorEd.actual.id;
@@ -1990,6 +2337,7 @@
     const m = ev.target.closest(".muestra"); if (m) { aplicar(m, true); return; }
     const o = ev.target.closest("[data-orden]"); if (o) { ordenar(o.dataset.orden); return; }
     const a = ev.target.closest("[data-acc]");
+    if (a && a.dataset.acc === "t3d-reset") { const c = buscar(motorEd.elegida); if (c) { c.t3d = Object.assign({}, T3_DEF); cambio(); } return; }
     if (a && a.dataset.acc === "duplicar") duplicar();
     if (a && a.dataset.acc === "eliminar") eliminar();
   });
@@ -2037,7 +2385,7 @@
     avisar("Demo restablecida");
   });
   document.addEventListener("keydown", (ev) => {
-    if (!$("previa").hidden) { if (ev.key === "Escape") cerrarPrevia(); return; }
+    if (!$("previa").hidden) { if (ev.key === "Escape" && !(tourPv && tourPv.cerrarPop())) cerrarPrevia(); return; }
     if (!motorEd || motorEd.modo !== "capas") return;
     const escribiendo = /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName);
     if (motorEd.dibujo) {
@@ -2062,7 +2410,7 @@
     const ids = trIds();
     if (!tr.a || !ids.includes(tr.a)) tr.a = est.terreno.base || ids[0] || est.escenas[0].id;
     if (!tr.b || tr.b === tr.a || !ids.includes(tr.b)) tr.b = ids.find((x) => x !== tr.a) || null;
-    const op = (lado) => ({ editable: false, sinHotspots: true, alTomarMarca: (ev, i) => tomarMarca(ev, lado, i) });
+    const op = (lado) => ({ editable: false, sinHotspots: true, sinAcciones: true, alTomarMarca: (ev, i) => tomarMarca(ev, lado, i) });
     if (!tr.ma) { tr.ma = crearMotor($("tr-stage-a"), op("a")); tr.mb = crearMotor($("tr-stage-b"), op("b")); }
     if (!tr.ma.actual || tr.ma.actual.id !== tr.a) tr.ma.mostrar(tr.a, 0); else tr.ma.construir();
     $("tr-stage-b").parentNode.hidden = !tr.b;
@@ -2377,6 +2725,21 @@
   // Une un motor con su skin y su piloto automático (vista previa y editor de skin)
   function crearTour(stage, ui, o) {
     let motor = null, piloto = null, api = null, actualId = null;
+    // Ventanas de las acciones: página web o imagen sobre el tour
+    const pop = document.createElement("div");
+    pop.className = "pop"; pop.hidden = true;
+    stage.parentNode.appendChild(pop);
+    const cerrarPop = () => { if (pop.hidden) return false; pop.hidden = true; pop.innerHTML = ""; return true; };
+    pop.addEventListener("click", (ev) => { if (ev.target === pop || ev.target.closest(".pop-x")) cerrarPop(); });
+    function accion(c) {
+      const a = accionDe(c), url = urlSegura(c.url);
+      if (piloto) piloto.interrumpir(true);
+      if (a === "url") { if (url) window.open(url, "_blank", "noopener"); return; }
+      if (a === "web" && url) pop.innerHTML = '<div class="pop-caja web" role="dialog" aria-label="Página"><div class="pop-cab"><a href="' + esc(url) + '" target="_blank" rel="noopener">Abrir en otra pestaña ↗</a><button class="pop-x" aria-label="Cerrar">×</button></div><iframe src="' + esc(url) + '" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe></div>';
+      else if (a === "imagen" && c.imagen) pop.innerHTML = '<div class="pop-caja img" role="dialog" aria-label="Imagen"><img src="' + esc(c.imagen) + '" alt=""><button class="pop-x" aria-label="Cerrar">×</button></div>';
+      else return;
+      pop.hidden = false;
+    }
     function arrancarPiloto(id) {
       if (piloto) { piloto.detener(); piloto = null; }
       const pl = escena(id).piloto, activo = pl.activo && pl.puntos.length > 0;
@@ -2397,11 +2760,13 @@
       alMostrar: (id) => { actualId = id; api.escena(id); api.vista(motor.view()); arrancarPiloto(id); },
       alInteractuar: () => { if (piloto) piloto.interrumpir(true); },
       alMoverVista: () => api && motor && api.vista(motor.view()),
+      alAccion: accion,
     });
     motor.mostrar(o.inicio || P().escenaInicial, 0);
     return {
       repintar(orientacion) { pintar(orientacion); if (piloto) api.piloto(true); },
-      destruir() { if (piloto) piloto.detener(); motor.destruir(); motor = null; ui.innerHTML = ""; ui.onclick = null; },
+      cerrarPop,
+      destruir() { if (piloto) piloto.detener(); motor.destruir(); motor = null; ui.innerHTML = ""; ui.onclick = null; pop.remove(); },
     };
   }
 

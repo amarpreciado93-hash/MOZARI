@@ -39,3 +39,8 @@
 | 2026-10-28 | Capas con "Aplicar a todas las esferas": polígonos y textos vinculados se actualizan en todas al editarlos en cualquiera; borrar uno los borra en todas | Un lote es el mismo en todas las vistas |
 | 2026-10-28 | Precisión visible por punto y descarte automático del punto que no coincide (con 6 o más puntos) | Un clic mal puesto no debe torcer todos los lotes |
 | 2026-10-28 | Detección automática de puntos con `herramientas/terreno.py` (vista cenital + SIFT + homografía robusta); la demo Central/Frontal se calibró así y coincide con el navegador a 0.001° | Base para el botón "Detectar puntos" cuando exista el servidor |
+| 2026-10-28 | Textos y hotspots "Fijos en la esfera (3D)" por defecto: perspectiva real, crecen al acercarse, se pueden inclinar, girar, rotar en diagonal y estirar; asas sobre la esfera para rotar, escalar y estirar | Se ven como parte del lugar, no flotando frente a la cámara; un hotspot inclinado queda acostado en el piso |
+| 2026-10-28 | Toda capa (polígono, texto, hotspot) puede tener acción al clic: ir a panorama, abrir enlace, página en ventana o imagen en ventana | Un lote puede abrir su ficha o render; las ventanas del tour usan colores neutros |
+| 2026-10-28 | Al dibujar o ajustar puntos: mira visible y lupa ×3 con detalle real de la esfera | Precisión en esquinas de lotes |
+| 2026-10-28 | Deshacer y rehacer con Cmd/Ctrl + Z y Cmd/Ctrl + Shift + Z; cada gesto es un paso | Nadie trabaja sin deshacer |
+| 2026-10-28 | Piloto: bloque "Vista de inicio" con encuadre de celular 9:16 y selector del panorama donde empieza el tour | Elegir el inicio pensando en cómo se verá en el teléfono |
