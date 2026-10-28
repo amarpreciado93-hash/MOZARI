@@ -32,6 +32,7 @@
     color-scheme: dark;
   }
   [hidden] { display: none !important; }
+  html[data-modo="tour"] .app, html[data-modo="tour"] .movil { display: none !important; }
   html, body { height: 100%; }
   body { background: var(--mz-fondo); color: var(--mz-texto); font-family: var(--mz-texto-ui); overflow: hidden; font-size: 13px; }
   button, input, select { font-family: inherit; }
@@ -147,6 +148,22 @@
   .card-confirma span { font-size: 11px; color: var(--mz-tenue); line-height: 1.45; }
   .card-confirma div { display: flex; gap: 8px; justify-content: center; margin-top: 4px; }
   .mini.peligro-lleno { background: var(--mz-error); border-color: var(--mz-error); color: #fff; }
+  .pub-caja { display: flex; gap: 8px; align-items: center; margin-top: 18px; background: var(--mz-negro); border: 1px solid var(--mz-linea); border-radius: 12px; padding: 8px 8px 8px 14px; max-width: 640px; }
+  .pub-caja code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 13px var(--mz-texto-ui); color: var(--mz-texto); }
+  .pub-acc { display: flex; gap: 8px; margin: 14px 0 8px; flex-wrap: wrap; }
+  .pub-acc .btn-sec { text-decoration: none; }
+  .nuevo-tour { gap: 10px; }
+  .nuevo-tour .entrada { max-width: 260px; text-align: center; }
+  .hueco.subir { cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+  .hueco.subir:hover, .hueco.subir.encima { border-color: var(--mz-lima); background: var(--mz-lima-suave); }
+  .subida { position: fixed; z-index: 55; right: 20px; bottom: 20px; width: 340px; max-height: 50vh; overflow-y: auto; display: grid; gap: 8px; padding: 12px; border-radius: 16px; background: var(--mz-vidrio); border: 1px solid var(--mz-linea); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5); }
+  .sub-item { display: grid; gap: 4px; padding: 8px 10px; border-radius: 10px; background: var(--mz-negro); }
+  .sub-item b { font-size: 12px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sub-item i { display: block; height: 3px; border-radius: 2px; background: var(--mz-superficie-2); overflow: hidden; }
+  .sub-item u { display: block; height: 100%; width: 0; background: var(--mz-lima); transition: width 0.3s; }
+  .sub-item.error .nota { color: var(--mz-error); }
+  .sub-item.error u { background: var(--mz-error); width: 100% !important; }
+  .card .badge.pub { background: var(--mz-superficie-2); color: var(--mz-lima); border: 1px solid var(--mz-linea); }
   .card .badge { position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: var(--mz-pastilla); background: var(--mz-lima); color: var(--mz-negro); font-size: 10px; font-weight: 600; letter-spacing: 0.06em; }
   .card .cuerpo { padding: 12px 14px 14px; display: grid; gap: 8px; }
   .card .nombre { font-weight: 600; font-size: 14px; }
@@ -991,6 +1008,7 @@
   <div class="sk" id="pv-ui"></div>
 </div>
 
+<div class="subida" id="subida" aria-live="polite" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -1013,13 +1031,31 @@
   let tToast;
   function avisar(t) { const el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(tToast); tToast = setTimeout(() => (el.hidden = true), 2400); }
 
+  // =================== MODO ===================
+  // "tour": el link público de un tour (solo el visor). "nube": el estudio en Cloudflare, guarda en R2.
+  // "demo": la vista previa local con el proyecto de ejemplo, guarda en este navegador.
+  const PUBLICO = document.body.dataset.modo === "tour";
+  let NUBE = null;
+  if (!PUBLICO) {
+    try { const r = await fetch("api/yo", { cache: "no-store" }); if (r.ok && (r.headers.get("content-type") || "").includes("json")) NUBE = await r.json(); }
+    catch (e) { /* sin nube: modo demo */ }
+  }
+  const MODO = PUBLICO ? "tour" : NUBE ? "nube" : "demo";
+  const TOUR = MODO === "nube" ? (location.hash.match(/t=([a-z0-9-]+)/) || [])[1] || null : null;
+  const R = (id) => (MODO === "nube" ? "t/" + TOUR + "/escenas/" : "escenas/") + id + "/";
+  document.documentElement.dataset.modo = MODO;
+
   // =================== DATOS ===================
+  const VACIO = () => ({ version: 2, proyecto: { nombre: "", escenaInicial: "", musica: { volumen: 0.6, repetir: true } }, escenas: [], capas: {} });
   let base, meta = {};
   try {
-    base = await (await fetch("proyecto.json")).json();
-    await Promise.all(base.escenas.map((e) => fetch("escenas/" + e.id + "/escena.json").then((r) => r.json()).then((d) => (meta[e.id] = d))));
+    if (MODO === "nube") base = TOUR ? await (await fetch("api/tours/" + TOUR, { cache: "no-store" })).json() : VACIO();
+    else base = await (await fetch("proyecto.json", { cache: MODO === "tour" ? "no-cache" : "default" })).json();
+    if (!base || !base.proyecto || !Array.isArray(base.escenas)) throw new Error("proyecto inválido");
+    await Promise.all(base.escenas.map((e) => fetch(R(e.id) + "escena.json").then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) meta[e.id] = d; }).catch(() => {})));
   } catch (e) {
-    document.body.innerHTML = '<p style="padding:24px">No se pudo leer el proyecto. Revisa que exista proyecto.json junto a esta página.</p>';
+    document.body.innerHTML = '<p style="padding:24px;font-family:system-ui;color:#ddd;background:#0b0b0b;min-height:100vh;margin:0">' +
+      (MODO === "nube" ? 'No se pudo abrir este tour. <a style="color:#D5FF40" href="./">Volver a Mis Tours</a>' : MODO === "tour" ? "Este tour no está disponible." : "No se pudo leer el proyecto.") + "</p>";
     return;
   }
   // =================== LOTES ===================
@@ -1055,8 +1091,8 @@
     copiasLote(c).forEach(({ c: x }) => { if (x === c) return; ["estado", "area", "precio"].forEach((k) => (x.lote[k] = c.lote[k])); });
   }
   const original = JSON.stringify({ proyecto: base.proyecto, escenas: base.escenas, capas: base.capas, terreno: base.terreno || null, lotesEstados: base.lotesEstados || ESTADOS_DEF });
-  let est = JSON.parse(original);
-  try {
+  let est = MODO === "demo" ? JSON.parse(original) : JSON.parse(JSON.stringify(base));
+  if (MODO === "demo") try {
     const g = JSON.parse(localStorage.getItem(CLAVE) || localStorage.getItem(CLAVE_V1) || "null");
     if (g && g.proyecto && g.escenas) est = g;
   } catch (e) { /* sin almacenamiento */ }
@@ -1191,6 +1227,7 @@
     });
   }
 
+  const escenaOk = (id) => !!id && est.escenas.some((e) => e.id === id);
   function normalizar() {
     // Panoramas nuevos del archivo del proyecto: llegan con sus capas y con los hotspots que apuntan a ellos
     base.escenas.forEach((b) => {
@@ -1218,6 +1255,7 @@
       if (!e.piloto) e.piloto = b && b.piloto ? JSON.parse(JSON.stringify(b.piloto)) : { activo: false, puntos: [], alTerminar: "detener", siguiente: "", reanudar: 8 };
     });
     delete est.proyecto.littlePlanet;
+    if (!escenaOk(est.proyecto.escenaInicial)) est.proyecto.escenaInicial = est.escenas[0] ? est.escenas[0].id : "";
     // Lotes: colores de estado del proyecto y datos de lote nuevos que traiga el archivo del proyecto
     if (!est.lotesEstados) est.lotesEstados = JSON.parse(JSON.stringify(base.lotesEstados || ESTADOS_DEF));
     const lotesBase = {};
@@ -1233,8 +1271,9 @@
   normalizar();
   const escena = (id) => est.escenas.find((e) => e.id === id);
   const nombreDe = (id) => (escena(id) ? escena(id).nombre : "—");
-  const thumbDe = (id) => (escena(id) && escena(id).thumb) || "escenas/" + id + "/1/f/0/0.jpg";
-  const planetaDe = (id) => "escenas/" + id + "/planeta.jpg";
+  const VACIA_IMG = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 10"><rect width="16" height="10" fill="#171916"/></svg>');
+  const thumbDe = (id) => (!id || !escena(id) ? VACIA_IMG : escena(id).thumb || R(id) + "1/f/0/0.jpg");
+  const planetaDe = (id) => R(id) + "planeta.jpg";
   const vistaDe = (id) => escena(id).vista;
   // Textos y hotspots en 3D (pegados a la esfera) y acciones al hacer clic
   const K3 = 2.5, R3 = 400 * K3;
@@ -1282,10 +1321,42 @@
       if (t - tHistorial > 600) { historial.push(ultimoEstado); if (historial.length > 60) historial.shift(); }
       rehechos = []; tHistorial = t; ultimoEstado = ahora;
     }
-    try { localStorage.setItem(CLAVE, ahora); $("b-estado").textContent = "Guardado"; }
-    catch (e) { $("b-estado").textContent = "Sin espacio para guardar"; }
+    persistir(ahora);
     pintarResumen();
   }
+  // Dónde se guarda: en la nube (Cloudflare R2) o en este navegador (demo)
+  let tNube = 0, enviando = false, pendienteNube = null;
+  function persistir(txt) {
+    if (MODO === "tour") return;
+    if (MODO === "demo") {
+      try { localStorage.setItem(CLAVE, txt); $("b-estado").textContent = "Guardado"; }
+      catch (e) { $("b-estado").textContent = "Sin espacio para guardar"; }
+      return;
+    }
+    if (!TOUR) return;
+    pendienteNube = txt;
+    $("b-estado").textContent = "Guardando…";
+    clearTimeout(tNube);
+    tNube = setTimeout(enviarNube, 700);
+  }
+  async function enviarNube() {
+    if (enviando || pendienteNube === null) return;
+    enviando = true;
+    const txt = pendienteNube; pendienteNube = null;
+    try {
+      const r = await fetch("api/tours/" + TOUR, { method: "PUT", headers: { "content-type": "application/json" }, body: txt });
+      if (r.status === 401) { $("b-estado").textContent = "Tu sesión venció: recarga la página"; pendienteNube = pendienteNube || txt; }
+      else if (!r.ok) throw new Error(r.status);
+      else $("b-estado").textContent = pendienteNube === null ? "Guardado en la nube" : "Guardando…";
+    } catch (e) {
+      pendienteNube = pendienteNube || txt;
+      $("b-estado").textContent = "Sin conexión, reintentando…";
+      setTimeout(enviarNube, 4000);
+    }
+    enviando = false;
+    if (pendienteNube !== null) { clearTimeout(tNube); tNube = setTimeout(enviarNube, 300); }
+  }
+  window.addEventListener("beforeunload", (ev) => { if (MODO === "nube" && (pendienteNube !== null || enviando)) { ev.preventDefault(); ev.returnValue = ""; } });
   function viajarHistorial(atras) {
     const de = atras ? historial : rehechos, a = atras ? rehechos : historial;
     if (!de.length) { avisar(atras ? "No hay nada que deshacer" : "No hay nada que rehacer"); return; }
@@ -1293,7 +1364,7 @@
     ultimoEstado = de.pop();
     est = JSON.parse(ultimoEstado);
     trCache = {}; tHistorial = 0;
-    try { localStorage.setItem(CLAVE, ultimoEstado); } catch (e) { /* sin almacenamiento */ }
+    persistir(ultimoEstado);
     // Repinta la ventana actual conservando la capa elegida si sigue existiendo
     const clave = nav.sec + "/" + nav.sub;
     if (motorEd && motorEd.actual && (clave === "panoramas/capas" || clave === "panoramas/piloto")) {
@@ -1366,9 +1437,13 @@
   $("nav").addEventListener("click", (ev) => { const b = ev.target.closest("[data-sec]"); if (b) ir(b.dataset.sec); });
   $("subtabs").addEventListener("click", (ev) => { const b = ev.target.closest("[data-sub]"); if (b) ir(nav.sec, b.dataset.sub); });
 
+  const SIN_ESFERAS = ["panoramas/mapa", "panoramas/capas", "panoramas/piloto", "panoramas/terreno", "skin/h", "skin/v"];
   function ir(sec, sub) {
+    // En la nube, sin tour abierto solo existe Mis Tours
+    if (MODO === "nube" && !TOUR && sec !== "tours") { avisar("Abre o crea un tour primero"); sec = "tours"; sub = "todos"; }
     const S = SECCIONES.find((s) => s.id === sec);
     sub = sub || nav.ultimoSub[sec] || S.subs[0][0];
+    if (!est.escenas.length && SIN_ESFERAS.includes(sec + "/" + sub)) { avisar("Primero sube una esfera"); sec = "panoramas"; sub = "lista"; return ir(sec, sub); }
     const antes = nav.sec + "/" + nav.sub;
     nav.sec = sec; nav.sub = sub; nav.ultimoSub[sec] = sub;
     const clave = sec + "/" + sub;
@@ -1380,7 +1455,8 @@
     if (antes === "panoramas/terreno" && clave !== antes) cerrarTerreno();
     document.querySelectorAll("#contenedor > section").forEach((s) => (s.hidden = !s.dataset.vista.split(" ").includes(clave)));
     $("sel-pano-wrap").hidden = !enEditor;
-    if (PROXIMO[clave]) {
+    if (clave === "publicar/web" && MODO === "nube") { pintarPublicar(); }
+    else if (PROXIMO[clave]) {
       const [ico, t, d] = PROXIMO[clave];
       $("proximo").innerHTML = '<div class="icono">' + ico + "</div><span class=\"etiq\">Próximo bloque</span><h1>" + t + "</h1><p>" + d + "</p>";
       $("v-proximo").hidden = false;
@@ -1396,8 +1472,61 @@
     if (sec === "skin") requestAnimationFrame(() => abrirSkin(sub));
   }
 
+  // =================== PUBLICAR (nube) ===================
+  // El link público vive en el Worker de tours; publicar congela una copia del borrador.
+  const hostTours = () => location.host.replace(/^mozari-estudio\./, "mozari-tours.");
+  const linkTour = () => location.protocol + "//" + hostTours() + "/" + TOUR + "/";
+  function pintarPublicar() {
+    const t = (toursNube || []).find((x) => x.id === TOUR) || {};
+    const pub = t.publicado ? new Date(t.publicado).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+    $("proximo").innerHTML = '<div class="icono">' + ICO.web + '</div><span class="etiq">Publicar</span><h1>Tu tour en la web</h1>' +
+      '<p>Publicar congela una copia para tu cliente. Puedes seguir editando y publicar de nuevo cuando quieras; el link no cambia.</p>' +
+      '<div class="pub-caja"><code id="pub-link">' + esc(linkTour()) + '</code><button class="btn-sec" id="pub-copiar">Copiar link</button></div>' +
+      '<div class="pub-acc"><button class="btn-prim" id="pub-publicar"' + (est.escenas.length ? "" : " disabled") + ">" + (pub ? "Publicar cambios" : "Publicar tour") + "</button>" +
+      (pub ? '<a class="btn-sec" href="' + esc(linkTour()) + '" target="_blank" rel="noopener">Abrir tour ↗</a>' : "") + "</div>" +
+      '<p class="nota" id="pub-estado">' + (pub ? "Última publicación: " + pub : est.escenas.length ? "Aún no está publicado." : "Sube al menos una esfera para publicar.") + "</p>";
+    $("v-proximo").hidden = false;
+    if (!toursNube) cargarToursNube().then(() => nav.sec === "publicar" && pintarPublicar());
+  }
+  $("proximo").addEventListener("click", async (ev) => {
+    if (ev.target.id === "pub-copiar") {
+      try { await navigator.clipboard.writeText(linkTour()); avisar("Link copiado"); } catch (e) { avisar("Copia el link manualmente"); }
+    }
+    if (ev.target.id === "pub-publicar") {
+      const b = ev.target; b.disabled = true; b.textContent = "Publicando…";
+      // primero se asegura que el último cambio ya esté guardado
+      clearTimeout(tNube); pendienteNube = JSON.stringify(est); await enviarNube();
+      for (let i = 0; i < 20 && (enviando || pendienteNube !== null); i++) await new Promise((ok) => setTimeout(ok, 300));
+      const r = await fetch("api/tours/" + TOUR + "/publicar", { method: "POST" }).catch(() => null);
+      if (!r || !r.ok) { b.disabled = false; b.textContent = "Publicar tour"; avisar("No se pudo publicar"); return; }
+      toursNube = null; await cargarToursNube(); pintarPublicar();
+      avisar("¡Publicado! Tu cliente ya ve esta versión.");
+    }
+  });
+
   // =================== MIS TOURS ===================
+  let toursNube = null, borrandoTour = null;
+  async function cargarToursNube() {
+    try { const r = await fetch("api/tours", { cache: "no-store" }); toursNube = (await r.json()).tours || []; }
+    catch (e) { toursNube = []; avisar("No se pudo leer tu lista de tours"); }
+    pintarTours();
+  }
   function pintarTours() {
+    if (MODO === "nube") {
+      if (!toursNube) { $("tours").innerHTML = '<p class="nota">Cargando tus tours…</p>'; cargarToursNube(); return; }
+      const fecha = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
+      $("tours").innerHTML = toursNube.map((t) => {
+        const foto = t.inicial ? "t/" + t.id + "/escenas/" + t.inicial + "/1/f/0/0.jpg" : VACIA_IMG;
+        const conf = borrandoTour === t.id ? '<div class="card-confirma" role="alertdialog"><b>¿Borrar ' + esc(t.nombre) + "?</b><span>Se borran sus esferas y su link público. Esto no se puede deshacer.</span><div><button class=\"mini peligro-lleno\" data-si-borrar-tour=\"" + t.id + '">Borrar</button><button class="mini" data-no-borrar-tour>Cancelar</button></div></div>' : "";
+        return '<div class="card" role="button" tabindex="0" data-tour="' + t.id + '"><div class="foto"><img src="' + foto + '" alt="" loading="lazy" onerror="this.style.opacity=0">' +
+          (t.id === TOUR ? '<span class="badge">ABIERTO</span>' : t.publicado ? '<span class="badge pub">PUBLICADO</span>' : "") +
+          '<button class="card-borrar" data-borrar-tour="' + t.id + '" aria-label="Borrar ' + esc(t.nombre) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>' + conf + "</div>" +
+          '<div class="cuerpo"><span class="nombre">' + esc(t.nombre || "Tour") + '</span><div class="chips"><span class="chip-dato">' + (+t.escenas || 0) + " panoramas</span><span class=\"chip-dato\">" + fecha(t.actualizado) + "</span></div></div></div>";
+      }).join("") +
+        '<form class="hueco nuevo-tour" id="nuevo-tour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><b>Nuevo tour</b>' +
+        '<input class="entrada" name="nombre" maxlength="60" placeholder="Nombre del tour" required><button class="btn-prim" type="submit">Crear</button></form>';
+      return;
+    }
     const todas = Object.values(est.capas).flat();
     $("tours").innerHTML =
       '<button class="card" data-abrir-tour><div class="foto"><img src="' + thumbProyecto() + '" alt=""><span class="badge">EN EDICIÓN</span></div>' +
@@ -1405,7 +1534,40 @@
       todas.filter((c) => c.tipo === "hotspot").length + " hotspots</span></div></div></button>" +
       '<div class="hueco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><b>Nuevo tour</b><span class="nota">Se activa cuando conectemos el servidor (bloque Publicar).</span></div>';
   }
-  $("tours").addEventListener("click", (ev) => { if (ev.target.closest("[data-abrir-tour]")) ir("proyecto", "general"); });
+  $("tours").addEventListener("click", async (ev) => {
+    if (MODO !== "nube") { if (ev.target.closest("[data-abrir-tour]")) ir("proyecto", "general"); return; }
+    const bt = ev.target.closest("[data-borrar-tour]");
+    if (bt) { ev.stopPropagation(); borrandoTour = bt.dataset.borrarTour; pintarTours(); return; }
+    if (ev.target.closest("[data-no-borrar-tour]")) { borrandoTour = null; pintarTours(); return; }
+    const si = ev.target.closest("[data-si-borrar-tour]");
+    if (si) {
+      const id = si.dataset.siBorrarTour;
+      si.disabled = true; si.textContent = "Borrando…";
+      const r = await fetch("api/tours/" + id, { method: "DELETE" }).catch(() => null);
+      if (!r || !r.ok) { avisar("No se pudo borrar"); return; }
+      borrandoTour = null; toursNube = null;
+      if (id === TOUR) { location.hash = ""; location.reload(); return; }
+      pintarTours(); avisar("Tour borrado"); return;
+    }
+    if (ev.target.closest(".card-confirma")) return;
+    const c = ev.target.closest("[data-tour]");
+    if (c) abrirTourNube(c.dataset.tour);
+  });
+  $("tours").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const f = ev.target, nombre = f.nombre.value.trim();
+    if (!nombre) return;
+    f.querySelector("button").disabled = true;
+    const r = await fetch("api/tours", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nombre }) }).catch(() => null);
+    if (!r || !r.ok) { f.querySelector("button").disabled = false; avisar("No se pudo crear el tour"); return; }
+    const { id } = await r.json();
+    abrirTourNube(id, true);
+  });
+  function abrirTourNube(id, nuevo) {
+    if (id === TOUR) { ir("proyecto", "general"); return; }
+    location.hash = "t=" + id + (nuevo ? "&nuevo" : "");
+    location.reload();
+  }
 
   // =================== PROYECTO ===================
   const P = () => est.proyecto;
@@ -1501,10 +1663,10 @@
 
     function escenaM(id) {
       if (escenasM[id]) return escenasM[id];
-      const d = meta[id], b = "escenas/" + id + "/";
+      const d = meta[id], b = R(id);
       const source = Marzipano.ImageUrlSource.fromString(b + "{z}/{f}/{y}/{x}.jpg", { cubeMapPreviewUrl: b + "preview.jpg" });
       const geometry = new Marzipano.CubeGeometry(d.niveles);
-      const limiter = Marzipano.RectilinearView.limit.traditional(d.cara, (110 * Math.PI) / 180);
+      const limiter = Marzipano.RectilinearView.limit.traditional(d.cara, (110 * Math.PI) / 180, (150 * Math.PI) / 180);
       const view = new Marzipano.RectilinearView(vistaDe(id), limiter);
       const scene = viewer.createScene({ source, geometry, view, pinFirstLevel: true });
       view.addEventListener("change", () => { if (actual && actual.view === view) { programar(); if (opciones.alMoverVista) opciones.alMoverVista(); } });
@@ -1984,7 +2146,7 @@
       if (!lupa) lupa = crearLupa();
       const id = actual.id;
       if (!lupa.escenas[id]) {
-        const d = meta[id], b = "escenas/" + id + "/";
+        const d = meta[id], b = R(id);
         const view = new Marzipano.RectilinearView({ yaw: 0, pitch: 0, fov: 0.4 });
         const scene = lupa.v.createScene({ source: Marzipano.ImageUrlSource.fromString(b + "{z}/{f}/{y}/{x}.jpg", { cubeMapPreviewUrl: b + "preview.jpg" }), geometry: new Marzipano.CubeGeometry(d.niveles), view, pinFirstLevel: true });
         lupa.escenas[id] = { scene, view };
@@ -2211,7 +2373,9 @@
         '<span class="chip-dato">' + pol + (pol === 1 ? " polígono" : " polígonos") + "</span>" +
         '<span class="chip-dato' + (pl ? " ok" : "") + '">Piloto ' + (pl ? "activo" : "apagado") + "</span></div></div></div>";
     }).join("") +
-      '<div class="hueco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir esfera</b><span class="nota">Se activa cuando conectemos el servidor (bloque Publicar). Por ahora, pásale tus esferas a Claude.</span></div>';
+      (MODO === "nube"
+        ? '<label class="hueco subir" id="subir-zona"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir esferas</b><span class="nota">Arrastra aquí tus JPG 360 (2:1) o haz clic. Mozari las prepara para la web en tu computadora.</span><input type="file" id="subir-archivo" accept="image/jpeg,image/png,image/webp" multiple hidden></label>'
+        : '<div class="hueco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir esfera</b><span class="nota">En el estudio en línea puedes subir tus propias esferas.</span></div>');
   }
   let borrandoPano = null;
   $("pano-lista").addEventListener("click", (ev) => {
@@ -2247,6 +2411,230 @@
     avisar(nombre + " se borró. Cmd + Z para deshacer.");
   }
   $("pano-lista").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { const c = ev.target.closest("[data-abrir]"); if (c) { edPano = c.dataset.abrir; ir("panoramas", "capas"); } } });
+
+  // =================== SUBIR ESFERAS (nube) ===================
+  // La esfera se prepara en esta computadora: se proyecta a cubo con WebGL, se arma la pirámide de
+  // niveles (cada uno la mitad del anterior) y se sube pieza por pieza a la nube.
+  const SUBIDA = { TILE: 1024, CALIDAD: 0.82, MAX_CARA: 8192, PARALELO: 6 };
+  function tamCaraDe(ancho) {
+    const ideal = ancho / Math.PI, cand = [];
+    for (let n = 8; n <= 14; n++) cand.push(2 ** n, 3 * 2 ** n);
+    cand.sort((a, b) => a - b);
+    for (const c of cand) if (c >= 0.9 * ideal && c >= 512) return Math.min(c, SUBIDA.MAX_CARA);
+    return SUBIDA.MAX_CARA;
+  }
+  function nivelesDe(cara, tile) {
+    const t = [];
+    for (let s = cara; s >= 512 && s % 256 === 0; s /= 2) t.push(s);
+    const l = [{ tileSize: 256, size: 256, fallbackOnly: true }];
+    let n = 1;
+    t.reverse().forEach((s) => { while (s / n > tile) n *= 2; l.push({ tileSize: s / n, size: s }); });
+    return l;
+  }
+  const SOMBREADOR_V = "#version 300 es\nout vec2 vUv;void main(){vec2 p=vec2(float((gl_VertexID<<1)&2),float(gl_VertexID&2))*2.0-1.0;vUv=vec2(p.x*0.5+0.5,0.5-p.y*0.5);gl_Position=vec4(p,0,1);}";
+  const SOMBREADOR_F = `#version 300 es
+precision highp float;
+in vec2 vUv; out vec4 color;
+uniform int uModo, uCara; uniform vec4 uTile, uPropio, uPad; uniform sampler2D uTex;
+const float PI = 3.141592653589793;
+void main(){
+  vec3 d;
+  if (uModo == 0) {
+    vec2 f = mix(uTile.xy, uTile.zw, vUv); float u = f.x * 2.0 - 1.0, v = f.y * 2.0 - 1.0;
+    if (uCara == 0) d = vec3(-u, -v, -1.0); else if (uCara == 1) d = vec3(u, -1.0, -v);
+    else if (uCara == 2) d = vec3(u, -v, 1.0); else if (uCara == 3) d = vec3(-1.0, -v, u);
+    else if (uCara == 4) d = vec3(1.0, -v, -u); else d = vec3(u, 1.0, v);
+  } else {
+    vec2 p = (vUv * 2.0 - 1.0) * 1.5625; float r2 = dot(p, p);
+    d = vec3(2.0 * p.x, r2 - 1.0, -2.0 * p.y) / (1.0 + r2);
+  }
+  float yaw = atan(d.x, d.z), pitch = atan(d.y, length(d.xz));
+  vec2 st = vec2(fract(yaw / (2.0 * PI) + 0.5), min(0.5 - pitch / PI, 0.9999999));
+  if (st.x < uPropio.x || st.x >= uPropio.z || st.y < uPropio.y || st.y >= uPropio.w) discard;
+  color = vec4(texture(uTex, (st - uPad.xy) / (uPad.zw - uPad.xy)).rgb, 1.0);
+}`;
+  function crearProyector(bitmap, lado) {
+    const cv = new OffscreenCanvas(lado, lado);
+    const gl = cv.getContext("webgl2", { antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: true });
+    if (!gl) throw new Error("Este navegador no tiene WebGL2. Usa Chrome.");
+    const sh = (t, src) => { const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+    const pr = gl.createProgram();
+    gl.attachShader(pr, sh(gl.VERTEX_SHADER, SOMBREADOR_V)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, SOMBREADOR_F));
+    gl.linkProgram(pr); gl.useProgram(pr);
+    const U = {}; ["uModo", "uCara", "uTile", "uPropio", "uPad", "uTex"].forEach((k) => (U[k] = gl.getUniformLocation(pr, k)));
+    return { cv, gl, U, piezas: [] };
+  }
+  // Parte la esfera en piezas que quepan en la tarjeta de video (con 2 px de margen para que no haya costuras)
+  async function cargarPiezas(P, bitmap) {
+    const { gl } = P, W = bitmap.width, H = bitmap.height, max = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), 16384), pad = 2;
+    const cols = Math.ceil(W / (max - 2 * pad)), rows = Math.ceil(H / (max - 2 * pad));
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const x0 = Math.floor((c * W) / cols), x1 = Math.floor(((c + 1) * W) / cols), y0 = Math.floor((r * H) / rows), y1 = Math.floor(((r + 1) * H) / rows);
+      const px0 = Math.max(0, x0 - pad), px1 = Math.min(W, x1 + pad), py0 = Math.max(0, y0 - pad), py1 = Math.min(H, y1 + pad);
+      const trozo = await createImageBitmap(bitmap, px0, py0, px1 - px0, py1 - py0);
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, trozo);
+      [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR));
+      [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE));
+      trozo.close();
+      P.piezas.push({ tex, propio: [x0 / W, y0 / H, c === cols - 1 ? 1.0001 : x1 / W, r === rows - 1 ? 1.0001 : y1 / H], pad: [px0 / W, py0 / H, px1 / W, py1 / H] });
+    }
+  }
+  function proyectar(P, lado, modo, cara, tile) {
+    const { gl, U, cv } = P;
+    if (cv.width !== lado) { cv.width = lado; cv.height = lado; }
+    gl.viewport(0, 0, lado, lado);
+    gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.uniform1i(U.uModo, modo); gl.uniform1i(U.uCara, cara || 0); gl.uniform1i(U.uTex, 0);
+    gl.uniform4fv(U.uTile, tile || [0, 0, 1, 1]);
+    gl.activeTexture(gl.TEXTURE0);
+    P.piezas.forEach((p) => { gl.bindTexture(gl.TEXTURE_2D, p.tex); gl.uniform4fv(U.uPropio, p.propio); gl.uniform4fv(U.uPad, p.pad); gl.drawArrays(gl.TRIANGLES, 0, 3); });
+    return cv.transferToImageBitmap();
+  }
+  async function aJpg(img, lado) {
+    const c = new OffscreenCanvas(lado, lado), x = c.getContext("2d");
+    x.drawImage(img, 0, 0, lado, lado);
+    return c.convertToBlob({ type: "image/jpeg", quality: SUBIDA.CALIDAD });
+  }
+  const idEsfera = (nombre) => (nombre.toLowerCase().replace(/\.[a-z0-9]+$/, "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30) || "esfera") + "-" + Math.random().toString(36).slice(2, 6);
+  async function subirArchivo(ruta, blob) {
+    for (let i = 0; i < 4; i++) {
+      try {
+        const r = await fetch("api/tours/" + TOUR + "/f/" + ruta, { method: "PUT", body: blob });
+        if (r.ok) return;
+        if (r.status === 401) throw Object.assign(new Error("sesión"), { fatal: true });
+      } catch (e) { if (e.fatal) throw new Error("Tu sesión venció. Recarga la página."); }
+      await new Promise((ok) => setTimeout(ok, 800 * (i + 1)));
+    }
+    throw new Error("No se pudo subir " + ruta);
+  }
+  async function prepararEsfera(file, avance) {
+    avance("Leyendo la esfera…", 0);
+    let bitmap;
+    try { bitmap = await createImageBitmap(file); }
+    catch (e) { throw new Error("No se pudo abrir la imagen. Usa un JPG 360 de 2:1."); }
+    const W = bitmap.width, H = bitmap.height;
+    if (Math.abs(W / H - 2) > 0.03) { bitmap.close(); throw new Error("No es una esfera 360: mide " + W + "×" + H + " y debe ser 2:1."); }
+    const id = idEsfera(file.name), carpeta = "escenas/" + id + "/";
+    const cara = tamCaraDe(W), niveles = nivelesDe(cara, SUBIDA.TILE), L = niveles.length - 1;
+    const top = niveles[L], nTop = top.size / top.tileSize;
+    const P = crearProyector(bitmap, top.tileSize);
+    await cargarPiezas(P, bitmap);
+    bitmap.close();
+    // Cola de subida en paralelo
+    const cola = [];
+    let total = 0, hechos = 0, peso = 0, error = null, activos = 0;
+    const totalPrevisto = 6 * niveles.slice(1).reduce((s, n) => s + (n.size / n.tileSize) ** 2, 0) + 4;
+    const bombear = () => {
+      while (activos < SUBIDA.PARALELO && cola.length && !error) {
+        const [ruta, blob] = cola.shift(); activos++;
+        subirArchivo(carpeta + ruta, blob).then(() => { hechos++; peso += blob.size; avance("Subiendo " + hechos + " de " + totalPrevisto, hechos / totalPrevisto); }).catch((e) => (error = e)).finally(() => { activos--; bombear(); });
+      }
+    };
+    const encolar = async (ruta, blob) => { total++; cola.push([ruta, blob]); bombear(); while (cola.length > 24 && !error) await new Promise((ok) => setTimeout(ok, 60)); if (error) throw error; };
+    const caras = "bdflru", preview = [];
+    for (let ci = 0; ci < 6; ci++) {
+      avance("Preparando cara " + (ci + 1) + " de 6…", hechos / totalPrevisto);
+      // Nivel más grande: directo desde la esfera
+      let rejilla = [];
+      for (let ty = 0; ty < nTop; ty++) {
+        rejilla.push([]);
+        for (let tx = 0; tx < nTop; tx++) {
+          const bm = proyectar(P, top.tileSize, 0, ci, [tx / nTop, ty / nTop, (tx + 1) / nTop, (ty + 1) / nTop]);
+          rejilla[ty].push(bm);
+          await encolar(L + "/" + caras[ci] + "/" + ty + "/" + tx + ".jpg", await aJpg(bm, top.tileSize));
+        }
+      }
+      // Niveles menores: cada uno a la mitad del anterior
+      for (let z = L - 1; z >= 1; z--) {
+        const nv = niveles[z], n = nv.size / nv.tileSize, nHijo = rejilla.length, k = nHijo / n, tsH = niveles[z + 1].tileSize, nueva = [];
+        for (let ty = 0; ty < n; ty++) {
+          nueva.push([]);
+          for (let tx = 0; tx < n; tx++) {
+            const c = new OffscreenCanvas(nv.tileSize, nv.tileSize), x = c.getContext("2d");
+            x.imageSmoothingQuality = "high";
+            for (let cy = 0; cy < k; cy++) for (let cx = 0; cx < k; cx++) x.drawImage(rejilla[ty * k + cy][tx * k + cx], (cx * tsH) / 2, (cy * tsH) / 2, tsH / 2, tsH / 2);
+            const bm = c.transferToImageBitmap();
+            nueva[ty].push(bm);
+            await encolar(z + "/" + caras[ci] + "/" + ty + "/" + tx + ".jpg", await aJpg(bm, nv.tileSize));
+          }
+        }
+        rejilla.flat().forEach((b) => b.close());
+        rejilla = nueva;
+      }
+      // Vista previa de 256 px a partir del nivel más chico
+      const pc = new OffscreenCanvas(256, 256), px = pc.getContext("2d"), n1 = rejilla.length;
+      px.imageSmoothingQuality = "high";
+      rejilla.forEach((fila, ty) => fila.forEach((b, tx) => px.drawImage(b, (tx * 256) / n1, (ty * 256) / n1, 256 / n1, 256 / n1)));
+      preview.push(pc.transferToImageBitmap());
+      rejilla.flat().forEach((b) => b.close());
+    }
+    const tira = new OffscreenCanvas(256, 1536), tx2 = tira.getContext("2d");
+    preview.forEach((b, i) => { tx2.drawImage(b, 0, i * 256); b.close(); });
+    await encolar("preview.jpg", await tira.convertToBlob({ type: "image/jpeg", quality: SUBIDA.CALIDAD }));
+    const planeta = proyectar(P, 640, 1);
+    await encolar("planeta.jpg", await aJpg(planeta, 640));
+    planeta.close();
+    while ((cola.length || activos) && !error) await new Promise((ok) => setTimeout(ok, 100));
+    if (error) throw error;
+    const datos = { id, nombre: file.name.replace(/\.[a-z0-9]+$/i, ""), origen: { archivo: file.name, ancho: W, alto: H }, cara, niveles, vista: { yaw: 0, pitch: 0, fov: 1.4 }, peso };
+    await subirArchivo(carpeta + "escena.json", new Blob([JSON.stringify(datos)], { type: "application/json" }));
+    P.piezas.forEach((p) => P.gl.deleteTexture(p.tex));
+    const ext = P.gl.getExtension("WEBGL_lose_context"); if (ext) ext.loseContext();
+    return datos;
+  }
+  let subiendo = false;
+  async function subirEsferas(files) {
+    if (MODO !== "nube" || !TOUR) return;
+    files = [...files].filter((f) => /^image\//.test(f.type));
+    if (!files.length) { avisar("Elige imágenes JPG 360"); return; }
+    if (subiendo) { avisar("Espera a que termine la subida actual"); return; }
+    subiendo = true;
+    const panel = $("subida");
+    panel.hidden = false;
+    panel.innerHTML = files.map((f, i) => '<div class="sub-item" data-i="' + i + '"><b>' + esc(f.name) + '</b><span class="nota">En espera</span><i><u></u></i></div>').join("");
+    const fila = (i) => panel.querySelector('[data-i="' + i + '"]');
+    let ok = 0;
+    for (let i = 0; i < files.length; i++) {
+      const el = fila(i);
+      el.classList.add("activa");
+      try {
+        const t0 = performance.now();
+        const d = await prepararEsfera(files[i], (txt, p) => { el.querySelector(".nota").textContent = txt; el.querySelector("u").style.width = Math.round(p * 100) + "%"; });
+        meta[d.id] = d;
+        est.escenas.push({ id: d.id, nombre: d.nombre, vista: d.vista });
+        est.capas[d.id] = [];
+        normalizar();
+        guardar();
+        pintarLista(); panel.hidden = false;
+        el.classList.add("lista");
+        el.querySelector(".nota").textContent = "Lista · " + (d.peso / 1048576).toFixed(0) + " MB · " + Math.round((performance.now() - t0) / 1000) + " s";
+        el.querySelector("u").style.width = "100%";
+        ok++;
+      } catch (e) {
+        el.classList.add("error");
+        el.querySelector(".nota").textContent = e.message || "Algo falló";
+      }
+      el.classList.remove("activa");
+    }
+    subiendo = false;
+    avisar(ok ? (ok === 1 ? "Esfera lista" : ok + " esferas listas") : "No se pudo subir");
+    setTimeout(() => { if (!subiendo && !panel.querySelector(".error")) panel.hidden = true; }, 6000);
+  }
+  window.addEventListener("beforeunload", (ev) => { if (subiendo) { ev.preventDefault(); ev.returnValue = ""; } });
+  $("pano-lista").addEventListener("change", (ev) => { if (ev.target.id === "subir-archivo") { subirEsferas(ev.target.files); ev.target.value = ""; } });
+  ["dragenter", "dragover"].forEach((t) => $("pano-lista").addEventListener(t, (ev) => {
+    if (MODO !== "nube" || !ev.dataTransfer || ![...ev.dataTransfer.types].includes("Files")) return;
+    ev.preventDefault(); const z = $("subir-zona"); if (z) z.classList.add("encima");
+  }));
+  $("pano-lista").addEventListener("dragleave", (ev) => { const z = $("subir-zona"); if (z && !z.contains(ev.relatedTarget)) z.classList.remove("encima"); });
+  $("pano-lista").addEventListener("drop", (ev) => {
+    if (MODO !== "nube" || !ev.dataTransfer || !ev.dataTransfer.files.length) return;
+    ev.preventDefault(); const z = $("subir-zona"); if (z) z.classList.remove("encima");
+    subirEsferas(ev.dataTransfer.files);
+  });
 
   // =================== PANORAMAS: MAPA DE NODOS ===================
   const mapa = (function () {
@@ -2978,7 +3366,7 @@
     avisar("Demo restablecida");
   });
   document.addEventListener("keydown", (ev) => {
-    if (!$("previa").hidden) { if (ev.key === "Escape" && !(tourPv && tourPv.cerrarPop())) cerrarPrevia(); return; }
+    if (!$("previa").hidden) { if (ev.key === "Escape" && !(tourPv && tourPv.cerrarPop()) && MODO !== "tour") cerrarPrevia(); return; }
     if (!motorEd || motorEd.modo !== "capas") return;
     const escribiendo = /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName);
     if (motorEd.dibujo) {
@@ -3599,6 +3987,7 @@
   const audioTour = new Audio();
   const orientacionPantalla = () => (window.innerWidth < window.innerHeight ? "v" : "h");
   function abrirPrevia() {
+    if (!est.escenas.length) { avisar("Primero sube una esfera"); return; }
     if (motorEd && motorEd.dibujo) terminarDibujo(false);
     detenerPilotoEd();
     $("previa").hidden = false;
@@ -3606,7 +3995,7 @@
     audioPrueba.pause(); $("m-play").innerHTML = ICO_PLAY;
     orientPv = orientacionPantalla();
     tourPv = crearTour($("pv-stage"), $("pv-ui"), {
-      orientacion: orientPv, cerrable: true, alCerrar: cerrarPrevia, hayMusica: !!musicaUrl,
+      orientacion: orientPv, cerrable: MODO !== "tour", alCerrar: cerrarPrevia, hayMusica: !!musicaUrl,
       alMusica: () => { if (audioTour.paused) { audioTour.play().catch(() => {}); return true; } audioTour.pause(); return false; },
       alPantalla: () => {
         const el = $("previa");
@@ -3637,6 +4026,13 @@
   ["abrir-previa", "r-previa", "mv-previa"].forEach((id) => $(id).addEventListener("click", abrirPrevia));
 
   // =================== ARRANQUE ===================
+  if (MODO === "tour") {
+    // Link público: directo al tour, sin el estudio ni la pantalla de Mozari
+    $("splash").remove();
+    document.title = P().nombre || "Tour 360";
+    abrirPrevia();
+    return;
+  }
   // Pantalla de arranque con el crédito de R360 Team; un clic la salta.
   (function () {
     const sp = $("splash");
@@ -3644,6 +4040,14 @@
     const t = setTimeout(quitar, matchMedia("(prefers-reduced-motion: reduce)").matches ? 900 : 2400);
     sp.addEventListener("click", () => { clearTimeout(t); quitar(); });
   })();
+  if (MODO === "nube") {
+    $("restablecer").hidden = true;
+    if (!TOUR) { $("b-proj").textContent = "Elige un tour"; ir("tours", "todos"); return; }
+    pintarResumen();
+    if (/nuevo/.test(location.hash)) { history.replaceState(null, "", "#t=" + TOUR); ir("panoramas", "lista"); avisar("Tour creado. Sube tus esferas."); }
+    else ir(est.escenas.length ? "proyecto" : "panoramas", est.escenas.length ? "general" : "lista");
+    return;
+  }
   pintarResumen();
   ir("proyecto", "general");
 })();

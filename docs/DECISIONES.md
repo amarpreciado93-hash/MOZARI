@@ -72,3 +72,8 @@
 | 2026-10-28 | "Publicar" copia el borrador a `publicado/<id>/proyecto.json`; el público nunca ve el borrador | Editar sin romper el tour que ya está en manos del cliente |
 | 2026-10-28 | Despliegue automático conectando el repo de GitHub a Cloudflare (Workers Builds); cada Push origin publica | Sin comandos ni pasos manuales |
 | 2026-10-28 | En línea en Cloudflare: estudio en mozari-estudio.amarpreciado93.workers.dev (protegido con Access, solo miembros de la cuenta) y tours en mozari-tours.amarpreciado93.workers.dev; ambos se publican solos con cada Push | Mozari ya vive en la nube de R360 |
+| 2026-10-28 | Estudio en línea: Mis Tours lista, crea, abre y borra los tours guardados en R2; cada cambio se guarda solo en la nube (aviso "Guardado en la nube" / "Sin conexión, reintentando…") | Trabajar desde cualquier compu sin perder nada |
+| 2026-10-28 | Subir esfera desde el navegador: la propia compu corta la foto en piezas multirresolución con la tarjeta de video (WebGL) y las sube de 6 en 6; una de 150 MP tarda ~1.5 min | Sin servidores que procesar ni costos extra |
+| 2026-10-28 | Publicar desde el estudio: guarda lo pendiente, congela el tour y da el link para copiar | Un clic para entregar al cliente |
+| 2026-10-28 | El tour público usa el mismo programa del estudio en modo "tour" (solo el visor, sin herramientas) | Un solo programa que mantener: lo que se ve en la vista previa es lo que ve el cliente |
+| 2026-10-28 | herramientas/construir.py arma estudio/index.html desde el visor | Una sola fuente del programa |
