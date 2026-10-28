@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mozari Estudio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;800&display=swap">
 <style>
   /* Layout: app de escritorio con dos niveles de navegación, como 3DVista pero más claro:
      arriba las ventanas (Mis Tours, Proyecto, Panoramas, Media, Skin, Publicar),
@@ -314,37 +314,160 @@
 
   .toast { position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); padding: 9px 18px; border-radius: var(--mz-pastilla); font-size: 13px; white-space: nowrap; background: var(--mz-vidrio); border: 1px solid var(--mz-linea); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 
-  /* ---------- Skin del tour (lo usan la vista previa y el editor de skin) ---------- */
+  /* ---------- Skins del tour: 4 plantillas base (las usan la vista previa y el editor de skin) ---------- */
   .sk { position: absolute; inset: 0; z-index: 5; pointer-events: none; color: #fff; font-family: var(--mz-texto-ui); }
-  .sk-panel { background: var(--sk-panel); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--sk-radio); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-  .sk-top { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 10px; }
-  .sk-marca { pointer-events: auto; display: flex; align-items: center; gap: 10px; padding: 9px 16px 9px 12px; justify-self: start; min-width: 0; max-width: 100%; }
-  .sk-marca.centro { grid-column: 2; justify-self: center; }
-  .sk-logo-iso { width: 24px; height: 24px; color: var(--sk-acento); flex: none; }
-  .sk-logo-img { height: 28px; max-width: 150px; object-fit: contain; flex: none; }
-  .sk-marca b { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sk-btns { grid-column: 3; justify-self: end; display: flex; gap: 8px; pointer-events: auto; }
-  .sk-btn { width: 42px; height: 42px; display: grid; place-items: center; border-radius: var(--sk-radio-btn); color: #fff; cursor: pointer; padding: 0; }
-  .sk-btn:hover, .sk-btn[aria-pressed="true"] { background: var(--sk-acento); color: var(--sk-sobre); }
+  .sk button, .sk a { font-family: inherit; }
+  .sk-panel { background: var(--sk-panel); border: 1px solid rgba(255, 255, 255, 0.09); border-radius: var(--sk-radio); backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); }
+  .sk-logo { display: inline-flex; align-items: center; flex: none; }
+  .sk-logo svg { width: 26px; height: 26px; color: var(--sk-acento); }
+  .sk-logo img { height: 30px; max-width: 160px; object-fit: contain; }
+  .sk-btn { pointer-events: auto; width: 40px; height: 40px; display: grid; place-items: center; border-radius: var(--sk-radio-btn); color: #fff; cursor: pointer; padding: 0; border: 0; background: transparent; transition: background 0.2s, color 0.2s; }
+  .sk-btn.sk-panel { border: 1px solid rgba(255, 255, 255, 0.09); background: var(--sk-panel); }
+  .sk-btn:hover { background: var(--sk-acento); color: var(--sk-sobre); }
   .sk-btn svg { width: 17px; height: 17px; }
-  .sk-piloto { position: absolute; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 72px); display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 11px; color: rgba(255, 255, 255, 0.8); white-space: nowrap; }
-  .sk-piloto i { width: 6px; height: 6px; border-radius: 50%; background: var(--sk-acento); animation: respira 1.6s ease-in-out infinite; }
-  .sk-menu { position: absolute; pointer-events: auto; display: flex; gap: 4px; padding: 5px; overflow: auto; scrollbar-width: none; }
-  .sk-menu--abajo { left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); max-width: calc(100% - 32px); }
-  .sk--zoom .sk-menu--abajo { max-width: calc(100% - 160px); }
-  .sk-menu--izquierda { left: max(16px, env(safe-area-inset-left, 0px)); top: 50%; transform: translateY(-50%); flex-direction: column; max-height: calc(100% - 190px); }
-  .sk-item { flex: none; border: 0; background: transparent; color: rgba(255, 255, 255, 0.72); cursor: pointer; font: 500 13px var(--mz-texto-ui); border-radius: var(--sk-radio-item); padding: 9px 18px; white-space: nowrap; text-align: left; }
-  .sk-item:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
-  .sk-item[aria-current="true"] { background: var(--sk-acento); color: var(--sk-sobre); }
-  .sk-menu--miniaturas .sk-item { display: grid; gap: 6px; padding: 5px 5px 8px; width: 120px; }
-  .sk-menu--miniaturas .sk-item img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: var(--sk-radio-img); display: block; }
-  .sk-menu--miniaturas .sk-item span { padding-inline: 3px; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
-  .sk-zoom { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); display: grid; gap: 8px; pointer-events: auto; }
-  .sk--v .sk-menu--abajo { left: 12px; right: 12px; transform: none; max-width: none; }
-  .sk--v .sk-menu--miniaturas .sk-item { width: 96px; }
-  .sk--v .sk-zoom { bottom: calc(env(safe-area-inset-bottom, 0px) + 150px); right: 12px; }
-  .sk--v .sk-top { left: 12px; right: 12px; }
-  .sk--v .sk-marca b { font-size: 13px; }
+  .sk-cta { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--sk-acento); color: var(--sk-sobre); text-decoration: none; font-weight: 600; font-size: 13px; padding: 11px 18px; border-radius: var(--sk-radio-btn); white-space: nowrap; border: 0; cursor: pointer; }
+  .sk-cta svg { width: 16px; height: 16px; }
+  .sk-cta:hover { filter: brightness(1.08); }
+  .sk-pil { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; color: rgba(255, 255, 255, 0.82); white-space: nowrap; }
+  .sk-pil i { width: 6px; height: 6px; border-radius: 50%; background: var(--sk-acento); animation: respira 1.6s ease-in-out infinite; }
+  .sk [data-ir] { cursor: pointer; }
+
+  /* ===== Plantilla 1 · CINE: minimalista, título grande, menú escondido ===== */
+  .t-cine .c-velo { position: absolute; left: 0; right: 0; pointer-events: none; }
+  .t-cine .c-velo.arriba { top: 0; height: 140px; background: linear-gradient(rgba(0, 0, 0, 0.55), transparent); }
+  .t-cine .c-velo.abajo { bottom: 0; height: 240px; background: linear-gradient(transparent, rgba(0, 0, 0, 0.62)); }
+  .t-cine .c-arriba { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 22px); left: max(28px, env(safe-area-inset-left, 0px)); right: max(28px, env(safe-area-inset-right, 0px)); display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .t-cine .c-marca { display: flex; align-items: center; gap: 14px; min-width: 0; pointer-events: auto; }
+  .t-cine .c-marca span.n { font-size: 11px; font-weight: 500; letter-spacing: 0.32em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.9; }
+  .t-cine .c-ctrl { display: flex; align-items: center; gap: 4px; pointer-events: auto; }
+  .t-cine .c-menu-btn { pointer-events: auto; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: var(--sk-radio-btn); color: #fff; background: transparent; border: 1px solid rgba(255, 255, 255, 0.35); font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; margin-left: 6px; }
+  .t-cine .c-menu-btn:hover { background: #fff; color: #000; }
+  .t-cine .c-menu-btn svg { width: 15px; height: 15px; }
+  .t-cine .c-cta { margin-right: 6px; padding: 10px 16px; font-size: 12px; }
+  .t-cine .c-titulo { position: absolute; left: max(28px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 32px); right: 180px; display: grid; gap: 6px; }
+  .t-cine .c-indice { font-size: 12px; font-weight: 600; letter-spacing: 0.2em; color: var(--sk-acento); font-variant-numeric: tabular-nums; }
+  .t-cine .c-titulo h2 { margin: 0; font-size: clamp(30px, 4.2vw, 52px); font-weight: 600; line-height: 1.02; letter-spacing: -0.01em; text-wrap: balance; text-shadow: 0 2px 24px rgba(0, 0, 0, 0.4); }
+  .t-cine .c-flechas { position: absolute; right: max(28px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 36px); display: flex; gap: 10px; pointer-events: auto; }
+  .t-cine .c-flechas .sk-btn { width: 52px; height: 52px; border: 1px solid rgba(255, 255, 255, 0.35); }
+  .t-cine .c-cajon { position: absolute; top: 12px; right: 12px; bottom: 12px; width: 340px; display: flex; flex-direction: column; pointer-events: auto; overflow: hidden; }
+  .t-cine .c-cajon header { display: flex; justify-content: space-between; align-items: center; padding: 16px 16px 8px 20px; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; font-weight: 500; }
+  .t-cine .c-lista { overflow-y: auto; padding: 8px 12px 16px; display: grid; gap: 10px; }
+  .t-cine .c-item { position: relative; border: 0; padding: 0; background: none; border-radius: var(--sk-radio-item); overflow: hidden; text-align: left; color: #fff; }
+  .t-cine .c-item img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; transition: transform 0.4s; }
+  .t-cine .c-item:hover img { transform: scale(1.04); }
+  .t-cine .c-item .t { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 14px 10px; background: linear-gradient(transparent, rgba(0, 0, 0, 0.75)); display: flex; gap: 10px; align-items: baseline; font-weight: 500; font-size: 14px; }
+  .t-cine .c-item .t small { color: var(--sk-acento); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; }
+  .t-cine .c-item[aria-current="true"] { outline: 2px solid var(--sk-acento); outline-offset: -2px; }
+  .t-cine.sk--v .c-arriba { left: 18px; right: 18px; }
+  .t-cine.sk--v .c-marca span.n, .t-cine.sk--v .c-cta { display: none; }
+  .t-cine.sk--v .c-menu-btn span { display: none; }
+  .t-cine.sk--v .c-menu-btn { padding: 0; width: 40px; justify-content: center; }
+  .t-cine.sk--v .c-titulo { left: 20px; right: 20px; bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); }
+  .t-cine.sk--v .c-titulo h2 { font-size: 34px; }
+  .t-cine.sk--v .c-flechas { left: 20px; right: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); }
+  .t-cine.sk--v .c-flechas .sk-btn { width: 46px; height: 46px; }
+  .t-cine.sk--v .c-cajon { top: auto; left: 10px; right: 10px; bottom: 10px; width: auto; height: 62%; }
+
+  /* ===== Plantilla 2 · DESARROLLO: barra lateral de venta con contacto ===== */
+  .t-desarrollo .d-lateral { position: absolute; top: 16px; bottom: 16px; left: max(16px, env(safe-area-inset-left, 0px)); width: 290px; display: flex; flex-direction: column; pointer-events: auto; overflow: hidden; transition: transform 0.35s cubic-bezier(.4, 0, .2, 1), opacity 0.3s; }
+  .t-desarrollo.oculto .d-lateral { transform: translateX(calc(-100% - 24px)); opacity: 0; }
+  .t-desarrollo .d-cab { padding: 22px 20px 18px; display: grid; gap: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+  .t-desarrollo .d-cab .sk-logo svg { width: 34px; height: 34px; }
+  .t-desarrollo .d-cab .sk-logo img { height: 40px; max-width: 200px; }
+  .t-desarrollo .d-cab small { display: block; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--sk-acento); font-weight: 600; margin-bottom: 4px; }
+  .t-desarrollo .d-cab b { display: block; font-size: 18px; font-weight: 600; line-height: 1.2; }
+  .t-desarrollo .d-lista { flex: 1; overflow-y: auto; padding: 10px; display: grid; align-content: start; gap: 4px; }
+  .t-desarrollo .d-item { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 8px; align-items: baseline; padding: 12px 14px; border: 0; background: transparent; color: rgba(255, 255, 255, 0.62); border-radius: var(--sk-radio-item); text-align: left; font-size: 20px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.2; transition: color 0.2s, background 0.2s; }
+  .t-desarrollo .d-item small { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: rgba(255, 255, 255, 0.4); font-variant-numeric: tabular-nums; }
+  .t-desarrollo .d-item span { overflow-wrap: anywhere; }
+  .t-desarrollo .d-item:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+  .t-desarrollo .d-item[aria-current="true"] { color: #fff; background: rgba(255, 255, 255, 0.08); box-shadow: inset 3px 0 0 var(--sk-acento); }
+  .t-desarrollo .d-item[aria-current="true"] small { color: var(--sk-acento); }
+  .t-desarrollo .d-pie { padding: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: grid; gap: 8px; }
+  .t-desarrollo .d-pie .sk-cta { width: 100%; box-sizing: border-box; padding: 13px; }
+  .t-desarrollo .d-pie .sk-pil { justify-content: center; }
+  .t-desarrollo .d-toggle { position: absolute; top: 28px; left: calc(max(16px, env(safe-area-inset-left, 0px)) + 290px + 10px); width: 34px; height: 34px; transition: left 0.35s cubic-bezier(.4, 0, .2, 1); }
+  .t-desarrollo.oculto .d-toggle { left: max(16px, env(safe-area-inset-left, 0px)); }
+  .t-desarrollo.oculto .d-toggle svg { transform: rotate(180deg); }
+  .t-desarrollo .d-ctrl { position: absolute; top: 16px; right: max(16px, env(safe-area-inset-right, 0px)); display: flex; gap: 8px; pointer-events: auto; }
+  .t-desarrollo.sk--v .d-lateral { top: auto; left: 10px; right: 10px; bottom: 10px; width: auto; max-height: 64%; }
+  .t-desarrollo.sk--v .d-cab { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; padding: 14px 16px; }
+  .t-desarrollo.sk--v .d-cab b { font-size: 15px; }
+  .t-desarrollo.sk--v .d-lista { display: none; }
+  .t-desarrollo.sk--v.abierto .d-lista { display: grid; }
+  .t-desarrollo.sk--v .d-toggle { display: none; }
+  .t-desarrollo .d-hoja { display: none; }
+  .t-desarrollo.sk--v .d-hoja { display: grid; width: 34px; height: 34px; }
+  .t-desarrollo.sk--v.abierto .d-hoja svg { transform: rotate(180deg); }
+  .t-desarrollo.sk--v .d-ctrl { top: 12px; right: 12px; }
+
+  /* ===== Plantilla 3 · DOCK: barra flotante con miniaturas, como una app ===== */
+  .t-dock .k-marca { position: absolute; top: 16px; left: max(16px, env(safe-area-inset-left, 0px)); display: flex; align-items: center; gap: 12px; padding: 10px 18px 10px 12px; pointer-events: auto; max-width: 40%; }
+  .t-dock .k-marca b { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t-dock .k-ctrl { position: absolute; top: 16px; right: max(16px, env(safe-area-inset-right, 0px)); display: flex; gap: 8px; pointer-events: auto; }
+  .t-dock .k-escena { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 108px); display: flex; align-items: center; gap: 10px; padding: 8px 16px; white-space: nowrap; }
+  .t-dock .k-escena b { font-weight: 600; font-size: 14px; }
+  .t-dock .k-escena small { font-size: 11px; color: rgba(255, 255, 255, 0.6); font-variant-numeric: tabular-nums; }
+  .t-dock .k-dock { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); display: flex; align-items: flex-end; gap: 10px; padding: 10px 12px; pointer-events: auto; max-width: calc(100% - 32px); }
+  .t-dock .k-items { display: flex; gap: 10px; align-items: flex-end; overflow-x: auto; overflow-y: visible; scrollbar-width: none; padding-top: 22px; margin-top: -22px; }
+  .t-dock .k-item { position: relative; flex: none; width: 54px; height: 54px; border-radius: 50%; padding: 0; border: 2px solid rgba(255, 255, 255, 0.25); background: none; transition: transform 0.25s cubic-bezier(.3, 1.4, .5, 1), border-color 0.2s; transform-origin: 50% 100%; }
+  .t-dock .k-item img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+  .t-dock .k-item:hover { transform: scale(1.22); }
+  .t-dock .k-item[aria-current="true"] { border-color: var(--sk-acento); box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.35); }
+  .t-dock .k-item .k-tip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); padding: 4px 10px; border-radius: 999px; background: rgba(0, 0, 0, 0.8); font-size: 11px; white-space: nowrap; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+  .t-dock .k-item:hover .k-tip { opacity: 1; }
+  .t-dock .k-sep { width: 1px; align-self: stretch; background: rgba(255, 255, 255, 0.15); margin: 4px 2px; flex: none; }
+  .t-dock .k-herr { display: flex; gap: 6px; align-items: center; align-self: center; flex: none; }
+  .t-dock .k-herr .sk-cta { padding: 10px 16px; }
+  .t-dock.sk--v .k-marca { left: 12px; top: 12px; max-width: 60%; }
+  .t-dock.sk--v .k-ctrl { right: 12px; top: 12px; }
+  .t-dock.sk--v .k-dock { left: 10px; right: 10px; transform: none; max-width: none; }
+  .t-dock.sk--v .k-items { flex: 1; }
+  .t-dock.sk--v .k-herr .sk-btn { display: none; }
+  .t-dock.sk--v .k-escena { bottom: calc(env(safe-area-inset-bottom, 0px) + 104px); }
+
+  /* ===== Plantilla 4 · BRÚJULA: orientación, ruta paso a paso, para terrenos ===== */
+  .t-brujula .b-marca { position: absolute; top: 16px; left: max(16px, env(safe-area-inset-left, 0px)); display: flex; align-items: center; gap: 12px; padding: 12px 18px 12px 14px; pointer-events: auto; max-width: 45%; }
+  .t-brujula .b-marca b { display: block; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t-brujula .b-marca small { display: block; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--sk-acento); font-weight: 600; }
+  .t-brujula .b-der { position: absolute; top: 16px; right: max(16px, env(safe-area-inset-right, 0px)); display: grid; justify-items: end; gap: 10px; pointer-events: auto; }
+  .t-brujula .b-ctrl { display: flex; gap: 8px; }
+  .t-brujula .b-brujula { width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; position: relative; }
+  .t-brujula .b-brujula svg { width: 80px; height: 80px; }
+  .t-brujula .b-grados { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); font-size: 11px; font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, 0.85); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); }
+  .t-brujula .b-abajo { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); display: grid; justify-items: center; gap: 14px; width: min(640px, calc(100% - 32px)); pointer-events: auto; }
+  .t-brujula .b-ruta { display: flex; align-items: center; width: 100%; padding: 0 10px; box-sizing: border-box; }
+  .t-brujula .b-paso { flex: none; position: relative; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.7); background: rgba(0, 0, 0, 0.4); padding: 0; }
+  .t-brujula .b-paso span { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); font-size: 10px; white-space: nowrap; opacity: 0; transition: opacity 0.15s; background: rgba(0, 0, 0, 0.75); padding: 3px 8px; border-radius: 999px; }
+  .t-brujula .b-paso:hover span, .t-brujula .b-paso[aria-current="true"] span { opacity: 1; }
+  .t-brujula .b-paso[aria-current="true"] { background: var(--sk-acento); border-color: var(--sk-acento); transform: scale(1.3); }
+  .t-brujula .b-paso.hecho { background: rgba(255, 255, 255, 0.85); }
+  .t-brujula .b-linea { flex: 1; height: 2px; background: rgba(255, 255, 255, 0.35); }
+  .t-brujula .b-nav { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px; width: 100%; box-sizing: border-box; }
+  .t-brujula .b-nav .sk-btn { width: 44px; height: 44px; background: rgba(255, 255, 255, 0.08); }
+  .t-brujula .b-nav .info { text-align: center; min-width: 0; }
+  .t-brujula .b-nav small { display: block; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--sk-acento); font-weight: 600; }
+  .t-brujula .b-nav b { display: block; font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t-brujula .b-cta-wrap { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); pointer-events: auto; }
+  .t-brujula .b-pil { position: absolute; left: 50%; transform: translateX(-50%); top: 22px; padding: 6px 12px; }
+  .t-brujula.sk--v .b-marca { left: 12px; top: 12px; max-width: 60%; padding: 10px 14px 10px 12px; }
+  .t-brujula.sk--v .b-marca small { display: none; }
+  .t-brujula.sk--v .b-der { right: 12px; top: 12px; }
+  .t-brujula.sk--v .b-brujula { width: 72px; height: 72px; }
+  .t-brujula.sk--v .b-brujula svg { width: 62px; height: 62px; }
+  .t-brujula.sk--v .b-cta-wrap { position: static; }
+  .t-brujula.sk--v .b-pil { top: 96px; }
+
+  /* Selector de plantillas en el editor de skin */
+  .plantillas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .plantilla { border: 1px solid var(--mz-linea-neutra); background: var(--mz-negro); border-radius: 12px; padding: 8px; display: grid; gap: 6px; text-align: left; color: var(--mz-texto); cursor: pointer; }
+  .plantilla:hover { border-color: var(--mz-linea); }
+  .plantilla[aria-pressed="true"] { border-color: var(--mz-lima); box-shadow: 0 0 0 1px var(--mz-lima); }
+  .plantilla svg { width: 100%; height: auto; display: block; border-radius: 7px; }
+  .plantilla b { font-size: 12px; font-weight: 600; }
+  .plantilla span { font-size: 10.5px; line-height: 1.35; color: var(--mz-tenue); }
+  .campo input[type="url"] { width: 100%; box-sizing: border-box; font-size: 12px; color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 8px; padding: 7px 8px; }
+  .punto .mini-thumb { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 8px; display: block; margin-top: 8px; border: 1px solid var(--mz-linea-neutra); }
 
   /* ---------- Editor de skin ---------- */
   .skin-ed { height: 100%; display: grid; grid-template-columns: 340px minmax(0, 1fr); min-height: 0; }
@@ -369,6 +492,22 @@
   .marco--v .pantalla { width: 390px; height: 844px; border-radius: 44px; }
   .pantalla .stage { position: absolute; inset: 0; }
 
+  /* ---------- Pantalla de arranque: Mozari, creado por R360 Team ---------- */
+  .splash { position: fixed; inset: 0; z-index: 100; background: var(--mz-negro); display: grid; place-items: center; cursor: pointer; transition: opacity 0.6s ease, visibility 0.6s; }
+  .splash.fuera { opacity: 0; visibility: hidden; }
+  .splash-centro { display: grid; justify-items: center; gap: 20px; animation: entra 0.9s cubic-bezier(.2, .8, .2, 1) both; }
+  .splash-centro svg { width: 84px; height: 84px; color: var(--mz-lima); }
+  .splash-centro b { font-weight: 300; font-size: 24px; letter-spacing: 0.55em; margin-right: -0.55em; }
+  .splash-barra { width: 150px; height: 2px; border-radius: 2px; background: rgba(242, 245, 236, 0.12); overflow: hidden; margin-top: 10px; }
+  .splash-barra i { display: block; height: 100%; width: 0; background: var(--mz-lima); animation: carga 1.9s cubic-bezier(.6, 0, .2, 1) forwards 0.2s; }
+  .splash-credito { position: absolute; bottom: calc(env(safe-area-inset-bottom, 0px) + 44px); left: 50%; transform: translateX(-50%); width: 190px; color: rgba(242, 245, 236, 0.86); animation: aparece 0.8s ease both 0.5s; }
+  .splash-credito svg, .credito svg { width: 100%; height: auto; display: block; }
+  .credito { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 48px; color: var(--mz-tenue); font-size: 11px; }
+  .credito span { width: 128px; color: var(--mz-texto); opacity: 0.7; }
+  @keyframes entra { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: none; } }
+  @keyframes aparece { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes carga { to { width: 100%; } }
+
   /* Pantallas chicas: el estudio es de escritorio; el teléfono muestra el proyecto y la vista previa. */
   .movil { display: none; }
   @media (max-width: 1080px) { .nav button { padding-inline: 12px; font-size: 14px; } .marca-app b { display: none; } }
@@ -381,12 +520,20 @@
     .movil .tarjeta img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 10px; }
   }
   @media (prefers-reduced-motion: reduce) {
+    .splash-centro, .splash-credito { animation: none; }
+    .splash-barra i { animation: none; width: 100%; }
     .cp-pol { transition: none; }
     .hs-nucleo, .hs-boton::before, .piloto-on i { animation: none; }
   }
 </style>
 </head>
 <body>
+
+<!-- ======================= ARRANQUE ======================= -->
+<div class="splash" id="splash" aria-hidden="true">
+  <div class="splash-centro"><svg viewBox="0 0 613 613"><use href="#iso"/></svg><b>MOZARI</b><div class="splash-barra"><i></i></div></div>
+  <div class="splash-credito"><svg viewBox="0 0 2190 600" role="img" aria-label="Created by R360 Team"><g fill="none" stroke="currentColor" stroke-width="22"><circle cx="245" cy="300" r="222"/><path d="M245 78v444M23 300h444"/></g><g fill="currentColor" font-family="Poppins, Arial, sans-serif"><text x="555" y="238" font-size="212" font-weight="400">Created by</text><text x="548" y="522" font-size="268" font-weight="800" letter-spacing="2">R360 TEAM</text></g></svg></div>
+</div>
 
 <!-- ======================= ESTUDIO ======================= -->
 <div class="app" id="app">
@@ -411,6 +558,7 @@
         <h1>Mis Tours</h1>
         <p class="sub">Todos tus proyectos. Abre uno para trabajar en él.</p>
         <div class="rejilla" id="tours"></div>
+        <div class="credito">Mozari<span><svg viewBox="0 0 2190 600" role="img" aria-label="Created by R360 Team"><g fill="none" stroke="currentColor" stroke-width="22"><circle cx="245" cy="300" r="222"/><path d="M245 78v444M23 300h444"/></g><g fill="currentColor" font-family="Poppins, Arial, sans-serif"><text x="555" y="238" font-size="212" font-weight="400">Created by</text><text x="548" y="522" font-size="268" font-weight="800" letter-spacing="2">R360 TEAM</text></g></svg></span></div>
       </div>
     </section>
 
@@ -585,6 +733,7 @@
     <p class="nota">El estudio de Mozari está pensado para compu. Desde aquí puedes ver el tour como lo verá tu cliente.</p>
     <button class="btn-prim" id="mv-previa">Ver vista previa</button>
   </div>
+  <div class="credito" style="margin-top:8px"><span><svg viewBox="0 0 2190 600" role="img" aria-label="Created by R360 Team"><g fill="none" stroke="currentColor" stroke-width="22"><circle cx="245" cy="300" r="222"/><path d="M245 78v444M23 300h444"/></g><g fill="currentColor" font-family="Poppins, Arial, sans-serif"><text x="555" y="238" font-size="212" font-weight="400">Created by</text><text x="548" y="522" font-size="268" font-weight="800" letter-spacing="2">R360 TEAM</text></g></svg></span></div>
 </div>
 
 <!-- ======================= VISTA PREVIA ======================= -->
@@ -632,9 +781,10 @@
     if (g && g.proyecto && g.escenas) est = g;
   } catch (e) { /* sin almacenamiento */ }
   const SKIN_DEF = {
-    acento: LIMA, panel: NEGRO, opacidad: 0.74, radio: 14,
-    logo: { tipo: "mozari", img: "", posicion: "izq" }, nombre: true,
-    menu: { mostrar: true, estilo: "miniaturas", posicion: "abajo" },
+    plantilla: "cine", acento: LIMA, panel: NEGRO, opacidad: 0.72, radio: 14,
+    logo: { tipo: "mozari", img: "" }, nombre: true,
+    cta: { mostrar: true, texto: "Agendar visita", enlace: "" },
+    extra: { numero: true, brujula: true, ruta: true },
     botones: { pantalla: true, musica: true, zoom: false, piloto: true },
   };
   function mezclar(def, val) {
@@ -657,7 +807,7 @@
   normalizar();
   const escena = (id) => est.escenas.find((e) => e.id === id);
   const nombreDe = (id) => (escena(id) ? escena(id).nombre : "—");
-  const thumbDe = (id) => "escenas/" + id + "/1/f/0/0.jpg";
+  const thumbDe = (id) => (escena(id) && escena(id).thumb) || "escenas/" + id + "/1/f/0/0.jpg";
   const planetaDe = (id) => "escenas/" + id + "/planeta.jpg";
   const vistaDe = (id) => escena(id).vista;
   function guardar() {
@@ -833,7 +983,7 @@
   // =================== MOTOR (esfera + capas) ===================
   function crearMotor(stage, opciones) {
     const editable = !!opciones.editable;
-    const viewer = new Marzipano.Viewer(stage, { controls: { mouseViewMode: "drag" } });
+    const viewer = new Marzipano.Viewer(stage, { controls: { mouseViewMode: "drag" }, stage: { preserveDrawingBuffer: editable } });
     const capasEl = document.createElement("div");
     capasEl.className = "capas" + (editable ? " editable" : "");
     stage.appendChild(capasEl);
@@ -1092,6 +1242,7 @@
       setModo(m) { motor.modo = m; capasEl.classList.toggle("solo-ver", m === "piloto"); render(); },
       construir, render: programar, estiloPoligono: (id, c) => { const n = nodos.get(id); if (n && n.path) estiloPoligono(n.path, c); },
       view: () => actual && actual.view,
+      captura: () => viewer.stage().takeSnapshot({ quality: 92 }),
       destruir() {
         ro.disconnect();
         if (editable) { window.removeEventListener("pointermove", alMover); window.removeEventListener("pointerup", alSoltar); }
@@ -1330,15 +1481,33 @@
     const pts = puntosRuta();
     motorEd.ruta = pts;
     $("recorrido").innerHTML = pts.map((p, i) => {
-      const cab = '<div class="cab"><b>' + (i === 0 ? "Inicio" : "Punto " + (i + 1)) + "</b><small>" + grados(p.yaw) + " · " + grados(-p.pitch) + " · " + zoomTxt(p.fov) + "</small></div>";
+      const cab = '<div class="cab"><b>' + (i === 0 ? "Inicio" : "Punto " + (i + 1)) + "</b><small>" + grados(p.yaw) + " · " + grados(-p.pitch) + " · " + zoomTxt(p.fov) + "</small></div>" +
+        (i === 0 ? '<img class="mini-thumb" src="' + thumbDe(motorEd.actual.id) + '" alt="Miniatura del panorama">' : "");
       const tiempos = i === 0 ? "" : '<div class="tiempos"><label>Viaje (s)<input type="number" min="0.5" max="60" step="0.5" value="' + p.viaje + '" data-i="' + i + '" data-k="viaje"></label><label>Pausa (s)<input type="number" min="0" max="60" step="0.5" value="' + p.pausa + '" data-i="' + i + '" data-k="pausa"></label></div>';
-      const acc = '<div class="acciones"><button class="mini" data-acc="ver" data-i="' + i + '">Ver</button><button class="mini" data-acc="fijar" data-i="' + i + '">Usar vista actual</button>' +
+      const acc = '<div class="acciones"><button class="mini" data-acc="ver" data-i="' + i + '">Ver</button><button class="mini' + (i === 0 ? " primario" : "") + '" data-acc="fijar" data-i="' + i + '">' + (i === 0 ? "Fijar inicio aquí" : "Usar vista actual") + "</button>" +
         (i === 0 ? "" : (i > 1 ? '<button class="mini" data-acc="subir" data-i="' + i + '" aria-label="Subir punto">↑</button>' : "") + (i < pts.length - 1 ? '<button class="mini" data-acc="bajar" data-i="' + i + '" aria-label="Bajar punto">↓</button>' : "") + '<button class="mini peligro" data-acc="quitar" data-i="' + i + '" aria-label="Quitar punto">✕</button>') + "</div>";
       return '<li class="punto" data-i="' + i + '"><span class="num">' + (i + 1) + "</span><div>" + cab + tiempos + acc + "</div></li>";
     }).join("");
     pintarDuracion();
     motorEd.render();
     marcarPuntoActual();
+  }
+  // Toma una foto de lo que se ve en la esfera y la usa como miniatura del panorama (16:10)
+  function capturarMiniatura(id) {
+    let url;
+    try { url = motorEd.captura(); } catch (e) { avisar("No se pudo tomar la miniatura en este navegador"); return; }
+    const img = new Image();
+    img.onload = () => {
+      const W = 640, H = 400, r = W / H;
+      let cw = img.width, ch = img.width / r;
+      if (ch > img.height) { ch = img.height; cw = img.height * r; }
+      const c = document.createElement("canvas"); c.width = W; c.height = H;
+      c.getContext("2d").drawImage(img, (img.width - cw) / 2, (img.height - ch) / 2, cw, ch, 0, 0, W, H);
+      escena(id).thumb = c.toDataURL("image/jpeg", 0.82);
+      guardar();
+      if (motorEd && motorEd.modo === "piloto") pintarRecorrido();
+    };
+    img.src = url;
   }
   function marcarPuntoActual() {
     if (!motorEd || motorEd.modo !== "piloto") return;
@@ -1361,7 +1530,7 @@
     if (b.dataset.acc === "ver") { const p = puntosRuta()[i]; motorEd.view().setParameters({ yaw: p.yaw, pitch: p.pitch, fov: p.fov }); return; }
     if (b.dataset.acc === "fijar") {
       const v = vistaActual();
-      if (i === 0) { escena(id).vista = v; avisar("Inicio actualizado: la esfera arranca aquí"); }
+      if (i === 0) { escena(id).vista = v; capturarMiniatura(id); avisar("Inicio fijado. La miniatura del panorama se actualizó."); }
       else { Object.assign(pl.puntos[i - 1], v); avisar("Punto " + (i + 1) + " actualizado"); }
     }
     if (b.dataset.acc === "quitar") pl.puntos.splice(i - 1, 1);
@@ -1640,48 +1809,122 @@
     cerrar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
     mas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
     menos: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>',
+    prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+    next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+    rejilla: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>',
+    abajo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>',
+    chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.6-5.2A8.4 8.4 0 1 1 21 11.5z"/></svg>',
+  };
+  const BRUJULA = '<svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="37" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1"/>' +
+    [0, 45, 90, 135, 180, 225, 270, 315].map((a) => '<line x1="40" y1="5" x2="40" y2="' + (a % 90 ? 9 : 12) + '" stroke="rgba(255,255,255,.5)" stroke-width="1.5" transform="rotate(' + a + ' 40 40)"/>').join("") +
+    '<g class="sk-aguja"><path d="M40 12 L46 40 L40 36 L34 40 Z" style="fill:var(--sk-acento)"/><path d="M40 68 L46 40 L40 44 L34 40 Z" fill="rgba(255,255,255,.55)"/></g><circle cx="40" cy="40" r="3" fill="#fff"/></svg>';
+
+  // Las 4 plantillas base. Cada una arma su HTML con ganchos comunes:
+  // [data-ir] cambia de panorama · [data-txt] textos vivos · [data-piloto] aviso · .sk-aguja brújula
+  const PLANTILLAS = {
+    cine: {
+      nombre: "Cine", desc: "Minimalista. Título grande y menú escondido. Para proyectos premium.",
+      html: (c) => '<div class="c-velo arriba"></div><div class="c-velo abajo"></div>' +
+        '<div class="c-arriba"><div class="c-marca">' + c.logo + (c.sk.nombre ? '<span class="n">' + esc(P().nombre) + "</span>" : "") + "</div>" +
+        '<div class="c-ctrl">' + c.cta("c-cta") + c.botones("") + '<button class="c-menu-btn" data-sk="cajon">' + ICO_SK.rejilla + "<span>Panoramas</span></button>" + c.cerrar("") + "</div></div>" +
+        '<div class="c-titulo">' + (c.sk.extra.numero ? '<span class="c-indice" data-txt="indice"></span>' : "") + '<h2 data-txt="nombre"></h2>' + (c.sk.botones.piloto ? '<span class="sk-pil" data-piloto hidden><i></i>Piloto automático</span>' : "") + "</div>" +
+        '<div class="c-flechas"><button class="sk-btn" data-sk="prev" aria-label="Panorama anterior">' + ICO_SK.prev + '</button><button class="sk-btn" data-sk="next" aria-label="Panorama siguiente">' + ICO_SK.next + "</button></div>" +
+        '<aside class="c-cajon sk-panel" data-cajon hidden><header>Panoramas<button class="sk-btn" data-sk="cajon" aria-label="Cerrar panoramas">' + ICO_SK.cerrar + "</button></header>" +
+        '<div class="c-lista">' + c.escenas.map((e, i) => '<button class="c-item" data-ir="' + e.id + '"><img src="' + thumbDe(e.id) + '" alt=""><span class="t"><small>' + String(i + 1).padStart(2, "0") + "</small>" + esc(e.nombre) + "</span></button>").join("") + "</div></aside>",
+    },
+    desarrollo: {
+      nombre: "Desarrollo", desc: "Barra lateral con lista y botón de contacto. Para vender lotes y casas.",
+      html: (c) => '<aside class="d-lateral sk-panel"><div class="d-cab">' + c.logo + "<div>" + '<small>Recorrido virtual</small>' + (c.sk.nombre ? "<b>" + esc(P().nombre) + "</b>" : "<b data-txt=\"nombre\"></b>") + "</div>" +
+        '<button class="sk-btn d-hoja" data-sk="hoja" aria-label="Ver panoramas">' + ICO_SK.abajo + "</button></div>" +
+        '<nav class="d-lista" aria-label="Panoramas">' + c.escenas.map((e, i) => '<button class="d-item" data-ir="' + e.id + '"><small>' + String(i + 1).padStart(2, "0") + "</small><span>" + esc(e.nombre) + "</span></button>").join("") + "</nav>" +
+        '<div class="d-pie">' + c.cta("") + (c.sk.botones.piloto ? '<span class="sk-pil" data-piloto hidden><i></i>Piloto automático</span>' : "") + "</div></aside>" +
+        '<button class="sk-btn sk-panel d-toggle" data-sk="lateral" aria-label="Mostrar u ocultar menú">' + ICO_SK.prev + "</button>" +
+        '<div class="d-ctrl">' + c.botones("sk-panel") + c.cerrar("sk-panel") + "</div>",
+    },
+    dock: {
+      nombre: "Dock", desc: "Barra flotante con miniaturas redondas, como una app.",
+      html: (c) => '<div class="k-marca sk-panel">' + c.logo + (c.sk.nombre ? "<b>" + esc(P().nombre) + "</b>" : "") + "</div>" +
+        '<div class="k-ctrl">' + c.cerrar("sk-panel") + "</div>" +
+        '<div class="k-escena sk-panel">' + (c.sk.botones.piloto ? '<span class="sk-pil" data-piloto hidden><i></i></span>' : "") + '<b data-txt="nombre"></b>' + (c.sk.extra.numero ? '<small data-txt="indice"></small>' : "") + "</div>" +
+        '<nav class="k-dock sk-panel" aria-label="Panoramas"><div class="k-items">' + c.escenas.map((e) => '<button class="k-item" data-ir="' + e.id + '" aria-label="' + esc(e.nombre) + '"><img src="' + thumbDe(e.id) + '" alt=""><span class="k-tip">' + esc(e.nombre) + "</span></button>").join("") + "</div>" +
+        '<span class="k-sep"></span><div class="k-herr">' + c.botones("") + c.cta("") + "</div></nav>",
+    },
+    brujula: {
+      nombre: "Brújula", desc: "Orientación, ruta y navegación paso a paso. Para terrenos.",
+      html: (c) => '<div class="b-marca sk-panel">' + c.logo + "<div>" + '<small>Recorrido virtual</small>' + (c.sk.nombre ? "<b>" + esc(P().nombre) + "</b>" : "") + "</div></div>" +
+        '<div class="b-der"><div class="b-ctrl">' + c.botones("sk-panel") + c.cerrar("sk-panel") + "</div>" +
+        (c.sk.extra.brujula ? '<div class="b-brujula sk-panel" role="img" aria-label="Orientación">' + BRUJULA + '<span class="b-grados" data-txt="grados">0°</span></div>' : "") + "</div>" +
+        (c.sk.botones.piloto ? '<span class="sk-pil sk-panel b-pil" data-piloto hidden><i></i>Piloto automático</span>' : "") +
+        '<div class="b-abajo">' +
+        (c.sk.extra.ruta ? '<div class="b-ruta">' + c.escenas.map((e, i) => (i ? '<span class="b-linea"></span>' : "") + '<button class="b-paso" data-ir="' + e.id + '" aria-label="' + esc(e.nombre) + '"><span>' + esc(e.nombre) + "</span></button>").join("") + "</div>" : "") +
+        '<div class="b-nav sk-panel"><button class="sk-btn" data-sk="prev" aria-label="Panorama anterior">' + ICO_SK.prev + '</button><div class="info"><small data-txt="indice-largo"></small><b data-txt="nombre"></b></div><button class="sk-btn" data-sk="next" aria-label="Panorama siguiente">' + ICO_SK.next + "</button></div>" +
+        (c.vertical ? c.cta("") : "") + "</div>" + (c.vertical ? "" : '<div class="b-cta-wrap">' + c.cta("") + "</div>"),
+    },
   };
 
-  // Dibuja la interfaz del tour (skin) sobre una esfera. o: { orientacion, motor, cerrable, alCerrar, hayMusica, alMusica, alPantalla }
+  // Dibuja el skin elegido sobre una esfera. o: { orientacion, motor, cerrable, alCerrar, hayMusica, alMusica, alPantalla }
   function renderSkin(ui, o) {
     const sk = est.skin, vertical = o.orientacion === "v";
+    const T = PLANTILLAS[sk.plantilla] ? sk.plantilla : "cine";
     const [r, g, b] = hexRgb(sk.panel);
-    ui.className = "sk " + (vertical ? "sk--v" : "sk--h") + (sk.botones.zoom ? " sk--zoom" : "");
+    ui.className = "sk t-" + T + (vertical ? " sk--v" : " sk--h");
     ui.style.setProperty("--sk-acento", sk.acento);
     ui.style.setProperty("--sk-sobre", textoSobre(sk.acento));
     ui.style.setProperty("--sk-panel", "rgba(" + r + "," + g + "," + b + "," + sk.opacidad + ")");
     ui.style.setProperty("--sk-radio", sk.radio + "px");
-    ui.style.setProperty("--sk-radio-btn", sk.radio >= 14 ? "50%" : sk.radio + "px");
-    ui.style.setProperty("--sk-radio-item", Math.max(0, sk.radio - 5) + "px");
+    ui.style.setProperty("--sk-radio-btn", sk.radio >= 14 ? "999px" : sk.radio + "px");
+    ui.style.setProperty("--sk-radio-item", Math.max(0, sk.radio - 4) + "px");
     ui.style.setProperty("--sk-radio-img", Math.max(0, sk.radio - 8) + "px");
-    const logo = sk.logo.tipo === "propio" && sk.logo.img ? '<img class="sk-logo-img" src="' + sk.logo.img + '" alt="">' : '<svg class="sk-logo-iso" viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg>';
-    const marca = '<div class="sk-marca sk-panel' + (sk.logo.posicion === "centro" ? " centro" : "") + '">' + logo + (sk.nombre ? "<b>" + esc(P().nombre) + "</b>" : "") + "</div>";
-    const btn = (k, ico, etq) => '<button class="sk-btn sk-panel" data-sk="' + k + '" aria-label="' + etq + '">' + ico + "</button>";
-    let botones = "";
-    if (sk.botones.musica && o.hayMusica) botones += btn("musica", ICO_SK.musica, "Silenciar música");
-    if (sk.botones.pantalla) botones += btn("pantalla", ICO_SK.pantalla, "Pantalla completa");
-    if (o.cerrable) botones += btn("cerrar", ICO_SK.cerrar, "Cerrar vista previa");
-    const estilo = sk.menu.estilo, pos = vertical ? "abajo" : sk.menu.posicion;
-    const menu = sk.menu.mostrar ? '<nav class="sk-menu sk-panel sk-menu--' + estilo + " sk-menu--" + pos + '" aria-label="Panoramas">' +
-      est.escenas.map((e) => '<button class="sk-item" data-id="' + e.id + '">' + (estilo === "miniaturas" ? '<img src="' + thumbDe(e.id) + '" alt="">' : "") + "<span>" + esc(e.nombre) + "</span></button>").join("") + "</nav>" : "";
-    const zoom = sk.botones.zoom ? '<div class="sk-zoom">' + btn("mas", ICO_SK.mas, "Acercar") + btn("menos", ICO_SK.menos, "Alejar") + "</div>" : "";
-    const piloto = sk.botones.piloto ? '<div class="sk-piloto sk-panel" hidden><i></i>Piloto automático · toca para tomar el control</div>' : "";
-    ui.innerHTML = '<div class="sk-top">' + marca + '<div class="sk-btns">' + botones + "</div></div>" + piloto + menu + zoom;
+    const btn = (k, etq, cls) => '<button class="sk-btn ' + cls + '" data-sk="' + k + '" aria-label="' + etq + '">' + ICO_SK[k] + "</button>";
+    const c = {
+      sk, vertical, escenas: est.escenas,
+      logo: '<span class="sk-logo">' + (sk.logo.tipo === "propio" && sk.logo.img ? '<img src="' + sk.logo.img + '" alt="">' : '<svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg>') + "</span>",
+      botones: (cls) => (sk.botones.musica && o.hayMusica ? btn("musica", "Silenciar música", cls) : "") + (sk.botones.zoom ? btn("menos", "Alejar", cls) + btn("mas", "Acercar", cls) : "") + (sk.botones.pantalla ? btn("pantalla", "Pantalla completa", cls) : ""),
+      cerrar: (cls) => (o.cerrable ? btn("cerrar", "Cerrar vista previa", cls) : ""),
+      cta: (cls) => {
+        if (!sk.cta.mostrar) return "";
+        const t = esc(sk.cta.texto || "Contactar");
+        return sk.cta.enlace ? '<a class="sk-cta ' + cls + '" href="' + esc(sk.cta.enlace) + '" target="_blank" rel="noopener">' + ICO_SK.chat + t + "</a>" : '<button class="sk-cta ' + cls + '" data-sk="cta">' + ICO_SK.chat + t + "</button>";
+      },
+    };
+    ui.innerHTML = PLANTILLAS[T].html(c);
+    let actualId = null;
+    const ids = est.escenas.map((e) => e.id);
+    const irRel = (d) => { if (!actualId || !o.motor()) return; const i = ids.indexOf(actualId); o.motor().mostrar(ids[(i + d + ids.length) % ids.length]); };
     ui.onclick = (ev) => {
-      const it = ev.target.closest(".sk-item");
-      if (it && o.motor()) { o.motor().mostrar(it.dataset.id); return; }
+      const it = ev.target.closest("[data-ir]");
+      if (it && o.motor()) { o.motor().mostrar(it.dataset.ir); const caj = ui.querySelector("[data-cajon]"); if (caj) caj.hidden = true; ui.classList.remove("abierto"); return; }
       const bt = ev.target.closest("[data-sk]");
       if (!bt) return;
       const k = bt.dataset.sk, v = o.motor() && o.motor().view();
       if (k === "mas" && v) v.setFov(v.fov() * 0.75);
       if (k === "menos" && v) v.setFov(v.fov() * 1.33);
+      if (k === "prev") irRel(-1);
+      if (k === "next") irRel(1);
+      if (k === "cajon") { const caj = ui.querySelector("[data-cajon]"); caj.hidden = !caj.hidden; }
+      if (k === "lateral") ui.classList.toggle("oculto");
+      if (k === "hoja") ui.classList.toggle("abierto");
+      if (k === "cta") avisar("Agrega el enlace de contacto en Skin → Contacto");
       if (k === "cerrar" && o.alCerrar) o.alCerrar();
-      if (k === "pantalla") { if (o.alPantalla) o.alPantalla(); }
-      if (k === "musica" && o.alMusica) { const sonando = o.alMusica(); bt.innerHTML = sonando ? ICO_SK.musica : ICO_SK.mudo; bt.setAttribute("aria-label", sonando ? "Silenciar música" : "Reproducir música"); }
+      if (k === "pantalla" && o.alPantalla) o.alPantalla();
+      if (k === "musica" && o.alMusica) { const s = o.alMusica(); bt.innerHTML = s ? ICO_SK.musica : ICO_SK.mudo; bt.setAttribute("aria-label", s ? "Silenciar música" : "Reproducir música"); }
     };
     return {
-      escena(id) { ui.querySelectorAll(".sk-item").forEach((c) => c.setAttribute("aria-current", c.dataset.id === id ? "true" : "false")); },
-      piloto(on) { const p = ui.querySelector(".sk-piloto"); if (p) p.hidden = !on; },
+      escena(id) {
+        actualId = id;
+        const i = ids.indexOf(id);
+        ui.querySelectorAll("[data-ir]").forEach((el) => { const j = ids.indexOf(el.dataset.ir); el.setAttribute("aria-current", j === i ? "true" : "false"); el.classList.toggle("hecho", j < i); });
+        ui.querySelectorAll('[data-txt="nombre"]').forEach((el) => (el.textContent = nombreDe(id)));
+        ui.querySelectorAll('[data-txt="indice"]').forEach((el) => (el.textContent = String(i + 1).padStart(2, "0") + " / " + String(ids.length).padStart(2, "0")));
+        ui.querySelectorAll('[data-txt="indice-largo"]').forEach((el) => (el.textContent = "Panorama " + (i + 1) + " de " + ids.length));
+      },
+      piloto(on) { ui.querySelectorAll("[data-piloto]").forEach((p) => (p.hidden = !on)); },
+      vista(v) {
+        if (!v) return;
+        const deg = Math.round((((v.yaw() * 180) / Math.PI) % 360 + 360) % 360);
+        ui.querySelectorAll(".sk-aguja").forEach((a) => a.setAttribute("transform", "rotate(" + -deg + " 40 40)"));
+        ui.querySelectorAll('[data-txt="grados"]').forEach((el) => (el.textContent = deg + "°"));
+      },
     };
   }
 
@@ -1698,12 +1941,13 @@
         alFin: () => api.piloto(false),
       });
     }
-    const pintar = (orientacion) => { api = renderSkin(ui, Object.assign({}, o, { orientacion, motor: () => motor })); if (actualId) api.escena(actualId); };
+    const pintar = (orientacion) => { api = renderSkin(ui, Object.assign({}, o, { orientacion, motor: () => motor })); if (actualId) api.escena(actualId); if (motor) api.vista(motor.view()); };
     pintar(o.orientacion);
     motor = crearMotor(stage, {
       editable: false,
-      alMostrar: (id) => { actualId = id; api.escena(id); arrancarPiloto(id); },
+      alMostrar: (id) => { actualId = id; api.escena(id); api.vista(motor.view()); arrancarPiloto(id); },
       alInteractuar: () => { if (piloto) piloto.interrumpir(true); },
+      alMoverVista: () => api && motor && api.vista(motor.view()),
     });
     motor.mostrar(o.inicio || P().escenaInicial, 0);
     return {
@@ -1730,7 +1974,7 @@
   function cerrarSkin() { if (tourSk) { tourSk.destruir(); tourSk = null; } }
   function ajustarMarco() {
     const caja = $("sk-vista"), m = $("sk-marco");
-    if (caja.hidden || !caja.clientWidth) return;
+    if (caja.offsetParent === null || !caja.clientWidth) return;
     const w = m.offsetWidth, h = m.offsetHeight, aw = caja.clientWidth - 48, ah = caja.clientHeight - 80;
     const s = Math.min(aw / w, ah / h, 1);
     m.style.transform = "scale(" + s + ")";
@@ -1739,27 +1983,52 @@
   }
   new ResizeObserver(ajustarMarco).observe($("sk-vista"));
 
+  // Miniaturas de cada plantilla para el selector (dibujadas con el color de acento)
+  function miniPlantilla(id, a) {
+    const fondo = '<rect width="160" height="96" fill="#2a3324"/><rect width="160" height="96" fill="url(#mg)"/>';
+    const defs = '<defs><linearGradient id="mg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5d7a8c"/><stop offset=".55" stop-color="#3f5a4a"/><stop offset="1" stop-color="#22301f"/></linearGradient></defs>';
+    const p = "rgba(11,11,11,.72)";
+    const dib = {
+      cine: '<rect y="0" width="160" height="20" fill="rgba(0,0,0,.35)"/><rect x="8" y="7" width="22" height="5" rx="2" fill="' + a + '"/><rect x="118" y="6" width="34" height="8" rx="4" fill="none" stroke="#fff" stroke-opacity=".7"/>' +
+        '<rect x="8" y="64" width="12" height="3" fill="' + a + '"/><rect x="8" y="70" width="70" height="9" rx="2" fill="#fff"/><circle cx="132" cy="76" r="7" fill="none" stroke="#fff" stroke-opacity=".7"/><circle cx="148" cy="76" r="7" fill="none" stroke="#fff" stroke-opacity=".7"/>',
+      desarrollo: '<rect x="5" y="5" width="44" height="86" rx="5" fill="' + p + '"/><rect x="11" y="11" width="16" height="5" rx="2" fill="' + a + '"/><rect x="11" y="20" width="28" height="4" rx="2" fill="#fff"/>' +
+        [32, 44, 56].map((y, i) => '<rect x="11" y="' + y + '" width="12" height="8" rx="1.5" fill="#8aa"/><rect x="26" y="' + (y + 2) + '" width="16" height="3" rx="1.5" fill="#fff" fill-opacity="' + (i ? 0.5 : 1) + '"/>').join("") +
+        '<rect x="10" y="76" width="34" height="9" rx="4.5" fill="' + a + '"/><rect x="132" y="6" width="10" height="10" rx="5" fill="' + p + '"/><rect x="145" y="6" width="10" height="10" rx="5" fill="' + p + '"/>',
+      dock: '<rect x="6" y="6" width="40" height="11" rx="5.5" fill="' + p + '"/><rect x="11" y="9.5" width="8" height="4" rx="2" fill="' + a + '"/><rect x="58" y="58" width="44" height="9" rx="4.5" fill="' + p + '"/>' +
+        '<rect x="30" y="72" width="100" height="18" rx="9" fill="' + p + '"/>' + [42, 58, 74].map((x, i) => '<circle cx="' + x + '" cy="81" r="6" fill="#8aa" stroke="' + (i === 0 ? a : "rgba(255,255,255,.4)") + '" stroke-width="1.5"/>').join("") +
+        '<rect x="104" y="77" width="20" height="8" rx="4" fill="' + a + '"/>',
+      brujula: '<rect x="6" y="6" width="46" height="14" rx="5" fill="' + p + '"/><rect x="11" y="11" width="8" height="4" rx="2" fill="' + a + '"/><circle cx="141" cy="28" r="12" fill="' + p + '"/><path d="M141 19 L144 28 L141 26 L138 28Z" fill="' + a + '"/>' +
+        '<line x1="44" y1="62" x2="116" y2="62" stroke="#fff" stroke-opacity=".5"/>' + [44, 68, 92, 116].map((x, i) => '<circle cx="' + x + '" cy="62" r="3" fill="' + (i === 1 ? a : "#fff") + '"/>').join("") +
+        '<rect x="34" y="70" width="92" height="18" rx="6" fill="' + p + '"/><rect x="62" y="76" width="36" height="5" rx="2" fill="#fff"/>',
+    };
+    return '<svg viewBox="0 0 160 96" aria-hidden="true">' + defs + fondo + dib[id] + "</svg>";
+  }
+
   const SK_MUESTRAS = [LIMA, BLANCO, "#3DA9FC", "#FF5A4E", "#FFB020", "#9B7BFF"];
   const seg = (k, val, opciones) => '<div class="seg" role="group">' + opciones.map(([v, n]) => '<button data-sk-k="' + k + '" data-v="' + v + '" aria-pressed="' + (String(val) === String(v)) + '">' + n + "</button>").join("") + "</div>";
   const tgl = (k, on, etq) => '<label class="interruptor"><span style="font-size:12px">' + etq + '</span><input type="checkbox" class="toggle" data-sk-k="' + k + '"' + (on ? " checked" : "") + "></label>";
   function pintarPanelSkin() {
-    const sk = SK(), vertical = nav.sub === "v";
+    const sk = SK(), T = sk.plantilla;
     const logoMuestra = sk.logo.tipo === "propio" && sk.logo.img ? '<img src="' + sk.logo.img + '" alt="Logo del cliente">' : '<svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg>';
     $("sk-panel").innerHTML =
+      '<div class="grupo"><b>Plantilla base</b><div class="plantillas">' +
+      Object.entries(PLANTILLAS).map(([id, p]) => '<button class="plantilla" data-sk-k="plantilla" data-v="' + id + '" aria-pressed="' + (id === T) + '">' + miniPlantilla(id, sk.acento) + "<b>" + p.nombre + "</b><span>" + p.desc + "</span></button>").join("") +
+      "</div></div>" +
       '<div class="grupo"><b>Marca</b>' +
       '<div class="logo-fila"><span class="muestra-logo">' + logoMuestra + "</span>" + seg("logo.tipo", sk.logo.tipo, [["mozari", "Mozari"], ["propio", "Logo del cliente"]]) + "</div>" +
       (sk.logo.tipo === "propio" ? '<label class="btn-sec" for="sk-logo-archivo" style="justify-self:start">' + (sk.logo.img ? "Cambiar logo" : "Subir logo (PNG o SVG)") + '</label><input type="file" id="sk-logo-archivo" accept="image/png,image/svg+xml,image/webp,image/jpeg" hidden>' : "") +
-      campo("Posición", seg("logo.posicion", sk.logo.posicion, [["izq", "Izquierda"], ["centro", "Centro"]])) +
       tgl("nombre", sk.nombre, "Mostrar el nombre del tour") + "</div>" +
       '<div class="grupo"><b>Colores</b>' +
       campo("Acento", '<div class="color"><input type="color" data-sk-k="acento" value="' + sk.acento + '" aria-label="Color de acento">' + SK_MUESTRAS.map((m) => '<button class="muestra" style="background:' + m + '" data-sk-k="acento" data-v="' + m + '" aria-label="Usar ' + m + '"></button>').join("") + "</div>") +
       campo("Paneles", '<div class="color"><input type="color" data-sk-k="panel" value="' + sk.panel + '" aria-label="Color de paneles">' + [NEGRO, "#1B2430", "#FFFFFF"].map((m) => '<button class="muestra" style="background:' + m + '" data-sk-k="panel" data-v="' + m + '" aria-label="Usar ' + m + '"></button>').join("") + "</div>") +
       campo("Opacidad", '<div class="rango"><input type="range" data-sk-k="opacidad" min="0.3" max="1" step="0.02" value="' + sk.opacidad + '" aria-label="Opacidad de paneles"><span class="valor" id="sk-op-v">' + Math.round(sk.opacidad * 100) + "%</span></div>") +
       campo("Esquinas", '<div class="rango"><input type="range" data-sk-k="radio" min="0" max="24" step="1" value="' + sk.radio + '" aria-label="Redondeo de esquinas"><span class="valor" id="sk-radio-v">' + sk.radio + " px</span></div>") + "</div>" +
-      '<div class="grupo"><b>Menú de panoramas</b>' + tgl("menu.mostrar", sk.menu.mostrar, "Mostrar menú") +
-      (sk.menu.mostrar ? campo("Estilo", seg("menu.estilo", sk.menu.estilo, [["miniaturas", "Miniaturas"], ["pastillas", "Pastillas"]])) +
-        (vertical ? '<p class="nota">En 9:16 el menú va siempre abajo, para el pulgar.</p>' : campo("Posición", seg("menu.posicion", sk.menu.posicion, [["abajo", "Abajo"], ["izquierda", "Izquierda"]]))) : "") + "</div>" +
-      '<div class="grupo"><b>Botones</b>' + tgl("botones.pantalla", sk.botones.pantalla, "Pantalla completa") + tgl("botones.musica", sk.botones.musica, "Música (si el tour tiene)") +
+      '<div class="grupo"><b>Contacto</b>' + tgl("cta.mostrar", sk.cta.mostrar, "Botón de contacto") +
+      (sk.cta.mostrar ? campo("Texto", '<input type="text" data-sk-k="cta.texto" maxlength="28" value="' + esc(sk.cta.texto) + '">') + campo("Enlace", '<input type="url" data-sk-k="cta.enlace" placeholder="https://wa.me/52…" value="' + esc(sk.cta.enlace) + '">') + '<p class="nota">WhatsApp, formulario o página del desarrollo. Se abre en otra pestaña.</p>' : "") + "</div>" +
+      '<div class="grupo"><b>Elementos</b>' +
+      (T === "cine" || T === "dock" ? tgl("extra.numero", sk.extra.numero, "Número de panorama (01 / 03)") : "") +
+      (T === "brujula" ? tgl("extra.brujula", sk.extra.brujula, "Brújula de orientación") + tgl("extra.ruta", sk.extra.ruta, "Ruta paso a paso") : "") +
+      tgl("botones.pantalla", sk.botones.pantalla, "Pantalla completa") + tgl("botones.musica", sk.botones.musica, "Música (si el tour tiene)") +
       tgl("botones.zoom", sk.botones.zoom, "Zoom + / −") + tgl("botones.piloto", sk.botones.piloto, "Aviso de piloto automático") + "</div>";
   }
   function setSk(k, v) {
@@ -1767,11 +2036,12 @@
     ks.reduce((o, x) => o[x], SK())[u] = v;
     guardar();
   }
+  const repintarSk = () => tourSk && tourSk.repintar(nav.sub === "v" ? "v" : "h");
   $("sk-panel").addEventListener("click", (ev) => {
     const b = ev.target.closest("button[data-sk-k]");
     if (!b) return;
     setSk(b.dataset.skK, b.dataset.v);
-    pintarPanelSkin(); tourSk && tourSk.repintar(nav.sub === "v" ? "v" : "h");
+    pintarPanelSkin(); repintarSk();
   });
   $("sk-panel").addEventListener("input", (ev) => {
     const el = ev.target, k = el.dataset.skK;
@@ -1780,14 +2050,15 @@
     setSk(k, v);
     if (k === "opacidad") $("sk-op-v").textContent = Math.round(v * 100) + "%";
     if (k === "radio") $("sk-radio-v").textContent = v + " px";
-    tourSk && tourSk.repintar(nav.sub === "v" ? "v" : "h");
+    if (k === "acento") document.querySelectorAll(".plantilla svg").forEach((s, i) => (s.outerHTML = miniPlantilla(Object.keys(PLANTILLAS)[i], v)));
+    repintarSk();
   });
   $("sk-panel").addEventListener("change", (ev) => {
     const el = ev.target;
     if (el.id === "sk-logo-archivo") return subirLogo(el);
     if (el.type !== "checkbox" || !el.dataset.skK) return;
     setSk(el.dataset.skK, el.checked);
-    pintarPanelSkin(); tourSk && tourSk.repintar(nav.sub === "v" ? "v" : "h");
+    pintarPanelSkin(); repintarSk();
   });
   function subirLogo(input) {
     const f = input.files[0];
@@ -1800,7 +2071,7 @@
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
       setSk("logo.img", c.toDataURL("image/png"));
       URL.revokeObjectURL(img.src);
-      pintarPanelSkin(); tourSk && tourSk.repintar(nav.sub === "v" ? "v" : "h");
+      pintarPanelSkin(); repintarSk();
       avisar("Logo del cliente aplicado");
     };
     img.onerror = () => avisar("No se pudo leer ese archivo");
@@ -1808,8 +2079,8 @@
   }
   $("sk-reset").addEventListener("click", () => {
     est.skin = JSON.parse(JSON.stringify(SKIN_DEF)); guardar();
-    pintarPanelSkin(); tourSk && tourSk.repintar(nav.sub === "v" ? "v" : "h");
-    avisar("Skin Mozari restablecido");
+    pintarPanelSkin(); repintarSk();
+    avisar("Skin restablecido");
   });
 
   // =================== VISTA PREVIA ===================
@@ -1855,6 +2126,13 @@
   ["abrir-previa", "r-previa", "mv-previa"].forEach((id) => $(id).addEventListener("click", abrirPrevia));
 
   // =================== ARRANQUE ===================
+  // Pantalla de arranque con el crédito de R360 Team; un clic la salta.
+  (function () {
+    const sp = $("splash");
+    const quitar = () => { sp.classList.add("fuera"); setTimeout(() => sp.remove(), 700); };
+    const t = setTimeout(quitar, matchMedia("(prefers-reduced-motion: reduce)").matches ? 900 : 2400);
+    sp.addEventListener("click", () => { clearTimeout(t); quitar(); });
+  })();
   pintarResumen();
   ir("proyecto", "general");
 })();
