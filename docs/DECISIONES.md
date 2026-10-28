@@ -35,3 +35,7 @@
 | 2026-10-28 | Crédito R360 Team rehecho en SVG (`marca/vectores/created-by-r360-team.svg`) con "Created" bien escrito | Los PNG originales dicen "Creted"; el SVG escala sin perder calidad y toma el color de la interfaz |
 | 2026-10-28 | Skins del tour con colores neutros por defecto (acento blanco, panel negro translúcido, sin logo); el lima queda solo para el software | Los tours son para cualquier cliente y público; la marca Mozari no debe teñir sus interfaces |
 | 2026-10-28 | Los hotspots toman el color de acento del skin | Todo el tour se ve de una sola pieza con la marca del cliente |
+| 2026-10-28 | Lotificación por "Terreno": puntos de referencia del suelo marcados en dos esferas (mínimo 4) y una homografía del plano del suelo lleva cada lote a las demás esferas | El suelo visto desde un dron es un plano; con 4+ puntos la conversión es exacta. Se dibuja una vez y queda en todas |
+| 2026-10-28 | Capas con "Aplicar a todas las esferas": polígonos y textos vinculados se actualizan en todas al editarlos en cualquiera; borrar uno los borra en todas | Un lote es el mismo en todas las vistas |
+| 2026-10-28 | Precisión visible por punto y descarte automático del punto que no coincide (con 6 o más puntos) | Un clic mal puesto no debe torcer todos los lotes |
+| 2026-10-28 | Detección automática de puntos con `herramientas/terreno.py` (vista cenital + SIFT + homografía robusta); la demo Central/Frontal se calibró así y coincide con el navegador a 0.001° | Base para el botón "Detectar puntos" cuando exista el servidor |

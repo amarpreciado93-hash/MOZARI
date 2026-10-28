@@ -204,6 +204,43 @@
   .lista li.vacio { display: block; cursor: default; color: var(--mz-tenue); line-height: 1.5; padding: 14px 10px; }
   .lista li.vacio:hover { background: none; }
   .lista .tipo { width: 18px; height: 18px; color: var(--mz-tenue); }
+  .lista .vinc { width: 12px; height: 12px; margin-left: 6px; vertical-align: -1px; color: var(--mz-lima); }
+
+  /* ---------- Terreno: puntos de referencia entre esferas ---------- */
+  .terreno { height: 100%; display: grid; grid-template-columns: 290px minmax(0, 1fr); min-height: 0; }
+  .tr-dos { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--mz-linea-neutra); min-width: 0; min-height: 0; }
+  .tr-lado { position: relative; background: var(--mz-negro); min-width: 0; min-height: 0; overflow: hidden; }
+  .tr-lado .stage { position: absolute; inset: 0; cursor: crosshair; }
+  .tr-cab { position: absolute; z-index: 6; top: 12px; left: 12px; right: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; pointer-events: none; }
+  .tr-cab > * { pointer-events: auto; }
+  .tr-cab .etiq { background: var(--mz-vidrio); padding: 7px 11px; border-radius: var(--mz-pastilla); color: var(--mz-texto); }
+  .tr-cab select { background: var(--mz-vidrio); color: var(--mz-texto); border: 1px solid var(--mz-linea); border-radius: var(--mz-pastilla); padding: 7px 12px; font: 500 12px var(--mz-texto-ui); backdrop-filter: blur(10px); }
+  .tr-cab .chip-dato { background: var(--mz-vidrio); }
+  .tr-pt { pointer-events: all; cursor: grab; }
+  .tr-pt .anillo { fill: rgba(11, 11, 11, 0.35); stroke: #fff; stroke-width: 2; }
+  .tr-pt .centro { fill: #fff; }
+  .tr-pt .badge rect { fill: #fff; }
+  .tr-pt .badge text { fill: var(--mz-negro); font-size: 11px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  .tr-pt.activo .anillo { stroke: var(--mz-lima); stroke-width: 2.5; }
+  .tr-pt.activo .centro, .tr-pt.activo .badge rect { fill: var(--mz-lima); }
+  .tr-pt.solo .anillo { stroke-dasharray: 3 3; }
+  .tr-pt.mal .anillo { stroke: var(--mz-error); }
+  .tr-pt.mal .badge rect { fill: var(--mz-error); }
+  .tr-esf, .tr-puntos { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .tr-esf li { display: grid; grid-template-columns: 46px minmax(0, 1fr) 28px; gap: 10px; align-items: center; padding: 6px; border-radius: 12px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); }
+  .tr-esf img { width: 46px; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 7px; display: block; }
+  .tr-esf b { display: block; font-weight: 500; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tr-esf small { font-size: 11px; color: var(--mz-tenue); }
+  .tr-esf small.ok { color: var(--mz-lima); }
+  .tr-esf small.aviso { color: var(--mz-aviso); }
+  .tr-puntos li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto 28px; gap: 8px; align-items: center; padding: 5px 4px 5px 8px; border-radius: 10px; border: 1px solid transparent; cursor: pointer; font-size: 12px; }
+  .tr-puntos li:hover { background: var(--mz-lima-suave); }
+  .tr-puntos li.activo { border-color: var(--mz-lima); background: var(--mz-lima-suave); }
+  .tr-puntos .num { width: 22px; height: 22px; border-radius: 50%; background: var(--mz-texto); color: var(--mz-negro); display: grid; place-items: center; font-weight: 600; font-size: 11px; }
+  .tr-puntos li.falta .num { background: transparent; color: var(--mz-aviso); border: 1.5px dashed var(--mz-aviso); }
+  .tr-puntos li.mal .num { background: var(--mz-error); }
+  .tr-puntos small { color: var(--mz-tenue); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .tr-agregar { width: 100%; box-sizing: border-box; font: 500 12px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px dashed var(--mz-linea); border-radius: 10px; padding: 9px 10px; }
   .ojo { width: 28px; height: 28px; display: grid; place-items: center; border: 0; background: transparent; color: var(--mz-tenue); cursor: pointer; border-radius: 8px; }
   .ojo:hover { color: var(--mz-lima); }
   .ojo svg { width: 16px; height: 16px; }
@@ -706,6 +743,22 @@
       </aside>
     </section>
 
+    <!-- Panoramas / Terreno: puntos de referencia para aplicar lotes a todas las esferas -->
+    <section data-vista="panoramas/terreno" class="terreno" id="terreno" hidden>
+      <aside class="ed-panel" aria-label="Terreno">
+        <header>
+          <h3>Terreno</h3>
+          <p class="nota">Marca los mismos puntos del suelo en dos esferas. Con 4 o más, los lotes pasan solos de una a otra.</p>
+        </header>
+        <div class="props" id="tr-panel"></div>
+      </aside>
+      <div class="tr-dos">
+        <div class="tr-lado"><div class="tr-cab"><span class="etiq">Base</span><select id="tr-a" aria-label="Esfera base"></select></div><div class="stage" id="tr-stage-a"></div></div>
+        <div class="tr-lado"><div class="tr-cab"><span class="etiq">Comparar con</span><select id="tr-b" aria-label="Esfera a comparar"></select><span class="chip-dato" id="tr-prec"></span></div><div class="stage" id="tr-stage-b"></div></div>
+        <div class="banda" id="tr-banda"></div>
+      </div>
+    </section>
+
     <!-- Skin (16:9 y 9:16) -->
     <section data-vista="skin/h skin/v" class="skin-ed" id="skin-ed" hidden>
       <aside aria-label="Ajustes del skin">
@@ -774,7 +827,7 @@
     document.body.innerHTML = '<p style="padding:24px">No se pudo leer el proyecto. Revisa que exista proyecto.json junto a esta página.</p>';
     return;
   }
-  const original = JSON.stringify({ proyecto: base.proyecto, escenas: base.escenas, capas: base.capas });
+  const original = JSON.stringify({ proyecto: base.proyecto, escenas: base.escenas, capas: base.capas, terreno: base.terreno || null });
   let est = JSON.parse(original);
   try {
     const g = JSON.parse(localStorage.getItem(CLAVE) || localStorage.getItem(CLAVE_V1) || "null");
@@ -793,7 +846,139 @@
     Object.keys(def).forEach((k) => (out[k] = mezclar(def[k], val ? val[k] : undefined)));
     return out;
   }
+  // =================== TERRENO (matemática) ===================
+  // Un dron ve el suelo como un plano. Cada dirección (yaw, pitch) bajo el horizonte cae en un
+  // punto de ese plano; entre dos esferas del mismo terreno, esos planos se relacionan con una
+  // homografía que se calcula con 4 o más puntos de referencia marcados en ambas.
+  function aPlano(yaw, pitch) { if (!(pitch > 0.012)) return null; const t = Math.tan(pitch); return [Math.sin(yaw) / t, Math.cos(yaw) / t]; }
+  function dePlano(q) { return [Math.atan2(q[0], q[1]), Math.atan2(1, Math.hypot(q[0], q[1]))]; }
+  function mulM(A, B) { const C = []; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) C[i * 3 + j] = A[i * 3] * B[j] + A[i * 3 + 1] * B[3 + j] + A[i * 3 + 2] * B[6 + j]; return C; }
+  function invM(m) {
+    const [a, b, c, d, e, f, g, h, i] = m, A = e * i - f * h, B = -(d * i - f * g), C = d * h - e * g, det = a * A + b * B + c * C;
+    if (Math.abs(det) < 1e-12) return null;
+    return [A / det, -(b * i - c * h) / det, (b * f - c * e) / det, B / det, (a * i - c * g) / det, -(a * f - c * d) / det, C / det, -(a * h - b * g) / det, (a * e - b * d) / det];
+  }
+  function aplicarH(H, q) { const z = H[6] * q[0] + H[7] * q[1] + H[8]; if (!(z > 1e-9)) return null; return [(H[0] * q[0] + H[1] * q[1] + H[2]) / z, (H[3] * q[0] + H[4] * q[1] + H[5]) / z]; }
+  function normal2(P) {
+    const cx = P.reduce((s, p) => s + p[0], 0) / P.length, cy = P.reduce((s, p) => s + p[1], 0) / P.length;
+    const md = P.reduce((s, p) => s + Math.hypot(p[0] - cx, p[1] - cy), 0) / P.length || 1, s = Math.SQRT2 / md;
+    return [s, 0, -s * cx, 0, s, -s * cy, 0, 0, 1];
+  }
+  function ajustarH(A, B) { // A[i] → B[i], mínimos cuadrados normalizados
+    if (A.length < 4) return null;
+    const Ta = normal2(A), Tb = normal2(B), M = Array.from({ length: 8 }, () => new Array(9).fill(0));
+    A.forEach((pa, k) => {
+      const [x, y] = aplicarH(Ta, pa), [X, Y] = aplicarH(Tb, B[k]);
+      [[x, y, 1, 0, 0, 0, -x * X, -y * X, X], [0, 0, 0, x, y, 1, -x * Y, -y * Y, Y]].forEach((r) => {
+        for (let i = 0; i < 8; i++) for (let j = 0; j < 9; j++) M[i][j] += r[i] * r[j];
+      });
+    });
+    for (let c = 0; c < 8; c++) { // Gauss con pivoteo
+      let p = c; for (let r = c + 1; r < 8; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+      if (Math.abs(M[p][c]) < 1e-12) return null;
+      [M[c], M[p]] = [M[p], M[c]];
+      for (let r = 0; r < 8; r++) if (r !== c) { const f = M[r][c] / M[c][c]; for (let j = c; j < 9; j++) M[r][j] -= f * M[c][j]; }
+    }
+    const Hn = M.map((r, i) => r[8] / r[i]).concat(1), Tbi = invM(Tb);
+    return Tbi ? mulM(Tbi, mulM(Hn, Ta)) : null;
+  }
+  const dir3 = (y, p) => [Math.sin(y) * Math.cos(p), -Math.sin(p), Math.cos(y) * Math.cos(p)];
+  const anguloEntre = (a, b) => { const u = dir3(a[0], a[1]), v = dir3(b[0], b[1]); return (Math.acos(Math.max(-1, Math.min(1, u[0] * v[0] + u[1] * v[1] + u[2] * v[2]))) * 180) / Math.PI; };
+  let trCache = {};
+  const trIds = () => (est.terreno ? Object.keys(est.terreno.puntos).filter((id) => meta[id]) : []);
+  // Homografía base → esfera, con su error por punto (en grados)
+  function trH(id) {
+    const T = est.terreno;
+    if (!T || !T.puntos[id] || !T.puntos[T.base]) return null;
+    if (id === T.base) return { H: [1, 0, 0, 0, 1, 0, 0, 0, 1], n: (T.puntos[id] || []).filter(Boolean).length, err: [], media: 0 };
+    if (trCache[id] !== undefined) return trCache[id];
+    const pb = T.puntos[T.base], pi = T.puntos[id], idx = [], A = [], B = [];
+    pb.forEach((p, k) => { const q = pi[k]; if (!p || !q) return; const a = aPlano(p[0], p[1]), b = aPlano(q[0], q[1]); if (a && b) { idx.push(k); A.push(a); B.push(b); } });
+    const evaluar = (H, sin) => {
+      const err = [];
+      idx.forEach((k, j) => { const m = aplicarH(H, A[j]); err[k] = m ? anguloEntre(dePlano(m), pi[k]) : 99; });
+      const vals = idx.filter((k) => k !== sin).map((k) => err[k]);
+      return { H, n: idx.length, err, media: vals.length > 4 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0, excluido: sin };
+    };
+    const H = ajustarH(A, B);
+    let r = H ? evaluar(H, -1) : null;
+    // Si un punto no coincide, se descarta solo: se prueba quitar cada uno y se queda el mejor ajuste
+    if (r && idx.length >= 6 && r.media > 0.25) {
+      let mejor = null;
+      idx.forEach((k, j) => {
+        const H2 = ajustarH(A.filter((_, x) => x !== j), B.filter((_, x) => x !== j));
+        const e = H2 && evaluar(H2, k);
+        if (e && (!mejor || e.media < mejor.media)) mejor = e;
+      });
+      if (mejor && mejor.media < r.media * 0.4) r = mejor;
+    }
+    trCache[id] = r || { H: null, n: idx.length, err: [], media: 0, excluido: -1 };
+    return trCache[id];
+  }
+  const trLista = (id) => { const r = trH(id); return !!(r && r.H); };
+  function transferir(yp, desde, hacia) {
+    const a = trH(desde), b = trH(hacia);
+    if (!a || !a.H || !b || !b.H) return null;
+    const ai = invM(a.H), q = aPlano(yp[0], yp[1]);
+    if (!ai || !q) return null;
+    const enBase = aplicarH(ai, q), m = enBase && aplicarH(b.H, enBase);
+    if (!m) return null;
+    const r = dePlano(m);
+    return [+r[0].toFixed(5), +r[1].toFixed(5)];
+  }
+  let consecutivoTr = Date.now() % 1e6;
+  const idCopia = () => "t" + (consecutivoTr++).toString(36);
+  // Lleva una capa vinculada (polígono o texto) a todas las esferas listas del terreno
+  function propagar(c, desde, soloFaltantes) {
+    if (!c.vinculo || !trLista(desde)) return 0;
+    let n = 0;
+    trIds().forEach((id) => {
+      if (id === desde || !trLista(id)) return;
+      const l = est.capas[id] = est.capas[id] || [];
+      let copia = l.find((x) => x.vinculo === c.vinculo);
+      if (copia && soloFaltantes) return;
+      let geo;
+      if (c.tipo === "poligono") { geo = c.puntos.map((p) => transferir(p, desde, id)); if (geo.some((p) => !p)) return; }
+      else { const p = transferir([c.yaw, c.pitch], desde, id); if (!p) return; geo = p; }
+      const datos = JSON.parse(JSON.stringify(c));
+      delete datos.id; delete datos.visible;
+      if (!copia) { copia = { id: idCopia(), visible: true }; l.push(copia); }
+      Object.assign(copia, datos);
+      if (c.tipo === "poligono") copia.puntos = geo; else { copia.yaw = geo[0]; copia.pitch = geo[1]; }
+      n++;
+    });
+    return n;
+  }
+  function gruposVinculo() {
+    const g = {};
+    Object.keys(est.capas).forEach((id) => (est.capas[id] || []).forEach((c) => { if (c.vinculo) (g[c.vinculo] = g[c.vinculo] || []).push({ id, c }); }));
+    return g;
+  }
+  // forzar: recalcula todas las copias desde la esfera base (al mover puntos de referencia)
+  function sincronizarTerreno(forzar) {
+    trCache = {};
+    const T = est.terreno, g = gruposVinculo();
+    Object.values(g).forEach((miembros) => {
+      const fuente = miembros.find((m) => T && m.id === T.base && trLista(m.id)) || miembros.find((m) => trLista(m.id));
+      if (fuente) propagar(fuente.c, fuente.id, !forzar);
+    });
+  }
+
   function normalizar() {
+    // Panoramas nuevos del archivo del proyecto: llegan con sus capas y con los hotspots que apuntan a ellos
+    base.escenas.forEach((b) => {
+      if (est.escenas.some((e) => e.id === b.id)) return;
+      est.escenas.push(JSON.parse(JSON.stringify(b)));
+      est.capas[b.id] = JSON.parse(JSON.stringify((base.capas || {})[b.id] || []));
+      Object.keys(base.capas || {}).forEach((k) => {
+        if (k === b.id || !est.capas[k]) return;
+        base.capas[k].filter((c) => c.tipo === "hotspot" && c.destino === b.id && !est.capas[k].some((x) => x.id === c.id)).forEach((c) => est.capas[k].push(JSON.parse(JSON.stringify(c))));
+      });
+    });
+    if (est.terreno === undefined) est.terreno = base.terreno ? JSON.parse(JSON.stringify(base.terreno)) : null;
+    if (!est.terreno) est.terreno = { base: null, puntos: {} };
+    Object.keys(est.terreno.puntos).forEach((id) => { if (!meta[id]) delete est.terreno.puntos[id]; });
+    if (!est.terreno.puntos[est.terreno.base]) est.terreno.base = Object.keys(est.terreno.puntos)[0] || null;
     // Los tours usan colores neutros por defecto; el verde lima es solo del software
     if (est.skin && !est.skin.neutro) { est.skin.acento = "#FFFFFF"; est.skin.panel = "#111111"; est.skin.opacidad = 0.6; if (est.skin.logo && est.skin.logo.tipo === "mozari") est.skin.logo.tipo = "ninguno"; }
     est.skin = mezclar(SKIN_DEF, est.skin);
@@ -806,6 +991,7 @@
       if (!e.piloto) e.piloto = b && b.piloto ? JSON.parse(JSON.stringify(b.piloto)) : { activo: false, puntos: [], alTerminar: "detener", siguiente: "", reanudar: 8 };
     });
     delete est.proyecto.littlePlanet;
+    sincronizarTerreno(false);
   }
   normalizar();
   const escena = (id) => est.escenas.find((e) => e.id === id);
@@ -840,7 +1026,7 @@
   const SECCIONES = [
     { id: "tours", nombre: "Mis Tours", subs: [["todos", "Todos"]] },
     { id: "proyecto", nombre: "Proyecto", subs: [["general", "General"], ["musica", "Música"]] },
-    { id: "panoramas", nombre: "Panoramas", subs: [["lista", "Lista"], ["mapa", "Mapa"], ["capas", "Capas"], ["piloto", "Piloto automático"]] },
+    { id: "panoramas", nombre: "Panoramas", subs: [["lista", "Lista"], ["mapa", "Mapa"], ["capas", "Capas"], ["piloto", "Piloto automático"], ["terreno", "Terreno"]] },
     { id: "media", nombre: "Media", subs: [["fotos", "Fotos"], ["videos", "Videos"], ["planos", "Planos"], ["audios", "Audios"]] },
     { id: "skin", nombre: "Skin", subs: [["h", "16:9"], ["v", "9:16"]] },
     { id: "publicar", nombre: "Publicar", subs: [["web", "Web"], ["compartir", "Compartir"]] },
@@ -879,6 +1065,7 @@
     const enEditor = clave === "panoramas/capas" || clave === "panoramas/piloto";
     if (!enEditor && (antes === "panoramas/capas" || antes === "panoramas/piloto")) cerrarEditor();
     if (antes.startsWith("skin/") && sec !== "skin") cerrarSkin();
+    if (antes === "panoramas/terreno" && clave !== antes) cerrarTerreno();
     document.querySelectorAll("#contenedor > section").forEach((s) => (s.hidden = !s.dataset.vista.split(" ").includes(clave)));
     $("sel-pano-wrap").hidden = !enEditor;
     if (PROXIMO[clave]) {
@@ -891,6 +1078,7 @@
     if (clave === "panoramas/lista") pintarLista();
     if (clave === "panoramas/mapa") requestAnimationFrame(() => mapa.dibujar());
     if (enEditor) abrirEditor(edPano || P().escenaInicial, sub);
+    if (clave === "panoramas/terreno") requestAnimationFrame(abrirTerreno);
     if (sec === "skin") requestAnimationFrame(() => abrirSkin(sub));
   }
 
@@ -1054,6 +1242,7 @@
       if (!actual) return;
       lista().forEach((c) => {
         if (!editable && !c.visible) return;
+        if (opciones.sinHotspots && c.tipo === "hotspot") return;
         const el = document.createElement("div");
         el.className = "cp cp-" + c.tipo;
         if (!c.visible) el.hidden = true;
@@ -1151,6 +1340,18 @@
           extra.appendChild(g);
         });
       }
+      // Puntos de referencia del terreno: anillo con centro exacto y número a un lado
+      if (motor.marcas) motor.marcas.forEach((m) => {
+        const pc = aCamara(cam, m.yaw, m.pitch);
+        if (pc.z <= 0.05) return;
+        const s = aPantalla(cam, pc);
+        const g = document.createElementNS(SVGNS, "g");
+        g.setAttribute("class", "tr-pt" + (m.clase ? " " + m.clase : ""));
+        g.setAttribute("data-m", m.i);
+        g.setAttribute("transform", "translate(" + s.x.toFixed(1) + "," + s.y.toFixed(1) + ")");
+        g.innerHTML = '<circle class="anillo" r="10"></circle><circle class="centro" r="1.8"></circle><g class="badge" transform="translate(16,-16)"><rect x="-10" y="-9" width="20" height="18" rx="9"></rect><text>' + (m.i + 1) + "</text></g>";
+        extra.appendChild(g);
+      });
       // Polígono en borrador
       const dib = motor.dibujo;
       if (!dib) return;
@@ -1205,7 +1406,13 @@
       }
       programar();
     }
-    function alSoltar() { if (arrastre && arrastre.movido) guardar(); arrastre = null; }
+    function alSoltar() { if (arrastre && arrastre.movido) { if (opciones.alSoltar) opciones.alSoltar(arrastre.c); guardar(); } arrastre = null; }
+    if (opciones.alTomarMarca) extra.addEventListener("pointerdown", (ev) => {
+      const g = ev.target.closest(".tr-pt");
+      if (!g) return;
+      ev.stopPropagation(); ev.preventDefault();
+      opciones.alTomarMarca(ev, +g.getAttribute("data-m"));
+    });
     if (editable) { window.addEventListener("pointermove", alMover); window.addEventListener("pointerup", alSoltar); }
 
     let toque = null;
@@ -1245,6 +1452,8 @@
       setModo(m) { motor.modo = m; capasEl.classList.toggle("solo-ver", m === "piloto"); render(); },
       construir, render: programar, estiloPoligono: (id, c) => { const n = nodos.get(id); if (n && n.path) estiloPoligono(n.path, c); },
       view: () => actual && actual.view,
+      coords: (ev) => (actual ? coordsEn(ev) : null),
+      marcas: null,
       captura: () => viewer.stage().takeSnapshot({ quality: 92 }),
       destruir() {
         ro.disconnect();
@@ -1442,6 +1651,7 @@
         editable: true,
         alSeleccionar: (cid) => seleccionar(cid),
         alCambiar: () => cambio(),
+        alSoltar: (c) => { if (c.vinculo) propagar(c, motorEd.actual.id); },
         alCerrarDibujo: () => terminarDibujo(true),
         alInteractuar: () => { if (pilotoEd) detenerPilotoEd(); },
         alMoverVista: () => { if (motorEd && motorEd.modo === "piloto") marcarPuntoActual(); },
@@ -1654,13 +1864,14 @@
   };
   const OJO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   const OJO_NO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 4.4-1.1"/></svg>';
+  const ICO_VINC = '<svg class="vinc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-label="En todas las esferas del terreno"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>';
   function pintarCapas() {
     if (!motorEd) return;
     const ul = $("lista"), l = cs();
     if (!l.length) { ul.innerHTML = '<li class="vacio" role="presentation">Este panorama no tiene capas. Agrega un polígono, un texto o un hotspot.</li>'; return; }
     ul.innerHTML = l.slice().reverse().map((c) =>
       '<li role="option" draggable="true" data-id="' + c.id + '" aria-selected="' + (c.id === motorEd.elegida) + '"' + (c.visible ? "" : ' class="oculta"') + ">" +
-      ICONOS[c.tipo] + "<span>" + esc(c.nombre) + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>").join("");
+      ICONOS[c.tipo] + "<span>" + esc(c.nombre) + (c.vinculo ? ICO_VINC : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>").join("");
   }
   $("lista").addEventListener("click", (ev) => {
     const ojo = ev.target.closest("[data-ojo]");
@@ -1724,6 +1935,16 @@
       h += '<div class="grupo"><b>Acción</b>' + campo("Lleva a", '<select data-k="destino">' + est.escenas.filter((e) => e.id !== motorEd.actual.id).map((e) => '<option value="' + e.id + '"' + (c.destino === e.id ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("") + "</select>") +
         campo("Texto", '<input type="text" data-k="texto" placeholder="Ir a…" value="' + esc(c.texto || "") + '">') + '<p class="nota">Más adelante: catálogo de hotspots y más acciones.</p></div>';
     }
+    if (c.tipo === "poligono" || c.tipo === "texto") {
+      const aqui = motorEd.actual.id, listas = trIds().filter(trLista);
+      h += '<div class="grupo"><b>Terreno</b>';
+      if (trLista(aqui) && listas.length > 1) {
+        const otras = listas.filter((x) => x !== aqui).map(nombreDe).join(", ");
+        h += interruptor("Aplicar a todas las esferas", "_vinculo", !!c.vinculo) +
+          '<p class="nota">' + (c.vinculo ? "Está también en " + esc(otras) + ". Si lo editas aquí, se actualiza en todas." : "Lo copia a " + esc(otras) + " en el lugar correcto, con los puntos de referencia del terreno.") + "</p>";
+      } else h += '<p class="nota">Para aplicarlo a otras esferas, une este panorama al terreno en Panoramas → Terreno.</p>';
+      h += "</div>";
+    }
     h += '<div class="grupo"><b>Orden</b><div class="orden"><button class="mini" data-orden="frente">Arriba</button><button class="mini" data-orden="subir">Subir</button><button class="mini" data-orden="bajar">Bajar</button><button class="mini" data-orden="fondo">Abajo</button></div></div>';
     h += '<div class="acciones"><button class="mini" data-acc="duplicar">Duplicar</button><button class="mini peligro" data-acc="eliminar">Eliminar</button></div>';
     cont.innerHTML = h;
@@ -1736,6 +1957,7 @@
     escribir(c, el.dataset.k, v);
     const etq = document.querySelector('[data-v-de="' + el.dataset.k + '"]');
     if (etq) etq.textContent = el.dataset.k.includes("opacidad") ? pct(v) : px(v);
+    if (c.vinculo) propagar(c, motorEd.actual.id);
     guardar();
     if (el.dataset.k === "nombre") { pintarCapas(); return; }
     if (c.tipo === "poligono" && el.dataset.k !== "rollover.activo") motorEd.estiloPoligono(c.id, c);
@@ -1743,7 +1965,27 @@
     if (repintar) pintarProps();
   }
   $("props").addEventListener("input", (ev) => { if (ev.target.type !== "checkbox" && ev.target.tagName !== "SELECT") aplicar(ev.target, false); });
-  $("props").addEventListener("change", (ev) => { if (ev.target.type === "checkbox" || ev.target.tagName === "SELECT") aplicar(ev.target, true); else if (ev.target.type === "color") pintarProps(); });
+  $("props").addEventListener("change", (ev) => {
+    if (ev.target.dataset.k === "_vinculo") { vincular(ev.target.checked); return; }
+    if (ev.target.type === "checkbox" || ev.target.tagName === "SELECT") aplicar(ev.target, true); else if (ev.target.type === "color") pintarProps();
+  });
+  // Aplicar a todas las esferas del terreno (o quitarlo de las demás)
+  function vincular(si) {
+    const c = motorEd.elegida && buscar(motorEd.elegida), aqui = motorEd.actual.id;
+    if (!c) return;
+    if (si) {
+      c.vinculo = "v" + c.id;
+      const n = propagar(c, aqui);
+      if (!n) { delete c.vinculo; avisar("No se pudo: esta capa no está sobre el suelo"); }
+      else avisar("Aplicado en " + (n + 1) + " esferas");
+    } else {
+      const v = c.vinculo;
+      Object.keys(est.capas).forEach((id) => { if (id !== aqui) est.capas[id] = est.capas[id].filter((x) => x.vinculo !== v); });
+      delete c.vinculo;
+      avisar("Ahora solo está en " + nombreDe(aqui));
+    }
+    cambio();
+  }
   $("props").addEventListener("click", (ev) => {
     const m = ev.target.closest(".muestra"); if (m) { aplicar(m, true); return; }
     const o = ev.target.closest("[data-orden]"); if (o) { ordenar(o.dataset.orden); return; }
@@ -1762,7 +2004,7 @@
     const c = motorEd.elegida && buscar(motorEd.elegida);
     if (!c) return;
     const copia = JSON.parse(JSON.stringify(c));
-    copia.id = nuevoId(); copia.nombre = c.nombre + " copia";
+    copia.id = nuevoId(); copia.nombre = c.nombre + " copia"; delete copia.vinculo;
     if (copia.puntos) copia.puntos = copia.puntos.map(([y, p]) => [y + 0.03, p]); else copia.yaw += 0.03;
     const l = cs(); l.splice(l.indexOf(c) + 1, 0, copia);
     motorEd.elegida = copia.id; cambio(); avisar("Capa duplicada");
@@ -1770,10 +2012,18 @@
   function eliminar() {
     const l = cs(), i = l.findIndex((c) => c.id === motorEd.elegida);
     if (i < 0) return;
-    l.splice(i, 1); motorEd.elegida = null; cambio(); avisar("Capa eliminada");
+    const v = l[i].vinculo;
+    l.splice(i, 1); motorEd.elegida = null;
+    let n = 0;
+    if (v) Object.keys(est.capas).forEach((id) => { const antes = est.capas[id].length; est.capas[id] = est.capas[id].filter((x) => x.vinculo !== v); n += antes - est.capas[id].length; });
+    cambio(); avisar(n ? "Eliminado en " + (n + 1) + " esferas" : "Capa eliminada");
   }
   function seleccionar(id) { if (!motorEd) return; motorEd.elegida = id; pintarCapas(); pintarProps(); motorEd.render(); }
-  function cambio() { guardar(); motorEd.construir(); pintarCapas(); pintarProps(); }
+  function cambio() {
+    const c = motorEd.elegida && buscar(motorEd.elegida);
+    if (c && c.vinculo) propagar(c, motorEd.actual.id);
+    guardar(); motorEd.construir(); pintarCapas(); pintarProps();
+  }
   $("copiar").addEventListener("click", async () => {
     try { await navigator.clipboard.writeText(JSON.stringify(est, null, 2)); avisar("Datos copiados. Pégalos en el chat con Claude."); }
     catch (e) { avisar("No se pudo copiar en este dispositivo"); }
@@ -1800,6 +2050,199 @@
     if ((ev.key === "Delete" || ev.key === "Backspace") && motorEd.elegida) { ev.preventDefault(); eliminar(); }
     if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "d" && motorEd.elegida) { ev.preventDefault(); duplicar(); }
     if (ev.key === "Escape") seleccionar(null);
+  });
+
+  // =================== PANORAMAS: TERRENO ===================
+  // Dos esferas lado a lado. El mismo número = el mismo lugar del suelo en ambas.
+  const tr = { a: null, b: null, ma: null, mb: null, pend: null, sel: -1, arr: null };
+  const TP = () => est.terreno.puntos;
+  const grad2 = (g) => (g < 0.01 ? "<0.01°" : "±" + g.toFixed(2) + "°");
+  const largoPuntos = () => Math.max(0, ...Object.values(TP()).map((l) => l.length));
+  function abrirTerreno() {
+    const ids = trIds();
+    if (!tr.a || !ids.includes(tr.a)) tr.a = est.terreno.base || ids[0] || est.escenas[0].id;
+    if (!tr.b || tr.b === tr.a || !ids.includes(tr.b)) tr.b = ids.find((x) => x !== tr.a) || null;
+    const op = (lado) => ({ editable: false, sinHotspots: true, alTomarMarca: (ev, i) => tomarMarca(ev, lado, i) });
+    if (!tr.ma) { tr.ma = crearMotor($("tr-stage-a"), op("a")); tr.mb = crearMotor($("tr-stage-b"), op("b")); }
+    if (!tr.ma.actual || tr.ma.actual.id !== tr.a) tr.ma.mostrar(tr.a, 0); else tr.ma.construir();
+    $("tr-stage-b").parentNode.hidden = !tr.b;
+    if (tr.b) { if (!tr.mb.actual || tr.mb.actual.id !== tr.b) tr.mb.mostrar(tr.b, 0); else tr.mb.construir(); }
+    pintarTerreno();
+  }
+  function cerrarTerreno() {
+    if (!tr.ma) return;
+    tr.ma.destruir(); tr.mb.destruir();
+    tr.ma = tr.mb = null; tr.pend = null; tr.arr = null;
+  }
+  function pintarTerreno() {
+    const ids = trIds(), T = est.terreno, n = largoPuntos(), P = TP();
+    const opc = (lista, sel) => lista.map((id) => '<option value="' + id + '"' + (id === sel ? " selected" : "") + ">" + esc(nombreDe(id)) + "</option>").join("");
+    $("tr-a").innerHTML = opc(ids.length ? ids : [tr.a], tr.a);
+    $("tr-b").innerHTML = opc(ids.filter((x) => x !== tr.a), tr.b);
+    const rb = tr.b && trH(tr.b);
+    // Precisión de la esfera comparada
+    const chip = $("tr-prec");
+    if (!rb || !rb.H) { chip.className = "chip-dato aviso"; chip.textContent = "Faltan " + Math.max(1, 4 - (rb ? rb.n : 0)) + " puntos"; }
+    else if (rb.n === 4) { chip.className = "chip-dato"; chip.textContent = "4 puntos · el mínimo"; }
+    else { const m = rb.media; chip.className = "chip-dato " + (m < 0.3 ? "ok" : "aviso"); chip.textContent = (m < 0.3 ? "Precisión alta" : m < 0.8 ? "Precisión media" : "Revisa los puntos") + " · " + grad2(m); }
+    chip.hidden = !tr.b;
+    const malo = (i) => !!(rb && rb.H && rb.n > 4 && (i === rb.excluido || rb.err[i] > Math.max(0.5, 3 * rb.media)));
+    // Marcas en las dos esferas
+    const marcas = (id, otra) => (P[id] || []).map((p, i) => p && { yaw: p[0], pitch: p[1], i, clase: [i === tr.sel ? "activo" : "", otra && !(P[otra] || [])[i] ? "solo" : "", malo(i) ? "mal" : ""].join(" ").trim() }).filter(Boolean);
+    if (tr.ma) { tr.ma.marcas = marcas(tr.a, tr.b); tr.ma.render(); }
+    if (tr.mb && tr.b) { tr.mb.marcas = marcas(tr.b, tr.a); tr.mb.render(); }
+    // Panel
+    const vinc = Object.values(gruposVinculo());
+    const nPol = vinc.filter((g) => g[0].c.tipo === "poligono").length, nTxt = vinc.length - nPol;
+    let h = '<div class="grupo"><b>Esferas del terreno</b><ul class="tr-esf">' + ids.map((id) => {
+      const r = trH(id), esBase = id === T.base;
+      const est2 = esBase ? ["ok", "Base"] : r && r.H ? ["ok", r.n + " puntos · lista"] : ["aviso", (r ? r.n : 0) + " de 4 puntos"];
+      return '<li><img src="' + thumbDe(id) + '" alt=""><div><b>' + esc(nombreDe(id)) + '</b><small class="' + est2[0] + '">' + est2[1] + '</small></div><button class="ojo" data-quitar="' + id + '" aria-label="Quitar ' + esc(nombreDe(id)) + ' del terreno">✕</button></li>';
+    }).join("") + "</ul>";
+    const fuera = est.escenas.filter((e) => !ids.includes(e.id));
+    if (fuera.length) h += '<select class="tr-agregar" id="tr-agregar" aria-label="Agregar esfera al terreno"><option value="">+ Agregar esfera del mismo terreno…</option>' + fuera.map((e) => '<option value="' + e.id + '">' + esc(e.nombre) + "</option>").join("") + "</select>";
+    h += "</div>";
+    if (tr.b) {
+      h += '<div class="grupo"><b>Puntos de referencia</b>';
+      if (!n) h += '<p class="nota">Aún no hay puntos. Haz clic en el suelo de cualquiera de las dos esferas.</p>';
+      else h += '<ol class="tr-puntos">' + Array.from({ length: n }, (_, i) => {
+        const enA = (P[tr.a] || [])[i], enB = (P[tr.b] || [])[i];
+        if (!enA && !enB) return "";
+        const falta = !enA ? nombreDe(tr.a) : !enB ? nombreDe(tr.b) : "";
+        const err = rb && rb.H && rb.n > 4 && rb.err[i] !== undefined ? grad2(rb.err[i]) : "";
+        return '<li data-i="' + i + '" class="' + [i === tr.sel ? "activo" : "", falta ? "falta" : "", malo(i) ? "mal" : ""].join(" ") + '"><span class="num">' + (i + 1) + "</span><span>" + (falta ? "Falta en " + esc(falta) : rb && i === rb.excluido ? "No coincide · no se usa" : "En las dos esferas") + "</span><small>" + err + '</small><button class="ojo" data-borrar="' + i + '" aria-label="Quitar punto ' + (i + 1) + '">✕</button></li>';
+      }).join("") + "</ol>";
+      h += '<p class="nota">Usa puntos fijos del suelo: esquinas de calles, postes, mojoneras. De 6 a 8 bien repartidos dan más precisión.</p></div>';
+    }
+    h += '<div class="grupo"><b>Aplicado a todas</b><p class="nota">' + (vinc.length ? nPol + " polígonos" + (nTxt ? " y " + nTxt + " textos" : "") + " están en todas las esferas listas." : "Ninguna capa todavía.") + " Se activa en Capas → Aplicar a todas las esferas.</p></div>";
+    $("tr-panel").innerHTML = h;
+    // Banda de ayuda
+    let b;
+    if (ids.length < 2) b = "<span><b>Agrega 2 o más esferas</b> del mismo terreno en el panel de la izquierda.</span>";
+    else if (tr.pend) b = "<span><b>Punto " + (tr.pend.i + 1) + ":</b> ahora haz clic en el mismo lugar en " + esc(nombreDe(tr.pend.lado === "a" ? tr.b : tr.a)) + '.</span><button class="mini" data-tr="cancelar">Cancelar</button>';
+    else b = "<span><b>Clic en el suelo</b> para un punto nuevo. Arrastra un punto para ajustarlo.</span>";
+    $("tr-banda").innerHTML = b;
+  }
+  // Cambió algún punto: recalcula y lleva de nuevo las capas a todas las esferas
+  function cambioTerreno() {
+    sincronizarTerreno(true);
+    guardar();
+    if (tr.ma) tr.ma.construir();
+    if (tr.mb && tr.b) tr.mb.construir();
+    pintarTerreno();
+  }
+  function idDe(lado) { return lado === "a" ? tr.a : tr.b; }
+  function motorDe(lado) { return lado === "a" ? tr.ma : tr.mb; }
+  function ponerPunto(lado, k) {
+    const id = idDe(lado), P = TP();
+    if (!(k.pitch > 0.03)) { avisar("Marca puntos en el suelo, abajo del horizonte"); return; }
+    const yp = [+k.yaw.toFixed(5), +k.pitch.toFixed(5)];
+    if (tr.pend) {
+      P[id][tr.pend.i] = yp;
+      if (tr.pend.lado !== lado) { const i = tr.pend.i; tr.pend = null; tr.sel = i; cambioTerreno(); const r = trH(tr.b); avisar(r && r.excluido === i ? "El punto " + (i + 1) + " no coincide con los demás. Revísalo." : "Punto " + (i + 1) + " listo en las dos esferas"); return; }
+    } else {
+      const i = largoPuntos();
+      ids2().forEach((x) => { while (P[x].length < i) P[x].push(null); });
+      P[id][i] = yp;
+      tr.pend = { i, lado }; tr.sel = i;
+    }
+    guardar(); pintarTerreno();
+  }
+  const ids2 = () => [tr.a, tr.b].filter(Boolean);
+  // Clic (sin arrastrar) sobre cada esfera
+  ["a", "b"].forEach((lado) => {
+    const st = $(lado === "a" ? "tr-stage-a" : "tr-stage-b");
+    let t0 = null;
+    st.addEventListener("pointerdown", (ev) => { t0 = { x: ev.clientX, y: ev.clientY }; });
+    st.addEventListener("pointerup", (ev) => {
+      if (!t0 || trIds().length < 2 || !tr.b) return;
+      const mov = Math.hypot(ev.clientX - t0.x, ev.clientY - t0.y);
+      t0 = null;
+      if (mov > 5) return;
+      const k = motorDe(lado).coords(ev);
+      if (k) ponerPunto(lado, k);
+    });
+  });
+  function tomarMarca(ev, lado, i) {
+    tr.arr = { lado, i, x: ev.clientX, y: ev.clientY, movido: false };
+  }
+  window.addEventListener("pointermove", (ev) => {
+    const a = tr.arr;
+    if (!a) return;
+    if (!a.movido && Math.hypot(ev.clientX - a.x, ev.clientY - a.y) < 3) return;
+    a.movido = true;
+    const m = motorDe(a.lado), k = m && m.coords(ev);
+    if (!k || !(k.pitch > 0.03)) return;
+    TP()[idDe(a.lado)][a.i] = [+k.yaw.toFixed(5), +k.pitch.toFixed(5)];
+    const p = TP()[idDe(a.lado)][a.i];
+    m.marcas.forEach((x) => { if (x.i === a.i) { x.yaw = p[0]; x.pitch = p[1]; } });
+    m.render();
+  });
+  window.addEventListener("pointerup", () => {
+    const a = tr.arr;
+    if (!a) return;
+    tr.arr = null;
+    if (a.movido) { tr.sel = a.i; cambioTerreno(); return; }
+    elegirPunto(a.i, false);
+  });
+  // Elegir un punto: lo resalta, y si falta en una de las dos esferas, espera ese clic
+  function elegirPunto(i, mirar) {
+    const P = TP(), enA = (P[tr.a] || [])[i], enB = (P[tr.b] || [])[i];
+    tr.sel = i;
+    tr.pend = !enA ? { i, lado: "b" } : !enB ? { i, lado: "a" } : null;
+    if (mirar) [["a", enA], ["b", enB]].forEach(([l, p]) => { if (p) motorDe(l).view().setParameters({ yaw: p[0], pitch: p[1] }); });
+    pintarTerreno();
+  }
+  function borrarPunto(i) {
+    Object.values(TP()).forEach((l) => { if (l.length > i) l.splice(i, 1); });
+    tr.sel = -1; tr.pend = null;
+    cambioTerreno(); avisar("Punto quitado");
+  }
+  $("tr-panel").addEventListener("click", (ev) => {
+    const q = ev.target.closest("[data-quitar]");
+    if (q) {
+      const id = q.dataset.quitar;
+      delete TP()[id];
+      (est.capas[id] || []).forEach((c) => delete c.vinculo);
+      if (est.terreno.base === id) est.terreno.base = Object.keys(TP())[0] || null;
+      if (tr.a === id) tr.a = null;
+      if (tr.b === id) tr.b = null;
+      tr.pend = null; tr.sel = -1;
+      sincronizarTerreno(false); guardar(); abrirTerreno(); avisar(nombreDe(id) + " ya no está en el terreno");
+      return;
+    }
+    const d = ev.target.closest("[data-borrar]");
+    if (d) { borrarPunto(+d.dataset.borrar); return; }
+    const li = ev.target.closest(".tr-puntos li[data-i]");
+    if (li) elegirPunto(+li.dataset.i, true);
+  });
+  $("tr-panel").addEventListener("change", (ev) => {
+    if (ev.target.id !== "tr-agregar" || !ev.target.value) return;
+    const id = ev.target.value;
+    TP()[id] = [];
+    if (!est.terreno.base) est.terreno.base = id;
+    if (id !== tr.a) tr.b = id;
+    guardar(); abrirTerreno(); avisar(nombreDe(id) + " se unió al terreno. Marca sus puntos.");
+  });
+  $("tr-a").addEventListener("change", (e) => {
+    const id = e.target.value;
+    est.terreno.base = id;
+    if (tr.b === id) tr.b = tr.a;
+    tr.a = id; tr.pend = null;
+    sincronizarTerreno(false); guardar(); abrirTerreno();
+  });
+  $("tr-b").addEventListener("change", (e) => { tr.b = e.target.value; tr.pend = null; abrirTerreno(); });
+  document.addEventListener("keydown", (ev) => {
+    if (!tr.ma || /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
+    if ((ev.key === "Delete" || ev.key === "Backspace") && tr.sel >= 0) { ev.preventDefault(); borrarPunto(tr.sel); }
+    if (ev.key === "Escape" && tr.pend) $("tr-banda").querySelector('[data-tr="cancelar"]').click();
+  });
+  $("tr-banda").addEventListener("click", (ev) => {
+    if (!ev.target.closest('[data-tr="cancelar"]') || !tr.pend) return;
+    const { i, lado } = tr.pend, P = TP();
+    const enOtra = (P[idDe(lado === "a" ? "b" : "a")] || [])[i];
+    if (!enOtra && !Object.keys(P).some((id) => id !== idDe(lado) && P[id][i])) { borrarPunto(i); return; }
+    tr.pend = null; pintarTerreno();
   });
 
   // =================== SKIN DEL TOUR ===================
