@@ -65,6 +65,26 @@
   .mi-plan .uso-barra { display: block; height: 6px; border-radius: 999px; background: var(--mz-linea-neutra); max-width: 360px; overflow: hidden; }
   .mi-plan .uso-lleno { display: block; height: 100%; min-width: 4px; background: var(--mz-lima); border-radius: 999px; }
   .mi-plan a, .mi-plan button { text-decoration: none; }
+  .dlg-pago { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0; border: 1px solid var(--mz-linea-neutra); border-radius: 18px; background: var(--mz-fondo); color: var(--mz-texto); font-family: var(--mz-texto-ui); }
+  .dlg-pago::backdrop { background: rgba(0, 0, 0, 0.6); }
+  .dlg-pago .dp-cuerpo { padding: 22px; display: grid; gap: 16px; }
+  .dlg-pago h2 { margin: 0; font-size: 20px; font-weight: 600; }
+  .dlg-pago p { margin: 0; color: var(--mz-tenue); font-size: 13px; line-height: 1.5; }
+  .dlg-pago .dp-cerrar { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: var(--mz-superficie); color: var(--mz-texto); cursor: pointer; font-size: 18px; line-height: 1; }
+  .dp-periodo { display: inline-flex; padding: 3px; gap: 2px; border-radius: var(--mz-pastilla); background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); justify-self: start; }
+  .dp-periodo button { border: 0; background: none; color: var(--mz-tenue); font: 500 13px var(--mz-texto-ui); padding: 7px 14px; border-radius: var(--mz-pastilla); cursor: pointer; }
+  .dp-periodo button[aria-pressed="true"] { background: var(--mz-texto); color: var(--mz-negro); }
+  .dp-periodo small { font-size: 11px; opacity: 0.75; }
+  .dp-planes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 520px) { .dp-planes { grid-template-columns: 1fr; } }
+  .dp-plan { text-align: left; display: grid; gap: 6px; align-content: start; padding: 14px; border-radius: var(--mz-radio); border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); color: var(--mz-texto); font-family: var(--mz-texto-ui); cursor: pointer; }
+  .dp-plan[aria-pressed="true"] { border-color: var(--mz-lima); box-shadow: 0 0 0 1px var(--mz-lima) inset; }
+  .dp-plan b { font-size: 15px; font-weight: 600; }
+  .dp-plan .dp-precio { font-size: 22px; font-weight: 600; }
+  .dp-plan .dp-precio small { font-size: 12px; font-weight: 400; color: var(--mz-tenue); }
+  .dp-plan ul { margin: 4px 0 0; padding-left: 16px; color: var(--mz-tenue); font-size: 12px; line-height: 1.6; }
+  .dp-pagar { width: 100%; padding: 12px 18px; font-size: 14px; }
+  .dp-nota { font-size: 12px !important; text-align: center; }
   .cuentas { margin-bottom: 18px; overflow: auto; border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); background: var(--mz-superficie); }
   .cuentas select { font: 500 13px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 8px; padding: 6px 8px; }
   .marca-mozari { position: absolute; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.92); color: #0B0B0B; font: 500 12px var(--mz-texto-ui); text-decoration: none; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); }
@@ -806,6 +826,7 @@
 </style>
 </head>
 <body>
+<dialog class="dlg-pago" id="dlg-pago" aria-labelledby="dp-titulo"><div class="dp-cuerpo" id="dp-cuerpo"></div></dialog>
 
 <!-- ======================= ARRANQUE ======================= -->
 <div class="splash" id="splash" aria-hidden="true">
@@ -1565,7 +1586,7 @@
       document.querySelectorAll("#contenedor > section").forEach((s) => (s.hidden = true));
       $("proximo").innerHTML = '<div class="icono">' + ICO.foto + '</div><span class="etiq">Plan Desarrollos</span><h1>Lotificación</h1>' +
         "<p>Lotes con su estado en todas las esferas, terreno para pasar los lotes de una vista a otra y masterplan con el avance de tu venta.</p>" +
-        '<div class="pub-acc"><a class="btn-prim" href="' + ESCAPARATE + '" target="_blank" rel="noopener">Ver planes</a></div>';
+        '<div class="pub-acc"><button class="btn-prim" data-comprar="desarrollos">Activar Desarrollos</button></div>';
       $("v-proximo").hidden = false;
       return;
     }
@@ -1689,8 +1710,13 @@
     else partes.push(n + (n === 1 ? " tour" : " tours"));
     if (u) partes.push(gbTxt(u.bytes) + (PLAN.bytes !== null ? " de " + gbTxt(PLAN.bytes) : ""));
     const pct = u && PLAN.bytes ? Math.min(100, (u.bytes / PLAN.bytes) * 100) : 0;
-    caja.innerHTML = '<div><b>Plan ' + esc(PLAN.nombre) + "</b><span>" + partes.join(" · ") + "</span>" + (PLAN.bytes !== null ? '<span class="uso-barra"><span class="uso-lleno" style="width:' + pct.toFixed(1) + '%"></span></span>' : "") + "</div>" +
-      (PLAN.id !== "desarrollos" ? '<a class="btn-sec" href="' + ESCAPARATE + '" target="_blank" rel="noopener">Mejorar plan</a>' : "") +
+    if (PLAN.vence) partes.push("vigente hasta el " + fechaLarga(PLAN.vence));
+    const aviso = PLAN.vencido ? '<span style="color:var(--mz-aviso)">Tu plan ' + esc(PLANES_TXT[PLAN.vencido] || "") + " venció. Tus tours siguen ahí; renuévalo para seguir sin límites.</span>" : "";
+    const boton = PLAN.vencido ? '<button class="btn-prim" data-comprar="' + PLAN.vencido + '">Renovar</button>'
+      : PLAN.vence ? '<button class="btn-sec" data-comprar="' + PLAN.id + '">Renovar</button>'
+      : PLAN.id !== "desarrollos" && !NUBE.admin ? '<button class="btn-sec" data-comprar="' + (PLAN.id === "pro" ? "desarrollos" : "pro") + '">Mejorar plan</button>' : "";
+    caja.innerHTML = '<div><b>Plan ' + esc(PLAN.nombre) + "</b><span>" + partes.join(" · ") + "</span>" + aviso + (PLAN.bytes !== null ? '<span class="uso-barra"><span class="uso-lleno" style="width:' + pct.toFixed(1) + '%"></span></span>' : "") + "</div>" +
+      boton +
       (NUBE.admin ? '<button class="btn-sec" id="ver-cuentas">Cuentas</button>' : "");
     if (!u) fetch("api/uso", { cache: "no-store" }).then((r) => r.json()).then((d) => { usoNube = d; pintarPlan(); }).catch(() => {});
   }
@@ -1701,9 +1727,9 @@
     const { cuentas } = await r.json();
     let caja = $("cuentas");
     if (!caja) { caja = document.createElement("div"); caja.id = "cuentas"; caja.className = "cuentas"; $("mi-plan").after(caja); }
-    caja.innerHTML = '<table class="lotes-tabla"><thead><tr><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Última entrada</th></tr></thead><tbody>' + cuentas.map((c) =>
+    caja.innerHTML = '<table class="lotes-tabla"><thead><tr><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Vence</th><th>Última entrada</th></tr></thead><tbody>' + cuentas.map((c) =>
       "<tr><td><b>" + esc(c.nombre || "") + "</b></td><td>" + esc(c.email) + "</td><td>" + (c.admin ? "Dueño" : '<select data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
-      "</td><td>" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td></tr>").join("") + "</tbody></table>";
+      "</td><td>" + (c.admin ? "" : c.vence ? fechaLarga(c.vence) : c.plan && c.plan !== "gratis" ? "No caduca" : "") + "</td><td>" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td></tr>").join("") + "</tbody></table>";
   }
   document.addEventListener("click", (ev) => { if (ev.target.id === "ver-cuentas") { const c = $("cuentas"); if (c && !c.hidden) { c.hidden = true; return; } if (c) c.hidden = false; pintarCuentas(); } });
   document.addEventListener("change", async (ev) => {
@@ -1712,6 +1738,83 @@
     const r = await fetch("api/admin/cuentas/" + uid, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ plan: ev.target.value }) }).catch(() => null);
     avisar(r && r.ok ? "Plan actualizado" : "No se pudo cambiar el plan");
   });
+  // =================== PAGO (Mercado Pago) ===================
+  // Se paga 1 mes o 1 año; no se renueva solo. El plan se activa cuando Mercado Pago confirma.
+  const PLANES_TXT = { gratis: "Gratis", pro: "Pro", desarrollos: "Desarrollos" };
+  const fechaLarga = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return ""; } };
+  const COBRO = { pro: { mes: 299, anio: 2990 }, desarrollos: { mes: 799, anio: 7990 } };
+  const QUE_INCLUYE = {
+    pro: ["Tours y esferas sin límite", "20 GB", "Sin marca Mozari"],
+    desarrollos: ["Todo lo de Pro", "100 GB", "Lotificación: lotes, terreno y masterplan"],
+  };
+  const pago = { plan: "pro", periodo: "mes" };
+  const pesos = (n) => "$" + n.toLocaleString("es-MX");
+  function pintarPago() {
+    const c = COBRO[pago.plan][pago.periodo];
+    $("dp-cuerpo").innerHTML = '<button class="dp-cerrar" data-dp-cerrar aria-label="Cerrar">×</button>' +
+      '<div><h2 id="dp-titulo">Mejora tu plan</h2><p>Precio de lanzamiento. Pagas una vez por el periodo que elijas; no se cobra solo.</p></div>' +
+      '<div class="dp-periodo" role="group" aria-label="Periodo">' +
+        '<button data-dp-periodo="mes" aria-pressed="' + (pago.periodo === "mes") + '">Mensual</button>' +
+        '<button data-dp-periodo="anio" aria-pressed="' + (pago.periodo === "anio") + '">Anual <small>2 meses gratis</small></button></div>' +
+      '<div class="dp-planes">' + ["pro", "desarrollos"].map((id) =>
+        '<button class="dp-plan" data-dp-plan="' + id + '" aria-pressed="' + (pago.plan === id) + '"><b>' + PLANES_TXT[id] + "</b>" +
+        '<span class="dp-precio">' + pesos(COBRO[id][pago.periodo]) + " <small>" + (pago.periodo === "mes" ? "/ mes" : "/ año") + "</small></span>" +
+        "<ul>" + QUE_INCLUYE[id].map((x) => "<li>" + x + "</li>").join("") + "</ul></button>").join("") + "</div>" +
+      '<button class="btn-prim dp-pagar" data-dp-pagar>Pagar ' + pesos(c) + " con Mercado Pago</button>" +
+      '<p class="dp-nota">Tarjeta, OXXO o saldo de Mercado Pago. Precios en pesos mexicanos.</p>';
+  }
+  function abrirPago(plan) {
+    if (MODO !== "nube") { window.open(ESCAPARATE, "_blank", "noopener"); return; }
+    if (COBRO[plan]) pago.plan = plan;
+    pintarPago(); $("dlg-pago").showModal();
+  }
+  function avisoPago(titulo, texto, recargar) {
+    $("dp-cuerpo").innerHTML = '<div><h2 id="dp-titulo">' + titulo + "</h2><p>" + texto + "</p></div>" +
+      '<button class="btn-prim dp-pagar" ' + (recargar ? "data-dp-recargar" : "data-dp-cerrar") + ">Continuar</button>";
+    if (!$("dlg-pago").open) $("dlg-pago").showModal();
+  }
+  document.addEventListener("click", async (ev) => {
+    const comprar = ev.target.closest("[data-comprar]");
+    if (comprar) { abrirPago(comprar.dataset.comprar); return; }
+    if (!ev.target.closest("#dlg-pago")) return;
+    if (ev.target === $("dlg-pago") || ev.target.closest("[data-dp-cerrar]")) { $("dlg-pago").close(); return; }
+    if (ev.target.closest("[data-dp-recargar]")) { location.replace(location.pathname + location.hash); return; }
+    const per = ev.target.closest("[data-dp-periodo]"); if (per) { pago.periodo = per.dataset.dpPeriodo; pintarPago(); return; }
+    const pl = ev.target.closest("[data-dp-plan]"); if (pl) { pago.plan = pl.dataset.dpPlan; pintarPago(); return; }
+    const b = ev.target.closest("[data-dp-pagar]");
+    if (b) {
+      b.disabled = true; b.textContent = "Abriendo Mercado Pago…";
+      const r = await fetch("api/pagos/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(pago) }).catch(() => null);
+      const d = r ? await r.json().catch(() => ({})) : {};
+      if (!r || !r.ok || !d.url) { b.disabled = false; pintarPago(); avisar(d.error || "No se pudo abrir el pago. Intenta de nuevo."); return; }
+      location.href = d.url;
+    }
+  });
+  // Al volver del escaparate (?comprar=) o de Mercado Pago (?pago=)
+  if (MODO === "nube") {
+    const q = new URLSearchParams(location.search);
+    const limpiar = () => history.replaceState(null, "", location.pathname + location.hash);
+    if (q.get("comprar")) { limpiar(); if (!NUBE.admin) setTimeout(() => abrirPago(q.get("comprar")), 300); }
+    else if (q.get("pago")) setTimeout(async () => {
+      const estado = q.get("pago"), cuerpo = { payment_id: q.get("payment_id") || q.get("collection_id") || "", ref: q.get("external_reference") || "" };
+      limpiar();
+      if (estado === "error") avisoPago("No se completó el pago", "No se hizo ningún cargo. Puedes intentarlo de nuevo cuando quieras.", false);
+      else {
+        avisoPago("Confirmando tu pago…", "Un momento, estamos revisando con Mercado Pago.", false);
+        let d = null;
+        for (let i = 0; i < 6; i++) {
+          const r = await fetch("api/pagos/verificar", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(cuerpo) }).catch(() => null);
+          d = r && r.ok ? await r.json().catch(() => null) : null;
+          if (d && d.estado === "aprobado") break;
+          if (estado === "pendiente") break;
+          await new Promise((ok) => setTimeout(ok, 2000));
+        }
+        if (d && d.estado === "aprobado") avisoPago("¡Listo! Ya tienes " + PLANES_TXT[d.plan], "Tu plan está activo hasta el " + fechaLarga(d.vence) + ". Te llega el comprobante de Mercado Pago a tu correo.", true);
+        else if (estado === "pendiente" || (d && d.estado === "pendiente")) avisoPago("Tu pago está pendiente", "Si pagaste en OXXO, se acredita en unas horas. Tu plan se activa solo en cuanto llegue; no tienes que hacer nada.", true);
+        else avisoPago("Aún no vemos tu pago", "Si ya pagaste, en unos minutos se activa solo. Si no, puedes intentarlo de nuevo.", true);
+      }
+    }, 300);
+  }
   function abrirTourNube(id, nuevo) {
     if (id === TOUR) { ir("proyecto", "general"); return; }
     location.hash = "t=" + id + (nuevo ? "&nuevo" : "");

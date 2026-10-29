@@ -11,7 +11,7 @@
   "assets": {
     "directory": "../../estudio",
     "binding": "ASSETS",
-    "run_worker_first": ["/", "/index.html", "/api/*", "/t/*", "/entrar", "/auth/*", "/salir"]
+    "run_worker_first": ["/", "/index.html", "/api/*", "/t/*", "/entrar", "/auth/*", "/salir", "/webhooks/*"]
   },
   "r2_buckets": [{ "binding": "R2", "bucket_name": "mozari" }],
   "vars": {

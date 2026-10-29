@@ -22,6 +22,7 @@
 import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR } from "./comun.js";
 import { rutasSesion, cuentaDe, perfil } from "./sesion.js";
 import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
+import { apiPagos, webhookMercadoPago } from "./pagos.js";
 
 const MAX_PROYECTO = 8 * 1024 * 1024;   // 8 MB de JSON
 const MAX_ARCHIVO = 25 * 1024 * 1024;   // 25 MB por archivo
@@ -97,7 +98,7 @@ async function admin(request, env, partes) {
       cur = l.truncated ? l.cursor : undefined;
     } while (cur);
     cuentas.sort((a, b) => String(b.ultimaEntrada).localeCompare(String(a.ultimaEntrada)));
-    return json({ cuentas: cuentas.map((p) => ({ uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada })) });
+    return json({ cuentas: cuentas.map((p) => ({ uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada })) });
   }
   if (partes.length === 4 && m === "PUT") {
     const uid = partes[3], cuerpo = await request.json().catch(() => ({}));
@@ -105,6 +106,7 @@ async function admin(request, env, partes) {
     const p = await perfil(env, uid);
     if (!p) return error(404, "No existe esa cuenta");
     p.plan = cuerpo.plan;
+    delete p.vence;   // lo que asigna el dueño a mano no caduca
     await env.R2.put("cuentas/" + uid + "/perfil.json", JSON.stringify(p), { httpMetadata: { contentType: "application/json" } });
     return json({ ok: true });
   }
@@ -114,6 +116,7 @@ async function admin(request, env, partes) {
 async function api(request, env, partes, yo) {
   const m = request.method, uid = yo.uid, plan = planDe(yo);
   if (partes[1] === "yo" && m === "GET") return json({ email: yo.email, nombre: yo.nombre, foto: yo.foto, admin: !!yo.admin, plan });
+  if (partes[1] === "pagos") return apiPagos(request, env, partes, yo);
   if (partes[1] === "admin") return yo.admin ? admin(request, env, partes) : error(403, "Solo el dueño de Mozari");
 
   if (partes[1] === "uso" && m === "GET") return json(Object.assign({ plan }, await usoDe(env, uid, true)));
@@ -218,6 +221,8 @@ export default {
 
     const s = await rutasSesion(request, env, (p) => adoptarTours(env, p));
     if (s) return s;
+
+    if (url.pathname === "/webhooks/mercadopago") return webhookMercadoPago(request, env);
 
     if (segs[0] === "api" || segs[0] === "t") {
       const yo = await cuentaDe(request, env);

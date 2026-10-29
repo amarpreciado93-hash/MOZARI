@@ -11,7 +11,9 @@
 // Variables: GOOGLE_CLIENT_ID (no es secreto)
 // Variable: ADMIN (correo del dueño de Mozari: ve el panel de cuentas y adopta los tours viejos)
 
-const COOKIE = "mz_sesion", ESTADO = "mz_estado", DIAS = 30;
+const COOKIE = "mz_sesion", ESTADO = "mz_estado", COMPRAR = "mz_comprar", DIAS = 30;
+// Si venía de "Elegir Pro" en el escaparate, después de entrar abre el pago de ese plan
+const destino = (url, c) => url.origin + "/" + (/^(pro|desarrollos)$/.test(c || "") ? "?comprar=" + c : "");
 
 const b64u = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const deB64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(s.length / 4) * 4, "=")), (c) => c.charCodeAt(0));
@@ -81,11 +83,11 @@ async function guardarCuenta(env, g) {
   return { p, nueva: !antes };
 }
 
-async function iniciarSesion(url, env, g, adopcion) {
+async function iniciarSesion(url, env, g, adopcion, comprar) {
   const { p, nueva } = await guardarCuenta(env, g);
   if (nueva && adopcion) await adopcion(p);
   const token = await firmar(env, { uid: p.uid, exp: Math.floor(Date.now() / 1000) + DIAS * 86400 });
-  return new Response(null, { status: 302, headers: [["location", url.origin + "/"], ["set-cookie", cookie(url, COOKIE, token, DIAS * 86400)], ["set-cookie", cookie(url, ESTADO, "", 0)]] });
+  return new Response(null, { status: 302, headers: [["location", destino(url, comprar)], ["set-cookie", cookie(url, COOKIE, token, DIAS * 86400)], ["set-cookie", cookie(url, ESTADO, "", 0)], ["set-cookie", cookie(url, COMPRAR, "", 0)]] });
 }
 
 // Rutas /entrar, /auth/google y /salir. Devuelve una respuesta o null si no es una de ellas.
@@ -95,18 +97,25 @@ export async function rutasSesion(request, env, adopcion) {
     return new Response(null, { status: 302, headers: { location: url.origin + "/", "set-cookie": cookie(url, COOKIE, "", 0) } });
   }
   if (url.pathname === "/entrar") {
+    const q = url.searchParams.get("comprar") || "";
+    const comprar = /^(pro|desarrollos)$/.test(q) ? q : "";
+    // Ya con sesión: directo al estudio (y al pago, si eligió un plan)
+    if (await cuentaDe(request, env)) return Response.redirect(url.origin + "/" + (comprar ? "?comprar=" + comprar : ""), 302);
     // Solo para probar en la computadora: entra con cualquier correo sin Google
     if (env.DEV === "1" && url.hostname === "localhost" && url.searchParams.get("dev")) {
       const email = url.searchParams.get("dev");
-      return iniciarSesion(url, env, { sub: "dev-" + email.replace(/[^a-z0-9]/gi, ""), email, name: email.split("@")[0] }, adopcion);
+      return iniciarSesion(url, env, { sub: "dev-" + email.replace(/[^a-z0-9]/gi, ""), email, name: email.split("@")[0] }, adopcion, comprar);
     }
     if (!env.GOOGLE_CLIENT_ID) return new Response("Falta configurar el acceso con Google", { status: 503 });
     const estado = b64u(crypto.getRandomValues(new Uint8Array(24)));
-    const q = new URLSearchParams({
+    const params = new URLSearchParams({
       client_id: env.GOOGLE_CLIENT_ID, redirect_uri: url.origin + "/auth/google", response_type: "code",
       scope: "openid email profile", state: estado, prompt: "select_account",
     });
-    return new Response(null, { status: 302, headers: { location: "https://accounts.google.com/o/oauth2/v2/auth?" + q, "set-cookie": cookie(url, ESTADO, estado, 600) } });
+    const h = new Headers({ location: "https://accounts.google.com/o/oauth2/v2/auth?" + params });
+    h.append("set-cookie", cookie(url, ESTADO, estado, 600));
+    if (comprar) h.append("set-cookie", cookie(url, COMPRAR, comprar, 900));
+    return new Response(null, { status: 302, headers: h });
   }
   if (url.pathname === "/auth/google") {
     const volver = (m) => Response.redirect(url.origin + "/?error=" + encodeURIComponent(m), 302);
@@ -124,7 +133,7 @@ export async function rutasSesion(request, env, adopcion) {
     let g;
     try { g = JSON.parse(new TextDecoder().decode(deB64u(id_token.split(".")[1]))); } catch (e) { return volver("Respuesta inválida de Google."); }
     if (g.aud !== env.GOOGLE_CLIENT_ID || !/^(https:\/\/)?accounts\.google\.com$/.test(g.iss) || !g.email_verified) return volver("Esa cuenta de Google no está verificada.");
-    return iniciarSesion(url, env, g, adopcion);
+    return iniciarSesion(url, env, g, adopcion, leerCookie(request, COMPRAR));
   }
   return null;
 }
