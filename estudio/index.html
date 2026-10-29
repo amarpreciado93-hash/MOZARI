@@ -58,6 +58,17 @@
   .nav button[aria-current="page"] { background: var(--mz-lima); color: var(--mz-negro); font-weight: 500; }
   .barra-der { display: flex; align-items: center; gap: 12px; padding-bottom: 10px; flex: none; }
   .cuenta { position: relative; }
+  .mi-plan { display: flex; align-items: center; gap: 12px; justify-content: space-between; flex-wrap: wrap; padding: 14px 18px; margin-bottom: 18px; border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); background: var(--mz-superficie); }
+  .mi-plan > div { display: grid; gap: 4px; min-width: 220px; flex: 1; }
+  .mi-plan b { font-weight: 600; }
+  .mi-plan span { color: var(--mz-tenue); font-size: 12px; }
+  .mi-plan .uso-barra { display: block; height: 6px; border-radius: 999px; background: var(--mz-linea-neutra); max-width: 360px; overflow: hidden; }
+  .mi-plan .uso-lleno { display: block; height: 100%; min-width: 4px; background: var(--mz-lima); border-radius: 999px; }
+  .mi-plan a, .mi-plan button { text-decoration: none; }
+  .cuentas { margin-bottom: 18px; overflow: auto; border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); background: var(--mz-superficie); }
+  .cuentas select { font: 500 13px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 8px; padding: 6px 8px; }
+  .marca-mozari { position: absolute; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.92); color: #0B0B0B; font: 500 12px var(--mz-texto-ui); text-decoration: none; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); }
+  .marca-mozari svg { width: 18px; height: 18px; }
   .cuenta-btn { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--mz-linea); background: var(--mz-superficie) center / cover no-repeat; color: var(--mz-texto); font: 600 14px var(--mz-texto-ui); cursor: pointer; padding: 0; }
   .cuenta-menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; min-width: 220px; display: grid; gap: 4px; padding: 14px; border-radius: 14px; background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5); }
   .cuenta-menu b { font-weight: 600; font-size: 14px; }
@@ -1108,6 +1119,10 @@
   }
   const MODO = PUBLICO ? "tour" : NUBE ? "nube" : "demo";
   const TOUR = MODO === "nube" ? (location.hash.match(/t=([a-z0-9-]+)/) || [])[1] || null : null;
+  // Plan de la cuenta (el servidor es quien pone los límites; aquí solo se avisa a tiempo)
+  const PLAN = MODO === "nube" && NUBE.plan ? NUBE.plan : null;
+  const sinLotif = () => !!(PLAN && !PLAN.lotificacion);
+  const ESCAPARATE = (MODO === "tour" ? "https://" + location.host.replace(/^mozari-tours\./, "mozari-estudio.") + "/" : "") + "escaparate#planes";
   // Tu cuenta (arriba a la derecha): foto de Google, nombre y Salir
   if (MODO === "nube" && NUBE.email) {
     const c = document.getElementById("cuenta"), btn = document.getElementById("cuenta-btn");
@@ -1435,6 +1450,7 @@
     try {
       const r = await fetch("api/tours/" + TOUR, { method: "PUT", headers: { "content-type": "application/json" }, body: txt });
       if (r.status === 401) { $("b-estado").textContent = "Tu sesión terminó: vuelve a entrar"; pendienteNube = pendienteNube || txt; }
+      else if (r.status === 403) { const e = await r.json().catch(() => ({})); $("b-estado").textContent = "No se guardó: límite de tu plan"; avisar(e.error || "Llegaste al límite de tu plan"); }
       else if (!r.ok) throw new Error(r.status);
       else $("b-estado").textContent = pendienteNube === null ? "Guardado en la nube" : "Guardando…";
     } catch (e) {
@@ -1545,6 +1561,14 @@
     document.querySelectorAll("#contenedor > section").forEach((s) => (s.hidden = !s.dataset.vista.split(" ").includes(clave)));
     $("sel-pano-wrap").hidden = !enEditor;
     if (clave === "publicar/web" && MODO === "nube") { pintarPublicar(); }
+    else if (sinLotif() && ["panoramas/terreno", "panoramas/lotes", "panoramas/masterplan"].includes(clave)) {
+      document.querySelectorAll("#contenedor > section").forEach((s) => (s.hidden = true));
+      $("proximo").innerHTML = '<div class="icono">' + ICO.foto + '</div><span class="etiq">Plan Desarrollos</span><h1>Lotificación</h1>' +
+        "<p>Lotes con su estado en todas las esferas, terreno para pasar los lotes de una vista a otra y masterplan con el avance de tu venta.</p>" +
+        '<div class="pub-acc"><a class="btn-prim" href="' + ESCAPARATE + '" target="_blank" rel="noopener">Ver planes</a></div>';
+      $("v-proximo").hidden = false;
+      return;
+    }
     else if (PROXIMO[clave]) {
       const [ico, t, d] = PROXIMO[clave];
       $("proximo").innerHTML = '<div class="icono">' + ico + "</div><span class=\"etiq\">Próximo bloque</span><h1>" + t + "</h1><p>" + d + "</p>";
@@ -1588,7 +1612,7 @@
       clearTimeout(tNube); pendienteNube = JSON.stringify(est); await enviarNube();
       for (let i = 0; i < 20 && (enviando || pendienteNube !== null); i++) await new Promise((ok) => setTimeout(ok, 300));
       const r = await fetch("api/tours/" + TOUR + "/publicar", { method: "POST" }).catch(() => null);
-      if (!r || !r.ok) { b.disabled = false; b.textContent = "Publicar tour"; avisar("No se pudo publicar"); return; }
+      if (!r || !r.ok) { const e = r ? await r.json().catch(() => ({})) : {}; b.disabled = false; b.textContent = "Publicar tour"; avisar(e.error || "No se pudo publicar"); return; }
       toursNube = null; await cargarToursNube(); pintarPublicar();
       avisar("¡Publicado! Tu cliente ya ve esta versión.");
     }
@@ -1605,6 +1629,7 @@
     if (MODO === "nube") {
       if (!toursNube) { $("tours").innerHTML = '<p class="nota">Cargando tus tours…</p>'; cargarToursNube(); return; }
       const fecha = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
+      if (PLAN) pintarPlan();
       $("tours").innerHTML = toursNube.map((t) => {
         const foto = t.inicial ? "t/" + t.id + "/escenas/" + t.inicial + "/1/f/0/0.jpg" : VACIA_IMG;
         const conf = borrandoTour === t.id ? '<div class="card-confirma" role="alertdialog"><b>¿Borrar ' + esc(t.nombre) + "?</b><span>Se borran sus esferas y su link público. Esto no se puede deshacer.</span><div><button class=\"mini peligro-lleno\" data-si-borrar-tour=\"" + t.id + '">Borrar</button><button class="mini" data-no-borrar-tour>Cancelar</button></div></div>' : "";
@@ -1649,9 +1674,43 @@
     if (!nombre) return;
     f.querySelector("button").disabled = true;
     const r = await fetch("api/tours", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nombre }) }).catch(() => null);
-    if (!r || !r.ok) { f.querySelector("button").disabled = false; avisar("No se pudo crear el tour"); return; }
+    if (!r || !r.ok) { const e = r ? await r.json().catch(() => ({})) : {}; f.querySelector("button").disabled = false; avisar(e.error || "No se pudo crear el tour"); return; }
     const { id } = await r.json();
     abrirTourNube(id, true);
+  });
+  // Tu plan arriba de Mis Tours: cuánto llevas usado y el botón para mejorar
+  let usoNube = null;
+  const gbTxt = (b) => (b / 1024 ** 3 < 0.1 ? Math.max(1, Math.round(b / 1048576)) + " MB" : (b / 1024 ** 3).toFixed(1) + " GB");
+  function pintarPlan() {
+    let caja = $("mi-plan");
+    if (!caja) { caja = document.createElement("div"); caja.id = "mi-plan"; caja.className = "mi-plan"; $("tours").before(caja); }
+    const u = usoNube, n = toursNube ? toursNube.length : 0, partes = [];
+    if (PLAN.tours !== null) partes.push(n + " de " + PLAN.tours + (PLAN.tours === 1 ? " tour" : " tours"));
+    else partes.push(n + (n === 1 ? " tour" : " tours"));
+    if (u) partes.push(gbTxt(u.bytes) + (PLAN.bytes !== null ? " de " + gbTxt(PLAN.bytes) : ""));
+    const pct = u && PLAN.bytes ? Math.min(100, (u.bytes / PLAN.bytes) * 100) : 0;
+    caja.innerHTML = '<div><b>Plan ' + esc(PLAN.nombre) + "</b><span>" + partes.join(" · ") + "</span>" + (PLAN.bytes !== null ? '<span class="uso-barra"><span class="uso-lleno" style="width:' + pct.toFixed(1) + '%"></span></span>' : "") + "</div>" +
+      (PLAN.id !== "desarrollos" ? '<a class="btn-sec" href="' + ESCAPARATE + '" target="_blank" rel="noopener">Mejorar plan</a>' : "") +
+      (NUBE.admin ? '<button class="btn-sec" id="ver-cuentas">Cuentas</button>' : "");
+    if (!u) fetch("api/uso", { cache: "no-store" }).then((r) => r.json()).then((d) => { usoNube = d; pintarPlan(); }).catch(() => {});
+  }
+  // Panel del dueño: todas las cuentas y su plan (para dar acceso a tus alumnos)
+  async function pintarCuentas() {
+    const r = await fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null);
+    if (!r || !r.ok) { avisar("No se pudieron leer las cuentas"); return; }
+    const { cuentas } = await r.json();
+    let caja = $("cuentas");
+    if (!caja) { caja = document.createElement("div"); caja.id = "cuentas"; caja.className = "cuentas"; $("mi-plan").after(caja); }
+    caja.innerHTML = '<table class="lotes-tabla"><thead><tr><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Última entrada</th></tr></thead><tbody>' + cuentas.map((c) =>
+      "<tr><td><b>" + esc(c.nombre || "") + "</b></td><td>" + esc(c.email) + "</td><td>" + (c.admin ? "Dueño" : '<select data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
+      "</td><td>" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td></tr>").join("") + "</tbody></table>";
+  }
+  document.addEventListener("click", (ev) => { if (ev.target.id === "ver-cuentas") { const c = $("cuentas"); if (c && !c.hidden) { c.hidden = true; return; } if (c) c.hidden = false; pintarCuentas(); } });
+  document.addEventListener("change", async (ev) => {
+    const uid = ev.target.dataset && ev.target.dataset.planDe;
+    if (!uid) return;
+    const r = await fetch("api/admin/cuentas/" + uid, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ plan: ev.target.value }) }).catch(() => null);
+    avisar(r && r.ok ? "Plan actualizado" : "No se pudo cambiar el plan");
   });
   function abrirTourNube(id, nuevo) {
     if (id === TOUR) { ir("proyecto", "general"); return; }
@@ -2681,7 +2740,8 @@ void main(){
         const r = await fetch("api/tours/" + TOUR + "/f/" + ruta, { method: "PUT", body: blob });
         if (r.ok) return;
         if (r.status === 401) throw Object.assign(new Error("sesión"), { fatal: true });
-      } catch (e) { if (e.fatal) throw new Error("Tu sesión terminó. Vuelve a entrar."); }
+        if (r.status === 403) { const e = await r.json().catch(() => ({})); throw Object.assign(new Error(e.error || "Llegaste al límite de tu plan"), { fatal: true, limite: true }); }
+      } catch (e) { if (e.limite) throw e; if (e.fatal) throw new Error("Tu sesión terminó. Vuelve a entrar."); }
       await new Promise((ok) => setTimeout(ok, 800 * (i + 1)));
     }
     throw new Error("No se pudo subir " + ruta);
@@ -2767,6 +2827,12 @@ void main(){
     files = [...files].filter((f) => /^image\//.test(f.type));
     if (!files.length) { avisar("Elige imágenes JPG 360"); return; }
     if (subiendo) { avisar("Espera a que termine la subida actual"); return; }
+    if (PLAN && PLAN.esferas !== null && est.escenas.length + files.length > PLAN.esferas) {
+      const caben = Math.max(0, PLAN.esferas - est.escenas.length);
+      avisar("Tu plan " + PLAN.nombre + " incluye " + PLAN.esferas + " esferas por tour" + (caben ? ": se subirán solo " + caben : ". Mejora tu plan para subir más"));
+      files = files.slice(0, caben);
+      if (!files.length) return;
+    }
     subiendo = true;
     const panel = $("subida");
     panel.hidden = false;
@@ -2792,6 +2858,7 @@ void main(){
       } catch (e) {
         el.classList.add("error");
         el.querySelector(".nota").textContent = e.message || "Algo falló";
+        if (e.limite) { el.classList.remove("activa"); avisar(e.message); break; }
       }
       el.classList.remove("activa");
     }
@@ -3258,6 +3325,7 @@ void main(){
   });
   const centro = () => { const v = motorEd.view(); return { yaw: v.yaw(), pitch: v.pitch() }; };
   $("add-pol").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "poligono") empezarDibujo("poligono"); });
+  $("add-lote").addEventListener("click", (ev) => { if (sinLotif()) { ev.stopImmediatePropagation(); avisar("Los lotes son del plan Desarrollos. Mejora tu plan para usarlos."); } }, true);
   $("add-lote").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "lote") empezarDibujo("lote"); });
   $("add-txt").addEventListener("click", () => {
     if (motorEd.dibujo) terminarDibujo(false);
@@ -4382,6 +4450,13 @@ void main(){
     $("splash").remove();
     document.title = P().nombre || "Tour 360";
     abrirPrevia();
+    // Plan Gratis: el tour lleva "Hecho con Mozari" (lo pone el servidor al publicar)
+    if (P().marcaMozari) {
+      const a = document.createElement("a");
+      a.className = "marca-mozari"; a.href = ESCAPARATE.replace("#planes", ""); a.target = "_blank"; a.rel = "noopener";
+      a.innerHTML = '<svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg>Hecho con Mozari';
+      document.body.appendChild(a);
+    }
     return;
   }
   // Pantalla de arranque con el crédito de R360 Team; un clic la salta.

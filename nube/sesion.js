@@ -73,7 +73,7 @@ export async function cuentaDe(request, env) {
 // Crea la cuenta la primera vez; después solo actualiza nombre y foto
 async function guardarCuenta(env, g) {
   const uid = "g" + g.sub, antes = await perfil(env, uid), ahora = new Date().toISOString();
-  const p = Object.assign({ uid, plan: "prueba", creado: ahora }, antes || {}, {
+  const p = Object.assign({ uid, plan: "gratis", creado: ahora }, antes || {}, {
     email: g.email, nombre: g.name || g.email, foto: g.picture || "", ultimaEntrada: ahora,
   });
   if (env.ADMIN && g.email.toLowerCase() === env.ADMIN.toLowerCase()) p.admin = true;

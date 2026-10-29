@@ -11,14 +11,17 @@
 //   PUT    /api/tours/:id/f/<ruta>        sube un archivo (piezas de esfera, imágenes, audio)
 //   DELETE /api/tours/:id/f/<prefijo>/    borra una carpeta (por ejemplo una esfera)
 //   POST   /api/tours/:id/publicar        congela el borrador como versión pública
-//   GET    /api/uso           espacio que usan tus tours
+//   GET    /api/uso           espacio que usan tus tours y tu plan
+//   GET    /api/admin/cuentas         (solo el dueño) todas las cuentas
+//   PUT    /api/admin/cuentas/:uid    (solo el dueño) cambia el plan de una cuenta  { plan }
 //   GET    /t/:id/<ruta>      archivos de tu tour (el estudio los usa para mostrar las esferas)
 //
 // Cada tour pertenece a una cuenta: cuentas/<uid>/tours/<id>. Nadie puede leer, cambiar ni borrar
 // tours de otra cuenta. Los tours publicados se ven en el Worker de tours (público, solo lectura).
 
 import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR } from "./comun.js";
-import { rutasSesion, cuentaDe } from "./sesion.js";
+import { rutasSesion, cuentaDe, perfil } from "./sesion.js";
+import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
 
 const MAX_PROYECTO = 8 * 1024 * 1024;   // 8 MB de JSON
 const MAX_ARCHIVO = 25 * 1024 * 1024;   // 25 MB por archivo
@@ -53,27 +56,67 @@ async function adoptarTours(env, p) {
   } while (cursor);
 }
 
-async function api(request, env, partes, yo) {
-  const m = request.method, uid = yo.uid;
-  if (partes[1] === "yo" && m === "GET") return json({ email: yo.email, nombre: yo.nombre, foto: yo.foto, plan: yo.plan, admin: !!yo.admin });
+// Espacio usado por una cuenta. Contarlo cuesta, así que se guarda y se recalcula cada 10 minutos
+// (o al momento cuando se pide). Para los límites basta con este dato reciente.
+async function usoDe(env, uid, forzar) {
+  const k = "cuentas/" + uid + "/uso.json";
+  if (!forzar) {
+    const o = await env.R2.get(k);
+    if (o) { const u = await o.json(); if (Date.now() - u.fecha < 10 * 60 * 1000) return u; }
+  }
+  let bytes = 0, tours = 0, cur;
+  do {
+    const l = await env.R2.list({ prefix: "cuentas/" + uid + "/tours/", cursor: cur, limit: 1000 });
+    for (const t of l.objects) {
+      tours++;
+      let c;
+      do {
+        const f = await env.R2.list({ prefix: "tours/" + t.key.split("/").pop() + "/", cursor: c, limit: 1000 });
+        f.objects.forEach((o) => (bytes += o.size));
+        c = f.truncated ? f.cursor : undefined;
+      } while (c);
+    }
+    cur = l.truncated ? l.cursor : undefined;
+  } while (cur);
+  const u = { bytes, tours, fecha: Date.now() };
+  await env.R2.put(k, JSON.stringify(u));
+  return u;
+}
+const gb = (b) => (b / 1024 ** 3).toFixed(b < 10 * 1024 ** 3 ? 1 : 0) + " GB";
+const limite = (mensaje, que) => json({ error: mensaje, limite: que }, 403);
 
-  if (partes[1] === "uso" && m === "GET") {
-    let bytes = 0, objetos = 0, tours = 0, cur;
+async function admin(request, env, partes) {
+  const m = request.method;
+  if (partes[2] !== "cuentas") return error(404, "Ruta desconocida");
+  if (partes.length === 3 && m === "GET") {
+    const cuentas = [];
+    let cur;
     do {
-      const l = await env.R2.list({ prefix: "cuentas/" + uid + "/tours/", cursor: cur, limit: 1000 });
-      for (const t of l.objects) {
-        tours++;
-        let c;
-        do {
-          const f = await env.R2.list({ prefix: "tours/" + t.key.split("/").pop() + "/", cursor: c, limit: 1000 });
-          f.objects.forEach((o) => { bytes += o.size; objetos++; });
-          c = f.truncated ? f.cursor : undefined;
-        } while (c);
-      }
+      const l = await env.R2.list({ prefix: "cuentas/", cursor: cur, limit: 1000 });
+      for (const o of l.objects) if (o.key.endsWith("/perfil.json")) { const p = await (await env.R2.get(o.key)).json(); cuentas.push(p); }
       cur = l.truncated ? l.cursor : undefined;
     } while (cur);
-    return json({ bytes, objetos, tours });
+    cuentas.sort((a, b) => String(b.ultimaEntrada).localeCompare(String(a.ultimaEntrada)));
+    return json({ cuentas: cuentas.map((p) => ({ uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada })) });
   }
+  if (partes.length === 4 && m === "PUT") {
+    const uid = partes[3], cuerpo = await request.json().catch(() => ({}));
+    if (!/^[A-Za-z0-9_-]{2,80}$/.test(uid) || !PLANES[cuerpo.plan]) return error(400, "Datos inválidos");
+    const p = await perfil(env, uid);
+    if (!p) return error(404, "No existe esa cuenta");
+    p.plan = cuerpo.plan;
+    await env.R2.put("cuentas/" + uid + "/perfil.json", JSON.stringify(p), { httpMetadata: { contentType: "application/json" } });
+    return json({ ok: true });
+  }
+  return error(405, "Método no permitido");
+}
+
+async function api(request, env, partes, yo) {
+  const m = request.method, uid = yo.uid, plan = planDe(yo);
+  if (partes[1] === "yo" && m === "GET") return json({ email: yo.email, nombre: yo.nombre, foto: yo.foto, admin: !!yo.admin, plan });
+  if (partes[1] === "admin") return yo.admin ? admin(request, env, partes) : error(403, "Solo el dueño de Mozari");
+
+  if (partes[1] === "uso" && m === "GET") return json(Object.assign({ plan }, await usoDe(env, uid, true)));
 
   if (partes[1] !== "tours") return error(404, "Ruta desconocida");
 
@@ -85,6 +128,10 @@ async function api(request, env, partes, yo) {
       return json({ tours });
     }
     if (m === "POST") {
+      if (plan.tours !== null) {
+        const l = await env.R2.list({ prefix: "cuentas/" + uid + "/tours/", limit: 1000 });
+        if (l.objects.length >= plan.tours) return limite("Tu plan " + plan.nombre + " incluye " + plan.tours + (plan.tours === 1 ? " tour" : " tours") + ". Mejora tu plan para crear más.", "tours");
+      }
       const cuerpo = await request.json().catch(() => ({}));
       const nombre = String(cuerpo.nombre || "Tour nuevo").slice(0, 80);
       const id = idNuevo(nombre);
@@ -111,6 +158,7 @@ async function api(request, env, partes, yo) {
       let p;
       try { p = JSON.parse(txt); } catch (e) { return error(400, "JSON inválido"); }
       if (!p || !p.proyecto || !Array.isArray(p.escenas)) return error(400, "Proyecto incompleto");
+      if (!pasa(plan.esferas, p.escenas.length)) return limite("Tu plan " + plan.nombre + " incluye " + plan.esferas + " esferas por tour. Mejora tu plan para subir más.", "esferas");
       await env.R2.put(base + "proyecto.json", txt, { httpMetadata: { contentType: tipoDe("x.json") } });
       await guardarIndice(env, uid, id, { nombre: p.proyecto.nombre || "Tour", escenas: p.escenas.length, inicial: p.proyecto.escenaInicial || "" });
       return json({ ok: true });
@@ -118,6 +166,7 @@ async function api(request, env, partes, yo) {
     if (m === "DELETE") {
       const n = await borrarPrefijo(env, base) + await borrarPrefijo(env, "publicado/" + id + "/");
       await env.R2.delete(indiceDe(uid, id));
+      await usoDe(env, uid, true);
       return json({ ok: true, borrados: n });
     }
     return error(405, "Método no permitido");
@@ -126,7 +175,11 @@ async function api(request, env, partes, yo) {
   if (partes[3] === "publicar" && partes.length === 4 && m === "POST") {
     const obj = await env.R2.get(base + "proyecto.json");
     if (!obj) return error(404, "No existe ese tour");
-    await env.R2.put("publicado/" + id + "/proyecto.json", await obj.text(), { httpMetadata: { contentType: tipoDe("x.json"), cacheControl: "no-cache" } });
+    const p = await obj.json();
+    if (!plan.lotificacion && usaLotificacion(p)) return limite("Este tour tiene lotes. La lotificación es del plan Desarrollos.", "lotificacion");
+    // El plan Gratis publica con la marca "Hecho con Mozari"; lo decide el servidor, no la página
+    p.proyecto.marcaMozari = !!plan.marca;
+    await env.R2.put("publicado/" + id + "/proyecto.json", JSON.stringify(p), { httpMetadata: { contentType: tipoDe("x.json"), cacheControl: "no-cache" } });
     await guardarIndice(env, uid, id, { publicado: new Date().toISOString() });
     return json({ ok: true });
   }
@@ -138,6 +191,10 @@ async function api(request, env, partes, yo) {
     if (m === "PUT") {
       const largo = +request.headers.get("content-length") || 0;
       if (!largo || largo > MAX_ARCHIVO) return error(413, "Archivo vacío o muy pesado");
+      if (plan.bytes !== null) {
+        const u = await usoDe(env, uid);
+        if (u.bytes + largo > plan.bytes) return limite("Llegaste al espacio de tu plan " + plan.nombre + " (" + gb(plan.bytes) + "). Mejora tu plan para subir más.", "espacio");
+      }
       const tipo = tipoDe(ruta);
       if (tipo === "application/octet-stream" || tipo.startsWith("text/html")) return error(415, "Tipo de archivo no permitido");
       await env.R2.put(base + ruta, request.body, { httpMetadata: { contentType: tipo } });
