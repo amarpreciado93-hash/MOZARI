@@ -21,16 +21,40 @@ export default {
     const segs = url.pathname.replace(/^\/+/, "").split("/");
     const id = segs[0];
 
+    // Íconos de la pestaña (los mismos de Mozari)
+    if (segs.length === 1 && /^(favicon\.(ico|svg)|apple-touch-icon\.png|icon-(192|512)\.png|og\.jpg)$/.test(id)) return env.ASSETS.fetch(request);
     if (!id || !ID_TOUR.test(id)) return new Response(INICIO, { status: id ? 404 : 200, headers: { "content-type": "text/html; charset=utf-8" } });
     if (segs.length === 1) return Response.redirect(url.origin + "/" + id + "/" + url.search, 301);
 
     const ruta = segs.slice(1).join("/");
     // Página del visor (la misma para todos los tours; ella lee proyecto.json de su carpeta)
     if (ruta === "" || ruta === "index.html") {
-      if (!(await env.R2.head("publicado/" + id + "/proyecto.json"))) return new Response(NO_PUBLICADO, { status: 404, headers: { "content-type": "text/html; charset=utf-8" } });
+      const pub = await env.R2.get("publicado/" + id + "/proyecto.json");
+      if (!pub) return new Response(NO_PUBLICADO, { status: 404, headers: { "content-type": "text/html; charset=utf-8" } });
+      // Al compartir el link se ve el nombre del tour y su portada (o la vista de su esfera de inicio)
+      let nombre = "Recorrido virtual 360", imagen = "";
+      try {
+        const p = await pub.json(), pr = p.proyecto || {};
+        if (pr.nombre) nombre = String(pr.nombre).slice(0, 90);
+        const base = url.origin + "/" + id + "/";
+        if (typeof pr.thumbnail === "string" && rutaValida(pr.thumbnail)) imagen = base + pr.thumbnail;
+        else if (pr.escenaInicial && /^[A-Za-z0-9_-]{1,80}$/.test(pr.escenaInicial)) imagen = base + "escenas/" + pr.escenaInicial + "/1/f/0/0.jpg";
+      } catch (e) { /* sin datos: textos genéricos */ }
+      const desc = "Recorrido virtual 360 · Muévete por el lugar como si estuvieras ahí.";
+      const meta = (sel, v) => ({ element: (el) => el.setAttribute("content", v) });
       // El mismo programa del estudio, pero en modo "tour": solo el visor, sin herramientas
       const pagina = await env.ASSETS.fetch(new Request(url.origin + "/", { headers: request.headers }));
-      const r = new HTMLRewriter().on("body", { element: (el) => el.setAttribute("data-modo", "tour") }).transform(pagina);
+      let rw = new HTMLRewriter().on("body", { element: (el) => el.setAttribute("data-modo", "tour") })
+        .on("title", { element: (el) => el.setInnerContent(nombre) })
+        .on('meta[property="og:title"]', meta(0, nombre))
+        .on('meta[property="og:description"]', meta(0, desc))
+        .on('meta[name="description"]', meta(0, desc))
+        .on('meta[property="og:url"]', meta(0, url.origin + "/" + id + "/"))
+        .on('meta[property="og:site_name"]', meta(0, nombre));
+      if (imagen) rw = rw.on('meta[property="og:image"]', meta(0, imagen)).on('meta[name="twitter:image"]', meta(0, imagen))
+        .on('meta[property="og:image:width"]', { element: (el) => el.remove() }).on('meta[property="og:image:height"]', { element: (el) => el.remove() })
+        .on('meta[property="og:image:alt"]', meta(0, nombre));
+      const r = rw.transform(pagina);
       const h = new Headers(r.headers);
       h.set("cache-control", "no-cache");
       return new Response(r.body, { status: 200, headers: h });

@@ -16,6 +16,10 @@ cabeza, cuerpo = txt[:fin_style], txt[fin_style:]
 doc = (
     '<!doctype html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n'
     '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
+    '<meta name="description" content="Sube tus esferas, conéctalas y comparte un link.">\n'
+    '<meta property="og:title" content="Mozari · Arma tours 360 profesionales">\n'
+    '<meta property="og:description" content="Sube tus esferas, conéctalas y comparte un link.">\n'
+    + """<meta property="og:type" content="website">\n<meta property="og:site_name" content="Mozari">\n<meta property="og:url" content="https://mozari.app/">\n<meta property="og:image" content="https://mozari.app/og.jpg">\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n<meta property="og:image:alt" content="Mozari · Tours 360 profesionales desde tu navegador">\n<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:image" content="https://mozari.app/og.jpg">\n<link rel="icon" href="/favicon.ico" sizes="any">\n<link rel="icon" href="/favicon.svg" type="image/svg+xml">\n<link rel="apple-touch-icon" href="/apple-touch-icon.png">\n<meta name="theme-color" content="#0B0B0B">\n"""
     + cabeza + "\n</head>\n<body>" + cuerpo.rstrip("\n") + "\n</body>\n</html>\n"
 )
 assert doc.count("<body") == 1 and doc.count("</head>") == 1
