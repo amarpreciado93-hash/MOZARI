@@ -4500,7 +4500,7 @@ void main(){
     pintar(o.orientacion);
     motor = crearMotor(stage, {
       editable: false,
-      alMostrar: (id) => { actualId = id; tQuieto = Date.now(); api.escena(id); api.vista(motor.view()); arrancarPiloto(id); },
+      alMostrar: (id) => { actualId = id; tQuieto = Date.now(); api.escena(id); api.vista(motor.view()); arrancarPiloto(id); if (!o.sinPrecarga) precarga.alrededor(id); },
       alInteractuar: () => { if (piloto) piloto.interrumpir(true); },
       alMoverVista: () => api && motor && api.vista(motor.view()),
       alAccion: accion,
@@ -4526,7 +4526,7 @@ void main(){
     $("sk-leyenda").innerHTML = v ? "<b>9:16</b> · Así lo ve tu cliente en el celular" : "<b>16:9</b> · Así lo ve tu cliente en compu y pantallas";
     if (tourSk) tourSk.destruir();
     tourSk = crearTour($("sk-stage"), $("sk-ui"), {
-      orientacion: v ? "v" : "h", hayMusica: !!musicaUrl, sinPresentacion: true,
+      orientacion: v ? "v" : "h", hayMusica: !!musicaUrl, sinPresentacion: true, sinPrecarga: true,
       alMusica: () => true, alPantalla: () => avisar("En el tour publicado esto abre pantalla completa"),
     });
     pintarPanelSkin();
@@ -4648,13 +4648,82 @@ void main(){
   let tourPv = null, orientPv = "h";
   const audioTour = new Audio();
   const orientacionPantalla = () => (window.innerWidth < window.innerHeight ? "v" : "h");
-  function abrirPrevia() {
+  // =================== PRECARGA ===================
+  // Antes de abrir el tour se bajan las piezas que se ven primero (la esfera de inicio a buena
+  // resolución y una versión ligera de las vecinas). Mientras navegas, se adelantan las esferas a
+  // las que llevan los hotspots. Todo queda en la caché del navegador: al entrar, sale al instante.
+  const precarga = (function () {
+    const hechas = new Set();
+    let cola = [], activos = 0, gen = 0;
+    const PARALELO = 4;
+    const caras = "bdflru";
+    function nivelPara(id) {
+      const nv = meta[id].niveles, alto = Math.max(window.innerHeight, window.innerWidth * 0.56);
+      const quiero = Math.min(nv[nv.length - 1].size, Math.max(1024, alto * 1.3));
+      for (let z = 1; z < nv.length; z++) if (nv[z].size >= quiero) return z;
+      return nv.length - 1;
+    }
+    function piezas(id, z) {
+      if (!meta[id] || !meta[id].niveles[z]) return [];
+      const nv = meta[id].niveles[z], n = Math.ceil(nv.size / nv.tileSize), b = R(id), out = [];
+      for (const f of caras) for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) out.push(b + z + "/" + f + "/" + y + "/" + x + ".jpg");
+      return out;
+    }
+    const bajar = (u) => (hechas.has(u) ? Promise.resolve() : fetch(u, { priority: "low", credentials: "same-origin" }).then((r) => r.blob()).then(() => hechas.add(u), () => {}));
+    function siguiente() {
+      while (activos < PARALELO && cola.length) {
+        const u = cola.shift(), g = gen;
+        if (hechas.has(u)) continue;
+        activos++;
+        bajar(u).finally(() => { activos--; if (g === gen) siguiente(); });
+      }
+    }
+    const encolar = (urls) => { urls.forEach((u) => { if (!hechas.has(u) && !cola.includes(u)) cola.push(u); }); siguiente(); };
+    const vecinas = (id) => {
+      const ids = salidas(id).map((h) => h.destino).filter(escena);
+      const i = est.escenas.findIndex((e) => e.id === id), sig = est.escenas[i + 1];
+      if (sig && !ids.includes(sig.id)) ids.push(sig.id);
+      return ids;
+    };
+    return {
+      // Lo indispensable antes de abrir; avisa el avance de 0 a 1. Nunca espera más de 15 s.
+      inicial(id, alAvance) {
+        const ligeras = [id].concat(vecinas(id));
+        const urls = est.escenas.map((e) => R(e.id) + "preview.jpg")
+          .concat(...ligeras.map((x) => piezas(x, Math.min(1, meta[x].niveles.length - 1))))
+          .concat(piezas(id, nivelPara(id)));
+        let listo = 0;
+        const total = urls.length;
+        return new Promise((fin) => {
+          const t = setTimeout(fin, 15000);
+          let i = 0;
+          const uno = () => { if (i >= urls.length) return; const u = urls[i++]; bajar(u).then(() => { listo++; alAvance(listo / total); if (listo >= total) { clearTimeout(t); fin(); } else uno(); }); };
+          for (let k = 0; k < 6; k++) uno();
+          if (!total) { clearTimeout(t); fin(); }
+        });
+      },
+      // Mientras navegas: las vecinas a buena resolución, en segundo plano
+      alrededor(id) {
+        cola = [];
+        vecinas(id).forEach((x) => encolar(piezas(x, Math.min(1, meta[x].niveles.length - 1))));
+        vecinas(id).forEach((x) => encolar(piezas(x, nivelPara(x))));
+      },
+      parar() { gen++; cola = []; },
+    };
+  })();
+
+  let previaGen = 0;
+  async function abrirPrevia() {
     if (!est.escenas.length) { avisar("Primero sube una esfera"); return; }
     if (motorEd && motorEd.dibujo) terminarDibujo(false);
     detenerPilotoEd();
     $("previa").hidden = false;
     $("pv-carga").hidden = false;
+    $("pv-carga").textContent = "Cargando…";
     audioPrueba.pause(); $("m-play").innerHTML = ICO_PLAY;
+    const g = ++previaGen;
+    await precarga.inicial(P().escenaInicial, (x) => { if (g === previaGen) $("pv-carga").textContent = "Cargando " + Math.round(x * 100) + "%"; });
+    if (g !== previaGen || $("previa").hidden) return;
     orientPv = orientacionPantalla();
     tourPv = crearTour($("pv-stage"), $("pv-ui"), {
       orientacion: orientPv, cerrable: MODO !== "tour", alCerrar: cerrarPrevia, hayMusica: !!musicaUrl,
@@ -4682,6 +4751,7 @@ void main(){
   function cerrarPrevia() {
     audioTour.pause();
     try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { /* nada */ }
+    previaGen++; precarga.parar();
     if (tourPv) { tourPv.destruir(); tourPv = null; }
     $("previa").hidden = true;
   }

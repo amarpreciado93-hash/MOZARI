@@ -107,3 +107,4 @@
 | 2026-10-29 | Capas → Ruta: línea abierta sobre la esfera (punteada, guiones o continua), color, grosor, opacidad, flecha al final y movimiento opcional | Marcar caminos y recorridos dentro del terreno o del lugar |
 | 2026-10-29 | Mapa: fondo gris con retícula, las esferas conectadas se quedan dentro del recuadro y las sueltas en una fila "Sin conectar" abajo; flechas verdes y más grandes | Más orden y se ve de un vistazo qué ya está conectado |
 | 2026-10-29 | Panoramas → Lista: las tarjetas se reordenan arrastrando y muestran su número de aparición; la primera es la de inicio | El mismo orden en Lista, Capas y la presentación |
+| 2026-10-29 | Precarga: antes de abrir la Vista previa o el tour publicado se baja la esfera de inicio a buena resolución y una versión ligera de sus vecinas (con % de carga); al navegar, las esferas a las que llevan los hotspots se adelantan en segundo plano | Entrar a cada esfera se ve nítido al instante, sin el paso borroso |
