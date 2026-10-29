@@ -26,6 +26,7 @@ import { apiPagos, webhookMercadoPago } from "./pagos.js";
 
 const MAX_PROYECTO = 8 * 1024 * 1024;   // 8 MB de JSON
 const MAX_ARCHIVO = 25 * 1024 * 1024;   // 25 MB por archivo
+const MAX_VIDEO = 95 * 1024 * 1024;     // 95 MB por video (Cloudflare acepta hasta 100 MB por envío)
 
 function idNuevo(nombre) {
   const base = String(nombre || "tour").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
@@ -194,7 +195,7 @@ async function api(request, env, partes, yo) {
     if (!valida) return error(400, "Ruta de archivo inválida");
     if (m === "PUT") {
       const largo = +request.headers.get("content-length") || 0;
-      if (!largo || largo > MAX_ARCHIVO) return error(413, "Archivo vacío o muy pesado");
+      if (!largo || largo > (tipoDe(ruta) === "video/mp4" ? MAX_VIDEO : MAX_ARCHIVO)) return error(413, tipoDe(ruta) === "video/mp4" ? "El video pesa más de 95 MB. Compáctalo o súbelo a YouTube y pega el link." : "Archivo vacío o muy pesado");
       if (plan.bytes !== null) {
         const u = await usoDe(env, uid);
         if (u.bytes + largo > plan.bytes) return limite("Llegaste al espacio de tu plan " + plan.nombre + " (" + gb(plan.bytes) + "). Mejora tu plan para subir más.", "espacio");

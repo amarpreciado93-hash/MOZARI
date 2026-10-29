@@ -31,11 +31,25 @@ export function tipoDe(ruta) {
   return TIPOS[ext] || "application/octet-stream";
 }
 
-// Sirve un objeto de R2 con caché del navegador y soporte de If-None-Match
+// Sirve un objeto de R2 con caché del navegador, If-None-Match y Range (los videos se adelantan por partes)
 export async function servirR2(env, request, clave, cache) {
-  const obj = await env.R2.get(clave, { onlyIf: request.headers });
+  const conRango = request.headers.has("range");
+  const obj = await env.R2.get(clave, conRango ? { range: request.headers } : { onlyIf: request.headers });
   if (obj === null) return error(404, "No existe");
   const h = new Headers();
+  h.set("accept-ranges", "bytes");
+  if (conRango && obj.range && "body" in obj) {
+    obj.writeHttpMetadata(h);
+    if (!h.get("content-type")) h.set("content-type", tipoDe(clave));
+    const rg = obj.range, ini = rg.suffix !== undefined ? obj.size - rg.suffix : rg.offset || 0;
+    const largo = rg.suffix !== undefined ? rg.suffix : rg.length ?? obj.size - ini;
+    h.set("content-range", "bytes " + ini + "-" + (ini + largo - 1) + "/" + obj.size);
+    h.set("content-length", String(largo));
+    h.set("etag", obj.httpEtag);
+    h.set("cache-control", cache);
+    h.set("access-control-allow-origin", "*");
+    return new Response(obj.body, { status: 206, headers: h });
+  }
   obj.writeHttpMetadata(h);
   if (!h.get("content-type")) h.set("content-type", tipoDe(clave));
   h.set("etag", obj.httpEtag);

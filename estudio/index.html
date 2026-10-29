@@ -576,6 +576,15 @@
   .lupa-mira::after { left: -0.5px; top: -12px; width: 1px; height: 24px; }
   .lupa-x { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 600; letter-spacing: 0.04em; background: rgba(11, 11, 11, 0.75); padding: 2px 8px; border-radius: 999px; color: var(--mz-lima); }
   .foto-card .foto img { object-fit: cover; }
+  .video-link { display: flex; gap: 8px; max-width: 720px; margin: 0 0 18px; }
+  .video-link .entrada { flex: 1; }
+  .foto-card .foto.sin-poster { display: grid; place-items: center; background: var(--mz-negro); color: var(--mz-tenue); }
+  .foto-card .foto.sin-poster svg { width: 40px; height: 40px; }
+  .foto-card .play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 46px; height: 46px; border-radius: 50%; background: rgba(11, 11, 11, 0.7); color: #fff; display: grid; place-items: center; pointer-events: none; }
+  .foto-card .play svg { width: 18px; height: 18px; margin-left: 2px; }
+  .pop-caja.vid { width: min(1100px, 100%, calc((100cqh - 40px) * var(--ar, 1.7778))); aspect-ratio: var(--ar, 16 / 9); background: #000; }
+  .pop-caja.vid iframe, .pop-caja.vid video { width: 100%; height: 100%; border: 0; display: block; background: #000; }
+  .pop-caja.vid .pop-x { position: absolute; top: 10px; right: 10px; z-index: 2; background: #FFF; color: #111; }
   .foto-card .cuerpo input { width: 100%; font: 600 14px var(--mz-texto-ui); color: var(--mz-texto); background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 4px 6px; margin: -4px -6px; }
   .foto-card .cuerpo input:hover, .foto-card .cuerpo input:focus { border-color: var(--mz-linea); outline: none; background: var(--mz-negro); }
   .foto-card .card-borrar { opacity: 1; }
@@ -978,6 +987,14 @@
     </section>
 
     <!-- Panoramas / Lista -->
+    <section data-vista="media/videos" hidden>
+      <div class="contenido" style="max-width:none">
+        <h1>Videos</h1>
+        <p class="sub">Pega un link de YouTube o Vimeo, o sube un MP4 de hasta 95 MB. Ábrelos desde cualquier capa con la acción <b>Video en ventana</b>.</p>
+        <form class="video-link" id="video-link"><input class="entrada" name="url" inputmode="url" placeholder="https://youtube.com/watch?v=…  o  https://vimeo.com/…" required><button class="btn-prim" type="submit">Agregar link</button></form>
+        <div class="rejilla" id="videos-lista"></div>
+      </div>
+    </section>
     <section data-vista="media/fotos" hidden>
       <div class="contenido" style="max-width:none">
         <h1>Fotos</h1>
@@ -1400,6 +1417,7 @@
     if (est.terreno === undefined) est.terreno = base.terreno ? JSON.parse(JSON.stringify(base.terreno)) : null;
     if (!est.media) est.media = { fotos: [] };
     if (!Array.isArray(est.media.fotos)) est.media.fotos = [];
+    if (!Array.isArray(est.media.videos)) est.media.videos = [];
     if (!est.terreno) est.terreno = { base: null, puntos: {} };
     Object.keys(est.terreno.puntos).forEach((id) => { if (!meta[id]) delete est.terreno.puntos[id]; });
     if (!est.terreno.puntos[est.terreno.base]) est.terreno.base = Object.keys(est.terreno.puntos)[0] || null;
@@ -1447,7 +1465,7 @@
   const t3 = (c) => Object.assign({}, T3_DEF, c.t3d);
   const tamHs = (c) => c.tamano || 48;
   const accionDe = (c) => c.accion || (c.tipo === "hotspot" ? "panorama" : c.lote ? "ficha" : "ninguna");
-  const ACCIONES = [["ninguna", "Nada"], ["panorama", "Ir a un panorama"], ["url", "Abrir enlace"], ["web", "Página en ventana"], ["imagen", "Imagen en ventana"], ["galeria", "Galería de fotos"]];
+  const ACCIONES = [["ninguna", "Nada"], ["panorama", "Ir a un panorama"], ["url", "Abrir enlace"], ["web", "Página en ventana"], ["imagen", "Imagen en ventana"], ["galeria", "Galería de fotos"], ["video", "Video en ventana"]];
   const ICO_ACCION = {
     panorama: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
     url: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5h5v5M19 5l-8 8M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4"/></svg>',
@@ -1600,7 +1618,6 @@
     compartir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="m8.2 10.8 7.6-4M8.2 13.2l7.6 4"/></svg>',
   };
   const PROXIMO = {
-    "media/videos": [ICO.video, "Videos", "Videos planos que se abren desde un hotspot: recorridos con dron, testimoniales, avances de obra."],
     "media/planos": [ICO.plano, "Planos", "Planos y masterplans con la ubicación de cada panorama y un radar que muestra hacia dónde estás viendo."],
     "media/audios": [ICO.audio, "Audios", "Narraciones y sonidos por panorama. La música de fondo del tour vive en Proyecto → Música."],
     "publicar/web": [ICO.web, "Publicar en la web", "Tu tour con link propio y hosting en Cloudflare, sin cobro por visitas."],
@@ -1648,6 +1665,7 @@
     if (clave === "proyecto/presentacion") pintarPresentacion();
     if (clave === "panoramas/lista") pintarLista();
     if (clave === "media/fotos") pintarFotos();
+    if (clave === "media/videos") pintarVideos();
     if (clave === "panoramas/mapa") requestAnimationFrame(() => mapa.dibujar());
     if (enEditor) abrirEditor(edPano || P().escenaInicial, sub);
     if (clave === "panoramas/terreno") requestAnimationFrame(abrirTerreno);
@@ -3713,6 +3731,11 @@ void main(){
     if (a === "url" || a === "web") g += campo("Enlace", '<input type="text" inputmode="url" data-k="url" placeholder="https://…" value="' + esc(c.url || "") + '">');
     const fotos = est.media.fotos;
     if (a === "imagen" && fotos.length) g += campo("De tus fotos", '<select data-k="imagen"><option value="">Elige una foto…</option>' + fotos.map((x) => '<option value="' + esc(x.archivo) + '"' + (c.imagen === x.archivo ? " selected" : "") + ">" + esc(x.nombre) + "</option>").join("") + "</select>");
+    if (a === "video") {
+      const vs = est.media.videos;
+      g += vs.length ? campo("Video", '<select data-k="video"><option value="">Elige un video…</option>' + vs.map((v) => '<option value="' + v.id + '"' + (c.video === v.id ? " selected" : "") + ">" + esc(v.nombre) + "</option>").join("") + "</select>")
+        : '<p class="nota">Aún no tienes videos. Agrégalos en <b>Media → Videos</b>.</p>';
+    }
     if (a === "galeria") {
       const sel = c.galeria || [];
       g += fotos.length
@@ -4520,6 +4543,15 @@ void main(){
       if (a === "ficha" && c.lote) { pop.innerHTML = fichaLote(c); pop.hidden = false; return; }
       if (a === "url") { if (url) window.open(url, "_blank", "noopener"); return; }
       if (a === "web" && url) pop.innerHTML = '<div class="pop-caja web" role="dialog" aria-label="Página"><div class="pop-cab"><a href="' + esc(url) + '" target="_blank" rel="noopener">Abrir en otra pestaña ↗</a><button class="pop-x" aria-label="Cerrar">×</button></div><iframe src="' + esc(url) + '" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe></div>';
+      else if (a === "video") {
+        const v = est.media.videos.find((x) => x.id === c.video);
+        if (!v) return;
+        const ar = v.ancho && v.alto ? v.ancho / v.alto : v.vertical ? 9 / 16 : 16 / 9;
+        const dentro = v.tipo === "archivo"
+          ? '<video src="' + esc(urlArchivo(v.archivo)) + '" controls autoplay playsinline' + (v.poster ? ' poster="' + esc(urlArchivo(v.poster)) + '"' : "") + "></video>"
+          : '<iframe src="' + esc(embedVideo(v)) + '" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen></iframe>';
+        pop.innerHTML = '<div class="pop-caja vid" role="dialog" aria-label="' + esc(v.nombre) + '" style="--ar:' + ar.toFixed(4) + '">' + dentro + '<button class="pop-x" aria-label="Cerrar">×</button></div>';
+      }
       else if (a === "galeria") {
         const fs = (c.galeria || []).map((id) => est.media.fotos.find((x) => x.id === id)).filter(Boolean);
         if (!fs.length) return;
@@ -4761,6 +4793,116 @@ void main(){
     if (!ev.dataTransfer || !ev.dataTransfer.files.length) return;
     ev.preventDefault(); const z = $("fotos-zona"); if (z) z.classList.remove("encima");
     subirFotos(ev.dataTransfer.files);
+  });
+
+  // =================== MEDIA: VIDEOS ===================
+  // Links de YouTube o Vimeo (no pesan nada) o MP4 propios de hasta 95 MB.
+  function leerLinkVideo(txt) {
+    let u; try { u = new URL(txt.trim()); } catch (e) { return null; }
+    const h = u.hostname.replace(/^www\.|^m\./, "");
+    let m;
+    if (h === "youtu.be" && (m = u.pathname.match(/^\/([\w-]{6,})/))) return { tipo: "youtube", vid: m[1] };
+    if (/(^|\.)youtube(-nocookie)?\.com$/.test(h)) {
+      if (u.searchParams.get("v")) return { tipo: "youtube", vid: u.searchParams.get("v") };
+      if ((m = u.pathname.match(/^\/(shorts|embed|live)\/([\w-]{6,})/))) return { tipo: "youtube", vid: m[2], vertical: m[1] === "shorts" };
+    }
+    if (/(^|\.)vimeo\.com$/.test(h) && (m = u.pathname.match(/\/(\d{5,})(?:\/([0-9a-f]{6,}))?/))) return { tipo: "vimeo", vid: m[1], h: m[2] || u.searchParams.get("h") || "" };
+    return null;
+  }
+  const embedVideo = (v) => v.tipo === "youtube" ? "https://www.youtube-nocookie.com/embed/" + encodeURIComponent(v.vid) + "?autoplay=1&rel=0&playsinline=1&modestbranding=1"
+    : "https://player.vimeo.com/video/" + encodeURIComponent(v.vid) + "?autoplay=1" + (v.h ? "&h=" + encodeURIComponent(v.h) : "");
+  const posterVideo = (v) => v.poster ? urlArchivo(v.poster) : v.tipo === "youtube" ? "https://i.ytimg.com/vi/" + encodeURIComponent(v.vid) + "/hqdefault.jpg" : "";
+  const usosVideo = (v) => Object.values(est.capas).flat().filter((c) => c && c.video === v.id);
+  const ICO_PLAY_V = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>';
+  const mb = (b) => (b / 1048576).toFixed(b < 10485760 ? 1 : 0) + " MB";
+  const minSeg = (t) => Math.floor(t / 60) + ":" + String(Math.round(t % 60)).padStart(2, "0");
+  function pintarVideos() {
+    const vs = est.media.videos;
+    $("videos-lista").innerHTML = vs.map((v) => {
+      const p = posterVideo(v), u = usosVideo(v).length;
+      const dato = v.tipo === "archivo" ? "MP4 · " + mb(v.peso || 0) + (v.duracion ? " · " + minSeg(v.duracion) : "") : v.tipo === "youtube" ? (v.vertical ? "YouTube Short" : "YouTube") : "Vimeo";
+      return '<div class="card foto-card"><div class="foto' + (p ? "" : " sin-poster") + '">' + (p ? '<img src="' + esc(p) + '" alt="" loading="lazy" onerror="this.remove()"><span class="play">' + ICO_PLAY_V + "</span>" : ICO.video) +
+        '<button class="card-borrar" data-borrar-video="' + v.id + '" aria-label="Quitar ' + esc(v.nombre) + '" title="Quitar video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button></div>' +
+        '<div class="cuerpo"><input type="text" maxlength="60" data-nombre-video="' + v.id + '" value="' + esc(v.nombre) + '" aria-label="Nombre del video"><div class="chips"><span class="chip-dato">' + dato + '</span><span class="chip-dato">' + u + (u === 1 ? " uso" : " usos") + "</span></div></div></div>";
+    }).join("") +
+      (MODO === "nube"
+        ? '<label class="hueco subir" id="videos-zona"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir MP4</b><span class="nota">Hasta 95 MB. Para videos largos, mejor un link de YouTube o Vimeo.</span><input type="file" id="videos-archivo" accept="video/mp4" hidden></label>'
+        : '<div class="hueco"><b>Subir MP4</b><span class="nota">Se activa en la nube. Aquí puedes usar links de YouTube o Vimeo.</span></div>');
+  }
+  $("video-link").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const txt = ev.target.url.value, d = leerLinkVideo(txt);
+    if (!d) { avisar("Ese link no es de YouTube ni de Vimeo"); return; }
+    const n = est.media.videos.filter((v) => v.tipo === d.tipo).length + 1;
+    est.media.videos.push(Object.assign({ id: "v" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), nombre: (d.tipo === "youtube" ? "YouTube " : "Vimeo ") + n, url: txt.trim() }, d));
+    ev.target.reset(); guardar(); pintarVideos(); avisar("Video agregado. Ponle nombre.");
+  });
+  // Sube con avance (fetch no informa el avance de subida)
+  function subirConAvance(ruta, blob, alAvance) {
+    return new Promise((ok, mal) => {
+      const x = new XMLHttpRequest();
+      x.open("PUT", "api/tours/" + TOUR + "/f/" + ruta);
+      x.upload.onprogress = (e) => e.lengthComputable && alAvance(e.loaded / e.total);
+      x.onload = () => { if (x.status < 300) ok(); else { let m = "No se pudo subir el video"; try { m = JSON.parse(x.responseText).error || m; } catch (e) { /* sin detalle */ } mal(new Error(m)); } };
+      x.onerror = () => mal(new Error("Se cortó la conexión al subir el video"));
+      x.send(blob);
+    });
+  }
+  // Portada: un cuadro del video a 1 s (o a un tercio si es muy corto)
+  function datosVideo(f) {
+    return new Promise((ok) => {
+      const v = document.createElement("video"), url = URL.createObjectURL(f);
+      v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = url;
+      const fin = (d) => { URL.revokeObjectURL(url); ok(d); };
+      const t = setTimeout(() => fin({}), 12000);
+      v.onloadedmetadata = () => { v.currentTime = Math.min(1, (v.duration || 3) / 3); };
+      v.onseeked = () => {
+        clearTimeout(t);
+        const k = Math.min(1, 960 / Math.max(v.videoWidth, 1)), cv = document.createElement("canvas");
+        cv.width = Math.round(v.videoWidth * k) || 960; cv.height = Math.round(v.videoHeight * k) || 540;
+        try { cv.getContext("2d").drawImage(v, 0, 0, cv.width, cv.height); } catch (e) { /* sin portada */ }
+        fin({ ancho: v.videoWidth, alto: v.videoHeight, duracion: v.duration, cv });
+      };
+      v.onerror = () => { clearTimeout(t); fin({}); };
+    });
+  }
+  async function subirVideo(f) {
+    if (!f) return;
+    if (!/\.mp4$/i.test(f.name) && f.type !== "video/mp4") { avisar("Sube el video en MP4 (H.264)"); return; }
+    if (f.size > 95 * 1048576) { avisar("El video pesa " + mb(f.size) + ". El máximo es 95 MB: compáctalo o súbelo a YouTube y pega el link."); return; }
+    const d = await datosVideo(f);
+    const id = "v" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), ruta = "archivos/video-" + id + ".mp4";
+    const z = $("videos-zona");
+    try {
+      await subirConAvance(ruta, f, (x) => { if (z) z.querySelector("b").textContent = "Subiendo " + Math.round(x * 100) + "%"; });
+      const poster = d.cv ? await medio(d.cv, "image/jpeg", 0.82, "poster").catch(() => "") : "";
+      est.media.videos.push({ id, nombre: f.name.replace(/\.[a-z0-9]+$/i, "").slice(0, 60), tipo: "archivo", archivo: ruta, poster, peso: f.size, ancho: d.ancho || 0, alto: d.alto || 0, duracion: d.duracion || 0 });
+      guardar(); pintarVideos(); avisar("Video listo");
+    } catch (err) { avisar(err.message); pintarVideos(); }
+  }
+  $("videos-lista").addEventListener("change", (ev) => { if (ev.target.id === "videos-archivo") { subirVideo(ev.target.files[0]); ev.target.value = ""; } });
+  $("videos-lista").addEventListener("input", (ev) => {
+    const id = ev.target.dataset.nombreVideo; if (!id) return;
+    const v = est.media.videos.find((y) => y.id === id); if (v) { v.nombre = ev.target.value.trim() || "Video"; guardar(); }
+  });
+  $("videos-lista").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-borrar-video]"); if (!b) return;
+    ev.preventDefault();
+    const v = est.media.videos.find((y) => y.id === b.dataset.borrarVideo); if (!v) return;
+    const u = usosVideo(v).length;
+    if (u && b.dataset.seguro !== "1") { b.dataset.seguro = "1"; avisar("Se usa en " + u + (u === 1 ? " capa" : " capas") + ". Toca de nuevo para quitarlo."); setTimeout(() => (b.dataset.seguro = ""), 4000); return; }
+    est.media.videos = est.media.videos.filter((y) => y !== v);
+    usosVideo(v).forEach((c) => delete c.video);
+    guardar(); pintarVideos(); avisar("Video quitado");
+  });
+  ["dragenter", "dragover"].forEach((t) => $("videos-lista").addEventListener(t, (ev) => {
+    if (MODO !== "nube" || !ev.dataTransfer || ![...ev.dataTransfer.types].includes("Files")) return;
+    ev.preventDefault(); const z = $("videos-zona"); if (z) z.classList.add("encima");
+  }));
+  $("videos-lista").addEventListener("drop", (ev) => {
+    if (MODO !== "nube" || !ev.dataTransfer || !ev.dataTransfer.files.length) return;
+    ev.preventDefault(); const z = $("videos-zona"); if (z) z.classList.remove("encima");
+    subirVideo(ev.dataTransfer.files[0]);
   });
 
   // =================== PRECARGA ===================
