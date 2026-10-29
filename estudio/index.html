@@ -280,6 +280,7 @@
   .ed-panel h3 { margin: 0; font-size: 13px; font-weight: 600; }
   .agregar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
   .agregar button { display: flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 6px; border-radius: 10px; border: 1px solid var(--mz-linea); background: transparent; color: var(--mz-texto); font: 500 11px var(--mz-texto-ui); cursor: pointer; }
+  .agregar button:last-child:nth-child(odd) { grid-column: span 2; }
   .agregar button:hover, .agregar button[aria-pressed="true"] { border-color: var(--mz-lima); color: var(--mz-lima); }
   .agregar svg { width: 18px; height: 18px; }
   .lista { list-style: none; margin: 0; padding: 6px; overflow-y: auto; flex: 1; display: grid; align-content: start; gap: 2px; }
@@ -398,6 +399,12 @@
   .cp.cp-poligono { inset: 0; }
   .cp-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
   .cp-pol { pointer-events: all; cursor: pointer; stroke-linejoin: round; stroke-linecap: round; fill: var(--f); fill-opacity: var(--fo); stroke: var(--s); stroke-opacity: var(--so); stroke-width: var(--sw); transition: fill 0.2s, fill-opacity 0.2s, stroke 0.2s, stroke-width 0.2s; }
+  .cp-pol.cp-camino { fill: none; pointer-events: visibleStroke; stroke-dasharray: var(--dash, none); }
+  .cp-pol.cp-camino:hover { fill: none; }
+  .cp-pol.cp-camino.anim { animation: camino-anda 1.2s linear infinite; }
+  @keyframes camino-anda { to { stroke-dashoffset: var(--paso, -20); } }
+  .cp-camino-toque { fill: none; stroke: transparent; stroke-width: 18; pointer-events: visibleStroke; cursor: pointer; }
+  .editable .cp-camino-toque { cursor: move; }
   .cp-pol:hover { fill: var(--hf); fill-opacity: var(--hfo); stroke: var(--hs); stroke-opacity: var(--hso); stroke-width: var(--hsw); }
   .editable .cp-pol, .editable .cp-texto, .editable .hs-boton { cursor: move; }
   .solo-ver .cp, .solo-ver .cp * { pointer-events: none !important; }
@@ -405,6 +412,7 @@
   .cp-sel { fill: none; stroke: #fff; stroke-width: 1; stroke-dasharray: 5 4; pointer-events: none; }
   .cp-vert { fill: var(--mz-negro); stroke: var(--mz-lima); stroke-width: 2; pointer-events: all; cursor: grab; }
   .cp-vert:hover { fill: var(--mz-lima); }
+  .cp-borrador.abierto { fill: none; }
   .cp-borrador { fill: rgba(213, 255, 64, 0.18); stroke: var(--mz-lima); stroke-width: 2; stroke-dasharray: 6 4; pointer-events: none; }
   .cp-borrador-pt { fill: var(--mz-lima); pointer-events: none; }
   .cp-borrador-pt.primero { fill: var(--mz-negro); stroke: var(--mz-lima); stroke-width: 2; }
@@ -993,6 +1001,7 @@
           <div class="agregar">
             <button id="add-lote" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 7.5 12 4l8.5 3.5v9L12 20l-8.5-3.5z"/><path d="M12 4v16M3.5 7.5 12 11l8.5-3.5"/></svg>Lote</button>
             <button id="add-pol" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 7l9-3 7 8-5 8-10-3z"/></svg>Polígono</button>
+            <button id="add-camino" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2.2 3"><path d="M4 19c4 0 3-6 8-7s4-6 8-7"/></svg>Ruta</button>
             <button id="add-txt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13"/></svg>Texto</button>
             <button id="add-hs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="8.5" stroke-opacity=".5"/></svg>Hotspot</button>
           </div>
@@ -2003,7 +2012,22 @@
     const nodos = new Map();
     const lista = () => est.capas[actual.id];
 
+    // Ruta: línea abierta (punteada, guiones o continua) con flecha al final opcional
+    const DASH = { puntos: (g) => "0 " + (g * 2.4), guiones: (g) => (g * 3.5) + " " + (g * 2.4), continua: () => "none" };
+    function estiloCamino(path, c) {
+      const k = c.camino, g = +k.grosor || 4, s = path.style;
+      s.setProperty("--s", k.color); s.setProperty("--so", k.opacidad ?? 1); s.setProperty("--sw", g);
+      s.setProperty("--hs", k.color); s.setProperty("--hso", 1); s.setProperty("--hsw", g + 1);
+      const dash = (DASH[k.estilo] || DASH.puntos)(g);
+      s.setProperty("--dash", dash);
+      s.setProperty("--paso", dash === "none" ? 0 : -dash.split(" ").reduce((a, b) => a + +b, 0));
+      path.classList.toggle("anim", !!k.animada && dash !== "none");
+      const fl = path.ownerSVGElement && path.ownerSVGElement.querySelector("marker path");
+      if (fl) fl.setAttribute("fill", k.color);
+      path.setAttribute("marker-end", k.flecha ? "url(#fl-" + c.id + ")" : "");
+    }
     function estiloPoligono(path, c) {
+      if (c.camino) return estiloCamino(path, c);
       if (c.lote) {
         // Lote: el color sale de su estado (Disponible, Apartado, Vendido)
         const l = loteDe(c), col = estadoDe(c).color, g = c.trazo ? c.trazo.grosor : 1.5, s = path.style;
@@ -2040,9 +2064,20 @@
           const svg = document.createElementNS(SVGNS, "svg");
           svg.setAttribute("class", "cp-svg");
           const path = document.createElementNS(SVGNS, "path");
-          path.setAttribute("class", "cp-pol");
-          estiloPoligono(path, c);
+          path.setAttribute("class", "cp-pol" + (c.camino ? " cp-camino" : ""));
+          let toque = null;
+          if (c.camino) {
+            // Flecha al final (sigue el color de la ruta) y un área invisible más ancha para tocarla fácil
+            const defs = document.createElementNS(SVGNS, "defs");
+            defs.innerHTML = '<marker id="fl-' + c.id + '" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker>';
+            svg.appendChild(defs);
+            toque = document.createElementNS(SVGNS, "path");
+            toque.setAttribute("class", "cp-camino-toque");
+            toque.addEventListener("pointerdown", (ev) => tomar(ev, c, "mover"));
+          }
           svg.appendChild(path);
+          if (toque) svg.appendChild(toque);
+          estiloPoligono(path, c);
           el.appendChild(svg);
           path.addEventListener("pointerdown", (ev) => tomar(ev, c, "mover"));
           let etq = null;
@@ -2052,7 +2087,7 @@
             etq = document.createElementNS(SVGNS, "g"); etq.setAttribute("class", "lote-etq"); svgEtq.appendChild(etq);
             if (loteDe(c).rotulo !== "frente") { planos = crearRotulosPlanos(c); capaEtq.appendChild(planos.cont); }
           }
-          nodos.set(c.id, { el, c, svg, path, etq, planos });
+          nodos.set(c.id, { el, c, svg, path, etq, planos, toque });
           if (!editable && accionDe(c) !== "ninguna") { path.classList.add("con-accion"); path.addEventListener("click", (ev) => { ev.stopPropagation(); ejecutar(c); }); }
         } else if (c.tipo === "texto") {
           const t = document.createElement("div");
@@ -2278,9 +2313,11 @@
         const c = n.c;
         if (c.tipo === "poligono") {
           const enCam = c.puntos.map(([y, p]) => aCamara(cam, y, p));
-          const rec = recortar(enCam, true);
-          const d = rec.length < 3 ? "" : trazo(cam, rec, true);
+          const cerrado = !c.camino;
+          const rec = recortar(enCam, cerrado);
+          const d = rec.length < (cerrado ? 3 : 2) ? "" : trazo(cam, rec, cerrado);
           n.path.setAttribute("d", d);
+          if (n.toque) n.toque.setAttribute("d", d);
           if (n.etq) etiquetasLote(n, cam, enCam, rec);
           n.svg.querySelectorAll(".cp-sel, .cp-vert").forEach((x) => x.remove());
           if (editable && motor.modo === "capas" && id === motor.elegida && d) {
@@ -2293,7 +2330,7 @@
               const v = document.createElementNS(SVGNS, "circle");
               v.setAttribute("class", "cp-vert"); v.setAttribute("cx", s.x); v.setAttribute("cy", s.y); v.setAttribute("r", 6);
               v.addEventListener("pointerdown", (ev) => tomar(ev, c, "vertice", i));
-              v.addEventListener("dblclick", (ev) => { ev.stopPropagation(); if (c.puntos.length > 3) { c.puntos.splice(i, 1); opciones.alCambiar(); } });
+              v.addEventListener("dblclick", (ev) => { ev.stopPropagation(); if (c.puntos.length > (c.camino ? 2 : 3)) { c.puntos.splice(i, 1); opciones.alCambiar(); } });
               n.svg.appendChild(v);
             });
           }
@@ -2396,18 +2433,20 @@
       if (dib.cursor) pts.push([dib.cursor.yaw, dib.cursor.pitch]);
       if (!pts.length) return;
       const enCam = pts.map(([y, p]) => aCamara(cam, y, p));
-      const rec = recortar(enCam, pts.length > 2);
+      const cierra = dib.tipo !== "camino" && pts.length > 2;
+      const rec = recortar(enCam, cierra);
       if (rec.length > 1) {
         const path = document.createElementNS(SVGNS, "path");
-        path.setAttribute("class", "cp-borrador"); path.setAttribute("d", trazo(cam, rec, pts.length > 2));
+        path.setAttribute("class", "cp-borrador" + (cierra ? "" : " abierto")); path.setAttribute("d", trazo(cam, rec, cierra));
         extra.appendChild(path);
       }
       dib.puntos.forEach((pt, i) => {
         if (enCam[i].z <= CERCA) return;
         const s = aPantalla(cam, enCam[i]);
         const k = document.createElementNS(SVGNS, "circle");
-        k.setAttribute("class", "cp-borrador-pt" + (i === 0 ? " primero" : ""));
-        k.setAttribute("cx", s.x); k.setAttribute("cy", s.y); k.setAttribute("r", i === 0 ? 7 : 4);
+        const primero = i === 0 && dib.tipo !== "camino";
+        k.setAttribute("class", "cp-borrador-pt" + (primero ? " primero" : ""));
+        k.setAttribute("cx", s.x); k.setAttribute("cy", s.y); k.setAttribute("r", primero ? 7 : 4);
         extra.appendChild(k);
       });
     }
@@ -2585,7 +2624,7 @@
       if (dib) {
         const k = coordsEn(ev);
         if (!k) return;
-        if (dib.puntos.length >= 3) {
+        if (dib.puntos.length >= 3 && dib.tipo !== "camino") {
           const cam = camara(), p0 = aCamara(cam, dib.puntos[0][0], dib.puntos[0][1]), r = stage.getBoundingClientRect();
           if (p0.z > CERCA) { const s = aPantalla(cam, p0); if (Math.hypot(s.x - (ev.clientX - r.left), s.y - (ev.clientY - r.top)) < 12) { opciones.alCerrarDibujo(); return; } }
         }
@@ -3401,7 +3440,11 @@ void main(){
     motorEd.dibujo = { puntos: [], cursor: null, tipo: tipo || "poligono" };
     seleccionar(null);
     document.body.classList.add("dibujando");
-    $(tipo === "lote" ? "add-lote" : "add-pol").setAttribute("aria-pressed", "true");
+    $(tipo === "lote" ? "add-lote" : tipo === "camino" ? "add-camino" : "add-pol").setAttribute("aria-pressed", "true");
+    if (tipo === "camino") {
+      banda('<span><b>Dibujando ruta.</b> Clic en cada punto del camino. Enter o Terminar para acabar.</span><button class="mini" data-a="deshacer">Quitar punto</button><button class="mini" data-a="cancelar">Cancelar</button><button class="mini primario" data-a="cerrar">Terminar</button>');
+      return;
+    }
     const que = tipo === "lote" ? "lote " + siguienteLote().numero + (siguienteLote().manzana ? " de la manzana " + esc(siguienteLote().manzana) : "") : "polígono";
     banda('<span><b>Dibujando ' + que + '.</b> Clic en cada esquina. Clic en la primera o Enter para cerrar.</span><button class="mini" data-a="deshacer">Quitar punto</button><button class="mini" data-a="cancelar">Cancelar</button><button class="mini primario" data-a="cerrar">Cerrar</button>');
   }
@@ -3413,8 +3456,19 @@ void main(){
   }
   function terminarDibujo(guardarlo) {
     const dib = motorEd && motorEd.dibujo;
-    if (guardarlo && (!dib || dib.puntos.length < 3)) { avisar("Un polígono necesita al menos 3 puntos"); return; }
-    if (guardarlo) {
+    if (guardarlo && dib && dib.tipo === "camino") {
+      if (dib.puntos.length < 2) { avisar("Una ruta necesita al menos 2 puntos"); return; }
+      const c = {
+        id: nuevoId(), tipo: "poligono", nombre: "Ruta " + (cs().filter((x) => x.camino).length + 1), visible: true,
+        puntos: dib.puntos.map((p) => [+p[0].toFixed(5), +p[1].toFixed(5)]),
+        camino: { estilo: "puntos", color: LIMA, grosor: 5, opacidad: 1, flecha: true, animada: true },
+        relleno: { color: LIMA, opacidad: 0 }, trazo: { color: LIMA, grosor: 5, opacidad: 1 }, rollover: { activo: false, relleno: { color: LIMA, opacidad: 0 }, trazo: { color: LIMA, grosor: 5, opacidad: 1 } },
+      };
+      cs().push(c);
+      motorEd.elegida = c.id;
+      avisar("Ruta creada. Cambia su estilo a la derecha.");
+    } else if (guardarlo && (!dib || dib.puntos.length < 3)) { avisar("Un polígono necesita al menos 3 puntos"); return; }
+    else if (guardarlo) {
       const esLote = dib.tipo === "lote";
       const c = {
         id: nuevoId(), tipo: "poligono", nombre: "Polígono " + (cs().filter((x) => x.tipo === "poligono" && !x.lote).length + 1), visible: true,
@@ -3433,7 +3487,7 @@ void main(){
     }
     if (motorEd) { motorEd.dibujo = null; motorEd.sinPrecision(); }
     document.body.classList.remove("dibujando");
-    $("add-pol").setAttribute("aria-pressed", "false"); $("add-lote").setAttribute("aria-pressed", "false");
+    $("add-pol").setAttribute("aria-pressed", "false"); $("add-lote").setAttribute("aria-pressed", "false"); $("add-camino").setAttribute("aria-pressed", "false");
     banda(null);
     if (motorEd) cambio();
   }
@@ -3448,6 +3502,7 @@ void main(){
   $("add-pol").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "poligono") empezarDibujo("poligono"); });
   $("add-lote").addEventListener("click", (ev) => { if (sinLotif()) { ev.stopImmediatePropagation(); avisar("Los lotes son del plan Desarrollos. Mejora tu plan para usarlos."); } }, true);
   $("add-lote").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "lote") empezarDibujo("lote"); });
+  $("add-camino").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "camino") empezarDibujo("camino"); });
   $("add-txt").addEventListener("click", () => {
     if (motorEd.dibujo) terminarDibujo(false);
     const k = centro();
@@ -3465,6 +3520,7 @@ void main(){
   const ICONOS = {
     lote: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 7.5 12 4l8.5 3.5v9L12 20l-8.5-3.5z"/><path d="M12 4v16M3.5 7.5 12 11l8.5-3.5"/></svg>',
     poligono: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 7l9-3 7 8-5 8-10-3z"/></svg>',
+    camino: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2.2 3"><path d="M4 19c4 0 3-6 8-7s4-6 8-7"/></svg>',
     texto: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13"/></svg>',
     hotspot: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="8.5" stroke-opacity=".5"/></svg>',
   };
@@ -3477,7 +3533,7 @@ void main(){
     if (!l.length) { ul.innerHTML = '<li class="vacio" role="presentation">Este panorama no tiene capas. Agrega un polígono, un texto o un hotspot.</li>'; return; }
     ul.innerHTML = l.slice().reverse().map((c) =>
       '<li role="option" draggable="true" data-id="' + c.id + '" aria-selected="' + (c.id === motorEd.elegida) + '"' + (c.visible ? "" : ' class="oculta"') + ">" +
-      (c.lote ? ICONOS.lote : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.nombre)) + (c.vinculo ? ICO_VINC : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>").join("");
+      (c.lote ? ICONOS.lote : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.nombre)) + (c.vinculo ? ICO_VINC : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>").join("");
   }
   $("lista").addEventListener("click", (ev) => {
     const ojo = ev.target.closest("[data-ojo]");
@@ -3581,9 +3637,17 @@ void main(){
     const cont = $("props");
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
     if (!c) { $("props-titulo").textContent = "Propiedades"; cont.innerHTML = '<p class="vacio">Selecciona una capa en la lista o sobre la esfera para editarla.</p>'; return; }
-    $("props-titulo").textContent = c.lote ? nombreLote(c) : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
+    $("props-titulo").textContent = c.lote ? nombreLote(c) : c.camino ? "Ruta" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
     let h = c.lote ? "" : '<div class="grupo">' + campo("Nombre", '<input type="text" data-k="nombre" value="' + esc(c.nombre) + '">') + "</div>";
     if (c.lote) h += propsLote(c);
+    else if (c.camino) {
+      const k = c.camino;
+      h += '<div class="grupo"><b>Línea</b><div class="hs-estilos" style="grid-template-columns:repeat(3,1fr)">' + [["puntos", "Punteada"], ["guiones", "Guiones"], ["continua", "Continua"]].map(([v, n]) =>
+        '<button class="hs-estilo" data-k="camino.estilo" data-v="' + v + '" aria-pressed="' + (k.estilo === v) + '"><svg viewBox="0 0 40 8" width="40" height="8"><line x1="3" y1="4" x2="37" y2="4" stroke="currentColor" stroke-width="3" stroke-linecap="round"' + (v === "puntos" ? ' stroke-dasharray="0 7"' : v === "guiones" ? ' stroke-dasharray="9 6"' : "") + "/></svg>" + n + "</button>").join("") + "</div>" +
+        campo("Color", campoColor("camino.color", k.color)) + campo("Grosor", campoRango("camino.grosor", k.grosor, 1, 16, 0.5, px)) + campo("Opacidad", campoRango("camino.opacidad", k.opacidad ?? 1, 0.1, 1, 0.05, pct)) + "</div>";
+      h += '<div class="grupo">' + interruptor("Flecha al final", "camino.flecha", !!k.flecha) + interruptor("Movimiento", "camino.animada", !!k.animada) +
+        '<p class="nota">Arrastra la ruta para moverla y los puntos para ajustarla. Doble clic en un punto lo quita.</p></div>';
+    }
     else if (c.tipo === "poligono") {
       h += '<div class="grupo"><b>Relleno</b>' + campo("Color", campoColor("relleno.color", c.relleno.color)) + campo("Opacidad", campoRango("relleno.opacidad", c.relleno.opacidad, 0, 1, 0.05, pct)) + "</div>";
       h += '<div class="grupo"><b>Trazo</b>' + campo("Color", campoColor("trazo.color", c.trazo.color)) + campo("Grosor", campoRango("trazo.grosor", c.trazo.grosor, 0, 12, 0.5, px)) + campo("Opacidad", campoRango("trazo.opacidad", c.trazo.opacidad, 0, 1, 0.05, pct)) + "</div>";
