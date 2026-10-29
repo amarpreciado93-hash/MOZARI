@@ -103,3 +103,4 @@
 | 2026-10-29 | Dominio propio mozari.app (Cloudflare): el estudio y el escaparate en mozari.app, los tours publicados en tours.mozari.app. Las direcciones viejas de workers.dev mandan a mozari.app y los links de tours viejos siguen abriendo | Verse profesional y poder abrir la entrada con Google a todos |
 | 2026-10-29 | En Capas, la primera esfera de la tira es la de inicio (lleva la marca "Inicio"); arrastrar otra hasta arriba la vuelve la de inicio, y elegir la de inicio en Proyecto la sube al primer lugar | Un solo lugar y una sola regla para el orden y el inicio |
 | 2026-10-29 | La tarjeta del tour en Mis Tours usa el thumbnail del proyecto (si no hay, la esfera de inicio) | Reconocer cada tour como lo verá el cliente |
+| 2026-10-29 | Hotspot: interruptor "Mostrar nombre" para quitar la etiqueta; la etiqueta es más chica y discreta | La etiqueta tapaba la vista |

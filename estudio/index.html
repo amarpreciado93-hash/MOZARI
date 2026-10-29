@@ -438,8 +438,9 @@
   .hs-estilo[aria-pressed="true"] { border-color: var(--mz-lima); background: var(--mz-lima-suave); }
   .hs-estilo .hs-nucleo { width: 30px; height: 30px; }
   .hs-boton:hover .hs-nucleo { animation-play-state: paused; transform: scale(1.12); }
-  .hs-texto { position: absolute; left: 0; top: calc(var(--hs-tam) / 2 + 0.5em); transform: translateX(-50%); padding: 0.42em 1em; border-radius: var(--mz-pastilla); white-space: nowrap; background: var(--mz-vidrio); border: 1px solid var(--mz-linea); color: var(--mz-texto); font-size: 1em; font-weight: 500; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
+  .hs-texto { position: absolute; left: 0; top: calc(var(--hs-tam) / 2 + 0.5em); transform: translateX(-50%); padding: 0.3em 0.8em; border-radius: var(--mz-pastilla); white-space: nowrap; background: var(--mz-vidrio); border: 1px solid var(--mz-linea); color: var(--mz-texto); font-size: 0.78em; font-weight: 500; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
   .hs:hover .hs-texto, .editable .hs-texto { opacity: 1; }
+  .hs.sin-nombre .hs-texto { display: none; }
   .cp.elegida:not(.en3d) .cp-texto, .cp.elegida:not(.en3d) .hs-nucleo { outline: 2px dashed #fff; outline-offset: 4px; }
   /* Lotes: rótulos sobre la esfera, panel de datos, ficha y tabla */
   .capa-etq { position: absolute; inset: 0; pointer-events: none; }
@@ -2065,6 +2066,7 @@
           nodos.set(c.id, { el, c, t });
         } else if (c.tipo === "hotspot") {
           el.classList.add("hs");
+          if (c.verNombre === false) el.classList.add("sin-nombre");
           const texto = textoHotspot(c);
           el.innerHTML = '<button class="hs-boton' + (c.icono ? " con-icono" : "") + (estiloHs(c) ? " hs-" + estiloHs(c) : "") + '" aria-label="' + esc(texto) + '">' +
             (c.icono ? '<img src="' + esc(urlArchivo(c.icono)) + '" alt="">' : "") + '<span class="hs-nucleo">' + icoHs(c) + "</span></button>" +
@@ -3596,6 +3598,7 @@ void main(){
       h += grupo3d(c);
     } else if (c.tipo === "hotspot") {
       h += '<div class="grupo"><b>Hotspot</b>' + campo("Texto", '<input type="text" data-k="texto" placeholder="' + esc(textoHotspot(Object.assign({}, c, { texto: "" }))) + '" value="' + esc(c.texto || "") + '">') +
+        interruptor("Mostrar nombre", "verNombre", c.verNombre !== false) +
         campo("Tamaño", campoRango("tamano", tamHs(c), 16, 240, 1, px)) + "</div>";
       h += '<div class="grupo"><b>Estilo</b><div class="hs-estilos">' + Object.entries(ESTILOS_HS).map(([id, e]) =>
         '<button class="hs-estilo' + (id !== "clasico" ? " hs-" + id : "") + '" data-k="estilo" data-v="' + id + '" aria-pressed="' + ((c.estilo || "clasico") === id) + '"><span class="hs-nucleo">' + (e.ico || ICO_ACCION[accionDe(c)] || ICO_ACCION.panorama) + "</span>" + e.nombre + "</button>").join("") + "</div></div>";
