@@ -558,6 +558,12 @@
   .cp.con-accion, .cp-pol.con-accion { cursor: pointer; }
   .inerte .cp, .inerte .cp * { pointer-events: none !important; }
   .asas { pointer-events: none; }
+  .mz-linea { fill: none; stroke: var(--mz-lima); stroke-width: 1.5; stroke-dasharray: 4 4; pointer-events: none; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)); }
+  .mz-asa { pointer-events: all; cursor: grab; stroke: var(--mz-negro); stroke-width: 1.5; filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6)); }
+  .mz-asa.corte { fill: var(--mz-lima); }
+  .mz-asa.nodo { fill: #fff; }
+  .mz-mas { pointer-events: all; cursor: copy; fill: rgba(11, 11, 11, 0.75); stroke: #fff; stroke-width: 1.2; }
+  .mz-mas-t { fill: #fff; font: 700 11px var(--mz-texto-ui); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
   .asa-marco { fill: none; stroke: #fff; stroke-width: 1.2; stroke-dasharray: 5 4; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)); }
   .asa { fill: #fff; stroke: var(--mz-negro); stroke-width: 1.5; pointer-events: all; }
   .asa-rotar { fill: var(--mz-lima); cursor: grab; }
@@ -2432,6 +2438,30 @@
         }
       });
       extra.innerHTML = "";
+      // Asas propias de una capa (las líneas de una manzana): las da el editor
+      if (editable && motor.modo === "capas" && !motor.dibujo && motor.elegida && opciones.asasExtra) {
+        const ce = lista().find((x) => x.id === motor.elegida), A = ce && opciones.asasExtra(ce);
+        if (A) {
+          const scr = (pt) => { const q = aCamara(cam, pt[0], pt[1]); return q.z > CERCA ? aPantalla(cam, q) : null; };
+          A.lineas.forEach((ln) => {
+            const rec = recortar(ln.map(([y, p]) => aCamara(cam, y, p)), false);
+            if (rec.length > 1) { const e = document.createElementNS(SVGNS, "path"); e.setAttribute("class", "mz-linea"); e.setAttribute("d", trazo(cam, rec, false)); extra.appendChild(e); }
+          });
+          A.asas.forEach((h, i) => {
+            const p = scr(h.pt); if (!p) return;
+            if (h.tipo === "mas") {
+              const g = document.createElementNS(SVGNS, "g");
+              g.innerHTML = '<circle class="mz-mas" data-x="' + i + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="7"></circle><text class="mz-mas-t" x="' + p.x.toFixed(1) + '" y="' + p.y.toFixed(1) + '">+</text>';
+              extra.appendChild(g); return;
+            }
+            const e = document.createElementNS(SVGNS, "circle");
+            e.setAttribute("class", "mz-asa " + (h.tipo === "nodo" ? "nodo" : "corte")); e.setAttribute("data-x", i);
+            e.setAttribute("cx", p.x.toFixed(1)); e.setAttribute("cy", p.y.toFixed(1)); e.setAttribute("r", h.tipo === "nodo" ? 5 : 6.5);
+            extra.appendChild(e);
+          });
+          motor._asasExtra = A.asas;
+        }
+      }
       // Asas del texto u hotspot elegido: mover, rotar, escalar y estirar
       const ne = editable && motor.modo === "capas" && !motor.dibujo && motor.elegida && nodos.get(motor.elegida);
       if (ne && ne.c.tipo !== "poligono" && ne.el.style.visibility !== "hidden" && !ne.el.hidden) {
@@ -2672,6 +2702,7 @@
       const ahora = coordsEn(ev);
       if (!ahora) return;
       const { c, modo, indice, base } = arrastre;
+      if (modo === "extra") { if (opciones.moverAsaExtra) opciones.moverAsaExtra(c, arrastre.h, ahora); precision(ev); programar(); return; }
       if (modo === "vertice") { c.puntos[indice] = [ahora.yaw, limitarPitch(ahora.pitch)]; precision(ev); }
       else {
         let dy = ahora.yaw - arrastre.inicio.yaw;
@@ -2687,9 +2718,24 @@
     function alSoltar() {
       if (asa) { const c = asa.c, mov = asa.movido; asa = null; if (mov) { if (opciones.alSoltar) opciones.alSoltar(c); opciones.alCambiar(); } return; }
       if (arrastre && arrastre.movido) { if (opciones.alSoltar) opciones.alSoltar(arrastre.c); guardar(); }
-      if (arrastre && arrastre.modo === "vertice" && !motor.dibujo) precision(null);
+      if (arrastre && (arrastre.modo === "vertice" || arrastre.modo === "extra") && !motor.dibujo) precision(null);
+      if (arrastre && arrastre.modo === "extra" && !arrastre.movido) opciones.alCambiar();
       arrastre = null;
     }
+    if (editable) extra.addEventListener("pointerdown", (ev) => {
+      const t = ev.target.closest("[data-x]"); if (!t || !motor._asasExtra) return;
+      const h = motor._asasExtra[+t.getAttribute("data-x")], c = lista().find((x) => x.id === motor.elegida);
+      if (!h || !c) return;
+      ev.stopPropagation(); ev.preventDefault();
+      const h2 = opciones.tomarAsaExtra ? opciones.tomarAsaExtra(c, h) : h; // "+" crea un nodo y lo arrastra
+      arrastre = { c, modo: "extra", h: h2, x: ev.clientX, y: ev.clientY, movido: false };
+      programar();
+    });
+    if (editable) extra.addEventListener("dblclick", (ev) => {
+      const t = ev.target.closest("[data-x]"); if (!t || !motor._asasExtra) return;
+      const h = motor._asasExtra[+t.getAttribute("data-x")], c = lista().find((x) => x.id === motor.elegida);
+      if (h && c && opciones.quitarAsaExtra) { ev.stopPropagation(); opciones.quitarAsaExtra(c, h); opciones.alCambiar(); }
+    });
     if (opciones.sinAcciones) capasEl.classList.add("inerte");
     if (opciones.alTomarMarca) extra.addEventListener("pointerdown", (ev) => {
       const g = ev.target.closest(".tr-pt");
@@ -3297,6 +3343,10 @@ void main(){
         alCambiar: () => cambio(),
         alSoltar: (c) => { if (c.manzana) { repartirManzana(c); cambio(); return; } if (c.vinculo) propagar(c, motorEd.actual.id); },
         alArrastrar: (c) => { if (c.manzana) repartirManzana(c); },
+        asasExtra: (c) => (c.manzana ? asasManzana(c) : null),
+        tomarAsaExtra: (c, h) => tomarAsaManzana(c, h),
+        moverAsaExtra: (c, h, k) => moverAsaManzana(c, h, k),
+        quitarAsaExtra: (c, h) => quitarAsaManzana(c, h),
         alEntrar: (c, origen) => { abrirEditor(c.destino, nav.sub, vistaLlegada(c, origen)); avisar("Llegaste a " + nombreDe(c.destino) + (c.llegada === "frente" ? " viendo de frente" : "")); },
         alCerrarDibujo: () => terminarDibujo(true),
         alInteractuar: () => { if (pilotoEd) detenerPilotoEd(); },
@@ -3645,22 +3695,32 @@ void main(){
     const fr = cadenaSuelo(c.puntos.slice(0, F)), fo = cadenaSuelo(c.puntos.slice(F).reverse());
     if (parejo || !Array.isArray(m.cortes) || m.cortes.length !== n - 1) m.cortes = cortesParejos(fr, fo, n);
     const tf = [0].concat(m.cortes.map((x) => x.f), [1]), tb = [0].concat(m.cortes.map((x) => x.b), [1]);
+    // Cada corte es una línea del frente al fondo; puede tener nodos en medio (terrenos chuecos)
+    const md0 = Math.max(0.15, Math.min(0.85, +m.medio || 0.5));
+    const camino = (k) => [enCadena(fr, tf[k])].concat(k > 0 && k < n ? (m.cortes[k - 1].medios || []).map((p) => p.slice()) : [], [enCadena(fo, tb[k])]);
+    const corteEn = (k, frac) => { // punto a una fracción del largo del corte (en el suelo) y en qué tramo cae
+      const P = camino(k), G = P.map(([y, p]) => aPlano(y, p));
+      if (G.some((g) => !g)) { const a = P[0], b = P[P.length - 1]; let dy = b[0] - a[0]; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI; return { pt: [a[0] + dy * frac, a[1] + (b[1] - a[1]) * frac], i: 1, P }; }
+      const L = [0]; for (let i = 1; i < G.length; i++) L.push(L[i - 1] + Math.hypot(G[i][0] - G[i - 1][0], G[i][1] - G[i - 1][1]));
+      const meta = frac * L[L.length - 1]; let i = 1; while (i < L.length - 1 && L[i] < meta) i++;
+      const u = (meta - L[i - 1]) / ((L[i] - L[i - 1]) || 1);
+      return { pt: dePlano([G[i - 1][0] + (G[i][0] - G[i - 1][0]) * u, G[i - 1][1] + (G[i][1] - G[i - 1][1]) * u]), i, P };
+    };
+    geoManzana.set(c, { fr, fo, tf, tb, camino });
     const l = cs(), viejos = lotesDeManzana(c), red = (p) => [+p[0].toFixed(5), +p[1].toFixed(5)];
     // Doble: una línea al centro (a lo largo) parte cada corte; una fila da al frente y la otra al fondo
-    const doble = !!m.doble, md = Math.max(0.15, Math.min(0.85, +m.medio || 0.5));
-    const medio = (k) => {
-      const a = enCadena(fr, tf[k]), b = enCadena(fo, tb[k]);
-      if (fr.plano && fo.plano) { const qa = aPlano(a[0], a[1]), qb = aPlano(b[0], b[1]); return dePlano([qa[0] + (qb[0] - qa[0]) * md, qa[1] + (qb[1] - qa[1]) * md]); }
-      let dy = b[0] - a[0]; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI;
-      return [a[0] + dy * md, a[1] + (b[1] - a[1]) * md];
-    };
+    const doble = !!m.doble;
+    // Mitad de frente (hasta la línea del centro) y mitad de fondo de cada corte
+    const mitadFrente = (k) => { const r = corteEn(k, md0); return r.P.slice(1, r.i).concat([r.pt]); }; // sin el punto del frente
+    const mitadFondo = (k) => { const r = corteEn(k, md0); return [r.pt].concat(r.P.slice(r.i, r.P.length - 1)); }; // sin el del fondo
+    const sinPuntas = (k) => camino(k).slice(1, -1);
     const formas = [], inicio = +m.inicio || 1;
     for (let k = 0; k < n; k++) {
-      if (!doble) { formas.push({ puntos: tramo(fr, tf[k], tf[k + 1]).concat(tramo(fo, tb[k], tb[k + 1]).reverse()), numero: inicio + k }); continue; }
-      formas.push({ puntos: tramo(fr, tf[k], tf[k + 1]).concat([medio(k + 1), medio(k)]), numero: inicio + k });
+      if (!doble) { formas.push({ puntos: tramo(fr, tf[k], tf[k + 1]).concat(sinPuntas(k + 1), tramo(fo, tb[k], tb[k + 1]).reverse(), sinPuntas(k).reverse()), numero: inicio + k }); continue; }
+      formas.push({ puntos: tramo(fr, tf[k], tf[k + 1]).concat(mitadFrente(k + 1), mitadFrente(k).reverse()), numero: inicio + k });
     }
     if (doble) for (let k = n - 1; k >= 0; k--) // la fila del fondo sigue la numeración de regreso (en U); su frente es la calle de atrás
-      formas.push({ puntos: tramo(fo, tb[k], tb[k + 1]).reverse().concat([medio(k), medio(k + 1)]), numero: inicio + 2 * n - 1 - k });
+      formas.push({ puntos: tramo(fo, tb[k], tb[k + 1]).reverse().concat(mitadFondo(k).reverse(), mitadFondo(k + 1)), numero: inicio + 2 * n - 1 - k });
     for (let k = 0; k < formas.length; k++) {
       const puntos = formas[k].puntos.map(red);
       let x = viejos[k];
@@ -3678,6 +3738,56 @@ void main(){
       x.lote.lados = puntos.map((_, i) => (x.lote.lados || [])[i] || "");
     }
     viejos.slice(formas.length).forEach((x) => { const i = l.indexOf(x); if (i >= 0) l.splice(i, 1); });
+  }
+  const geoManzana = new WeakMap();
+  // Asas de la manzana elegida: puntas de cada corte (se deslizan por el frente o el fondo), nodos en
+  // medio de los cortes y "+" para agregar nodos (en los cortes y en las orillas del frente y del fondo)
+  function asasManzana(c) {
+    const g = geoManzana.get(c); if (!g) return null;
+    const m = c.manzana, n = m.n, F = m.nFrente, lineas = [], asas = [];
+    const mitad = (a, b) => { const qa = aPlano(a[0], a[1]), qb = aPlano(b[0], b[1]); if (qa && qb) return dePlano([(qa[0] + qb[0]) / 2, (qa[1] + qb[1]) / 2]); let dy = b[0] - a[0]; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI; return [a[0] + dy / 2, (a[1] + b[1]) / 2]; };
+    for (let k = 1; k < n; k++) {
+      const P = g.camino(k); lineas.push(P);
+      asas.push({ tipo: "corte", lado: "f", k, pt: P[0] }, { tipo: "corte", lado: "b", k, pt: P[P.length - 1] });
+      P.slice(1, -1).forEach((pt, j) => asas.push({ tipo: "nodo", k, j, pt }));
+      for (let j = 0; j < P.length - 1; j++) asas.push({ tipo: "mas", que: "corte", k, j, pt: mitad(P[j], P[j + 1]) });
+    }
+    for (let i = 0; i < c.puntos.length - 1; i++) { if (i === F - 1) continue; asas.push({ tipo: "mas", que: "borde", i, pt: mitad(c.puntos[i], c.puntos[i + 1]) }); }
+    return { lineas, asas };
+  }
+  function paramCadena(cad, k) {
+    const q = cad.plano ? aPlano(k.yaw, k.pitch) : [k.yaw, k.pitch];
+    if (!q) return null;
+    let mejor = 0, dmin = Infinity;
+    for (let i = 1; i < cad.suelo.length; i++) {
+      const A = cad.suelo[i - 1], B = cad.suelo[i], dx = B[0] - A[0], dy = B[1] - A[1], L2 = dx * dx + dy * dy || 1;
+      const u = Math.max(0, Math.min(1, ((q[0] - A[0]) * dx + (q[1] - A[1]) * dy) / L2)), d = Math.hypot(q[0] - A[0] - dx * u, q[1] - A[1] - dy * u);
+      if (d < dmin) { dmin = d; mejor = (cad.acum[i - 1] + u * Math.sqrt(L2)) / cad.total; }
+    }
+    return mejor;
+  }
+  function tomarAsaManzana(c, h) {
+    const m = c.manzana;
+    if (h.tipo !== "mas") return h;
+    if (h.que === "corte") { const x = m.cortes[h.k - 1]; x.medios = x.medios || []; x.medios.splice(h.j, 0, h.pt.slice()); repartirManzana(c); return { tipo: "nodo", k: h.k, j: h.j }; }
+    c.puntos.splice(h.i + 1, 0, h.pt.map((v) => +v.toFixed(5)));
+    if (h.i < m.nFrente - 1) m.nFrente++;
+    repartirManzana(c);
+    return { tipo: "borde", i: h.i + 1 };
+  }
+  function moverAsaManzana(c, h, k) {
+    const m = c.manzana, g = geoManzana.get(c);
+    if (h.tipo === "nodo") { const x = m.cortes[h.k - 1]; if (x && x.medios && x.medios[h.j]) x.medios[h.j] = [+k.yaw.toFixed(5), +k.pitch.toFixed(5)]; }
+    else if (h.tipo === "borde") c.puntos[h.i] = [+k.yaw.toFixed(5), +k.pitch.toFixed(5)];
+    else if (h.tipo === "corte" && g) {
+      const cad = h.lado === "f" ? g.fr : g.fo, t = paramCadena(cad, k); if (t === null) return;
+      const key = h.lado === "f" ? "f" : "b", ant = h.k > 1 ? m.cortes[h.k - 2][key] : 0, sig = h.k < m.n - 1 ? m.cortes[h.k][key] : 1;
+      m.cortes[h.k - 1][key] = Math.max(ant + 0.005, Math.min(sig - 0.005, t));
+    }
+    repartirManzana(c);
+  }
+  function quitarAsaManzana(c, h) {
+    if (h.tipo === "nodo") { const x = c.manzana.cortes[h.k - 1]; if (x && x.medios) x.medios.splice(h.j, 1); repartirManzana(c); }
   }
   function crearManzana(frente, fondo) {
     const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -3955,7 +4065,8 @@ void main(){
         campo(m.doble ? "Lotes por fila" : "Lotes", '<div class="mz-n"><button data-mz-n="-1" aria-label="Un lote menos">−</button><input type="text" inputmode="numeric" data-mz="n" value="' + m.n + '"><button data-mz-n="1" aria-label="Un lote más">+</button></div>') +
         campo("Primer número", '<input type="text" inputmode="numeric" data-mz="inicio" value="' + m.inicio + '">') +
         '<div class="orden"><button class="mini" data-mz-parejo>Repartir parejo</button></div>' +
-        '<p class="nota">Los lotes se reparten del mismo ancho en el suelo, no en la imagen. Arrastra las esquinas de la manzana para ajustarla: los ' + lotes.length + ' lotes la siguen. Doble clic en una esquina la quita.</p></div>';
+        '<p class="nota">Los lotes se reparten del mismo ancho en el suelo, no en la imagen. Arrastra las esquinas de la manzana para ajustarla: los ' + lotes.length + ' lotes la siguen. Doble clic en una esquina la quita.</p>' +
+        '<p class="nota"><b>Ajuste fino:</b> los puntos verdes recorren cada división por el frente o el fondo. Los <b>+</b> agregan un nodo para doblar una división o la orilla; arrástralo. Doble clic en un nodo blanco lo quita.</p></div>';
       h += '<div class="grupo"><b>Estado</b><p class="nota">Toca cada lote en la esfera para cambiar su estado, precio y superficie.</p></div>';
     }
     else if (c.camino) {
