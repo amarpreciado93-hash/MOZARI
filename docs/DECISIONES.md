@@ -78,3 +78,5 @@
 | 2026-10-28 | El tour público usa el mismo programa del estudio en modo "tour" (solo el visor, sin herramientas) | Un solo programa que mantener: lo que se ve en la vista previa es lo que ve el cliente |
 | 2026-10-28 | herramientas/construir.py arma estudio/index.html desde el visor | Una sola fuente del programa |
 | 2026-10-28 | Las capas (lotes, textos, hotspots) se pintan en el mismo cuadro que la esfera, justo después de que Marzipano dibuja | Antes iban un cuadro atrás y se veían despegadas al girar |
+| 2026-10-28 | Rótulo del lote al alejarse: "Lote 3 · Mz B" → "3 · B" → "3", el primero que quepa; las versiones cortas siempre a letra legible | El número del lote nunca se borra y no se enciman |
+| 2026-10-28 | El giro del rótulo se aplica después de la orientación automática: gira parejo en sentido del reloj y el programa ya no lo voltea solo | Antes brincaba 180° a medio giro |

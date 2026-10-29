@@ -1802,7 +1802,9 @@
       nom.className = "lt-p nom";
       const area = l.verArea ? fmtArea(l.area) : "";
       nom.innerHTML = esc(nombreLote(c)) + (area ? "<small>" + esc(area) + "</small>" : "");
-      if (l.etiqueta) cont.appendChild(nom);
+      // Versiones cortas para cuando el lote se ve chico al alejarse: "3 · B" y luego solo "3". El número nunca se borra.
+      const cortos = [nombreCorto(l), l.numero || "—"].map((tx) => { const e = document.createElement("div"); e.className = "lt-p nom"; e.textContent = tx; return e; });
+      if (l.etiqueta) { cont.appendChild(nom); cortos.forEach((e) => cont.appendChild(e)); }
       const lados = c.puntos.map((_, i) => {
         const v = l.medidas ? fmtLado((l.lados || [])[i]) : "";
         if (!v) return null;
@@ -1810,8 +1812,10 @@
         e.className = "lt-p lt-medida"; e.textContent = v; cont.appendChild(e);
         return e;
       });
-      return { cont, nom: l.etiqueta ? nom : null, lados, med: null };
+      return { cont, nom: l.etiqueta ? nom : null, cortos: l.etiqueta ? cortos : [], lados, med: null };
     }
+    const nombreCorto = (l) => (l.numero || "—") + (l.manzana ? " · " + l.manzana : "");
+    const LETRA_MIN = 9, LETRA_CORTA = 11; // px en pantalla: nombre completo desde 9; versiones cortas siempre a 11
     // Suelo con la cámara a altura 1: dirección (yaw, pitch) ↔ punto (x, z) del piso
     const aSuelo = (yaw, pitch) => { if (!(pitch > 0.012)) return null; const d = dir3(yaw, pitch); return [d[0] / -d[1], d[2] / -d[1]]; };
     const deSuelo = (g) => [Math.atan2(g[0], g[1]), Math.asin(1 / Math.hypot(g[0], 1, g[1]))];
@@ -1858,7 +1862,7 @@
       const G = c.puntos.map(([y, p]) => aSuelo(y, p));
       if (G.some((g) => !g) || n.el.hidden) { R.cont.style.display = "none"; return false; }
       R.cont.style.display = "";
-      if (!R.med) R.med = { nom: R.nom ? [R.nom.offsetWidth, R.nom.offsetHeight] : null, lados: R.lados.map((e) => (e ? [e.offsetWidth, e.offsetHeight] : null)) };
+      if (!R.med) R.med = { nom: R.nom ? [R.nom.offsetWidth, R.nom.offsetHeight] : null, cortos: R.cortos.map((e) => [e.offsetWidth, e.offsetHeight]), lados: R.lados.map((e) => (e ? [e.offsetWidth, e.offsetHeight] : null)) };
       // Centroide y tamaño del lote en el suelo
       let A2 = 0, cx = 0, cz = 0;
       G.forEach((p, i) => { const q = G[(i + 1) % G.length], k = p[0] * q[1] - q[0] * p[1]; A2 += k; cx += (p[0] + q[0]) * k; cz += (p[1] + q[1]) * k; });
@@ -1867,13 +1871,31 @@
       if (R.nom && R.med.nom) {
         const f = +l.frente || 0, A = G[f % G.length], B = G[(f + 1) % G.length], L = Math.hypot(B[0] - A[0], B[1] - A[1]) || 1;
         const ang = ((+l.giroRotulo || 0) * Math.PI) / 180, e0 = [(B[0] - A[0]) / L, (B[1] - A[1]) / L];
-        const [u, v] = orientar(ref, [e0[0] * Math.cos(ang) - e0[1] * Math.sin(ang), e0[0] * Math.sin(ang) + e0[1] * Math.cos(ang)]);
+        // Primero se orienta solo (derecho y legible desde esta esfera) y DESPUÉS se aplica el giro manual:
+        // así el giro es suave, en sentido del reloj, y el programa ya no lo voltea por su cuenta.
+        const [u0, v0] = orientar(ref, e0), ca = Math.cos(ang), sa = Math.sin(ang);
+        const gira = (p) => [p[0] * ca + p[1] * sa, p[1] * ca - p[0] * sa], u = gira(u0), v = gira(v0);
         const pu = G.map((g) => (g[0] - C[0]) * u[0] + (g[1] - C[1]) * u[1]), pv = G.map((g) => (g[0] - C[0]) * v[0] + (g[1] - C[1]) * v[1]);
-        const extU = Math.max(...pu) - Math.min(...pu), extV = Math.max(...pv) - Math.min(...pv), [w, h] = R.med.nom, r = h / w;
-        let Wg = t * extU, Hg = Wg * r;
-        if (Hg > 0.55 * t / 0.6 * extV) { Hg = 0.55 * t / 0.6 * extV; Wg = Hg / r; }
-        const alto = colocarPlano(cam, R.nom, w, h, C, u, v, Wg / 2, Hg / 2);
-        R.nom.style.visibility = alto * (40 / h) * 0.75 < 6 ? "hidden" : "";
+        const extU = Math.max(...pu) - Math.min(...pu), extV = Math.max(...pv) - Math.min(...pv);
+        // Ajusta el rótulo al lote y lo coloca; devuelve su tamaño de letra en pantalla
+        const poner = (el, [w, h], k) => {
+          const r = h / w;
+          let Wg = t * extU, Hg = Wg * r;
+          if (Hg > 0.55 * t / 0.6 * extV) { Hg = 0.55 * t / 0.6 * extV; Wg = Hg / r; }
+          return (colocarPlano(cam, el, w, h, C, u, v, (Wg * k) / 2, (Hg * k) / 2) * 40) / h;
+        };
+        // Del más completo al más corto: el primero que quepa en el lote con letra legible. Las versiones
+        // cortas van todas a la misma letra mínima; si ni el número cabe, crece (hasta 3 veces) en vez de borrarse.
+        const versiones = [[R.nom, R.med.nom]].concat(R.cortos.map((e, i) => [e, R.med.cortos[i]]));
+        let elegido = -1, letra = 0;
+        for (let i = 0; i < versiones.length; i++) {
+          letra = poner(versiones[i][0], versiones[i][1], 1);
+          if (letra <= 0) break; // fuera de la vista (colocarPlano ya lo ocultó)
+          if (letra >= (i ? LETRA_CORTA : LETRA_MIN) || i === versiones.length - 1) { elegido = i; break; }
+        }
+        if (elegido > 0) letra = poner(versiones[elegido][0], versiones[elegido][1], Math.min(3, LETRA_CORTA / letra));
+        versiones.forEach(([el], i) => { if (i !== elegido) el.style.display = "none"; });
+        if (elegido >= 0) versiones[elegido][0].style.visibility = letra >= 6 ? "" : "hidden";
       }
       R.lados.forEach((el, i) => {
         if (!el) return;
@@ -1904,10 +1926,12 @@
         const L = Math.hypot(v[0], v[1], v[2]) || 1, pc = aCamara(cam, Math.atan2(v[0], v[2]), Math.asin(-v[1] / L));
         const C = pc.z > CERCA ? aPantalla(cam, pc) : null;
         if (C && l.etiqueta) {
-          let tx = nombreLote(c), fs = Math.min(20 * t, lado * 0.17 * t);
-          if (tx.length * fs * 0.6 > ancho * 0.92) tx = (l.numero || "—") + (l.manzana ? "·" + l.manzana : "");
-          fs = Math.min(fs, (ancho * 0.92) / Math.max(1, tx.length * 0.6));
-          const area = l.verArea ? fmtArea(l.area) : "";
+          // Del más completo al más corto ("Lote 3 · Mz B" → "3 · B" → "3"): el número nunca se borra al alejarse
+          const opciones = [nombreLote(c), nombreCorto(l), l.numero || "—"], cabe = (s) => (ancho * 0.92) / Math.max(1, s.length * 0.6);
+          let nivel = 0, tx = opciones[0], fs = Math.min(20 * t, lado * 0.17 * t, cabe(tx));
+          while (fs < (nivel ? LETRA_CORTA : LETRA_MIN) && nivel < 2) { nivel++; tx = opciones[nivel]; fs = Math.min(LETRA_CORTA, cabe(tx)); }
+          if (fs < LETRA_CORTA && nivel && lado >= 6) fs = LETRA_CORTA;
+          const area = l.verArea && nivel === 0 ? fmtArea(l.area) : "";
           if (fs >= 7) {
             h += '<text class="lt-nom" x="' + C.x.toFixed(1) + '" y="' + (C.y - (area ? fs * 0.45 : 0)).toFixed(1) + '" font-size="' + fs.toFixed(1) + '">' + esc(tx) + "</text>";
             if (area && fs * 0.78 >= 7) h += '<text class="lt-area" x="' + C.x.toFixed(1) + '" y="' + (C.y + fs * 0.75).toFixed(1) + '" font-size="' + (fs * 0.78).toFixed(1) + '">' + esc(area) + "</text>";
