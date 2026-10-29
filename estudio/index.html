@@ -3628,8 +3628,23 @@ void main(){
     if (parejo || !Array.isArray(m.cortes) || m.cortes.length !== n - 1) m.cortes = cortesParejos(fr, fo, n);
     const tf = [0].concat(m.cortes.map((x) => x.f), [1]), tb = [0].concat(m.cortes.map((x) => x.b), [1]);
     const l = cs(), viejos = lotesDeManzana(c), red = (p) => [+p[0].toFixed(5), +p[1].toFixed(5)];
+    // Doble: una línea al centro (a lo largo) parte cada corte; una fila da al frente y la otra al fondo
+    const doble = !!m.doble, md = Math.max(0.15, Math.min(0.85, +m.medio || 0.5));
+    const medio = (k) => {
+      const a = enCadena(fr, tf[k]), b = enCadena(fo, tb[k]);
+      if (fr.plano && fo.plano) { const qa = aPlano(a[0], a[1]), qb = aPlano(b[0], b[1]); return dePlano([qa[0] + (qb[0] - qa[0]) * md, qa[1] + (qb[1] - qa[1]) * md]); }
+      let dy = b[0] - a[0]; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI;
+      return [a[0] + dy * md, a[1] + (b[1] - a[1]) * md];
+    };
+    const formas = [], inicio = +m.inicio || 1;
     for (let k = 0; k < n; k++) {
-      const puntos = tramo(fr, tf[k], tf[k + 1]).concat(tramo(fo, tb[k], tb[k + 1]).reverse()).map(red);
+      if (!doble) { formas.push({ puntos: tramo(fr, tf[k], tf[k + 1]).concat(tramo(fo, tb[k], tb[k + 1]).reverse()), numero: inicio + k }); continue; }
+      formas.push({ puntos: tramo(fr, tf[k], tf[k + 1]).concat([medio(k + 1), medio(k)]), numero: inicio + k });
+    }
+    if (doble) for (let k = n - 1; k >= 0; k--) // la fila del fondo sigue la numeración de regreso (en U); su frente es la calle de atrás
+      formas.push({ puntos: tramo(fo, tb[k], tb[k + 1]).reverse().concat([medio(k), medio(k + 1)]), numero: inicio + 2 * n - 1 - k });
+    for (let k = 0; k < formas.length; k++) {
+      const puntos = formas[k].puntos.map(red);
       let x = viejos[k];
       if (!x) {
         x = { id: nuevoId(), tipo: "poligono", nombre: "Lote", visible: true, deManzana: c.id, iManzana: k, puntos,
@@ -3639,11 +3654,12 @@ void main(){
         const iz = l.indexOf(viejos[viejos.length - 1] || c);
         l.splice(iz + 1, 0, x); viejos.push(x);
       }
+      if (x.puntos.length !== puntos.length) x.lote.lados = [];
       x.puntos = puntos; x.iManzana = k;
-      x.lote.manzana = m.mz; x.lote.numero = String((+m.inicio || 1) + k); x.lote.frente = 0;
+      x.lote.manzana = m.mz; x.lote.numero = String(formas[k].numero); x.lote.frente = 0;
       x.lote.lados = puntos.map((_, i) => (x.lote.lados || [])[i] || "");
     }
-    viejos.slice(n).forEach((x) => { const i = l.indexOf(x); if (i >= 0) l.splice(i, 1); });
+    viejos.slice(formas.length).forEach((x) => { const i = l.indexOf(x); if (i >= 0) l.splice(i, 1); });
   }
   function crearManzana(frente, fondo) {
     const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -3670,6 +3686,23 @@ void main(){
     if (b) { c.manzana.n = Math.max(1, Math.min(60, c.manzana.n + +b.dataset.mzN)); c.manzana.cortes = null; cambio(); return; }
     if (ev.target.closest("[data-mz-parejo]")) { repartirManzana(c, true); cambio(); avisar("Lotes repartidos parejo"); }
   });
+  // Doble y línea del centro (no son datos de capa normales)
+  $("props").addEventListener("input", (ev) => {
+    if (!ev.target.dataset || ev.target.dataset.k !== "_mzMedio") return;
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.manzana) return;
+    ev.stopImmediatePropagation();
+    c.manzana.medio = +ev.target.value; repartirManzana(c); motorEd.render();
+    const etq = document.querySelector('[data-v-de="_mzMedio"]'); if (etq) etq.textContent = Math.round(c.manzana.medio * 100) + "%";
+  }, true);
+  $("props").addEventListener("change", (ev) => {
+    const kk = ev.target.dataset && ev.target.dataset.k;
+    if (kk === "_mzDoble" || kk === "_mzMedio") {
+      const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.manzana) return;
+      ev.stopImmediatePropagation();
+      if (kk === "_mzDoble") { c.manzana.doble = ev.target.checked; if (!c.manzana.medio) c.manzana.medio = 0.5; avisar(c.manzana.doble ? "Manzana doble: " + c.manzana.n * 2 + " lotes" : "Manzana sencilla"); }
+      cambio(); return;
+    }
+  }, true);
   $("props").addEventListener("change", (ev) => {
     const k = ev.target.dataset && ev.target.dataset.mz; if (!k) return;
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.manzana) return;
@@ -3899,7 +3932,9 @@ void main(){
       const m = c.manzana, lotes = lotesDeManzana(c);
       h += '<div class="grupo"><b>Lotes de la manzana</b>' +
         campo("Manzana", '<input type="text" data-mz="mz" value="' + esc(m.mz) + '" placeholder="3">') +
-        campo("Lotes", '<div class="mz-n"><button data-mz-n="-1" aria-label="Un lote menos">−</button><input type="text" inputmode="numeric" data-mz="n" value="' + m.n + '"><button data-mz-n="1" aria-label="Un lote más">+</button></div>') +
+        interruptor("Doble: lotes por los dos lados", "_mzDoble", !!m.doble) +
+        (m.doble ? campo("Línea del centro", campoRango("_mzMedio", +m.medio || 0.5, 0.15, 0.85, 0.01, pct)) : "") +
+        campo(m.doble ? "Lotes por fila" : "Lotes", '<div class="mz-n"><button data-mz-n="-1" aria-label="Un lote menos">−</button><input type="text" inputmode="numeric" data-mz="n" value="' + m.n + '"><button data-mz-n="1" aria-label="Un lote más">+</button></div>') +
         campo("Primer número", '<input type="text" inputmode="numeric" data-mz="inicio" value="' + m.inicio + '">') +
         '<div class="orden"><button class="mini" data-mz-parejo>Repartir parejo</button></div>' +
         '<p class="nota">Los lotes se reparten del mismo ancho en el suelo, no en la imagen. Arrastra las esquinas de la manzana para ajustarla: los ' + lotes.length + ' lotes la siguen. Doble clic en una esquina la quita.</p></div>';
