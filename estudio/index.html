@@ -107,6 +107,8 @@
   .cuentas select { font: 500 13px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 8px; padding: 6px 8px; }
   .marca-mozari { position: absolute; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.92); color: #0B0B0B; font: 500 12px var(--mz-texto-ui); text-decoration: none; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); }
   .marca-mozari svg { width: 18px; height: 18px; }
+  /* Plan Gratis: marca de agua sobre todo el tour (no se puede entregar a un cliente así) */
+  .agua-mozari { position: absolute; inset: 0; z-index: 39; pointer-events: none; background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22380%22%20height%3D%22240%22%20viewBox%3D%220%200%20380%20240%22%3E%3Cg%20transform%3D%22rotate%28-24%20190%20120%29%22%20fill%3D%22%23fff%22%20fill-opacity%3D%22.34%22%20stroke%3D%22%23000%22%20stroke-opacity%3D%22.18%22%20stroke-width%3D%221%22%3E%3Csvg%20x%3D%2270%22%20y%3D%22100%22%20width%3D%2234%22%20height%3D%2234%22%20viewBox%3D%220%200%20613%20613%22%3E%3Cpath%20d%3D%22M89.0%20540.5C52.3%20536.4%2019.8%20511.8%206.5%20478.0C3.5%20470.4%200.1%20453.0%200.0%20445.0C-0.0%20433.4%203.9%20416.1%209.1%20404.8C16.2%20389.1%2028.5%20373.6%2041.3%20363.9C49.0%20358.1%2067.1%20349.3%2076.9%20346.6C119.8%20334.8%20165.9%20351.4%20189.1%20387.0C200.5%20404.5%20204.4%20418.2%20204.4%20440.5C204.4%20452.5%20204.0%20456.5%20202.1%20463.5C199.5%20473.0%20191.9%20489.9%20186.9%20497.2C178.2%20509.8%20162.1%20523.5%20147.1%20531.0C131.2%20538.9%20108.4%20542.7%2089.0%20540.5ZM454.4%20538.9C437.0%20536.0%20419.2%20528.3%20404.2%20517.3C386.4%20504.2%20371.5%20484.7%20362.5%20462.7C358.1%20451.9%20356.9%20448.0%20348.4%20417.0C337.4%20377.0%20323.2%20351.4%20299.2%20328.4C276.3%20306.3%20245.6%20291.3%20206.0%20282.5C174.5%20275.6%20166.3%20273.2%20154.5%20267.3C131.4%20255.6%20114.6%20239.4%20104.4%20218.9C97.5%20204.9%2094.9%20194.6%2094.3%20178.5C93.8%20166.5%2094.1%20163.7%2096.3%20153.7C100.7%20134.5%20107.8%20121.3%20121.4%20106.9C150.6%2075.9%20196.1%2065.4%20237.3%2080.1C261.2%2088.7%20282.6%20105.7%20297.4%20128.1C305.7%20140.4%20309.9%20149.9%20318.5%20175.8C334.3%20223.5%20346.9%20246.4%20369.5%20269.0C382.6%20282.1%20394.0%20290.6%20411.2%20300.2C428.3%20309.8%20441.1%20314.7%20484.5%20328.5C525.8%20341.6%20551.4%20361.5%20566.2%20392.0C585.4%20431.8%20577.9%20477.9%20547.1%20508.6C522.5%20533.0%20487.6%20544.5%20454.4%20538.9ZM515.3%20243.4C499.8%20241.6%20481.7%20233.4%20469.2%20222.6C455.3%20210.5%20445.5%20194.6%20440.9%20176.5C438.6%20167.5%20439.1%20145.7%20441.8%20136.2C450.7%20104.9%20473.3%2082.7%20504.8%2074.3C515.7%2071.5%20536.3%2071.5%20547.2%2074.3C579.3%2082.9%20603.7%20108.1%20610.6%20139.7C612.6%20148.7%20612.8%20167.1%20611.1%20174.5C608.4%20186.2%20602.7%20199.3%20596.7%20208.0C592.8%20213.6%20581.5%20224.7%20575.6%20228.7C558.7%20240.3%20535.7%20245.9%20515.3%20243.4Z%22%2F%3E%3C%2Fsvg%3E%3Ctext%20x%3D%22114%22%20y%3D%22126%22%20font-family%3D%22Poppins%2CArial%2Csans-serif%22%20font-size%3D%2219%22%20font-weight%3D%22600%22%20letter-spacing%3D%222%22%3EHECHO%20CON%20MOZARI%3C%2Ftext%3E%3Ctext%20x%3D%22114%22%20y%3D%22146%22%20font-family%3D%22Poppins%2CArial%2Csans-serif%22%20font-size%3D%2211%22%20font-weight%3D%22500%22%20letter-spacing%3D%221.5%22%3Emozari.app%20%C2%B7%20plan%20gratis%3C%2Ftext%3E%3C%2Fg%3E%3C%2Fsvg%3E") 0 0 / 380px 240px repeat; mix-blend-mode: normal; }
   .cuenta-btn { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--mz-linea); background: var(--mz-superficie) center / cover no-repeat; color: var(--mz-texto); font: 600 14px var(--mz-texto-ui); cursor: pointer; padding: 0; }
   .cuenta-menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; min-width: 220px; display: grid; gap: 4px; padding: 14px; border-radius: 14px; background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5); }
   .cuenta-menu b { font-weight: 600; font-size: 14px; }
@@ -5421,6 +5423,11 @@ void main(){
   let previaGen = 0;
   async function abrirPrevia() {
     if (!est.escenas.length) { avisar("Primero sube una esfera"); return; }
+    // En el plan Gratis la Vista previa también lleva la marca de agua: así se verá publicado
+    if (MODO === "nube" && PLAN && PLAN.marca && !$("previa").querySelector(".agua-mozari")) {
+      const agua = document.createElement("div"); agua.className = "agua-mozari"; agua.setAttribute("aria-hidden", "true");
+      $("previa").appendChild(agua);
+    }
     if (motorEd && motorEd.dibujo) terminarDibujo(false);
     detenerPilotoEd();
     $("previa").hidden = false;
@@ -5469,12 +5476,14 @@ void main(){
     $("splash").remove();
     document.title = P().nombre || "Tour 360";
     abrirPrevia();
-    // Plan Gratis: el tour lleva "Hecho con Mozari" (lo pone el servidor al publicar)
+    // Plan Gratis: el tour lleva "Hecho con Mozari" en todo el tour (lo decide el servidor al publicar)
     if (P().marcaMozari) {
+      const agua = document.createElement("div"); agua.className = "agua-mozari"; agua.setAttribute("aria-hidden", "true");
+      $("previa").appendChild(agua);
       const a = document.createElement("a");
       a.className = "marca-mozari"; a.href = ESCAPARATE.replace("#planes", ""); a.target = "_blank"; a.rel = "noopener";
-      a.innerHTML = '<svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg>Hecho con Mozari';
-      document.body.appendChild(a);
+      a.innerHTML = '<svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg>Hecho con Mozari · Crea el tuyo';
+      $("previa").appendChild(a);
     }
     return;
   }
