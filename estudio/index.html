@@ -408,6 +408,12 @@
   .cp-pol { pointer-events: all; cursor: pointer; stroke-linejoin: round; stroke-linecap: round; fill: var(--f); fill-opacity: var(--fo); stroke: var(--s); stroke-opacity: var(--so); stroke-width: var(--sw); transition: fill 0.2s, fill-opacity 0.2s, stroke 0.2s, stroke-width 0.2s; }
   .cp-pol.cp-camino { fill: none; pointer-events: visibleStroke; stroke-dasharray: var(--dash, none); }
   .cp-pol.cp-camino:hover { fill: none; }
+  .cp-pol.cp-manzana { fill: none; stroke-dasharray: 7 5; pointer-events: visibleStroke; }
+  .cp-pol.cp-manzana:hover { fill: none; }
+  .cp-borrador.previo { fill: none; stroke: #fff; stroke-dasharray: 2 4; }
+  .mz-n { display: flex; align-items: center; gap: 8px; }
+  .mz-n input { width: 64px; text-align: center; }
+  .mz-n button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--mz-linea); background: none; color: var(--mz-texto); font-size: 18px; cursor: pointer; }
   .cp-pol.cp-camino.anim { animation: camino-anda 1.2s linear infinite; }
   @keyframes camino-anda { to { stroke-dashoffset: var(--paso, -20); } }
   .cp-camino-toque { fill: none; stroke: transparent; stroke-width: 18; pointer-events: visibleStroke; cursor: pointer; }
@@ -1048,6 +1054,7 @@
           <h3>Capas</h3>
           <div class="agregar">
             <button id="add-lote" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 7.5 12 4l8.5 3.5v9L12 20l-8.5-3.5z"/><path d="M12 4v16M3.5 7.5 12 11l8.5-3.5"/></svg>Lote</button>
+            <button id="add-manzana" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6h18v12H3z"/><path d="M7.5 6v12M12 6v12M16.5 6v12" stroke-opacity=".6"/></svg>Manzana</button>
             <button id="add-pol" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 7l9-3 7 8-5 8-10-3z"/></svg>Polígono</button>
             <button id="add-camino" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2.2 3"><path d="M4 19c4 0 3-6 8-7s4-6 8-7"/></svg>Ruta</button>
             <button id="add-txt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13"/></svg>Texto</button>
@@ -2107,6 +2114,7 @@
       capaEtq.appendChild(svgEtq);
       lista().forEach((c) => {
         if (!editable && !c.visible) return;
+        if (!editable && c.manzana) return;
         if (opciones.sinHotspots && c.tipo === "hotspot") return;
         const el = document.createElement("div");
         el.className = "cp cp-" + c.tipo;
@@ -2115,7 +2123,7 @@
           const svg = document.createElementNS(SVGNS, "svg");
           svg.setAttribute("class", "cp-svg");
           const path = document.createElementNS(SVGNS, "path");
-          path.setAttribute("class", "cp-pol" + (c.camino ? " cp-camino" : ""));
+          path.setAttribute("class", "cp-pol" + (c.camino ? " cp-camino" : "") + (c.manzana ? " cp-manzana" : ""));
           let toque = null;
           if (c.camino) {
             // Flecha al final (sigue el color de la ruta) y un área invisible más ancha para tocarla fácil
@@ -2371,7 +2379,7 @@
           if (n.toque) n.toque.setAttribute("d", d);
           if (n.etq) etiquetasLote(n, cam, enCam, rec);
           n.svg.querySelectorAll(".cp-sel, .cp-vert").forEach((x) => x.remove());
-          if (editable && motor.modo === "capas" && id === motor.elegida && d) {
+          if (editable && motor.modo === "capas" && id === motor.elegida && d && !c.deManzana) {
             const sel = document.createElementNS(SVGNS, "path");
             sel.setAttribute("class", "cp-sel"); sel.setAttribute("d", d);
             n.svg.appendChild(sel);
@@ -2381,7 +2389,11 @@
               const v = document.createElementNS(SVGNS, "circle");
               v.setAttribute("class", "cp-vert"); v.setAttribute("cx", s.x); v.setAttribute("cy", s.y); v.setAttribute("r", 6);
               v.addEventListener("pointerdown", (ev) => tomar(ev, c, "vertice", i));
-              v.addEventListener("dblclick", (ev) => { ev.stopPropagation(); if (c.puntos.length > (c.camino ? 2 : 3)) { c.puntos.splice(i, 1); opciones.alCambiar(); } });
+              v.addEventListener("dblclick", (ev) => {
+                ev.stopPropagation();
+                if (c.manzana) { const F = c.manzana.nFrente; if (i < F ? F <= 2 : c.puntos.length - F <= 2) return; if (i < F) c.manzana.nFrente--; c.puntos.splice(i, 1); opciones.alCambiar(); return; }
+                if (c.puntos.length > (c.camino ? 2 : 3)) { c.puntos.splice(i, 1); opciones.alCambiar(); }
+              });
               n.svg.appendChild(v);
             });
           }
@@ -2480,11 +2492,15 @@
       // Polígono en borrador
       const dib = motor.dibujo;
       if (!dib) return;
+      if (dib.frente) {
+        const rf = recortar(dib.frente.map(([y, p]) => aCamara(cam, y, p)), false);
+        if (rf.length > 1) { const pf = document.createElementNS(SVGNS, "path"); pf.setAttribute("class", "cp-borrador previo"); pf.setAttribute("d", trazo(cam, rf, false)); extra.appendChild(pf); }
+      }
       const pts = dib.puntos.slice();
       if (dib.cursor) pts.push([dib.cursor.yaw, dib.cursor.pitch]);
       if (!pts.length) return;
       const enCam = pts.map(([y, p]) => aCamara(cam, y, p));
-      const cierra = dib.tipo !== "camino" && pts.length > 2;
+      const cierra = dib.tipo !== "camino" && dib.tipo !== "manzana" && pts.length > 2;
       const rec = recortar(enCam, cierra);
       if (rec.length > 1) {
         const path = document.createElementNS(SVGNS, "path");
@@ -2495,7 +2511,7 @@
         if (enCam[i].z <= CERCA) return;
         const s = aPantalla(cam, enCam[i]);
         const k = document.createElementNS(SVGNS, "circle");
-        const primero = i === 0 && dib.tipo !== "camino";
+        const primero = i === 0 && dib.tipo !== "camino" && dib.tipo !== "manzana";
         k.setAttribute("class", "cp-borrador-pt" + (primero ? " primero" : ""));
         k.setAttribute("cx", s.x); k.setAttribute("cy", s.y); k.setAttribute("r", primero ? 7 : 4);
         extra.appendChild(k);
@@ -2509,6 +2525,7 @@
       if (!editable || motor.modo !== "capas" || motor.dibujo) return;
       ev.stopPropagation(); ev.preventDefault();
       if (motor.elegida !== c.id) opciones.alSeleccionar(c.id);
+      if (c.deManzana) return; // sus lados los manda la manzana
       const inicio = coordsEn(ev);
       if (!inicio) return;
       arrastre = { c, modo, indice, inicio, x: ev.clientX, y: ev.clientY, movido: false, base: c.tipo === "poligono" ? c.puntos.map((p) => p.slice()) : [[c.yaw, c.pitch]] };
@@ -2646,6 +2663,7 @@
         if (c.tipo === "poligono") c.puntos = base.map(([y, p]) => [y + dy, limitarPitch(p + dp)]);
         else { c.yaw = base[0][0] + dy; c.pitch = limitarPitch(base[0][1] + dp); }
       }
+      if (opciones.alArrastrar) opciones.alArrastrar(c);
       programar();
     }
     function alSoltar() {
@@ -2675,7 +2693,7 @@
       if (dib) {
         const k = coordsEn(ev);
         if (!k) return;
-        if (dib.puntos.length >= 3 && dib.tipo !== "camino") {
+        if (dib.puntos.length >= 3 && dib.tipo !== "camino" && dib.tipo !== "manzana") {
           const cam = camara(), p0 = aCamara(cam, dib.puntos[0][0], dib.puntos[0][1]), r = stage.getBoundingClientRect();
           if (p0.z > CERCA) { const s = aPantalla(cam, p0); if (Math.hypot(s.x - (ev.clientX - r.left), s.y - (ev.clientY - r.top)) < 12) { opciones.alCerrarDibujo(); return; } }
         }
@@ -3259,7 +3277,8 @@ void main(){
         editable: true,
         alSeleccionar: (cid) => seleccionar(cid),
         alCambiar: () => cambio(),
-        alSoltar: (c) => { if (c.vinculo) propagar(c, motorEd.actual.id); },
+        alSoltar: (c) => { if (c.manzana) { repartirManzana(c); cambio(); return; } if (c.vinculo) propagar(c, motorEd.actual.id); },
+        alArrastrar: (c) => { if (c.manzana) repartirManzana(c); },
         alEntrar: (c, origen) => { abrirEditor(c.destino, nav.sub, vistaLlegada(c, origen)); avisar("Llegaste a " + nombreDe(c.destino) + (c.llegada === "frente" ? " viendo de frente" : "")); },
         alCerrarDibujo: () => terminarDibujo(true),
         alInteractuar: () => { if (pilotoEd) detenerPilotoEd(); },
@@ -3541,7 +3560,11 @@ void main(){
     motorEd.dibujo = { puntos: [], cursor: null, tipo: tipo || "poligono" };
     seleccionar(null);
     document.body.classList.add("dibujando");
-    $(tipo === "lote" ? "add-lote" : tipo === "camino" ? "add-camino" : "add-pol").setAttribute("aria-pressed", "true");
+    $(tipo === "lote" ? "add-lote" : tipo === "camino" ? "add-camino" : tipo === "manzana" ? "add-manzana" : "add-pol").setAttribute("aria-pressed", "true");
+    if (tipo === "manzana") {
+      banda('<span><b>Manzana · paso 1 de 2.</b> Dibuja el <b>frente</b> (el lado de la calle): clic en cada esquina, Enter para seguir.</span><button class="mini" data-a="deshacer">Quitar punto</button><button class="mini" data-a="cancelar">Cancelar</button><button class="mini primario" data-a="cerrar">Siguiente</button>');
+      return;
+    }
     if (tipo === "camino") {
       banda('<span><b>Dibujando ruta.</b> Clic en cada punto del camino. Enter o Terminar para acabar.</span><button class="mini" data-a="deshacer">Quitar punto</button><button class="mini" data-a="cancelar">Cancelar</button><button class="mini primario" data-a="cerrar">Terminar</button>');
       return;
@@ -3549,6 +3572,113 @@ void main(){
     const que = tipo === "lote" ? "lote " + siguienteLote().numero + (siguienteLote().manzana ? " de la manzana " + esc(siguienteLote().manzana) : "") : "polígono";
     banda('<span><b>Dibujando ' + que + '.</b> Clic en cada esquina. Clic en la primera o Enter para cerrar.</span><button class="mini" data-a="deshacer">Quitar punto</button><button class="mini" data-a="cancelar">Cancelar</button><button class="mini primario" data-a="cerrar">Cerrar</button>');
   }
+  // ---------- Manzanas: un frente y un fondo, repartidos en lotes del mismo ancho ----------
+  // La manzana guarda su contorno (frente + fondo al revés) y dónde cae cada corte en cada lado
+  // (fracción del largo medido en el suelo). Sus lotes son lotes normales que se recalculan solos.
+  const lotesDeManzana = (m) => cs().filter((x) => x.deManzana === m.id).sort((a, b) => a.iManzana - b.iManzana);
+  function cadenaSuelo(pts) {
+    let suelo = pts.map(([y, p]) => aPlano(y, p));
+    const plano = suelo.every(Boolean);
+    if (!plano) { // algún punto sobre el horizonte: se reparte sobre la imagen
+      let y0 = pts[0][0];
+      suelo = pts.map(([y, p]) => { let d = y - y0; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; y0 = y0 + d; return [y0, p]; });
+    }
+    const acum = [0];
+    for (let i = 1; i < suelo.length; i++) acum.push(acum[i - 1] + Math.hypot(suelo[i][0] - suelo[i - 1][0], suelo[i][1] - suelo[i - 1][1]));
+    return { pts, suelo, plano, acum, total: acum[acum.length - 1] || 1 };
+  }
+  function enCadena(cad, t) {
+    const L = t * cad.total, a = cad.acum;
+    let i = 1; while (i < a.length - 1 && a[i] < L) i++;
+    const k = (L - a[i - 1]) / ((a[i] - a[i - 1]) || 1), q0 = cad.suelo[i - 1], q1 = cad.suelo[i];
+    const q = [q0[0] + (q1[0] - q0[0]) * k, q0[1] + (q1[1] - q0[1]) * k];
+    return cad.plano ? dePlano(q) : q;
+  }
+  function tramo(cad, t0, t1) { // puntos de t0 a t1 (t0 < t1), con las esquinas de en medio
+    const out = [enCadena(cad, t0)];
+    for (let i = 1; i < cad.pts.length - 1; i++) { const t = cad.acum[i] / cad.total; if (t > t0 + 1e-6 && t < t1 - 1e-6) out.push(cad.pts[i].slice()); }
+    out.push(enCadena(cad, t1));
+    return out;
+  }
+  // Cortes del mismo ancho sobre el frente; cada uno baja derecho (perpendicular) al fondo, como se
+  // trazan los lotes reales. Si así quedarían lotes aplastados (fondo mucho más corto), se reparte parejo.
+  function cortesParejos(fr, fo, n) {
+    const tf = Array.from({ length: n - 1 }, (_, k) => (k + 1) / n);
+    const cerca = (q) => {
+      let mejor = 0, dmin = Infinity;
+      for (let i = 1; i < fo.suelo.length; i++) {
+        const A = fo.suelo[i - 1], B = fo.suelo[i], dx = B[0] - A[0], dy = B[1] - A[1], L2 = dx * dx + dy * dy || 1;
+        const k = Math.max(0, Math.min(1, ((q[0] - A[0]) * dx + (q[1] - A[1]) * dy) / L2)), x = A[0] + dx * k, y = A[1] + dy * k;
+        const d = Math.hypot(q[0] - x, q[1] - y);
+        if (d < dmin) { dmin = d; mejor = (fo.acum[i - 1] + k * Math.sqrt(L2)) / fo.total; }
+      }
+      return mejor;
+    };
+    const suelo = (t) => { const p = enCadena(fr, t); return fr.plano ? aPlano(p[0], p[1]) : p; };
+    // Sin lotes aplastados: cada corte deja al menos un hueco mínimo en el fondo (las esquinas se abren en abanico)
+    const g = Math.min(0.4 / n, 1 / (n + 1)), tb = tf.map((t) => cerca(suelo(t)));
+    for (let k = 0; k < tb.length; k++) tb[k] = Math.max(tb[k], (k ? tb[k - 1] : 0) + g);
+    for (let k = tb.length - 1; k >= 0; k--) tb[k] = Math.min(tb[k], (k < tb.length - 1 ? tb[k + 1] : 1) - g);
+    return tf.map((t, k) => ({ f: t, b: tb[k] }));
+  }
+  function repartirManzana(c, parejo) {
+    const m = c.manzana, F = m.nFrente, n = Math.max(1, Math.min(60, +m.n || 1));
+    m.n = n;
+    const fr = cadenaSuelo(c.puntos.slice(0, F)), fo = cadenaSuelo(c.puntos.slice(F).reverse());
+    if (parejo || !Array.isArray(m.cortes) || m.cortes.length !== n - 1) m.cortes = cortesParejos(fr, fo, n);
+    const tf = [0].concat(m.cortes.map((x) => x.f), [1]), tb = [0].concat(m.cortes.map((x) => x.b), [1]);
+    const l = cs(), viejos = lotesDeManzana(c), red = (p) => [+p[0].toFixed(5), +p[1].toFixed(5)];
+    for (let k = 0; k < n; k++) {
+      const puntos = tramo(fr, tf[k], tf[k + 1]).concat(tramo(fo, tb[k], tb[k + 1]).reverse()).map(red);
+      let x = viejos[k];
+      if (!x) {
+        x = { id: nuevoId(), tipo: "poligono", nombre: "Lote", visible: true, deManzana: c.id, iManzana: k, puntos,
+          relleno: { color: LIMA, opacidad: 0.35 }, trazo: { color: LIMA, grosor: 1.5, opacidad: 1 },
+          rollover: { activo: true, relleno: { color: LIMA, opacidad: 0.6 }, trazo: { color: BLANCO, grosor: 3, opacidad: 1 } },
+          lote: Object.assign({}, LOTE_DEF, { manzana: m.mz, numero: String((+m.inicio || 1) + k), frente: 0 }) };
+        const iz = l.indexOf(viejos[viejos.length - 1] || c);
+        l.splice(iz + 1, 0, x); viejos.push(x);
+      }
+      x.puntos = puntos; x.iManzana = k;
+      x.lote.manzana = m.mz; x.lote.numero = String((+m.inicio || 1) + k); x.lote.frente = 0;
+      x.lote.lados = puntos.map((_, i) => (x.lote.lados || [])[i] || "");
+    }
+    viejos.slice(n).forEach((x) => { const i = l.indexOf(x); if (i >= 0) l.splice(i, 1); });
+  }
+  function crearManzana(frente, fondo) {
+    const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+    if (d(frente[0], fondo[fondo.length - 1]) < d(frente[0], fondo[0])) fondo = fondo.slice().reverse(); // mismo sentido que el frente
+    const sig = siguienteLote();
+    const mz = String(sig.manzana || "1");
+    const c = {
+      id: nuevoId(), tipo: "poligono", nombre: "Manzana " + mz, visible: true,
+      puntos: frente.concat(fondo.slice().reverse()).map((p) => [+p[0].toFixed(5), +p[1].toFixed(5)]),
+      manzana: { mz, n: 10, inicio: 1, nFrente: frente.length, cortes: null },
+      relleno: { color: BLANCO, opacidad: 0 }, trazo: { color: BLANCO, grosor: 2, opacidad: 0.9 },
+      rollover: { activo: false, relleno: { color: BLANCO, opacidad: 0 }, trazo: { color: BLANCO, grosor: 2, opacidad: 1 } },
+    };
+    cs().push(c);
+    repartirManzana(c, true);
+    est.ultimoLote = { manzana: mz, numero: String(c.manzana.n) };
+    motorEd.elegida = c.id;
+    avisar("Manzana " + mz + " con 10 lotes. Cambia la cantidad a la derecha.");
+  }
+  $("props").addEventListener("click", (ev) => {
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
+    if (!c || !c.manzana) return;
+    const b = ev.target.closest("[data-mz-n]");
+    if (b) { c.manzana.n = Math.max(1, Math.min(60, c.manzana.n + +b.dataset.mzN)); c.manzana.cortes = null; cambio(); return; }
+    if (ev.target.closest("[data-mz-parejo]")) { repartirManzana(c, true); cambio(); avisar("Lotes repartidos parejo"); }
+  });
+  $("props").addEventListener("change", (ev) => {
+    const k = ev.target.dataset && ev.target.dataset.mz; if (!k) return;
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.manzana) return;
+    const v = ev.target.value.trim();
+    if (k === "n") { const n = parseInt(v, 10); if (n >= 1 && n <= 60 && n !== c.manzana.n) { c.manzana.n = n; c.manzana.cortes = null; } }
+    if (k === "inicio") { const n = parseInt(v, 10); if (n >= 0) c.manzana.inicio = n; }
+    if (k === "mz") { c.manzana.mz = v; c.nombre = "Manzana " + v; }
+    cambio();
+  });
   // Numeración automática: cada lote nuevo sigue al anterior en la misma manzana
   function siguienteLote() {
     const u = est.ultimoLote || { manzana: "1", numero: "0" };
@@ -3557,7 +3687,15 @@ void main(){
   }
   function terminarDibujo(guardarlo) {
     const dib = motorEd && motorEd.dibujo;
-    if (guardarlo && dib && dib.tipo === "camino") {
+    if (guardarlo && dib && dib.tipo === "manzana") {
+      if (dib.puntos.length < 2) { avisar(dib.frente ? "El fondo necesita al menos 2 puntos" : "El frente necesita al menos 2 puntos"); return; }
+      if (!dib.frente) {
+        dib.frente = dib.puntos.map((p) => p.slice()); dib.puntos = []; motorEd.render();
+        banda('<span><b>Manzana · paso 2 de 2.</b> Ahora dibuja el <b>fondo</b> (el lado de atrás de los lotes). Enter para terminar.</span><button class="mini" data-a="deshacer">Quitar punto</button><button class="mini" data-a="cancelar">Cancelar</button><button class="mini primario" data-a="cerrar">Crear manzana</button>');
+        return;
+      }
+      crearManzana(dib.frente, dib.puntos);
+    } else if (guardarlo && dib && dib.tipo === "camino") {
       if (dib.puntos.length < 2) { avisar("Una ruta necesita al menos 2 puntos"); return; }
       const c = {
         id: nuevoId(), tipo: "poligono", nombre: "Ruta " + (cs().filter((x) => x.camino).length + 1), visible: true,
@@ -3588,7 +3726,7 @@ void main(){
     }
     if (motorEd) { motorEd.dibujo = null; motorEd.sinPrecision(); }
     document.body.classList.remove("dibujando");
-    $("add-pol").setAttribute("aria-pressed", "false"); $("add-lote").setAttribute("aria-pressed", "false"); $("add-camino").setAttribute("aria-pressed", "false");
+    $("add-pol").setAttribute("aria-pressed", "false"); $("add-lote").setAttribute("aria-pressed", "false"); $("add-camino").setAttribute("aria-pressed", "false"); $("add-manzana").setAttribute("aria-pressed", "false");
     banda(null);
     if (motorEd) cambio();
   }
@@ -3603,6 +3741,8 @@ void main(){
   $("add-pol").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "poligono") empezarDibujo("poligono"); });
   $("add-lote").addEventListener("click", (ev) => { if (sinLotif()) { ev.stopImmediatePropagation(); avisar("Los lotes son del plan Desarrollos. Mejora tu plan para usarlos."); } }, true);
   $("add-lote").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "lote") empezarDibujo("lote"); });
+  $("add-manzana").addEventListener("click", (ev) => { if (sinLotif()) { ev.stopImmediatePropagation(); avisar("Las manzanas son del plan Desarrollos. Mejora tu plan para usarlas."); } }, true);
+  $("add-manzana").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "manzana") empezarDibujo("manzana"); });
   $("add-camino").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "camino") empezarDibujo("camino"); });
   $("add-txt").addEventListener("click", () => {
     if (motorEd.dibujo) terminarDibujo(false);
@@ -3621,6 +3761,7 @@ void main(){
   const ICONOS = {
     lote: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 7.5 12 4l8.5 3.5v9L12 20l-8.5-3.5z"/><path d="M12 4v16M3.5 7.5 12 11l8.5-3.5"/></svg>',
     poligono: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 7l9-3 7 8-5 8-10-3z"/></svg>',
+    manzana: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6h18v12H3z"/><path d="M7.5 6v12M12 6v12M16.5 6v12" stroke-opacity=".6"/></svg>',
     camino: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2.2 3"><path d="M4 19c4 0 3-6 8-7s4-6 8-7"/></svg>',
     texto: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13"/></svg>',
     hotspot: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="8.5" stroke-opacity=".5"/></svg>',
@@ -3634,7 +3775,7 @@ void main(){
     if (!l.length) { ul.innerHTML = '<li class="vacio" role="presentation">Este panorama no tiene capas. Agrega un polígono, un texto o un hotspot.</li>'; return; }
     ul.innerHTML = l.slice().reverse().map((c) =>
       '<li role="option" draggable="true" data-id="' + c.id + '" aria-selected="' + (c.id === motorEd.elegida) + '"' + (c.visible ? "" : ' class="oculta"') + ">" +
-      (c.lote ? ICONOS.lote : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.nombre)) + (c.vinculo ? ICO_VINC : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>").join("");
+      (c.lote ? ICONOS.lote : c.manzana ? ICONOS.manzana : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.nombre)) + (c.vinculo ? ICO_VINC : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>").join("");
   }
   $("lista").addEventListener("click", (ev) => {
     const ojo = ev.target.closest("[data-ojo]");
@@ -3751,9 +3892,19 @@ void main(){
     const cont = $("props");
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
     if (!c) { $("props-titulo").textContent = "Propiedades"; cont.innerHTML = '<p class="vacio">Selecciona una capa en la lista o sobre la esfera para editarla.</p>'; return; }
-    $("props-titulo").textContent = c.lote ? nombreLote(c) : c.camino ? "Ruta" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
+    $("props-titulo").textContent = c.lote ? nombreLote(c) : c.manzana ? "Manzana " + (c.manzana.mz || "") : c.camino ? "Ruta" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
     let h = c.lote ? "" : '<div class="grupo">' + campo("Nombre", '<input type="text" data-k="nombre" value="' + esc(c.nombre) + '">') + "</div>";
     if (c.lote) h += propsLote(c);
+    else if (c.manzana) {
+      const m = c.manzana, lotes = lotesDeManzana(c);
+      h += '<div class="grupo"><b>Lotes de la manzana</b>' +
+        campo("Manzana", '<input type="text" data-mz="mz" value="' + esc(m.mz) + '" placeholder="3">') +
+        campo("Lotes", '<div class="mz-n"><button data-mz-n="-1" aria-label="Un lote menos">−</button><input type="text" inputmode="numeric" data-mz="n" value="' + m.n + '"><button data-mz-n="1" aria-label="Un lote más">+</button></div>') +
+        campo("Primer número", '<input type="text" inputmode="numeric" data-mz="inicio" value="' + m.inicio + '">') +
+        '<div class="orden"><button class="mini" data-mz-parejo>Repartir parejo</button></div>' +
+        '<p class="nota">Los lotes se reparten del mismo ancho en el suelo, no en la imagen. Arrastra las esquinas de la manzana para ajustarla: los ' + lotes.length + ' lotes la siguen. Doble clic en una esquina la quita.</p></div>';
+      h += '<div class="grupo"><b>Estado</b><p class="nota">Toca cada lote en la esfera para cambiar su estado, precio y superficie.</p></div>';
+    }
     else if (c.camino) {
       const k = c.camino;
       h += '<div class="grupo"><b>Línea</b><div class="hs-estilos" style="grid-template-columns:repeat(3,1fr)">' + [["puntos", "Punteada"], ["guiones", "Guiones"], ["continua", "Continua"]].map(([v, n]) =>
@@ -3912,6 +4063,7 @@ void main(){
   function duplicar() {
     const c = motorEd.elegida && buscar(motorEd.elegida);
     if (!c) return;
+    if (c.manzana || c.deManzana) { avisar("Las manzanas no se duplican; dibuja otra"); return; }
     const copia = JSON.parse(JSON.stringify(c));
     copia.id = nuevoId(); copia.nombre = c.nombre + " copia"; delete copia.vinculo;
     if (copia.lote) { const mz = String(c.lote.manzana).trim().toLowerCase(); let max = 0; Object.values(est.capas).flat().forEach((x) => { if (x.lote && String(x.lote.manzana).trim().toLowerCase() === mz) max = Math.max(max, parseInt(x.lote.numero, 10) || 0); }); copia.lote.numero = String(max + 1); copia.lote.estado = "disponible"; }
@@ -3923,6 +4075,8 @@ void main(){
     const l = cs(), i = l.findIndex((c) => c.id === motorEd.elegida);
     if (i < 0) return;
     const v = l[i].vinculo;
+    if (l[i].deManzana) { avisar("Este lote es parte de una manzana. Quita lotes desde la manzana."); return; }
+    if (l[i].manzana) { const id = l[i].id; est.capas[motorEd.actual.id] = l.filter((x) => x.id !== id && x.deManzana !== id); motorEd.elegida = null; cambio(); avisar("Manzana y sus lotes eliminados"); return; }
     l.splice(i, 1); motorEd.elegida = null;
     let n = 0;
     if (v) Object.keys(est.capas).forEach((id) => { const antes = est.capas[id].length; est.capas[id] = est.capas[id].filter((x) => x.vinculo !== v); n += antes - est.capas[id].length; });
@@ -3931,6 +4085,7 @@ void main(){
   function seleccionar(id) { if (!motorEd) return; motorEd.elegida = id; pintarCapas(); pintarProps(); motorEd.render(); }
   function cambio() {
     const c = motorEd.elegida && buscar(motorEd.elegida);
+    if (c && c.manzana) repartirManzana(c);
     if (c && c.vinculo) propagar(c, motorEd.actual.id);
     guardar(); motorEd.construir(); pintarCapas(); pintarProps(); pintarTira();
   }
