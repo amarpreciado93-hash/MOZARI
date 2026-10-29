@@ -2232,6 +2232,14 @@
     // Orienta un texto sobre el suelo para que se lea derecho y nunca en espejo. Es fijo para cada esfera:
     // lejos, la parte de arriba del texto apunta hacia afuera (como se ve desde aquí); justo abajo del dron,
     // apunta hacia el frente de la vista de inicio, así todos los rótulos del plano se leen igual.
+    // Centro de una manzana en el suelo: todos sus lotes leen hacia el mismo lado
+    function centroManzana(id) {
+      const m = lista().find((x) => x.id === id);
+      if (!m) return null;
+      const G = m.puntos.map(([y, p]) => aSuelo(y, p));
+      if (G.some((g) => !g)) return null;
+      return [G.reduce((s, g) => s + g[0], 0) / G.length, G.reduce((s, g) => s + g[1], 0) / G.length];
+    }
     function refLote(C) {
       const yi = vistaDe(actual.id).yaw, f = [Math.sin(yi), Math.cos(yi)];
       const d = Math.hypot(C[0], C[1]) || 1, rad = [C[0] / d, C[1] / d];
@@ -2264,7 +2272,7 @@
       let A2 = 0, cx = 0, cz = 0;
       G.forEach((p, i) => { const q = G[(i + 1) % G.length], k = p[0] * q[1] - q[0] * p[1]; A2 += k; cx += (p[0] + q[0]) * k; cz += (p[1] + q[1]) * k; });
       const C = Math.abs(A2) > 1e-12 ? [cx / (3 * A2), cz / (3 * A2)] : [G.reduce((s, g) => s + g[0], 0) / G.length, G.reduce((s, g) => s + g[1], 0) / G.length];
-      const S = Math.sqrt(Math.abs(A2) / 2), t = +l.tamRotulo || 0.6, ref = refLote(C); // misma orientación para todos los rótulos del lote
+      const S = Math.sqrt(Math.abs(A2) / 2), t = +l.tamRotulo || 0.6, ref = refLote(c.deManzana ? centroManzana(c.deManzana) || C : C); // misma orientación para todos los rótulos del lote (y de toda su manzana)
       if (R.nom && R.med.nom) {
         const f = +l.frente || 0, A = G[f % G.length], B = G[(f + 1) % G.length], L = Math.hypot(B[0] - A[0], B[1] - A[1]) || 1;
         const ang = ((+l.giroRotulo || 0) * Math.PI) / 180, e0 = [(B[0] - A[0]) / L, (B[1] - A[1]) / L];
@@ -2284,13 +2292,23 @@
         // Del más completo al más corto: el primero que quepa en el lote con letra legible. Las versiones
         // cortas van todas a la misma letra mínima; si ni el número cabe, crece (hasta 3 veces) en vez de borrarse.
         const versiones = [[R.nom, R.med.nom]].concat(R.cortos.map((e, i) => [e, R.med.cortos[i]]));
-        let elegido = -1, letra = 0;
+        // La versión se elige con un tamaño que no depende de hacia dónde miras (solo de qué tan lejos está
+        // el lote y del zoom): así el rótulo no cambia de "Lote 5 · Mz 1" a "5 · 1" al girar la vista.
+        // Alto aparente: se encoge en la dirección que se aleja de la cámara (escorzo) y no en la de lado
+        const dist = Math.hypot(C[0], C[1], 1), dC = Math.hypot(C[0], C[1]) || 1, vr = (v[0] * C[0] + v[1] * C[1]) / dC;
+        const fijo = (cam.f / dist) * Math.sqrt(vr * vr / (dist * dist) + (1 - vr * vr));
+        const estimada = ([w, h]) => {
+          const rr = h / w; let Wg = t * extU, Hg = Wg * rr;
+          if (Hg > 0.55 * t / 0.6 * extV) Hg = 0.55 * t / 0.6 * extV;
+          return (Hg * fijo * 40) / h;
+        };
+        let elegido = versiones.length - 1, letraE = 0;
         for (let i = 0; i < versiones.length; i++) {
-          letra = poner(versiones[i][0], versiones[i][1], 1);
-          if (letra <= 0) break; // fuera de la vista (colocarPlano ya lo ocultó)
-          if (letra >= (i ? LETRA_CORTA : LETRA_MIN) || i === versiones.length - 1) { elegido = i; break; }
+          letraE = estimada(versiones[i][1]);
+          if (letraE >= (i ? LETRA_CORTA : LETRA_MIN)) { elegido = i; break; }
         }
-        if (elegido > 0) letra = poner(versiones[elegido][0], versiones[elegido][1], Math.min(3, LETRA_CORTA / letra));
+        letraE = estimada(versiones[elegido][1]);
+        let letra = poner(versiones[elegido][0], versiones[elegido][1], elegido > 0 ? Math.min(3, Math.max(1, LETRA_CORTA / (letraE || 1))) : 1);
         versiones.forEach(([el], i) => { if (i !== elegido) el.style.display = "none"; });
         if (elegido >= 0) versiones[elegido][0].style.visibility = letra >= 6 ? "" : "hidden";
       }
