@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mozari · Tours 360 con lotificación</title>
-<meta name="description" content="Crea recorridos virtuales 360 con lotes, estados de venta y masterplan. Publica con un link.">
-<meta property="og:title" content="Mozari · Tours 360 con lotificación">
-<meta property="og:description" content="Recorridos 360 con cada lote marcado y al día.">
+<title>Mozari · Arma tours 360 profesionales</title>
+<meta name="description" content="Arma tours 360 profesionales desde tu navegador: sube tus esferas, conéctalas, ponle tu marca y comparte un link.">
+<meta property="og:title" content="Mozari · Arma tours 360 profesionales">
+<meta property="og:description" content="Sube tus esferas, conéctalas y comparte un link.">
 <meta property="og:image" content="escaparate-tour.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
@@ -41,6 +41,9 @@
   #esfera:active { cursor: grabbing; }
   .esfera-dato { position: absolute; top: 18px; right: 18px; display: flex; gap: 8px; align-items: center; font-size: 12px; color: #fff; background: rgba(11, 11, 11, 0.45); backdrop-filter: blur(8px); padding: 7px 14px; border-radius: 999px; pointer-events: none; }
   .esfera-dato svg { width: 16px; height: 16px; }
+  .esfera-puntos { position: absolute; right: 22px; bottom: 22px; display: flex; gap: 8px; z-index: 2; }
+  .esfera-puntos button { width: 10px; height: 10px; border-radius: 50%; border: 0; padding: 0; background: rgba(255, 255, 255, 0.55); cursor: pointer; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15); transition: width 0.25s, background 0.25s; }
+  .esfera-puntos button[aria-pressed="true"] { width: 26px; border-radius: 999px; background: #fff; }
   .tarjeta-hero { position: absolute; left: 50%; bottom: 0; transform: translate(-50%, 58%); width: min(1040px, calc(100% - 48px)); background: #fff; border-radius: 22px; padding: 34px 40px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 12px 44px; align-items: center; box-shadow: 0 24px 70px rgba(11, 11, 11, 0.14); }
   .tarjeta-hero .lado { display: grid; gap: 16px; }
   h1 { margin: 0; font-size: clamp(28px, 3.2vw, 42px); line-height: 1.08; font-weight: 600; letter-spacing: -0.025em; }
@@ -79,6 +82,18 @@
   .lista2 h4 { margin: 0 0 4px; font-size: 16px; font-weight: 500; }
   .lista2 p { margin: 0; color: var(--tenue); font-size: 14px; }
 
+  .lotif { background: #0B0B0B; color: #F2F5EC; }
+  .lotif .envoltura { display: grid; gap: 40px; }
+  .lotif-cab { max-width: 720px; display: grid; gap: 14px; }
+  .lotif-cab p { margin: 0; color: #A7AC9F; font-size: 17px; }
+  .sello { justify-self: start; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; border: 1px solid #3A3D36; border-radius: 999px; padding: 5px 14px; color: #DADDD4; }
+  .lotif-esfera { position: relative; height: clamp(320px, 52vh, 560px); border-radius: 22px; overflow: hidden; background: #1A1C18; }
+  #esfera-lotes { position: absolute; inset: 0; cursor: grab; }
+  .lotif-esfera span { position: absolute; top: 16px; right: 16px; font-size: 12px; color: #fff; background: rgba(11, 11, 11, 0.5); padding: 7px 14px; border-radius: 999px; pointer-events: none; }
+  .lotif-tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+  .lotif-tres img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 14px; background: #171916; margin-bottom: 14px; }
+  .lotif-tres h4 { margin: 0 0 4px; font-size: 17px; font-weight: 500; }
+  .lotif-tres p { margin: 0; color: #A7AC9F; font-size: 14px; }
   .final { display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
   .final p { margin: 10px 0 0; color: var(--tenue); }
   footer { border-top: 1px solid var(--gris2); padding: 28px 0 40px; }
@@ -92,7 +107,7 @@
     nav.links { display: none; }
     .tarjeta-hero { grid-template-columns: 1fr; transform: translate(-50%, 72%); }
     .esfera-marco { margin-bottom: 250px; }
-    .pasos, .lista2 { grid-template-columns: 1fr; gap: 28px; }
+    .pasos, .lista2, .lotif-tres { grid-template-columns: 1fr; gap: 28px; }
     .lista2 { gap: 0; }
     .fila, .fila.inversa { grid-template-columns: 1fr; gap: 28px; }
     .fila.inversa .foto { order: 0; }
@@ -111,16 +126,17 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="iso" fill="currentColor" d="M89.0 540.5C52.3 536.4 19.8 511.8 6.5 478.0C3.5 470.4 0.1 453.0 0.0 445.0C-0.0 433.4 3.9 416.1 9.1 404.8C16.2 389.1 28.5 373.6 41.3 363.9C49.0 358.1 67.1 349.3 76.9 346.6C119.8 334.8 165.9 351.4 189.1 387.0C200.5 404.5 204.4 418.2 204.4 440.5C204.4 452.5 204.0 456.5 202.1 463.5C199.5 473.0 191.9 489.9 186.9 497.2C178.2 509.8 162.1 523.5 147.1 531.0C131.2 538.9 108.4 542.7 89.0 540.5ZM454.4 538.9C437.0 536.0 419.2 528.3 404.2 517.3C386.4 504.2 371.5 484.7 362.5 462.7C358.1 451.9 356.9 448.0 348.4 417.0C337.4 377.0 323.2 351.4 299.2 328.4C276.3 306.3 245.6 291.3 206.0 282.5C174.5 275.6 166.3 273.2 154.5 267.3C131.4 255.6 114.6 239.4 104.4 218.9C97.5 204.9 94.9 194.6 94.3 178.5C93.8 166.5 94.1 163.7 96.3 153.7C100.7 134.5 107.8 121.3 121.4 106.9C150.6 75.9 196.1 65.4 237.3 80.1C261.2 88.7 282.6 105.7 297.4 128.1C305.7 140.4 309.9 149.9 318.5 175.8C334.3 223.5 346.9 246.4 369.5 269.0C382.6 282.1 394.0 290.6 411.2 300.2C428.3 309.8 441.1 314.7 484.5 328.5C525.8 341.6 551.4 361.5 566.2 392.0C585.4 431.8 577.9 477.9 547.1 508.6C522.5 533.0 487.6 544.5 454.4 538.9ZM515.3 243.4C499.8 241.6 481.7 233.4 469.2 222.6C455.3 210.5 445.5 194.6 440.9 176.5C438.6 167.5 439.1 145.7 441.8 136.2C450.7 104.9 473.3 82.7 504.8 74.3C515.7 71.5 536.3 71.5 547.2 74.3C579.3 82.9 603.7 108.1 610.6 139.7C612.6 148.7 612.8 167.1 611.1 174.5C608.4 186.2 602.7 199.3 596.7 208.0C592.8 213.6 581.5 224.7 575.6 228.7C558.7 240.3 535.7 245.9 515.3 243.4Z"/></defs></svg>
 <header><div class="envoltura">
   <a class="marca" href="./"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg><b>MOZARI</b></a>
-  <nav class="links" aria-label="Secciones"><a href="#como">Cómo funciona</a><a href="#lotes">Lotes</a><a href="#masterplan">Masterplan</a><a href="#mas">Funciones</a></nav>
+  <nav class="links" aria-label="Secciones"><a href="#como">Cómo funciona</a><a href="#mas">Funciones</a><a href="#lotificacion">Lotificación</a></nav>
   <a class="btn btn-gris" href="entrar">Entrar</a>
 </div></header>
 
 <div class="esfera-marco">
-  <div id="esfera" role="img" aria-label="Tour 360 de Ballestrinque Parque Industrial con sus lotes numerados. Arrastra para mirar alrededor."></div>
-  <div class="esfera-dato"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 12h8M5 9l-3 3 3 3M19 9l3 3-3 3"/></svg>Ballestrinque Parque Industrial · Arrastra para mirar</div>
+  <div id="esfera" role="img" aria-label="Ejemplos de tours 360 hechos con Mozari: un interior, una vista aérea y un desarrollo con lotes. Arrastra para mirar alrededor."></div>
+  <div class="esfera-puntos" id="esfera-puntos" role="group" aria-label="Elegir ejemplo"></div>
+  <div class="esfera-dato"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 12h8M5 9l-3 3 3 3M19 9l3 3-3 3"/></svg><span id="esfera-nombre">Interior</span> · Arrastra para mirar</div>
   <div class="tarjeta-hero">
-    <h1>Tus recorridos 360 con cada lote marcado y al día.</h1>
-    <div class="lado"><p>Sube las esferas de tu dron, marca los lotes una vez y Mozari los lleva a todas las vistas. Cambias un estado y se actualiza en todo el tour.</p>
+    <h1>Arma tours 360 profesionales desde tu navegador.</h1>
+    <div class="lado"><p>Sube tus esferas, conéctalas, ponle tu marca y comparte un link. Para casas, hoteles, negocios y desarrollos.</p>
     <div id="error" class="error" hidden></div>
     <div class="cta"><a class="btn btn-negro" href="entrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="currentColor" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" opacity=".75"/><path fill="currentColor" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14z" opacity=".55"/><path fill="currentColor" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z" opacity=".9"/></svg>Entrar con Google</a><small>Funciona en el navegador.<br>No instalas nada.</small></div></div>
   </div>
@@ -128,53 +144,59 @@
 
 <main class="envoltura">
   <section id="como">
-    <div class="intro"><h2>De las fotos del dron a un link para tu cliente.</h2></div>
+    <div class="intro"><h2>De tus fotos 360 a un link para tu cliente.</h2></div>
     <div class="pasos">
-      <div class="paso"><b>01</b><h3>Sube tus esferas</h3><p>Arrastra tus fotos 360. Mozari las prepara para que carguen rápido en el celular, aunque pesen 150 MP.</p></div>
-      <div class="paso"><b>02</b><h3>Marca lotes y recorridos</h3><p>Dibuja cada lote con número, manzana, medidas y precio. Conecta las esferas y arma el piloto automático.</p></div>
+      <div class="paso"><b>01</b><h3>Sube tus esferas</h3><p>De cámara 360, dron o render. Mozari las prepara para que carguen rápido en el celular, aunque pesen 150 MP.</p></div>
+      <div class="paso"><b>02</b><h3>Conecta y personaliza</h3><p>Une las esferas arrastrando una sobre otra. Agrega textos, fotos, botones y tu logo.</p></div>
       <div class="paso"><b>03</b><h3>Publica y comparte</h3><p>Un clic y tienes el link. Si cambias algo, publicas de nuevo y el link sigue siendo el mismo.</p></div>
     </div>
   </section>
 
-  <div class="fila" id="lotes">
-    <div class="foto"><img src="escaparate-tour.webp" width="1600" height="900" alt="Tour 360 de un terreno con lotes marcados por estado" loading="lazy"></div>
+  <div class="fila">
+    <div class="foto"><img src="escaparate-editor.webp" width="1600" height="900" alt="Editor de Mozari con la lista de panoramas y sus capas" loading="lazy"></div>
     <div>
-      <h3>Cada lote con su estado, en todas las vistas.</h3>
-      <p>Número, manzana, superficie, medidas por lado y precio. Cambias el estado una vez y se actualiza en todas las esferas y en la ficha del lote.</p>
-      <div class="estados"><span style="--c:#22B573">Disponible</span><span style="--c:#F2A900">Apartado</span><span style="--c:#E5484D">Vendido</span></div>
-      <ul class="puntos"><li>Los rótulos se pintan sobre el suelo, con la perspectiva real</li><li>Al tocar un lote se abre su ficha con botón de contacto</li><li>Tú eliges los colores de cada estado</li></ul>
+      <h3>Un editor que se entiende a la primera.</h3>
+      <p>Tus panoramas a la izquierda, la esfera al centro y lo que estás editando a la derecha. Todo se guarda solo, en la nube.</p>
+      <ul class="puntos"><li>Arrastra una esfera sobre otra y quedan conectadas de ida y vuelta</li><li>Textos y hotspots pegados a la esfera, con su propia acción</li><li>Deshacer con Cmd + Z, como en cualquier programa</li></ul>
     </div>
   </div>
 
-  <div class="fila inversa" id="terreno">
-    <div class="foto"><img src="escaparate-terreno.webp" width="1142" height="783" alt="Dos esferas del mismo terreno con puntos de referencia marcados" loading="lazy"></div>
+  <div class="fila inversa">
+    <div class="foto"><img src="escaparate-marca.webp" width="1440" height="880" alt="Tour publicado con el diseño, el nombre y el botón de contacto del cliente" loading="lazy"></div>
     <div>
-      <h3>Lotificas una esfera y las demás se llenan solas.</h3>
-      <p>Marca unos puntos del suelo en dos vistas del dron. Con eso, Mozari lleva cada lote a su lugar en las otras esferas.</p>
-      <ul class="puntos"><li>Lupa para marcar con precisión</li><li>Te indica dónde debería ir cada punto nuevo</li><li>Si un punto no cuadra, lo detecta y lo descarta</li></ul>
-    </div>
-  </div>
-
-  <div class="fila" id="masterplan">
-    <div class="foto oscura"><img src="escaparate-masterplan.webp" width="663" height="577" alt="Masterplan con lotes coloreados por estado" loading="lazy"></div>
-    <div>
-      <h3>El avance de tu venta, visto desde arriba.</h3>
-      <p>Cada lote que dibujas aparece en el masterplan. Cambias su estado con un toque y descargas la imagen para tu equipo o tu cliente.</p>
-      <ul class="puntos"><li>Disponibles, apartados y vendidos</li><li>Porcentaje y metros vendidos</li><li>Se arma solo, sin dibujar nada aparte</li></ul>
+      <h3>Con tu marca, en cualquier pantalla.</h3>
+      <p>Elige el diseño, tus colores y tu logo. El mismo tour se acomoda solo a la computadora y al celular.</p>
+      <ul class="puntos"><li>Diseños 16:9 y 9:16</li><li>Botón de contacto para tus clientes</li><li>Música de fondo y modo presentación</li></ul>
     </div>
   </div>
 </main>
 
 <section class="mas" id="mas">
   <div class="envoltura">
-    <div class="intro"><h2>Y todo lo demás que pide un tour profesional.</h2></div>
+    <div class="intro"><h2>Todo lo que pide un tour profesional.</h2></div>
     <div class="lista2">
       <div><h4>Hotspots y acciones</h4><p>Conecta esferas arrastrando. Abre fichas, fotos o páginas web desde cualquier capa.</p></div>
       <div><h4>Piloto automático</h4><p>El tour recorre solo los puntos que elijas, ideal para video.</p></div>
-      <div><h4>Modo presentación</h4><p>Avanza de esfera en esfera cuando nadie toca la pantalla.</p></div>
+      <div><h4>Modo presentación</h4><p>Avanza de esfera en esfera cuando nadie toca la pantalla, ideal para recepciones y ferias.</p></div>
       <div><h4>Computadora y celular</h4><p>Diseño 16:9 y 9:16 con tu logo, colores y botón de contacto.</p></div>
       <div><h4>Música</h4><p>Música de fondo que viaja con el tour publicado.</p></div>
       <div><h4>Un solo link</h4><p>Lo mandas por WhatsApp, lo pones en tu web o en tus anuncios.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="lotif" id="lotificacion">
+  <div class="envoltura">
+    <div class="lotif-cab">
+      <span class="sello">Herramienta exclusiva</span>
+      <h2>Lotificación para desarrollos.</h2>
+      <p>Para quien vende terrenos: cada lote con su estado, en todas las vistas del dron y en un masterplan que se arma solo.</p>
+    </div>
+    <div class="lotif-esfera"><div id="esfera-lotes" role="img" aria-label="Ballestrinque Parque Industrial con sus lotes numerados. Arrastra para mirar alrededor."></div><span>Ballestrinque Parque Industrial · Arrastra para mirar</span></div>
+    <div class="lotif-tres">
+      <div><img src="escaparate-tour.webp" width="1600" height="900" alt="Lotes marcados por estado en un tour" loading="lazy"><h4>Lotes con su estado</h4><p>Disponible, apartado o vendido, con medidas, precio y ficha de contacto.</p></div>
+      <div><img src="escaparate-terreno.webp" width="1142" height="783" alt="Puntos de referencia en dos esferas del mismo terreno" loading="lazy"><h4>Terreno</h4><p>Lotificas una esfera y las demás vistas del dron se llenan solas.</p></div>
+      <div><img src="escaparate-masterplan.webp" width="663" height="577" alt="Masterplan con lotes por estado" loading="lazy"><h4>Masterplan</h4><p>El avance de tu venta visto desde arriba, listo para descargar.</p></div>
     </div>
   </div>
 </section>
@@ -195,28 +217,49 @@
   const e = new URLSearchParams(location.search).get("error");
   if (e) { const el = document.getElementById("error"); el.textContent = e; el.hidden = false; }
 
-  // Esfera en vivo: gira lento sobre los lotes y se puede mover con el dedo o el mouse
+  // Tres ejemplos en loop: paneo lento, fundido al cambiar. Si alguien mueve la esfera, el loop espera.
+  const crearVisor = (el) => { const v = new Marzipano.Viewer(el, { controls: { mouseViewMode: "drag" } }); v.controls().disableMethod("scrollZoom"); return v; };
+  async function escena(viewer, base, o) {
+    const d = await (await fetch(base + "escena.json")).json();
+    const el = viewer.domElement(), ang = () => el.clientWidth / el.clientHeight < 1;
+    const fov = ang() ? o.fovCel : o.fov, pitch = ang() ? o.pitchCel : o.pitch;
+    const view = new Marzipano.RectilinearView({ yaw: o.yaw, pitch, fov }, Marzipano.RectilinearView.limit.traditional(d.cara, (120 * Math.PI) / 180));
+    const scene = viewer.createScene({ source: Marzipano.ImageUrlSource.fromString(base + "{z}/{f}/{y}/{x}.jpg", { cubeMapPreviewUrl: base + "preview.jpg" }), geometry: new Marzipano.CubeGeometry(d.niveles), view, pinFirstLevel: true });
+    return { scene, view, paneo: Marzipano.autorotate({ yawSpeed: o.vel || 0.05, targetPitch: pitch, targetFov: fov }), o };
+  }
+  const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
   (async () => {
     if (!window.Marzipano) return;
-    const base = "escaparate-esfera/";
-    const d = await (await fetch(base + "escena.json")).json();
-    const el = document.getElementById("esfera");
-    const viewer = new Marzipano.Viewer(el, { controls: { mouseViewMode: "drag" } });
-    viewer.controls().disableMethod("scrollZoom"); // la rueda del mouse baja la página, no hace zoom
-    const angosta = () => el.clientWidth / el.clientHeight < 1;
-    const vertical = () => (angosta() ? 1.5 : 1.0), mirada = () => (angosta() ? 0.42 : 0.52);
-    const view = new Marzipano.RectilinearView({ yaw: -0.15, pitch: mirada(), fov: vertical() },
-      Marzipano.RectilinearView.limit.traditional(d.cara, (120 * Math.PI) / 180));
-    const scene = viewer.createScene({
-      source: Marzipano.ImageUrlSource.fromString(base + "{z}/{f}/{y}/{x}.jpg", { cubeMapPreviewUrl: base + "preview.jpg" }),
-      geometry: new Marzipano.CubeGeometry(d.niveles), view, pinFirstLevel: true,
-    });
-    scene.switchTo({ transitionDuration: 0 });
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    // Paneo lento alrededor de los lotes; si alguien mueve la esfera, se detiene y retoma solo
-    const paneo = Marzipano.autorotate({ yawSpeed: 0.045, targetPitch: mirada(), targetFov: vertical() });
-    viewer.setIdleMovement(4000, paneo);
-    viewer.startMovement(paneo);
+    const viewer = crearVisor(document.getElementById("esfera"));
+    const ej = [
+      { base: "escaparate-interior/", nombre: "Interior", yaw: -2.15, pitch: 0.1, fov: 1.2, pitchCel: 0.04, fovCel: 1.5 },
+      { base: "escaparate-aerea/", nombre: "Vista aérea", yaw: 0.85, pitch: 0.16, fov: 0.95, pitchCel: 0.2, fovCel: 1.5 },
+      { base: "escaparate-esfera/", nombre: "Desarrollo con lotes", yaw: -0.15, pitch: 0.52, fov: 1.0, pitchCel: 0.42, fovCel: 1.5 },
+    ];
+    const esc = await Promise.all(ej.map((o) => escena(viewer, o.base, o)));
+    const puntos = document.getElementById("esfera-puntos"), nombre = document.getElementById("esfera-nombre");
+    puntos.innerHTML = ej.map((o, i) => '<button aria-label="' + o.nombre + '"></button>').join("");
+    let i = -1, reloj = 0, tocada = 0;
+    function ver(n, rapido) {
+      i = (n + esc.length) % esc.length;
+      const e = esc[i];
+      e.view.setParameters({ yaw: e.o.yaw, pitch: e.view.pitch(), fov: e.view.fov() });
+      e.scene.switchTo({ transitionDuration: rapido ? 0 : 1400 });
+      nombre.textContent = e.o.nombre;
+      [...puntos.children].forEach((b, k) => b.setAttribute("aria-pressed", String(k === i)));
+      if (!quieto) { viewer.setIdleMovement(4000, e.paneo); viewer.startMovement(e.paneo); }
+      clearTimeout(reloj);
+      if (!quieto) reloj = setTimeout(siguiente, 15000);
+    }
+    function siguiente() { if (Date.now() - tocada < 8000) { reloj = setTimeout(siguiente, 3000); return; } ver(i + 1); }
+    viewer.domElement().addEventListener("pointerdown", () => (tocada = Date.now()));
+    puntos.addEventListener("click", (ev) => { const b = ev.target.closest("button"); if (b) ver([...puntos.children].indexOf(b)); });
+    ver(0, true);
+    // La esfera de lotes en su propia sección
+    const vl = crearVisor(document.getElementById("esfera-lotes"));
+    const l = await escena(vl, "escaparate-esfera/", { yaw: -0.15, pitch: 0.55, fov: 1.15, pitchCel: 0.5, fovCel: 1.5, vel: 0.04 });
+    l.scene.switchTo({ transitionDuration: 0 });
+    if (!quieto) { vl.setIdleMovement(4000, l.paneo); vl.startMovement(l.paneo); }
   })();
 </script>
 </body>

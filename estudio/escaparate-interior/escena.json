@@ -1,0 +1,34 @@
+{
+  "id": "interior",
+  "nombre": "interior",
+  "origen": {
+    "archivo": "render.jpg",
+    "ancho": 12000,
+    "alto": 6000
+  },
+  "cara": 2048,
+  "niveles": [
+    {
+      "tileSize": 256,
+      "size": 256,
+      "fallbackOnly": true
+    },
+    {
+      "tileSize": 512,
+      "size": 512
+    },
+    {
+      "tileSize": 512,
+      "size": 1024
+    },
+    {
+      "tileSize": 512,
+      "size": 2048
+    }
+  ],
+  "vista": {
+    "yaw": 0,
+    "pitch": 0,
+    "fov": 1.5708
+  }
+}
