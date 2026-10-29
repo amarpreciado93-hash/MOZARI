@@ -86,3 +86,6 @@
 | 2026-10-29 | Terreno con lupa ×3 y mira; desde el 5º punto marca "Aquí debería ir" en la otra esfera y gira hacia allá; avisa si un punto cae lejos de lo esperado o muy cerca del horizonte | Puntos más precisos y errores detectados al momento |
 | 2026-10-29 | Guía "Cómo lograr un trazo preciso" y límites del terreno (supone suelo plano y horizonte derecho) | Saber cuándo confiar en el trazo |
 | 2026-10-29 | En la nube, música, portada, miniaturas, imágenes de acciones y logo se suben como archivos del tour (archivos/…) en vez de ir incrustados en el proyecto | Suenan y se ven en el link publicado; el proyecto pesa KB, no MB |
+| 2026-10-29 | Etapa 2 · Cuentas: se entra con Google (proyecto Mozari en Google Cloud); sesión firmada en cookie de 30 días; cada tour pertenece a una cuenta (cuentas/<uid>/tours/<id>) y nadie toca tours ajenos | Vender Mozari como Kuula: cada alumno o cliente con su espacio |
+| 2026-10-29 | La página principal es el escaparate para quien no ha entrado y el estudio para quien sí; arriba a la derecha va tu foto y Salir | Una sola dirección para todo |
+| 2026-10-29 | Cloudflare Access deja de usarse en el estudio; el dueño (ADMIN) se queda con los tours creados antes de las cuentas | Los usuarios nunca ven Cloudflare |

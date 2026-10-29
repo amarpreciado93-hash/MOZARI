@@ -57,6 +57,12 @@
   .nav button:hover { color: var(--mz-texto); }
   .nav button[aria-current="page"] { background: var(--mz-lima); color: var(--mz-negro); font-weight: 500; }
   .barra-der { display: flex; align-items: center; gap: 12px; padding-bottom: 10px; flex: none; }
+  .cuenta { position: relative; }
+  .cuenta-btn { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--mz-linea); background: var(--mz-superficie) center / cover no-repeat; color: var(--mz-texto); font: 600 14px var(--mz-texto-ui); cursor: pointer; padding: 0; }
+  .cuenta-menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; min-width: 220px; display: grid; gap: 4px; padding: 14px; border-radius: 14px; background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5); }
+  .cuenta-menu b { font-weight: 600; font-size: 14px; }
+  .cuenta-menu small { color: var(--mz-tenue); font-size: 12px; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; }
+  .cuenta-menu a { text-decoration: none; justify-self: start; }
   .estado { font-size: 11px; color: var(--mz-tenue); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
   .estado i { width: 6px; height: 6px; border-radius: 50%; background: var(--mz-lima); }
 
@@ -804,6 +810,8 @@
     <div class="barra-der">
       <span class="estado"><i></i><span id="b-estado">Guardado</span></span>
       <button class="btn-prim" id="abrir-previa"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>Vista previa</button>
+      <div class="cuenta" id="cuenta" hidden><button class="cuenta-btn" id="cuenta-btn" aria-label="Tu cuenta"></button>
+        <div class="cuenta-menu" id="cuenta-menu" hidden><b id="cuenta-nombre"></b><small id="cuenta-email"></small><a class="btn-sec" href="salir">Salir</a></div></div>
     </div>
   </header>
   <div class="subbarra">
@@ -1100,6 +1108,17 @@
   }
   const MODO = PUBLICO ? "tour" : NUBE ? "nube" : "demo";
   const TOUR = MODO === "nube" ? (location.hash.match(/t=([a-z0-9-]+)/) || [])[1] || null : null;
+  // Tu cuenta (arriba a la derecha): foto de Google, nombre y Salir
+  if (MODO === "nube" && NUBE.email) {
+    const c = document.getElementById("cuenta"), btn = document.getElementById("cuenta-btn");
+    c.hidden = false;
+    if (NUBE.foto && /^https:\/\//.test(NUBE.foto)) btn.style.backgroundImage = "url(\"" + NUBE.foto.replace(/"/g, "") + "\")";
+    else btn.textContent = (NUBE.nombre || NUBE.email).trim().charAt(0).toUpperCase();
+    document.getElementById("cuenta-nombre").textContent = NUBE.nombre || "";
+    document.getElementById("cuenta-email").textContent = NUBE.email;
+    btn.addEventListener("click", (ev) => { ev.stopPropagation(); const m = document.getElementById("cuenta-menu"); m.hidden = !m.hidden; });
+    document.addEventListener("click", (ev) => { if (!ev.target.closest("#cuenta")) document.getElementById("cuenta-menu").hidden = true; });
+  }
   const R = (id) => (MODO === "nube" ? "t/" + TOUR + "/escenas/" : "escenas/") + id + "/";
   document.documentElement.dataset.modo = MODO;
 
@@ -1415,7 +1434,7 @@
     const txt = pendienteNube; pendienteNube = null;
     try {
       const r = await fetch("api/tours/" + TOUR, { method: "PUT", headers: { "content-type": "application/json" }, body: txt });
-      if (r.status === 401) { $("b-estado").textContent = "Tu sesión venció: recarga la página"; pendienteNube = pendienteNube || txt; }
+      if (r.status === 401) { $("b-estado").textContent = "Tu sesión terminó: vuelve a entrar"; pendienteNube = pendienteNube || txt; }
       else if (!r.ok) throw new Error(r.status);
       else $("b-estado").textContent = pendienteNube === null ? "Guardado en la nube" : "Guardando…";
     } catch (e) {
@@ -2662,7 +2681,7 @@ void main(){
         const r = await fetch("api/tours/" + TOUR + "/f/" + ruta, { method: "PUT", body: blob });
         if (r.ok) return;
         if (r.status === 401) throw Object.assign(new Error("sesión"), { fatal: true });
-      } catch (e) { if (e.fatal) throw new Error("Tu sesión venció. Recarga la página."); }
+      } catch (e) { if (e.fatal) throw new Error("Tu sesión terminó. Vuelve a entrar."); }
       await new Promise((ok) => setTimeout(ok, 800 * (i + 1)));
     }
     throw new Error("No se pudo subir " + ruta);

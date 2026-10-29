@@ -1,5 +1,7 @@
 {
-  // Mozari · ESTUDIO (privado). Protégelo con Cloudflare Access y copia aquí los dos datos que te da.
+  // Mozari · la plataforma: escaparate, cuentas con Google y estudio.
+  // Secretos (Cloudflare → este Worker → Settings → Variables and Secrets):
+  //   GOOGLE_CLIENT_SECRET
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "mozari-estudio",
   "main": "../estudio.js",
@@ -9,13 +11,13 @@
   "assets": {
     "directory": "../../estudio",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/t/*"]
+    "run_worker_first": ["/", "/index.html", "/api/*", "/t/*", "/entrar", "/auth/*", "/salir"]
   },
   "r2_buckets": [{ "binding": "R2", "bucket_name": "mozari" }],
   "vars": {
-    // Equipo de Access, por ejemplo "r360.cloudflareaccess.com"
-    "ACCESS_EQUIPO": "amarpreciado93.cloudflareaccess.com",
-    // "Application Audience (AUD) Tag" de la aplicación de Access
-    "ACCESS_AUD": "6ad428ceb189607274435ac15d8d6d2f84835c5a58512cedc9a55c1650e69ec0"
+    // Dueño de Mozari: se queda con los tours creados antes de las cuentas
+    "ADMIN": "amarpreciado93@gmail.com",
+    // ID público de la llave de Google (proyecto "Mozari" en Google Cloud). El secreto va aparte.
+    "GOOGLE_CLIENT_ID": "714496356293-4du5n8fsqmr3hp8u7942en9dbucaoduf.apps.googleusercontent.com"
   }
 }
