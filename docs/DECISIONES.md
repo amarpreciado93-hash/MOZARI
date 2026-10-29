@@ -90,3 +90,4 @@
 | 2026-10-29 | La página principal es el escaparate para quien no ha entrado y el estudio para quien sí; arriba a la derecha va tu foto y Salir | Una sola dirección para todo |
 | 2026-10-29 | Cloudflare Access deja de usarse en el estudio; el dueño (ADMIN) se queda con los tours creados antes de las cuentas | Los usuarios nunca ven Cloudflare |
 | 2026-10-29 | Escaparate completo: imagen real de un tour con lotes, cómo funciona en 3 pasos, 6 funciones, sección Masterplan, llamado final; páginas de Aviso de privacidad y Términos | Presentar Mozari como producto y cumplir lo que pide Google para abrir el acceso a todos |
+| 2026-10-29 | Escaparate en claro (blanco, gris claro y negro; el verde lima queda solo para el software) con la esfera de Ballestrinque en vivo: paneo lento sobre los lotes, se mueve con el dedo o el mouse | Se siente más confiable y menos genérico; muestra el producto real desde el primer segundo |
