@@ -85,6 +85,8 @@
   .dp-plan ul { margin: 4px 0 0; padding-left: 16px; color: var(--mz-tenue); font-size: 12px; line-height: 1.6; }
   .dp-pagar { width: 100%; padding: 12px 18px; font-size: 14px; }
   .dp-nota { font-size: 12px !important; text-align: center; }
+  .cuentas-titulo { margin: 0; padding: 14px 16px; font-size: 13px; color: var(--mz-tenue); border-bottom: 1px solid var(--mz-linea-neutra); }
+  .cuentas-titulo b { color: var(--mz-lima); font-weight: 600; }
   .cuentas { margin-bottom: 18px; overflow: auto; border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); background: var(--mz-superficie); }
   .cuentas select { font: 500 13px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 8px; padding: 6px 8px; }
   .marca-mozari { position: absolute; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.92); color: #0B0B0B; font: 500 12px var(--mz-texto-ui); text-decoration: none; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); }
@@ -1718,7 +1720,7 @@
       : PLAN.id !== "desarrollos" && !NUBE.admin ? '<button class="btn-sec" data-comprar="' + (PLAN.id === "pro" ? "desarrollos" : "pro") + '">Mejorar plan</button>' : "";
     caja.innerHTML = '<div><b>Plan ' + esc(PLAN.nombre) + "</b><span>" + partes.join(" · ") + "</span>" + aviso + (PLAN.bytes !== null ? '<span class="uso-barra"><span class="uso-lleno" style="width:' + pct.toFixed(1) + '%"></span></span>' : "") + "</div>" +
       boton +
-      (NUBE.admin ? '<button class="btn-sec" id="ver-cuentas">Cuentas</button>' : "");
+      (NUBE.admin ? '<button class="btn-sec" id="ver-cuentas">Panel de dueño</button>' : "");
     if (!u) fetch("api/uso", { cache: "no-store" }).then((r) => r.json()).then((d) => { usoNube = d; pintarPlan(); }).catch(() => {});
   }
   // Panel del dueño: todas las cuentas y su plan (para dar acceso a tus alumnos)
@@ -1728,7 +1730,7 @@
     const { cuentas } = await r.json();
     let caja = $("cuentas");
     if (!caja) { caja = document.createElement("div"); caja.id = "cuentas"; caja.className = "cuentas"; $("mi-plan").after(caja); }
-    caja.innerHTML = '<table class="lotes-tabla"><thead><tr><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Vence</th><th>Última entrada</th></tr></thead><tbody>' + cuentas.map((c) =>
+    caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p><table class="lotes-tabla"><thead><tr><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Vence</th><th>Última entrada</th></tr></thead><tbody>' + cuentas.map((c) =>
       "<tr><td><b>" + esc(c.nombre || "") + "</b></td><td>" + esc(c.email) + "</td><td>" + (c.admin ? "Dueño" : '<select data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
       "</td><td>" + (c.admin ? "" : c.vence ? fechaLarga(c.vence) : c.plan && c.plan !== "gratis" ? "No caduca" : "") + "</td><td>" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td></tr>").join("") + "</tbody></table>";
   }
