@@ -80,3 +80,8 @@
 | 2026-10-28 | Las capas (lotes, textos, hotspots) se pintan en el mismo cuadro que la esfera, justo después de que Marzipano dibuja | Antes iban un cuadro atrás y se veían despegadas al girar |
 | 2026-10-28 | Rótulo del lote al alejarse: "Lote 3 · Mz B" → "3 · B" → "3", el primero que quepa; las versiones cortas siempre a letra legible | El número del lote nunca se borra y no se enciman |
 | 2026-10-28 | El giro del rótulo se aplica después de la orientación automática: gira parejo en sentido del reloj y el programa ya no lo voltea solo | Antes brincaba 180° a medio giro |
+| 2026-10-29 | En Capas, la tira de panoramas se reordena arrastrando arriba o abajo; es el orden de Panoramas y de la presentación | Ordenar el recorrido sin salir de Capas |
+| 2026-10-29 | Tres estilos nuevos de hotspot con respiración propia: Regresar (flecha que empuja hacia atrás), Puerta (halo que respira) e Información (latido doble) | Distinguir a dónde lleva cada hotspot de un vistazo |
+| 2026-10-29 | Panoramas → Masterplan: plano de los lotes visto desde arriba, armado solo con el suelo del terreno; conteo por estado, % vendido, m² vendidos, cambio de estado al tocar y descarga en PNG | Ver y compartir el avance de la venta sin trabajo extra |
+| 2026-10-29 | Terreno con lupa ×3 y mira; desde el 5º punto marca "Aquí debería ir" en la otra esfera y gira hacia allá; avisa si un punto cae lejos de lo esperado o muy cerca del horizonte | Puntos más precisos y errores detectados al momento |
+| 2026-10-29 | Guía "Cómo lograr un trazo preciso" y límites del terreno (supone suelo plano y horizonte derecho) | Saber cuándo confiar en el trazo |

@@ -221,6 +221,8 @@
   .panos-tira li:hover { background: var(--mz-lima-suave); }
   .panos-tira li[aria-current="true"] { border-color: var(--mz-lima); cursor: default; }
   .panos-tira li.arrastrando { opacity: 0.4; }
+  .panos-tira li.antes { box-shadow: 0 -3px 0 var(--mz-lima); }
+  .panos-tira li.despues { box-shadow: 0 3px 0 var(--mz-lima); }
   .panos-tira img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 7px; display: block; pointer-events: none; }
   .panos-tira span { font-size: 11px; display: flex; align-items: center; gap: 4px; min-width: 0; }
   .panos-tira span em { font-style: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -272,6 +274,18 @@
   .tr-pt.solo .anillo { stroke-dasharray: 3 3; }
   .tr-pt.mal .anillo { stroke: var(--mz-error); }
   .tr-pt.mal .badge rect { fill: var(--mz-error); }
+  .tr-obj { pointer-events: none; }
+  .tr-obj circle { fill: none; stroke: var(--mz-lima); stroke-width: 2; stroke-dasharray: 5 4; animation: girar 6s linear infinite; transform-box: fill-box; transform-origin: center; }
+  .tr-obj text { fill: var(--mz-lima); font-size: 11px; font-weight: 600; text-anchor: middle; paint-order: stroke; stroke: rgba(0, 0, 0, 0.7); stroke-width: 3px; }
+  @keyframes girar { to { transform: rotate(360deg); } }
+  .lupa-marca { fill: none; stroke: #fff; stroke-width: 1.5; }
+  .lupa-marca.activo { stroke: var(--mz-lima); }
+  .lupa-num { fill: #fff; font-size: 10px; font-weight: 600; paint-order: stroke; stroke: #000; stroke-width: 2.5px; }
+  .lupa-obj { fill: none; stroke: var(--mz-lima); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  .tr-guia { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.5; color: var(--mz-tenue); }
+  .tr-guia li { margin: 4px 0; }
+  .tr-guia b { color: var(--mz-texto); font-weight: 500; }
+  details.tr-ayuda summary { cursor: pointer; font-size: 12px; font-weight: 500; color: var(--mz-lima); margin-bottom: 6px; }
   .tr-esf, .tr-puntos { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
   .tr-esf li { display: grid; grid-template-columns: 46px minmax(0, 1fr) 28px; gap: 10px; align-items: center; padding: 6px; border-radius: 12px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); }
   .tr-esf img { width: 46px; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 7px; display: block; }
@@ -370,6 +384,18 @@
   .hs-boton::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: calc(var(--hs-tam) * 0.042) solid var(--hs-color, var(--mz-lima)); opacity: 0; animation: onda 2.4s ease-out infinite; }
   .hs-boton img { width: 100%; height: 100%; object-fit: contain; }
   .hs-boton.con-icono::before, .hs-boton.con-icono .hs-nucleo { display: none; }
+  /* Estilos de hotspot, cada uno con su propia respiración */
+  .hs-regresar .hs-nucleo { animation: respira 3s ease-in-out infinite; }
+  .hs-regresar .hs-nucleo svg { animation: atras 1.6s ease-in-out infinite; }
+  .hs-boton.hs-regresar::before { animation-duration: 3.2s; }
+  .hs-puerta .hs-nucleo { border-radius: 30%; animation: brillo 2.8s ease-in-out infinite; }
+  .hs-boton.hs-puerta::before { display: none; }
+  .hs-info .hs-nucleo { animation: latido 1.9s ease-in-out infinite; }
+  .hs-boton.hs-info::before { animation: onda 1.9s ease-out infinite; }
+  .hs-estilos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .hs-estilo { display: grid; justify-items: center; gap: 6px; padding: 10px 2px 8px; border-radius: 10px; border: 1.5px solid var(--mz-linea); background: none; color: var(--mz-texto); font: 500 10.5px/1 var(--mz-texto-ui); cursor: pointer; }
+  .hs-estilo[aria-pressed="true"] { border-color: var(--mz-lima); background: var(--mz-lima-suave); }
+  .hs-estilo .hs-nucleo { width: 30px; height: 30px; }
   .hs-boton:hover .hs-nucleo { animation-play-state: paused; transform: scale(1.12); }
   .hs-texto { position: absolute; left: 0; top: calc(var(--hs-tam) / 2 + 0.5em); transform: translateX(-50%); padding: 0.42em 1em; border-radius: var(--mz-pastilla); white-space: nowrap; background: var(--mz-vidrio); border: 1px solid var(--mz-linea); color: var(--mz-texto); font-size: 1em; font-weight: 500; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
   .hs:hover .hs-texto, .editable .hs-texto { opacity: 1; }
@@ -434,6 +460,22 @@
   .lr-chip.estado button { display: inline-flex; align-items: center; gap: 8px; border: 0; background: transparent; color: inherit; font: inherit; padding: 4px 8px; cursor: pointer; }
   .lr-chip.estado i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
   .lr-chip input[type="color"] { width: 22px; height: 22px; border: 0; padding: 0; background: none; cursor: pointer; border-radius: 50%; }
+  .mp-avance { margin: -4px 0 16px; }
+  .mp-barra { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--mz-linea-neutra); }
+  .mp-barra i { display: block; height: 100%; background: var(--c); }
+  .mp-avance p { margin: 8px 0 0; font-size: 12px; color: var(--mz-tenue); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+  .mp-avance p b { color: var(--mz-texto); font-weight: 600; }
+  .mp-plano { position: relative; border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); background: var(--mz-superficie); padding: 18px; }
+  .mp-plano svg { display: block; width: 100%; height: auto; max-height: 64vh; }
+  .mp-plano .mp-lote { cursor: pointer; }
+  .mp-plano .mp-lote path { stroke: #fff; stroke-width: 1.5; stroke-opacity: 0.9; transition: fill-opacity 0.15s; }
+  .mp-plano .mp-lote:hover path { fill-opacity: 1; }
+  .mp-plano .mp-lote.elegido path { stroke: var(--mz-lima); stroke-width: 3; }
+  .mp-plano text { fill: #fff; font-family: var(--mz-texto-ui); font-weight: 600; text-anchor: middle; dominant-baseline: central; pointer-events: none; paint-order: stroke; stroke: rgba(0, 0, 0, 0.55); }
+  .mp-plano .mp-dl { position: absolute; top: 10px; right: 10px; }
+  .mp-ficha { margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); background: var(--mz-superficie); padding: 12px 16px; font-size: 13px; }
+  .mp-ficha h4 { margin: 0; font-size: 15px; font-weight: 600; }
+  .mp-ficha span { color: var(--mz-tenue); }
   .lr-vendido { margin-left: auto; color: var(--mz-tenue); font-size: 12px; }
   .lotes-tabla-wrap { overflow: auto; border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); background: var(--mz-superficie); }
   .lotes-tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -498,6 +540,9 @@
   .encuadre i { height: 100%; aspect-ratio: 9 / 16; border-left: 1.5px dashed rgba(255, 255, 255, 0.75); border-right: 1.5px dashed rgba(255, 255, 255, 0.75); box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.38); position: relative; }
   .encuadre i::after { content: "Celular 9:16"; position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); font: 500 10px var(--mz-texto-ui); letter-spacing: 0.08em; text-transform: uppercase; color: #fff; background: rgba(11, 11, 11, 0.7); padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
   @keyframes respira { 0%, 100% { transform: scale(0.92); } 50% { transform: scale(1.06); } }
+  @keyframes atras { 0%, 100% { transform: translateX(8%); } 50% { transform: translateX(-16%); } }
+  @keyframes brillo { 0%, 100% { transform: scale(0.95); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 0 0 color-mix(in srgb, var(--hs-color, #D5FF40) 65%, transparent); } 50% { transform: scale(1.02); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 0 7px color-mix(in srgb, var(--hs-color, #D5FF40) 0%, transparent); } }
+  @keyframes latido { 0%, 60%, 100% { transform: scale(0.94); } 12% { transform: scale(1.09); } 24% { transform: scale(0.97); } 36% { transform: scale(1.06); } }
   @keyframes onda { 0% { transform: scale(0.7); opacity: 0.8; } 100% { transform: scale(1.5); opacity: 0; } }
 
   /* ---------- Vista previa (lo que ve el cliente) ---------- */
@@ -739,7 +784,7 @@
     .splash-centro, .splash-credito { animation: none; }
     .splash-barra i { animation: none; width: 100%; }
     .cp-pol { transition: none; }
-    .hs-nucleo, .hs-boton::before, .piloto-on i { animation: none; }
+    .hs-nucleo, .hs-nucleo svg, .hs-boton::before, .piloto-on i { animation: none; }
   }
 </style>
 </head>
@@ -952,6 +997,19 @@
         <p class="sub">Cambia aquí el estado de cada lote. Se actualiza en todas las esferas y en su ficha.</p>
         <div class="lotes-resumen" id="lotes-resumen"></div>
         <div class="lotes-tabla-wrap" id="lotes-tabla"></div>
+      </div>
+    </section>
+
+    <!-- Panoramas / Masterplan: el plano de los lotes visto desde arriba, se arma solo con cada lote -->
+    <section data-vista="panoramas/masterplan" hidden>
+      <div class="contenido" style="max-width:1100px">
+        <h1>Masterplan</h1>
+        <p class="sub">Se arma solo con cada lote que dibujas. Toca un lote para cambiar su estado.</p>
+        <div class="lotes-resumen" id="mp-resumen"></div>
+        <div class="mp-avance" id="mp-avance"></div>
+        <div class="mp-plano" id="mp-plano"></div>
+        <div class="mp-ficha" id="mp-ficha" hidden></div>
+        <p class="nota" id="mp-nota"></p>
       </div>
     </section>
 
@@ -1290,6 +1348,15 @@
     imagen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m20.5 16-5-5-8 8"/></svg>',
     ninguna: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 11v6M12 7.5v.01"/></svg>',
   };
+  // Estilos de hotspot: ícono propio y su manera de "respirar". Clásico usa el ícono de su acción.
+  const ESTILOS_HS = {
+    clasico: { nombre: "Clásico" },
+    regresar: { nombre: "Regresar", ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>' },
+    puerta: { nombre: "Puerta", ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 21V4.5A1.5 1.5 0 0 1 8 3h8a1.5 1.5 0 0 1 1.5 1.5V21M4 21h16"/><path d="M14.3 12.3v.01" stroke-width="3.2"/></svg>' },
+    info: { nombre: "Información", ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 11v6M12 7v.01"/></svg>' },
+  };
+  const estiloHs = (c) => (ESTILOS_HS[c.estilo] && c.estilo !== "clasico" ? c.estilo : "");
+  const icoHs = (c) => (estiloHs(c) ? ESTILOS_HS[c.estilo].ico : ICO_ACCION[accionDe(c)] || ICO_ACCION.panorama);
   function textoHotspot(c) {
     if (c.texto) return c.texto;
     const a = accionDe(c);
@@ -1409,7 +1476,7 @@
   const SECCIONES = [
     { id: "tours", nombre: "Mis Tours", subs: [["todos", "Todos"]] },
     { id: "proyecto", nombre: "Proyecto", subs: [["general", "General"], ["musica", "Música"], ["presentacion", "Presentación"]] },
-    { id: "panoramas", nombre: "Panoramas", subs: [["lista", "Lista"], ["mapa", "Mapa"], ["capas", "Capas"], ["piloto", "Piloto automático"], ["terreno", "Terreno"], ["lotes", "Lotes"]] },
+    { id: "panoramas", nombre: "Panoramas", subs: [["lista", "Lista"], ["mapa", "Mapa"], ["capas", "Capas"], ["piloto", "Piloto automático"], ["terreno", "Terreno"], ["lotes", "Lotes"], ["masterplan", "Masterplan"]] },
     { id: "media", nombre: "Media", subs: [["fotos", "Fotos"], ["videos", "Videos"], ["planos", "Planos"], ["audios", "Audios"]] },
     { id: "skin", nombre: "Skin", subs: [["h", "16:9"], ["v", "9:16"]] },
     { id: "publicar", nombre: "Publicar", subs: [["web", "Web"], ["compartir", "Compartir"]] },
@@ -1469,6 +1536,7 @@
     if (enEditor) abrirEditor(edPano || P().escenaInicial, sub);
     if (clave === "panoramas/terreno") requestAnimationFrame(abrirTerreno);
     if (clave === "panoramas/lotes") pintarLotes();
+    if (clave === "panoramas/masterplan") pintarMasterplan();
     if (sec === "skin") requestAnimationFrame(() => abrirSkin(sub));
   }
 
@@ -1765,8 +1833,8 @@
         } else if (c.tipo === "hotspot") {
           el.classList.add("hs");
           const texto = textoHotspot(c);
-          el.innerHTML = '<button class="hs-boton' + (c.icono ? " con-icono" : "") + '" aria-label="' + esc(texto) + '">' +
-            (c.icono ? '<img src="' + esc(c.icono) + '" alt="">' : "") + '<span class="hs-nucleo">' + (ICO_ACCION[accionDe(c)] || ICO_ACCION.panorama) + "</span></button>" +
+          el.innerHTML = '<button class="hs-boton' + (c.icono ? " con-icono" : "") + (estiloHs(c) ? " hs-" + estiloHs(c) : "") + '" aria-label="' + esc(texto) + '">' +
+            (c.icono ? '<img src="' + esc(c.icono) + '" alt="">' : "") + '<span class="hs-nucleo">' + icoHs(c) + "</span></button>" +
             '<span class="hs-texto">' + esc(texto) + "</span>";
           const b = el.querySelector(".hs-boton");
           b.addEventListener("pointerdown", (ev) => tomar(ev, c, "mover"));
@@ -2075,6 +2143,17 @@
         g.innerHTML = '<circle class="anillo" r="10"></circle><circle class="centro" r="1.8"></circle><g class="badge" transform="translate(16,-16)"><rect x="-10" y="-9" width="20" height="18" rx="9"></rect><text>' + (m.i + 1) + "</text></g>";
         extra.appendChild(g);
       });
+      // Lugar sugerido para el punto que falta (terreno)
+      if (motor.objetivo) {
+        const pc = aCamara(cam, motor.objetivo.yaw, motor.objetivo.pitch);
+        if (pc.z > 0.05) {
+          const s = aPantalla(cam, pc), g = document.createElementNS(SVGNS, "g");
+          g.setAttribute("class", "tr-obj");
+          g.setAttribute("transform", "translate(" + s.x.toFixed(1) + "," + s.y.toFixed(1) + ")");
+          g.innerHTML = '<circle r="22"></circle><text y="-30">Aquí debería ir</text>';
+          extra.appendChild(g);
+        }
+      }
       // Polígono en borrador
       const dib = motor.dibujo;
       if (!dib) return;
@@ -2157,7 +2236,7 @@
     let lupa = null;
     const mira = document.createElement("div");
     mira.className = "mira-cursor"; mira.hidden = true; mira.innerHTML = "<i></i>";
-    if (editable) stage.appendChild(mira);
+    stage.appendChild(mira);
     function crearLupa() {
       const el = document.createElement("div");
       el.className = "lupa"; el.hidden = true;
@@ -2196,6 +2275,17 @@
         const rec = recortar(n.c.puntos.map(([a, b]) => aCamara(cam, a, b)), true);
         if (rec.length > 2) h += '<path class="lupa-pol" d="' + trazo(cam, rec, true) + '"/>';
       });
+      // Puntos del terreno y el lugar sugerido, también dentro de la lupa
+      (motor.marcas || []).forEach((m) => {
+        const pc = aCamara(cam, m.yaw, m.pitch);
+        if (pc.z <= 0.05) return;
+        const s = aPantalla(cam, pc);
+        h += '<circle class="lupa-marca' + (/activo/.test(m.clase || "") ? " activo" : "") + '" cx="' + s.x.toFixed(1) + '" cy="' + s.y.toFixed(1) + '" r="9"/><text class="lupa-num" x="' + (s.x + 12).toFixed(1) + '" y="' + (s.y - 10).toFixed(1) + '">' + (m.i + 1) + "</text>";
+      });
+      if (motor.objetivo) {
+        const pc = aCamara(cam, motor.objetivo.yaw, motor.objetivo.pitch);
+        if (pc.z > 0.05) { const s = aPantalla(cam, pc); h += '<circle class="lupa-obj" cx="' + s.x.toFixed(1) + '" cy="' + s.y.toFixed(1) + '" r="16"/>'; }
+      }
       const dib = motor.dibujo;
       if (dib && dib.puntos.length) {
         const rec = recortar(dib.puntos.concat([[k.yaw, k.pitch]]).map(([a, b]) => aCamara(cam, a, b)), false);
@@ -2286,7 +2376,8 @@
       construir, render: programar, estiloPoligono: (id, c) => { const n = nodos.get(id); if (n && n.path) estiloPoligono(n.path, c); },
       view: () => actual && actual.view,
       coords: (ev) => (actual ? coordsEn(ev) : null),
-      marcas: null,
+      marcas: null, objetivo: null,
+      lupa: (ev) => precision(ev),
       sinPrecision: () => precision(null),
       captura: () => viewer.stage().takeSnapshot({ quality: 92 }),
       destruir() {
@@ -2825,25 +2916,52 @@ void main(){
     if (!motorEd || !motorEd.actual) return;
     const aqui = motorEd.actual.id, conectadas = new Set(salidas(aqui).map((h) => h.destino));
     $("panos-tira").innerHTML = est.escenas.map((e) =>
-      '<li draggable="' + (e.id !== aqui) + '" data-id="' + e.id + '" aria-current="' + (e.id === aqui) + '" title="' + esc(e.nombre) + '"><img src="' + thumbDe(e.id) + '" alt="" loading="lazy"><span>' +
+      '<li draggable="true" data-id="' + e.id + '" aria-current="' + (e.id === aqui) + '" title="' + esc(e.nombre) + '"><img src="' + thumbDe(e.id) + '" alt="" loading="lazy"><span>' +
       (conectadas.has(e.id) ? ICO_ENLACE : "") + "<em>" + esc(e.nombre) + "</em></span></li>").join("");
-    $("panos-nota").textContent = motorEd.modo === "capas" ? "Arrastra uno a la esfera para conectarlo de ida y vuelta." : "Clic para cambiar de panorama.";
+    $("panos-nota").textContent = (motorEd.modo === "capas" ? "Arrastra uno a la esfera para conectarlo de ida y vuelta. " : "Clic para cambiar de panorama. ") + "Arriba o abajo cambia el orden (es el orden de la presentación).";
   }
-  let panoArrastrado = null;
+  let panoArrastrado = null, ordenArrastrado = null;
+  const limpiarOrden = () => document.querySelectorAll(".panos-tira li.antes, .panos-tira li.despues").forEach((x) => x.classList.remove("antes", "despues"));
+  // Reordenar arrastrando arriba o abajo dentro de la tira: es el mismo orden de Panoramas y de la presentación
+  $("panos-tira").addEventListener("dragover", (ev) => {
+    if (!ordenArrastrado) return;
+    const li = ev.target.closest("li[data-id]");
+    ev.preventDefault(); ev.dataTransfer.dropEffect = "move";
+    limpiarOrden();
+    if (!li || li.dataset.id === ordenArrastrado) return;
+    const r = li.getBoundingClientRect();
+    li.classList.add(ev.clientY < r.top + r.height / 2 ? "antes" : "despues");
+  });
+  $("panos-tira").addEventListener("drop", (ev) => {
+    if (!ordenArrastrado) return;
+    ev.preventDefault();
+    const li = ev.target.closest("li[data-id]"), id = ordenArrastrado;
+    const despues = li && li.classList.contains("despues");
+    limpiarOrden();
+    if (!li || li.dataset.id === id) return;
+    const l = est.escenas, de = l.findIndex((e) => e.id === id);
+    const [m] = l.splice(de, 1);
+    let a = l.findIndex((e) => e.id === li.dataset.id) + (despues ? 1 : 0);
+    l.splice(a, 0, m);
+    guardar(); pintarTira();
+    avisar("Orden actualizado: " + nombreDe(id) + " es la " + (l.indexOf(m) + 1) + "ª en la presentación");
+  });
   $("panos-tira").addEventListener("click", (ev) => {
     const li = ev.target.closest("li[data-id]");
     if (li && li.dataset.id !== motorEd.actual.id) abrirEditor(li.dataset.id, nav.sub);
   });
   $("panos-tira").addEventListener("dragstart", (ev) => {
     const li = ev.target.closest("li[data-id]");
-    if (!li || motorEd.modo !== "capas" || motorEd.dibujo) { ev.preventDefault(); return; }
-    panoArrastrado = li.dataset.id;
+    if (!li || motorEd.dibujo) { ev.preventDefault(); return; }
+    ordenArrastrado = li.dataset.id;
+    // A la esfera solo se conecta en Capas y con otro panorama
+    panoArrastrado = motorEd.modo === "capas" && li.dataset.id !== motorEd.actual.id ? li.dataset.id : null;
     li.classList.add("arrastrando");
-    ev.dataTransfer.effectAllowed = "link";
-    try { ev.dataTransfer.setData("text/plain", "mozari:" + panoArrastrado); } catch (e) { /* algunos navegadores */ }
+    ev.dataTransfer.effectAllowed = "linkMove";
+    try { ev.dataTransfer.setData("text/plain", "mozari:" + li.dataset.id); } catch (e) { /* algunos navegadores */ }
   });
   $("panos-tira").addEventListener("dragend", () => {
-    panoArrastrado = null;
+    panoArrastrado = null; ordenArrastrado = null; limpiarOrden();
     document.querySelectorAll(".panos-tira li.arrastrando").forEach((x) => x.classList.remove("arrastrando"));
     $("ed-lienzo").classList.remove("soltando"); $("drop-fantasma").hidden = true;
   });
@@ -3235,6 +3353,8 @@ void main(){
     } else if (c.tipo === "hotspot") {
       h += '<div class="grupo"><b>Hotspot</b>' + campo("Texto", '<input type="text" data-k="texto" placeholder="' + esc(textoHotspot(Object.assign({}, c, { texto: "" }))) + '" value="' + esc(c.texto || "") + '">') +
         campo("Tamaño", campoRango("tamano", tamHs(c), 16, 240, 1, px)) + "</div>";
+      h += '<div class="grupo"><b>Estilo</b><div class="hs-estilos">' + Object.entries(ESTILOS_HS).map(([id, e]) =>
+        '<button class="hs-estilo' + (id !== "clasico" ? " hs-" + id : "") + '" data-k="estilo" data-v="' + id + '" aria-pressed="' + ((c.estilo || "clasico") === id) + '"><span class="hs-nucleo">' + (e.ico || ICO_ACCION[accionDe(c)] || ICO_ACCION.panorama) + "</span>" + e.nombre + "</button>").join("") + "</div></div>";
       h += grupo3d(c);
     }
     h += grupoAccion(c);
@@ -3338,7 +3458,7 @@ void main(){
     cambio();
   }
   $("props").addEventListener("click", (ev) => {
-    const m = ev.target.closest(".muestra"); if (m) { aplicar(m, true); return; }
+    const m = ev.target.closest(".muestra, .hs-estilo"); if (m) { aplicar(m, true); return; }
     const o = ev.target.closest("[data-orden]"); if (o) { ordenar(o.dataset.orden); return; }
     const a = ev.target.closest("[data-acc]");
     const es = ev.target.closest("[data-estado]");
@@ -3467,6 +3587,115 @@ void main(){
     guardar(); pintarLotes();
   });
 
+  // =================== PANORAMAS: MASTERPLAN ===================
+  // Cada lote se pasa al suelo visto desde arriba. Con terreno, todos van al plano de la esfera base
+  // (con la homografía de su esfera); sin terreno, se usa la esfera con más lotes. De cada lote se toma
+  // la esfera donde se ve más desde arriba, que es la más precisa.
+  let mpElegido = null;
+  function planLotes() {
+    const T = est.terreno, base = T && T.base && trLista(T.base) ? T.base : null, todos = lotesUnicos();
+    let marco = base;
+    if (!marco) { const n = {}; todos.forEach((x) => x.m.forEach((m) => (n[m.id] = (n[m.id] || 0) + 1))); marco = Object.keys(n).sort((a, b) => n[b] - n[a])[0] || null; }
+    const lotes = [], fuera = [];
+    todos.forEach((x) => {
+      let mejor = null, alto = -9;
+      x.m.forEach((m) => {
+        if (m.id !== marco && !(base && trLista(m.id))) return;
+        const p = m.c.puntos.reduce((s, q) => s + q[1], 0) / m.c.puntos.length;
+        if (p > alto) { alto = p; mejor = m; }
+      });
+      const Hi = mejor && mejor.id !== marco ? invM(trH(mejor.id).H) : null;
+      const pts = mejor ? mejor.c.puntos.map(([y, p]) => { const q = aPlano(y, p); return q && (Hi ? aplicarH(Hi, q) : q); }) : [null];
+      if (pts.some((q) => !q)) fuera.push(x); else lotes.push({ x, pts });
+    });
+    if (!lotes.length) return { lotes, fuera, marco };
+    // Gira el plano para que las calles queden derechas y lo que se ve al iniciar la esfera quede arriba
+    let sx = 0, sy = 0;
+    lotes.forEach(({ pts }) => pts.forEach((a, i) => { const b = pts[(i + 1) % pts.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]), g = 4 * Math.atan2(b[1] - a[1], b[0] - a[0]); sx += L * Math.cos(g); sy += L * Math.sin(g); }));
+    const th = Math.atan2(sy, sx) / 4, yi = vistaDe(marco).yaw, f = [Math.sin(yi), Math.cos(yi)];
+    let phi = -th, mejorZ = -2;
+    for (let k = 0; k < 4; k++) { const a = -th + (k * Math.PI) / 2, z = f[0] * Math.sin(a) + f[1] * Math.cos(a); if (z > mejorZ) { mejorZ = z; phi = a; } }
+    const c = Math.cos(phi), s = Math.sin(phi);
+    lotes.forEach((l) => (l.pts = l.pts.map(([x, z]) => [x * c - z * s, -(x * s + z * c)]))); // y de pantalla hacia abajo
+    return { lotes, fuera, marco };
+  }
+  function pintarMasterplan() {
+    const { lotes, fuera } = planLotes(), E = estadosLote(), todos = lotes.map((l) => l.x).concat(fuera);
+    const cuenta = (id) => todos.filter((x) => estadoDe(x.c).id === id).length;
+    $("mp-resumen").innerHTML = '<span class="lr-chip"><b>' + todos.length + "</b>Lotes</span>" +
+      E.map((e) => '<span class="lr-chip estado" style="--c:' + e.color + '"><button tabindex="-1"><i></i><b>' + cuenta(e.id) + "</b>" + esc(e.nombre) + "</button></span>").join("");
+    if (!todos.length) {
+      $("mp-avance").innerHTML = ""; $("mp-ficha").hidden = true; $("mp-nota").textContent = "";
+      $("mp-plano").innerHTML = '<p class="vacio">Aún no hay lotes. En Panoramas → Capas usa el botón <b>Lote</b>: cada lote que dibujes aparece aquí.</p>';
+      return;
+    }
+    // Avance: barra por estado, % vendido y metros
+    const area = (fil) => todos.filter(fil).reduce((s, x) => s + (numES(x.c.lote.area) || 0), 0);
+    const total = area(() => true), vend = area((x) => estadoDe(x.c).id === "vendido");
+    $("mp-avance").innerHTML = '<div class="mp-barra">' + E.map((e) => '<i style="--c:' + e.color + ";width:" + (cuenta(e.id) / todos.length) * 100 + '%"></i>').join("") + "</div><p>" +
+      "<span><b>" + Math.round((cuenta("vendido") / todos.length) * 100) + "%</b> vendido</span>" +
+      (total ? "<span><b>" + fmtNum(vend) + "</b> de " + fmtNum(total) + " m² vendidos</span>" : "") + "</p>";
+    // Plano
+    const xs = lotes.flatMap((l) => l.pts.map((p) => p[0])), ys = lotes.flatMap((l) => l.pts.map((p) => p[1]));
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), pad = Math.max(x1 - x0, y1 - y0) * 0.04 || 1;
+    const areaPol = (P) => Math.abs(P.reduce((s, a, i) => { const b = P[(i + 1) % P.length]; return s + a[0] * b[1] - b[0] * a[1]; }, 0)) / 2;
+    const tams = lotes.map((l) => Math.sqrt(areaPol(l.pts))).sort((a, b) => a - b), fs = tams[tams.length >> 1] * 0.26;
+    const centro = (P) => { let A = 0, cx = 0, cy = 0; P.forEach((a, i) => { const b = P[(i + 1) % P.length], k = a[0] * b[1] - b[0] * a[1]; A += k; cx += (a[0] + b[0]) * k; cy += (a[1] + b[1]) * k; }); return Math.abs(A) > 1e-12 ? [cx / (3 * A), cy / (3 * A)] : P[0]; };
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + [x0 - pad, y0 - pad, x1 - x0 + 2 * pad, y1 - y0 + 2 * pad].map((v) => +v.toFixed(4)).join(" ") + '" role="img" aria-label="Masterplan">' +
+      lotes.map(({ x, pts }) => {
+        const l = x.c.lote, e = estadoDe(x.c), C = centro(pts), w = Math.max(...pts.map((p) => p[0])) - Math.min(...pts.map((p) => p[0]));
+        const corto = nombreCortoLote(l), tx = corto.length * fs * 0.6 < w * 0.85 ? corto : l.numero || "—";
+        return '<g class="mp-lote' + (x.k === mpElegido ? " elegido" : "") + '" data-k="' + esc(x.k) + '"><title>' + esc(nombreLote(x.c)) + " · " + esc(e.nombre) + "</title>" +
+          '<path vector-effect="non-scaling-stroke" fill="' + e.color + '" fill-opacity="0.82" d="M' + pts.map((p) => p[0].toFixed(4) + " " + p[1].toFixed(4)).join("L") + 'Z"/>' +
+          '<text x="' + C[0].toFixed(4) + '" y="' + C[1].toFixed(4) + '" font-size="' + fs.toFixed(4) + '" stroke-width="' + (fs * 0.12).toFixed(4) + '">' + esc(tx) + "</text></g>";
+      }).join("") + "</svg>";
+    $("mp-plano").innerHTML = svg + '<button class="mini mp-dl" data-acc="mp-png">Descargar imagen</button>';
+    $("mp-nota").textContent = fuera.length ? fuera.length + (fuera.length === 1 ? " lote no aparece" : " lotes no aparecen") + " en el plano porque su esfera no está unida al terreno (Panoramas → Terreno)." : "";
+    pintarFichaMp();
+  }
+  const nombreCortoLote = (l) => (l.numero || "—") + (l.manzana ? " · " + l.manzana : "");
+  function pintarFichaMp() {
+    const x = mpElegido && lotesUnicos().find((y) => y.k === mpElegido), f = $("mp-ficha");
+    if (!x) { f.hidden = true; return; }
+    const l = x.c.lote, E = estadosLote();
+    f.hidden = false;
+    f.innerHTML = "<h4>" + esc(nombreLote(x.c)) + "</h4>" + (l.area ? "<span>" + esc(fmtArea(l.area)) + "</span>" : "") + (l.precio ? "<span>" + esc(fmtPrecio(l.precio)) + "</span>" : "") +
+      '<div class="estados">' + E.map((e) => '<button data-estado="' + e.id + '" aria-pressed="' + (estadoDe(x.c).id === e.id) + '" style="--c:' + e.color + '"><i></i>' + esc(e.nombre) + "</button>").join("") + "</div>" +
+      '<button class="mini" data-ir="' + x.m[0].id + '" data-capa="' + x.m[0].c.id + '">Ver en la esfera</button>';
+  }
+  $("mp-plano").addEventListener("click", (ev) => {
+    if (ev.target.closest('[data-acc="mp-png"]')) { descargarMasterplan(); return; }
+    const g = ev.target.closest(".mp-lote");
+    mpElegido = g ? (mpElegido === g.dataset.k ? null : g.dataset.k) : null;
+    $("mp-plano").querySelectorAll(".mp-lote").forEach((n) => n.classList.toggle("elegido", n.dataset.k === mpElegido));
+    pintarFichaMp();
+  });
+  $("mp-ficha").addEventListener("click", (ev) => {
+    const x = lotesUnicos().find((y) => y.k === mpElegido);
+    const es = ev.target.closest("[data-estado]");
+    if (x && es) { x.m.forEach(({ c }) => (c.lote.estado = es.dataset.estado)); guardar(); pintarMasterplan(); avisar(nombreLote(x.c) + ": " + estadoDe(x.c).nombre); return; }
+    const a = ev.target.closest("[data-ir]");
+    if (a) { edPano = a.dataset.ir; ir("panoramas", "capas"); seleccionar(a.dataset.capa); }
+  });
+  // Imagen PNG del masterplan para mandar a clientes o al equipo
+  function descargarMasterplan() {
+    const s = $("mp-plano").querySelector("svg");
+    if (!s) return;
+    const vb = s.viewBox.baseVal, W = 2000, H = Math.round((W * vb.height) / vb.width);
+    const copia = s.cloneNode(true);
+    copia.setAttribute("width", W); copia.setAttribute("height", H);
+    copia.querySelectorAll("path").forEach((p) => { p.setAttribute("stroke", "#fff"); p.setAttribute("stroke-width", "2"); });
+    copia.querySelectorAll("text").forEach((t) => { t.setAttribute("fill", "#fff"); t.setAttribute("text-anchor", "middle"); t.setAttribute("dominant-baseline", "central"); t.setAttribute("font-family", "Poppins, Arial, sans-serif"); t.setAttribute("font-weight", "600"); t.setAttribute("paint-order", "stroke"); t.setAttribute("stroke", "rgba(0,0,0,.55)"); });
+    const img = new Image(), url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(copia)], { type: "image/svg+xml" }));
+    img.onload = () => {
+      const cv = document.createElement("canvas"); cv.width = W + 80; cv.height = H + 80;
+      const g = cv.getContext("2d"); g.fillStyle = "#151515"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(img, 40, 40, W, H);
+      URL.revokeObjectURL(url);
+      cv.toBlob((b) => { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "masterplan-" + (P().nombre || "tour").toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".png"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }, "image/png");
+    };
+    img.src = url;
+  }
+
   // =================== PANORAMAS: TERRENO ===================
   // Dos esferas lado a lado. El mismo número = el mismo lugar del suelo en ambas.
   const tr = { a: null, b: null, ma: null, mb: null, pend: null, sel: -1, arr: null };
@@ -3504,8 +3733,9 @@ void main(){
     const malo = (i) => !!(rb && rb.H && rb.n > 4 && (i === rb.excluido || rb.err[i] > Math.max(0.5, 3 * rb.media)));
     // Marcas en las dos esferas
     const marcas = (id, otra) => (P[id] || []).map((p, i) => p && { yaw: p[0], pitch: p[1], i, clase: [i === tr.sel ? "activo" : "", otra && !(P[otra] || [])[i] ? "solo" : "", malo(i) ? "mal" : ""].join(" ").trim() }).filter(Boolean);
-    if (tr.ma) { tr.ma.marcas = marcas(tr.a, tr.b); tr.ma.render(); }
-    if (tr.mb && tr.b) { tr.mb.marcas = marcas(tr.b, tr.a); tr.mb.render(); }
+    const obj = objetivoPendiente();
+    if (tr.ma) { tr.ma.marcas = marcas(tr.a, tr.b); tr.ma.objetivo = obj && obj.lado === "a" ? obj : null; tr.ma.render(); }
+    if (tr.mb && tr.b) { tr.mb.marcas = marcas(tr.b, tr.a); tr.mb.objetivo = obj && obj.lado === "b" ? obj : null; tr.mb.render(); }
     // Panel
     const vinc = Object.values(gruposVinculo());
     const nPol = vinc.filter((g) => g[0].c.tipo === "poligono").length, nTxt = vinc.length - nPol;
@@ -3527,7 +3757,14 @@ void main(){
         const err = rb && rb.H && rb.n > 4 && rb.err[i] !== undefined ? grad2(rb.err[i]) : "";
         return '<li data-i="' + i + '" class="' + [i === tr.sel ? "activo" : "", falta ? "falta" : "", malo(i) ? "mal" : ""].join(" ") + '"><span class="num">' + (i + 1) + "</span><span>" + (falta ? "Falta en " + esc(falta) : rb && i === rb.excluido ? "No coincide · no se usa" : "En las dos esferas") + "</span><small>" + err + '</small><button class="ojo" data-borrar="' + i + '" aria-label="Quitar punto ' + (i + 1) + '">✕</button></li>';
       }).join("") + "</ol>";
-      h += '<p class="nota">Usa puntos fijos del suelo: esquinas de calles, postes, mojoneras. De 6 a 8 bien repartidos dan más precisión.</p></div>';
+      h += '<details class="tr-ayuda"' + (n < 4 ? " open" : "") + '><summary>Cómo lograr un trazo preciso</summary><ol class="tr-guia">' +
+        "<li><b>Puntos en el suelo,</b> nunca arriba: la base de un poste, no la punta; esquinas de banqueta, no techos ni árboles.</li>" +
+        "<li><b>Cerca del dron.</b> Lo que se ve cerca del horizonte es impreciso: un pixel ahí son metros.</li>" +
+        "<li><b>Repartidos alrededor de los lotes,</b> en las 4 esquinas y al centro. Nunca todos en línea.</li>" +
+        "<li><b>De 6 a 8 puntos.</b> Si uno no cuadra, Mozari lo descarta solo.</li>" +
+        "<li><b>Usa la lupa</b> y pon la mira justo en la esquina. Desde el punto 5, el círculo te dice dónde debería ir.</li>" +
+        "<li><b>Dibuja cada lote en la esfera donde se ve más cerca;</b> las demás reciben la copia.</li></ol>" +
+        '<p class="nota"><b>Límites:</b> supone que el terreno es plano. Con pendientes, desniveles o lomas, los lotes lejos de los puntos se desvían. También necesita que el horizonte de la esfera esté derecho.</p></details></div>';
     }
     h += '<div class="grupo"><b>Aplicado a todas</b><p class="nota">' + (vinc.length ? nPol + " polígonos" + (nTxt ? " y " + nTxt + " textos" : "") + " están en todas las esferas listas." : "Ninguna capa todavía.") + " Se activa en Capas → Aplicar a todas las esferas.</p></div>";
     $("tr-panel").innerHTML = h;
@@ -3552,16 +3789,24 @@ void main(){
     const id = idDe(lado), P = TP();
     if (!(k.pitch > 0.03)) { avisar("Marca puntos en el suelo, abajo del horizonte"); return; }
     const yp = [+k.yaw.toFixed(5), +k.pitch.toFixed(5)];
+    const lejos = k.pitch < 0.17; // menos de ~10° bajo el horizonte: un pixel son muchos metros
     if (tr.pend) {
+      const obj = motorDe(lado).objetivo, desv = obj ? anguloEntre([obj.yaw, obj.pitch], yp) : 0;
       P[id][tr.pend.i] = yp;
-      if (tr.pend.lado !== lado) { const i = tr.pend.i; tr.pend = null; tr.sel = i; cambioTerreno(); const r = trH(tr.b); avisar(r && r.excluido === i ? "El punto " + (i + 1) + " no coincide con los demás. Revísalo." : "Punto " + (i + 1) + " listo en las dos esferas"); return; }
+      if (tr.pend.lado !== lado) {
+        const i = tr.pend.i; tr.pend = null; tr.sel = i; cambioTerreno();
+        const r = trH(tr.b);
+        avisar(r && r.excluido === i ? "El punto " + (i + 1) + " no coincide con los demás. Revísalo." : desv > 1.5 ? "Ojo: el punto " + (i + 1) + " quedó lejos de donde se esperaba. Revisa que sea el mismo lugar." : lejos ? "Punto " + (i + 1) + " listo, pero está muy cerca del horizonte: es poco preciso." : "Punto " + (i + 1) + " listo en las dos esferas");
+        return;
+      }
     } else {
       const i = largoPuntos();
       ids2().forEach((x) => { while (P[x].length < i) P[x].push(null); });
       P[id][i] = yp;
       tr.pend = { i, lado }; tr.sel = i;
+      if (lejos) avisar("Este punto está muy cerca del horizonte: pierde precisión. Mejor uno más cerca del dron.");
     }
-    guardar(); pintarTerreno();
+    guardar(); pintarTerreno(); apuntarObjetivo();
   }
   const ids2 = () => [tr.a, tr.b].filter(Boolean);
   // Clic (sin arrastrar) sobre cada esfera
@@ -3569,6 +3814,13 @@ void main(){
     const st = $(lado === "a" ? "tr-stage-a" : "tr-stage-b");
     let t0 = null;
     st.addEventListener("pointerdown", (ev) => { t0 = { x: ev.clientX, y: ev.clientY }; });
+    // Lupa ×3 con mira al pasar sobre la esfera (se quita mientras giras la vista)
+    st.addEventListener("pointermove", (ev) => {
+      const m = motorDe(lado);
+      if (!m || tr.arr) return;
+      if (ev.buttons || trIds().length < 2 || !tr.b) m.sinPrecision(); else m.lupa(ev);
+    });
+    st.addEventListener("pointerleave", () => { const m = motorDe(lado); if (m && !tr.arr) m.sinPrecision(); });
     st.addEventListener("pointerup", (ev) => {
       if (!t0 || trIds().length < 2 || !tr.b) return;
       const mov = Math.hypot(ev.clientX - t0.x, ev.clientY - t0.y);
@@ -3591,12 +3843,13 @@ void main(){
     TP()[idDe(a.lado)][a.i] = [+k.yaw.toFixed(5), +k.pitch.toFixed(5)];
     const p = TP()[idDe(a.lado)][a.i];
     m.marcas.forEach((x) => { if (x.i === a.i) { x.yaw = p[0]; x.pitch = p[1]; } });
-    m.render();
+    m.render(); m.lupa(ev);
   });
   window.addEventListener("pointerup", () => {
     const a = tr.arr;
     if (!a) return;
     tr.arr = null;
+    motorDe(a.lado) && motorDe(a.lado).sinPrecision();
     if (a.movido) { tr.sel = a.i; cambioTerreno(); return; }
     elegirPunto(a.i, false);
   });
@@ -3606,7 +3859,19 @@ void main(){
     tr.sel = i;
     tr.pend = !enA ? { i, lado: "b" } : !enB ? { i, lado: "a" } : null;
     if (mirar) [["a", enA], ["b", enB]].forEach(([l, p]) => { if (p) motorDe(l).view().setParameters({ yaw: p[0], pitch: p[1] }); });
-    pintarTerreno();
+    pintarTerreno(); apuntarObjetivo();
+  }
+  // Indicación previa: con 4 puntos o más, Mozari calcula dónde debería caer el punto que falta en la
+  // otra esfera, lo marca con un círculo y gira esa esfera para que lo veas. Tú solo afinas con la lupa.
+  function objetivoPendiente() {
+    if (!tr.pend || !tr.b) return null;
+    const otro = tr.pend.lado === "a" ? "b" : "a", de = (TP()[idDe(tr.pend.lado)] || [])[tr.pend.i];
+    const m = de && transferir(de, idDe(tr.pend.lado), idDe(otro));
+    return m ? { lado: otro, yaw: m[0], pitch: m[1] } : null;
+  }
+  function apuntarObjetivo() {
+    const o = objetivoPendiente(), m = o && motorDe(o.lado);
+    if (m && m.view()) m.view().setParameters({ yaw: o.yaw, pitch: o.pitch });
   }
   function borrarPunto(i) {
     Object.values(TP()).forEach((l) => { if (l.length > i) l.splice(i, 1); });
