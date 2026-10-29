@@ -1938,8 +1938,12 @@
       if (opciones.alAccion) opciones.alAccion(c);
     }
 
-    let pendiente = false;
-    function programar() { if (pendiente) return; pendiente = true; requestAnimationFrame(() => { pendiente = false; render(); }); }
+    // Las capas se pintan en el MISMO cuadro que la esfera: justo después de que Marzipano dibuja.
+    // Antes iban un cuadro atrás y "nadaban" al girar. El requestAnimationFrame queda solo de
+    // respaldo para cambios que no mueven la vista (editar una capa, por ejemplo).
+    let pendiente = false, sucio = false;
+    function programar() { sucio = true; if (pendiente) return; pendiente = true; requestAnimationFrame(() => { pendiente = false; if (sucio) { sucio = false; render(); } }); }
+    viewer.renderLoop().addEventListener("afterRender", () => { if (sucio) { sucio = false; render(); } });
     function render() {
       if (!actual) return;
       const cam = camara();
