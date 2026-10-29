@@ -15,6 +15,8 @@
     "run_worker_first": ["/", "/index.html", "/api/*", "/t/*", "/entrar", "/auth/*", "/salir", "/webhooks/*"]
   },
   "r2_buckets": [{ "binding": "R2", "bucket_name": "mozari" }],
+  // Correo de avisos (Email Routing de mozari.app): cada reporte de error le llega al dueño
+  "send_email": [{ "name": "CORREO", "destination_address": "amarpreciado93@gmail.com" }],
   "vars": {
     // Dueño de Mozari: se queda con los tours creados antes de las cuentas
     "DOMINIO": "mozari.app",
