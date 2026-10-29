@@ -106,3 +106,4 @@
 | 2026-10-29 | Hotspot: interruptor "Mostrar nombre" para quitar la etiqueta; la etiqueta es más chica y discreta | La etiqueta tapaba la vista |
 | 2026-10-29 | Capas → Ruta: línea abierta sobre la esfera (punteada, guiones o continua), color, grosor, opacidad, flecha al final y movimiento opcional | Marcar caminos y recorridos dentro del terreno o del lugar |
 | 2026-10-29 | Mapa: fondo gris con retícula, las esferas conectadas se quedan dentro del recuadro y las sueltas en una fila "Sin conectar" abajo; flechas verdes y más grandes | Más orden y se ve de un vistazo qué ya está conectado |
+| 2026-10-29 | Panoramas → Lista: las tarjetas se reordenan arrastrando y muestran su número de aparición; la primera es la de inicio | El mismo orden en Lista, Capas y la presentación |

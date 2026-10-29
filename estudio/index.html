@@ -173,6 +173,11 @@
 
   /* ---------- Rejillas (Mis Tours, Panoramas) ---------- */
   .rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  #pano-lista .card[draggable="true"] { cursor: grab; }
+  #pano-lista .card.arrastrando { opacity: 0.4; }
+  #pano-lista .card.antes { box-shadow: -4px 0 0 var(--mz-lima); }
+  #pano-lista .card.despues { box-shadow: 4px 0 0 var(--mz-lima); }
+  .orden-n { font-style: normal; display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; margin-right: 8px; border-radius: 999px; background: var(--mz-lima-suave); color: var(--mz-lima); font-size: 11px; font-weight: 700; vertical-align: 2px; }
   .card { background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); overflow: hidden; display: grid; cursor: pointer; text-align: left; padding: 0; color: inherit; font: inherit; }
   .card:hover { border-color: var(--mz-linea); }
   .card .foto { position: relative; aspect-ratio: 16 / 10; background: var(--mz-negro); }
@@ -2759,10 +2764,10 @@
       const hs = salidas(e.id).length, pol = cs.filter((c) => c.tipo === "poligono").length;
       const pl = e.piloto.activo && e.piloto.puntos.length;
       const confirma = borrandoPano === e.id ? '<div class="card-confirma" role="alertdialog" aria-label="Confirmar borrado"><b>¿Borrar ' + esc(e.nombre) + "?</b><span>Se quitan sus capas y los hotspots que llevan a él. Puedes deshacer con Cmd + Z.</span><div><button class=\"mini peligro-lleno\" data-si-borrar=\"" + e.id + '">Borrar</button><button class="mini" data-no-borrar>Cancelar</button></div></div>' : "";
-      return '<div class="card" role="button" tabindex="0" data-abrir="' + e.id + '" aria-label="Abrir ' + esc(e.nombre) + '">' +
+      return '<div class="card" role="button" tabindex="0" draggable="true" data-abrir="' + e.id + '" aria-label="Abrir ' + esc(e.nombre) + '">' +
         '<div class="foto"><img src="' + thumbDe(e.id) + '" alt="" loading="lazy">' + (e.id === P().escenaInicial ? '<span class="badge">INICIO</span>' : "") +
         '<button class="card-borrar" data-borrar="' + e.id + '" aria-label="Borrar ' + esc(e.nombre) + '" title="Borrar panorama"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>' + confirma + "</div>" +
-        '<div class="cuerpo"><span class="nombre">' + esc(e.nombre) + "</span>" +
+        '<div class="cuerpo"><span class="nombre"><i class="orden-n">' + (est.escenas.indexOf(e) + 1) + "</i>" + esc(e.nombre) + "</span>" +
         '<div class="chips"><span class="chip-dato">' + mp(d.origen.ancho, d.origen.alto) + "</span>" +
         '<span class="chip-dato' + (hs === 0 || hs > MAX_HS ? " aviso" : "") + '">' + hs + (hs === 1 ? " salida" : " salidas") + "</span>" +
         '<span class="chip-dato">' + pol + (pol === 1 ? " polígono" : " polígonos") + "</span>" +
@@ -3037,6 +3042,43 @@ void main(){
     if (MODO !== "nube" || !ev.dataTransfer || !ev.dataTransfer.files.length) return;
     ev.preventDefault(); const z = $("subir-zona"); if (z) z.classList.remove("encima");
     subirEsferas(ev.dataTransfer.files);
+  });
+
+  // Reordenar arrastrando las tarjetas: es el orden de aparición, y la primera es la de inicio
+  let cardArrastrada = null;
+  const limpiarCards = () => document.querySelectorAll("#pano-lista .card.antes, #pano-lista .card.despues").forEach((x) => x.classList.remove("antes", "despues"));
+  $("pano-lista").addEventListener("dragstart", (ev) => {
+    const c = ev.target.closest && ev.target.closest(".card[data-abrir]");
+    if (!c) return;
+    cardArrastrada = c.dataset.abrir; c.classList.add("arrastrando");
+    ev.dataTransfer.effectAllowed = "move";
+    try { ev.dataTransfer.setData("text/plain", "mozari-orden:" + cardArrastrada); } catch (e) { /* algunos navegadores */ }
+  });
+  $("pano-lista").addEventListener("dragover", (ev) => {
+    if (!cardArrastrada) return;
+    ev.preventDefault(); ev.dataTransfer.dropEffect = "move";
+    limpiarCards();
+    const c = ev.target.closest(".card[data-abrir]");
+    if (!c || c.dataset.abrir === cardArrastrada) return;
+    const r = c.getBoundingClientRect();
+    c.classList.add(ev.clientX < r.left + r.width / 2 ? "antes" : "despues");
+  });
+  $("pano-lista").addEventListener("drop", (ev) => {
+    if (!cardArrastrada) return;
+    ev.preventDefault(); ev.stopImmediatePropagation();
+    const c = ev.target.closest(".card[data-abrir]"), id = cardArrastrada, despues = c && c.classList.contains("despues");
+    limpiarCards();
+    if (!c || c.dataset.abrir === id) return;
+    const l = est.escenas, [m] = l.splice(l.findIndex((e) => e.id === id), 1);
+    l.splice(l.findIndex((e) => e.id === c.dataset.abrir) + (despues ? 1 : 0), 0, m);
+    const antes = P().escenaInicial;
+    P().escenaInicial = l[0].id;
+    guardar(); pintarLista();
+    avisar(l[0].id !== antes ? "Ahora el tour empieza en " + nombreDe(l[0].id) : "Orden actualizado");
+  }, true);
+  $("pano-lista").addEventListener("dragend", () => {
+    cardArrastrada = null; limpiarCards();
+    document.querySelectorAll("#pano-lista .card.arrastrando").forEach((x) => x.classList.remove("arrastrando"));
   });
 
   // =================== PANORAMAS: MAPA DE NODOS ===================
