@@ -23,6 +23,7 @@ import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR } fro
 import { rutasSesion, cuentaDe, perfil } from "./sesion.js";
 import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
 import { apiPagos, webhookMercadoPago } from "./pagos.js";
+import { EmailMessage } from "cloudflare:email";
 
 const MAX_PROYECTO = 8 * 1024 * 1024;   // 8 MB de JSON
 const MAX_ARCHIVO = 25 * 1024 * 1024;   // 25 MB por archivo
@@ -87,8 +88,75 @@ async function usoDe(env, uid, forzar) {
 const gb = (b) => (b / 1024 ** 3).toFixed(b < 10 * 1024 ** 3 ? 1 : 0) + " GB";
 const limite = (mensaje, que) => json({ error: mensaje, limite: que }, 403);
 
+// ---------- Reportes de error ----------
+// Cada reporte se guarda en reportes/<id>.json (y su imagen en reportes/<id>.jpg). Si el Worker tiene el
+// enlace de correo CORREO (Email Routing de Cloudflare), además le llega un correo al dueño.
+const REPORTES_DIA = 15, MAX_IMG_REPORTE = 3 * 1024 * 1024;
+const b64utf8 = (t) => btoa(String.fromCharCode(...new TextEncoder().encode(t)));
+async function avisarPorCorreo(env, rep, url) {
+  if (!env.CORREO || !env.ADMIN) return;
+  try {
+    const de = "reportes@" + (env.DOMINIO || url.hostname), asunto = "Mozari · Reporte de " + (rep.nombre || rep.email);
+    const cuerpo = rep.texto + "\n\n— " + rep.nombre + " <" + rep.email + ">\nPlan: " + rep.plan + "\nTour: " + (rep.contexto.tour || "—") + "\nSección: " + (rep.contexto.seccion || "—") +
+      "\nNavegador: " + (rep.contexto.navegador || "—") + "\nPantalla: " + (rep.contexto.pantalla || "—") + (rep.contexto.errores && rep.contexto.errores.length ? "\n\nErrores en la página:\n" + rep.contexto.errores.join("\n") : "") +
+      (rep.imagen ? "\n\nTiene imagen: ábrela en el Panel de dueño." : "") + "\n\nPanel de dueño: https://" + (env.DOMINIO || url.hostname) + "/";
+    const raw = ["From: Mozari <" + de + ">", "To: " + env.ADMIN, "Reply-To: " + rep.email, "Subject: =?UTF-8?B?" + b64utf8(asunto) + "?=",
+      "Message-ID: <" + rep.id + "@" + (env.DOMINIO || url.hostname) + ">", "Date: " + new Date().toUTCString(), "MIME-Version: 1.0",
+      "Content-Type: text/plain; charset=UTF-8", "Content-Transfer-Encoding: base64", "", b64utf8(cuerpo).replace(/.{76}/g, "$&\r\n")].join("\r\n");
+    await env.CORREO.send(new EmailMessage(de, env.ADMIN, raw));
+  } catch (e) { /* el reporte ya quedó guardado aunque el correo falle */ }
+}
+async function crearReporte(request, env, yo, plan) {
+  const c = await request.json().catch(() => null);
+  const texto = String((c && c.texto) || "").trim().slice(0, 4000);
+  if (!texto) return error(400, "Cuéntanos qué pasó");
+  const hoy = new Date().toISOString().slice(0, 10), cuenta = "cuentas/" + yo.uid + "/reportes-" + hoy;
+  const n = +((await (await env.R2.get(cuenta))?.text()) || 0);
+  if (n >= REPORTES_DIA && !yo.admin) return error(429, "Ya enviaste muchos reportes hoy. Gracias, los estamos revisando.");
+  const id = hoy.replace(/-/g, "") + "-" + Date.now().toString(36) + crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
+  const ctx = c.contexto && typeof c.contexto === "object" ? c.contexto : {};
+  const corto = (v, k) => String(v || "").slice(0, k);
+  const rep = {
+    id, fecha: new Date().toISOString(), estado: "nuevo", uid: yo.uid, email: yo.email, nombre: yo.nombre || "", plan: plan.id, texto,
+    contexto: { tour: corto(ctx.tour, 80), seccion: corto(ctx.seccion, 60), navegador: corto(ctx.navegador, 300), pantalla: corto(ctx.pantalla, 40), errores: (Array.isArray(ctx.errores) ? ctx.errores : []).slice(-10).map((e) => corto(e, 400)) },
+    imagen: false,
+  };
+  if (typeof c.imagen === "string" && /^data:image\/(jpeg|png);base64,/.test(c.imagen)) {
+    const bin = Uint8Array.from(atob(c.imagen.split(",")[1]), (x) => x.charCodeAt(0));
+    if (bin.length <= MAX_IMG_REPORTE) { await env.R2.put("reportes/" + id + ".jpg", bin, { httpMetadata: { contentType: c.imagen.slice(5, c.imagen.indexOf(";")) } }); rep.imagen = true; }
+  }
+  await env.R2.put("reportes/" + id + ".json", JSON.stringify(rep), { httpMetadata: { contentType: "application/json" } });
+  await env.R2.put(cuenta, String(n + 1));
+  await avisarPorCorreo(env, rep, new URL(request.url));
+  return json({ ok: true, id }, 201);
+}
+
 async function admin(request, env, partes) {
   const m = request.method;
+  if (partes[2] === "reportes") {
+    if (partes.length === 3 && m === "GET") {
+      const out = []; let cur;
+      do {
+        const l = await env.R2.list({ prefix: "reportes/", cursor: cur, limit: 1000 });
+        l.objects.forEach((o) => { if (o.key.endsWith(".json")) out.push(o.key); });
+        cur = l.truncated ? l.cursor : undefined;
+      } while (cur);
+      out.sort().reverse();
+      const reps = await Promise.all(out.slice(0, 200).map(async (k) => (await env.R2.get(k)).json()));
+      return json({ reportes: reps });
+    }
+    const id = partes[3] || "";
+    if (!/^[0-9]{8}-[a-z0-9]{6,30}$/.test(id)) return error(400, "Reporte inválido");
+    if (partes[4] === "imagen" && m === "GET") return servirR2(env, request, "reportes/" + id + ".jpg", "private, max-age=3600");
+    if (partes.length === 4 && m === "PUT") {
+      const o = await env.R2.get("reportes/" + id + ".json"); if (!o) return error(404, "No existe");
+      const rep = await o.json(), cuerpo = await request.json().catch(() => ({}));
+      if (["nuevo", "revisando", "resuelto"].includes(cuerpo.estado)) rep.estado = cuerpo.estado;
+      await env.R2.put("reportes/" + id + ".json", JSON.stringify(rep), { httpMetadata: { contentType: "application/json" } });
+      return json({ ok: true });
+    }
+    return error(405, "Método no permitido");
+  }
   if (partes[2] !== "cuentas") return error(404, "Ruta desconocida");
   if (partes.length === 3 && m === "GET") {
     const cuentas = [];
@@ -118,6 +186,7 @@ async function api(request, env, partes, yo) {
   const m = request.method, uid = yo.uid, plan = planDe(yo);
   if (partes[1] === "yo" && m === "GET") return json({ email: yo.email, nombre: yo.nombre, foto: yo.foto, admin: !!yo.admin, plan });
   if (partes[1] === "pagos") return apiPagos(request, env, partes, yo);
+  if (partes[1] === "reportes" && partes.length === 2 && m === "POST") return crearReporte(request, env, yo, plan);
   if (partes[1] === "admin") return yo.admin ? admin(request, env, partes) : error(403, "Solo el dueño de Mozari");
 
   if (partes[1] === "uso" && m === "GET") return json(Object.assign({ plan }, await usoDe(env, uid, true)));

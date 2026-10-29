@@ -95,7 +95,23 @@
   .cuenta-menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; min-width: 220px; display: grid; gap: 4px; padding: 14px; border-radius: 14px; background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5); }
   .cuenta-menu b { font-weight: 600; font-size: 14px; }
   .cuenta-menu small { color: var(--mz-tenue); font-size: 12px; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; }
-  .cuenta-menu a { text-decoration: none; justify-self: start; }
+  .cuenta-menu a, .cuenta-menu button { text-decoration: none; justify-self: start; }
+  .btn-reporte { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--mz-linea); background: none; color: var(--mz-tenue); cursor: pointer; display: grid; place-items: center; padding: 0; }
+  .btn-reporte:hover { color: var(--mz-lima); border-color: var(--mz-lima); }
+  .btn-reporte svg { width: 18px; height: 18px; }
+  .dlg-pago textarea { width: 100%; min-height: 120px; resize: vertical; box-sizing: border-box; font: 400 14px/1.5 var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 10px; padding: 10px 12px; }
+  .dlg-pago textarea:focus { outline: none; border-color: var(--mz-lima); }
+  .rep-adj { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--mz-tenue); }
+  .rep-adj img { width: 96px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid var(--mz-linea-neutra); }
+  .rep-lista { display: grid; gap: 0; }
+  .rep-item { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; padding: 14px 16px; border-bottom: 1px solid var(--mz-linea-neutra); font-size: 13px; }
+  .rep-item:last-child { border-bottom: 0; }
+  .rep-item p { margin: 0; white-space: pre-wrap; grid-column: 1 / -1; }
+  .rep-item small { color: var(--mz-tenue); }
+  .rep-item img { max-width: 260px; border-radius: 8px; grid-column: 1 / -1; cursor: zoom-in; }
+  .rep-item.nuevo { box-shadow: inset 3px 0 0 var(--mz-lima); }
+  .rep-item.resuelto { opacity: 0.55; }
+  .rep-tabs { display: flex; gap: 6px; padding: 10px 16px 0; }
   .estado { font-size: 11px; color: var(--mz-tenue); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
   .estado i { width: 6px; height: 6px; border-radius: 50%; background: var(--mz-lima); }
 
@@ -900,8 +916,9 @@
     <div class="barra-der">
       <span class="estado"><i></i><span id="b-estado">Guardado</span></span>
       <button class="btn-prim" id="abrir-previa"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>Vista previa</button>
+      <button class="btn-reporte" id="abrir-reporte" hidden title="Reportar un error" aria-label="Reportar un error"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/><path d="M12 8v5M12 16.5v.01"/></svg></button>
       <div class="cuenta" id="cuenta" hidden><button class="cuenta-btn" id="cuenta-btn" aria-label="Tu cuenta"></button>
-        <div class="cuenta-menu" id="cuenta-menu" hidden><b id="cuenta-nombre"></b><small id="cuenta-email"></small><a class="btn-sec" href="salir">Salir</a></div></div>
+        <div class="cuenta-menu" id="cuenta-menu" hidden><b id="cuenta-nombre"></b><small id="cuenta-email"></small><button class="btn-sec" data-reportar>Reportar un error</button><a class="btn-sec" href="salir">Salir</a></div></div>
     </div>
   </header>
   <div class="subbarra">
@@ -1207,6 +1224,11 @@
   // =================== MODO ===================
   // "tour": el link público de un tour (solo el visor). "nube": el estudio en Cloudflare, guarda en R2.
   // "demo": la vista previa local con el proyecto de ejemplo, guarda en este navegador.
+  // Últimos errores de la página: viajan con un reporte para entender qué falló
+  const ERRORES = [];
+  const anotarError = (t) => { ERRORES.push(new Date().toISOString().slice(11, 19) + " " + String(t).slice(0, 300)); if (ERRORES.length > 10) ERRORES.shift(); };
+  window.addEventListener("error", (e) => anotarError((e.message || "Error") + (e.filename ? " @" + e.filename.split("/").pop() + ":" + e.lineno : "")));
+  window.addEventListener("unhandledrejection", (e) => anotarError("Promesa: " + ((e.reason && e.reason.message) || e.reason)));
   const PUBLICO = document.body.dataset.modo === "tour";
   let NUBE = null;
   if (!PUBLICO) {
@@ -1227,6 +1249,7 @@
     else btn.textContent = (NUBE.nombre || NUBE.email).trim().charAt(0).toUpperCase();
     document.getElementById("cuenta-nombre").textContent = NUBE.nombre || "";
     document.getElementById("cuenta-email").textContent = NUBE.email;
+    document.getElementById("abrir-reporte").hidden = false;
     btn.addEventListener("click", (ev) => { ev.stopPropagation(); const m = document.getElementById("cuenta-menu"); m.hidden = !m.hidden; });
     document.addEventListener("click", (ev) => { if (!ev.target.closest("#cuenta")) document.getElementById("cuenta-menu").hidden = true; });
   }
@@ -1802,13 +1825,39 @@
     if (!u) fetch("api/uso", { cache: "no-store" }).then((r) => r.json()).then((d) => { usoNube = d; pintarPlan(); }).catch(() => {});
   }
   // Panel del dueño: todas las cuentas y su plan (para dar acceso a tus alumnos)
+  let vistaDueno = "cuentas";
+  const TABS_DUENO = (n) => '<div class="rep-tabs"><button class="mini' + (vistaDueno === "cuentas" ? " primario" : "") + '" data-dueno="cuentas">Cuentas</button><button class="mini' + (vistaDueno === "reportes" ? " primario" : "") + '" data-dueno="reportes">Reportes' + (n ? " (" + n + " nuevos)" : "") + "</button></div>";
+  async function pintarReportes() {
+    const r = await fetch("api/admin/reportes", { cache: "no-store" }).catch(() => null);
+    if (!r || !r.ok) { avisar("No se pudieron leer los reportes"); return; }
+    const { reportes } = await r.json(), nuevos = reportes.filter((x) => x.estado === "nuevo").length;
+    const caja = $("cuentas");
+    const f = (iso) => new Date(iso).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(nuevos) + '<div class="rep-lista">' + (reportes.length ? reportes.map((x) =>
+      '<div class="rep-item ' + x.estado + '"><div><b>' + esc(x.nombre || x.email) + "</b> <small>" + esc(x.email) + " · " + esc(x.plan) + " · " + f(x.fecha) + "</small></div>" +
+      '<select data-rep="' + x.id + '">' + [["nuevo", "Nuevo"], ["revisando", "Revisando"], ["resuelto", "Resuelto"]].map(([v, n]) => '<option value="' + v + '"' + (x.estado === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select>" +
+      "<p>" + esc(x.texto) + "</p>" +
+      '<small style="grid-column:1/-1">Tour: ' + esc(x.contexto.tour || "—") + " · Sección: " + esc(x.contexto.seccion || "—") + " · " + esc(x.contexto.pantalla || "") + (x.contexto.errores && x.contexto.errores.length ? "<br>Errores: " + x.contexto.errores.map(esc).join("<br>") : "") + "</small>" +
+      (x.imagen ? '<a href="api/admin/reportes/' + x.id + '/imagen" target="_blank" rel="noopener" style="grid-column:1/-1"><img src="api/admin/reportes/' + x.id + '/imagen" alt="Imagen del reporte" loading="lazy"></a>' : "") +
+      '<small style="grid-column:1/-1"><a href="mailto:' + esc(x.email) + '?subject=' + encodeURIComponent("Tu reporte en Mozari") + '">Responder por correo</a></small></div>').join("") : '<p class="nota" style="padding:16px">Aún no hay reportes.</p>') + "</div>";
+  }
+  document.addEventListener("click", (ev) => {
+    const t = ev.target.closest("[data-dueno]"); if (!t) return;
+    vistaDueno = t.dataset.dueno; vistaDueno === "reportes" ? pintarReportes() : pintarCuentas();
+  });
+  document.addEventListener("change", async (ev) => {
+    const id = ev.target.dataset && ev.target.dataset.rep; if (!id) return;
+    const r = await fetch("api/admin/reportes/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ estado: ev.target.value }) }).catch(() => null);
+    avisar(r && r.ok ? "Reporte actualizado" : "No se pudo actualizar"); if (r && r.ok) pintarReportes();
+  });
   async function pintarCuentas() {
+    if (vistaDueno === "reportes") return pintarReportes();
     const r = await fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudieron leer las cuentas"); return; }
     const { cuentas } = await r.json();
     let caja = $("cuentas");
     if (!caja) { caja = document.createElement("div"); caja.id = "cuentas"; caja.className = "cuentas"; $("mi-plan").after(caja); }
-    caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p><table class="lotes-tabla"><thead><tr><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Vence</th><th>Última entrada</th></tr></thead><tbody>' + cuentas.map((c) =>
+    caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p>' + TABS_DUENO(0) + '<table class="lotes-tabla"><thead><tr><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Vence</th><th>Última entrada</th></tr></thead><tbody>' + cuentas.map((c) =>
       "<tr><td><b>" + esc(c.nombre || "") + "</b></td><td>" + esc(c.email) + "</td><td>" + (c.admin ? "Dueño" : '<select data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
       "</td><td>" + (c.admin ? "" : c.vence ? fechaLarga(c.vence) : c.plan && c.plan !== "gratis" ? "No caduca" : "") + "</td><td>" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td></tr>").join("") + "</tbody></table>";
   }
@@ -1896,6 +1945,55 @@
       }
     }, 300);
   }
+  // =================== REPORTAR UN ERROR ===================
+  // Va al Panel de dueño (y al correo del dueño si está activado) con lo necesario para entender el problema.
+  let repImagen = "";
+  function abrirReporte() {
+    if (MODO !== "nube") return;
+    repImagen = "";
+    const sec = SECCIONES.find((x) => x.id === nav.sec), sub = sec && sec.subs.find((x) => x[0] === nav.sub);
+    const puedeCaptura = !!(motorEd && motorEd.actual && !$("ed-stage").closest("section").hidden);
+    $("dp-cuerpo").innerHTML = '<button class="dp-cerrar" data-dp-cerrar aria-label="Cerrar">×</button>' +
+      '<div><h2 id="dp-titulo">Reportar un error</h2><p>Cuéntanos qué pasó y qué esperabas que pasara. Lo leemos nosotros y te respondemos a tu correo.</p></div>' +
+      '<textarea id="rep-texto" maxlength="4000" placeholder="Ej.: Al mover un lote de la manzana 3, los números se encimaron…"></textarea>' +
+      '<div class="rep-adj">' + (puedeCaptura ? '<label><input type="checkbox" id="rep-captura" checked> Incluir lo que se ve en la esfera</label>' : "") +
+      '<label class="mini">Adjuntar imagen<input type="file" id="rep-archivo" accept="image/*" hidden></label><span id="rep-vista"></span></div>' +
+      '<p class="nota">También enviamos: el tour y la sección donde estás (' + esc((sec ? sec.nombre : "") + (sub ? " → " + sub[1] : "")) + '), tu navegador y los últimos errores técnicos de la página.</p>' +
+      '<button class="btn-prim dp-pagar" id="rep-enviar">Enviar reporte</button>';
+    $("cuenta-menu").hidden = true;
+    $("dlg-pago").showModal();
+    setTimeout(() => $("rep-texto").focus(), 50);
+  }
+  async function reducirImagen(src, max) {
+    const im = await new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = src; });
+    const k = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight)), cv = document.createElement("canvas");
+    cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k);
+    cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height);
+    return cv.toDataURL("image/jpeg", 0.8);
+  }
+  document.addEventListener("click", async (ev) => {
+    if (ev.target.closest("#abrir-reporte, [data-reportar]")) { ev.preventDefault(); abrirReporte(); return; }
+    if (ev.target.id !== "rep-enviar") return;
+    const texto = $("rep-texto").value.trim();
+    if (!texto) { avisar("Cuéntanos qué pasó"); $("rep-texto").focus(); return; }
+    const b = ev.target; b.disabled = true; b.textContent = "Enviando…";
+    let imagen = repImagen;
+    try { if (!imagen && $("rep-captura") && $("rep-captura").checked) imagen = await reducirImagen(motorEd.captura(), 1600); } catch (e) { /* sin captura */ }
+    const sec = SECCIONES.find((x) => x.id === nav.sec), sub = sec && sec.subs.find((x) => x[0] === nav.sub);
+    const contexto = { tour: (TOUR || "") + (P() && P().nombre ? " (" + P().nombre + ")" : ""), seccion: (sec ? sec.nombre : nav.sec) + (sub ? " → " + sub[1] : ""), navegador: navigator.userAgent, pantalla: innerWidth + "×" + innerHeight, errores: ERRORES.slice() };
+    const r = await fetch("api/reportes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ texto, contexto, imagen }) }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    if (!r || !r.ok) { b.disabled = false; b.textContent = "Enviar reporte"; avisar(d.error || "No se pudo enviar. Intenta de nuevo."); return; }
+    $("dp-cuerpo").innerHTML = '<div><h2 id="dp-titulo">¡Gracias!</h2><p>Recibimos tu reporte. Si necesitamos algo más te escribimos a ' + esc(NUBE.email) + ".</p></div>" +
+      '<button class="btn-prim dp-pagar" data-dp-cerrar>Listo</button>';
+  });
+  document.addEventListener("change", async (ev) => {
+    if (ev.target.id !== "rep-archivo" || !ev.target.files[0]) return;
+    const url = URL.createObjectURL(ev.target.files[0]);
+    try { repImagen = await reducirImagen(url, 1600); $("rep-vista").innerHTML = '<img src="' + repImagen + '" alt="Imagen adjunta">'; if ($("rep-captura")) $("rep-captura").checked = false; }
+    catch (e) { avisar("No se pudo leer esa imagen"); }
+    URL.revokeObjectURL(url);
+  });
   function abrirTourNube(id, nuevo) {
     if (id === TOUR) { ir("proyecto", "general"); return; }
     location.hash = "t=" + id + (nuevo ? "&nuevo" : "");
