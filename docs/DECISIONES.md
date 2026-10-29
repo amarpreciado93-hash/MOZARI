@@ -77,3 +77,4 @@
 | 2026-10-28 | Publicar desde el estudio: guarda lo pendiente, congela el tour y da el link para copiar | Un clic para entregar al cliente |
 | 2026-10-28 | El tour público usa el mismo programa del estudio en modo "tour" (solo el visor, sin herramientas) | Un solo programa que mantener: lo que se ve en la vista previa es lo que ve el cliente |
 | 2026-10-28 | herramientas/construir.py arma estudio/index.html desde el visor | Una sola fuente del programa |
+| 2026-10-28 | Las capas (lotes, textos, hotspots) se pintan en el mismo cuadro que la esfera, justo después de que Marzipano dibuja | Antes iban un cuadro atrás y se veían despegadas al girar |
