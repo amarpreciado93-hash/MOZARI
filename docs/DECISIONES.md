@@ -89,3 +89,4 @@
 | 2026-10-29 | Etapa 2 · Cuentas: se entra con Google (proyecto Mozari en Google Cloud); sesión firmada en cookie de 30 días; cada tour pertenece a una cuenta (cuentas/<uid>/tours/<id>) y nadie toca tours ajenos | Vender Mozari como Kuula: cada alumno o cliente con su espacio |
 | 2026-10-29 | La página principal es el escaparate para quien no ha entrado y el estudio para quien sí; arriba a la derecha va tu foto y Salir | Una sola dirección para todo |
 | 2026-10-29 | Cloudflare Access deja de usarse en el estudio; el dueño (ADMIN) se queda con los tours creados antes de las cuentas | Los usuarios nunca ven Cloudflare |
+| 2026-10-29 | Escaparate completo: imagen real de un tour con lotes, cómo funciona en 3 pasos, 6 funciones, sección Masterplan, llamado final; páginas de Aviso de privacidad y Términos | Presentar Mozari como producto y cumplir lo que pide Google para abrir el acceso a todos |
