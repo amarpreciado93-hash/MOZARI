@@ -221,12 +221,14 @@
 
   /* Mapa de nodos */
   .mapa-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; height: calc(100vh - 250px); min-height: 420px; }
-  .mapa { position: relative; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); overflow: hidden; }
+  .mapa { position: relative; background: #3A3C38 radial-gradient(rgba(242, 245, 236, 0.09) 1px, transparent 1.2px) 0 0 / 22px 22px; border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); overflow: hidden; }
   #mapa-svg { width: 100%; height: 100%; display: block; cursor: grab; }
   .mapa .herr { position: absolute; top: 12px; left: 12px; display: flex; gap: 8px; }
   .mapa .ayuda { position: absolute; bottom: 12px; left: 12px; right: 12px; font-size: 11px; color: var(--mz-tenue); pointer-events: none; }
-  .enlace { stroke: rgba(242, 245, 236, 0.32); stroke-width: 1.4; fill: none; transition: stroke 0.2s, opacity 0.2s; }
-  .etq-nodo { fill: var(--mz-texto); font-size: 12px; font-weight: 500; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: var(--mz-negro); stroke-width: 4px; transition: opacity 0.2s; }
+  .zona-sueltas { fill: rgba(11, 11, 11, 0.22); stroke: rgba(242, 245, 236, 0.18); stroke-dasharray: 5 5; }
+  .zona-sueltas-t { fill: var(--mz-tenue); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .enlace { stroke: var(--mz-lima); stroke-opacity: 0.85; stroke-width: 2.6; fill: none; transition: stroke 0.2s, opacity 0.2s; }
+  .etq-nodo { fill: var(--mz-texto); font-size: 12px; font-weight: 500; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: #3A3C38; stroke-width: 4px; transition: opacity 0.2s; }
   .nodo .aro { fill: none; stroke: rgba(242, 245, 236, 0.4); stroke-width: 2; }
   .nodo.inicio .aro { stroke: var(--mz-lima); stroke-width: 3; }
   .nodo.suelta .aro { stroke: var(--mz-tenue); stroke-dasharray: 4 3; }
@@ -236,7 +238,7 @@
   .nodo.origen .aro { stroke: var(--mz-lima); stroke-width: 4; stroke-dasharray: none; }
   .mapa.enfoque .nodo:not(.vecino), .mapa.enfoque .etq-nodo:not(.vecino) { opacity: 0.25; }
   .mapa.enfoque .enlace:not(.vecino) { opacity: 0.12; }
-  .mapa.enfoque .enlace.vecino { stroke: var(--mz-lima); }
+  .mapa.enfoque .enlace.vecino { stroke: var(--mz-lima); stroke-opacity: 1; stroke-width: 3.4; }
   .ruta { background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); padding: 16px; display: grid; gap: 12px; align-content: start; overflow: auto; }
   .ruta h3 { margin: 0; font-size: 14px; font-weight: 600; }
   .diag { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px; border-radius: 10px; background: var(--mz-negro); }
@@ -3079,8 +3081,8 @@ void main(){
       diagnostico(g);
       const grado = (n) => n.salen + n.entran, radio = (n) => 26 + Math.min(5, grado(n)) * 5;
       const defs = svg.append("defs");
-      defs.append("marker").attr("id", "flecha").attr("viewBox", "0 -5 10 10").attr("refX", 9).attr("refY", 0).attr("markerWidth", 7).attr("markerHeight", 7).attr("orient", "auto-start-reverse")
-        .append("path").attr("d", "M0,-4L9,0L0,4").attr("fill", "rgba(242,245,236,.55)");
+      defs.append("marker").attr("id", "flecha").attr("viewBox", "0 -5 10 10").attr("refX", 8).attr("refY", 0).attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto-start-reverse")
+        .append("path").attr("d", "M0,-5L10,0L0,5z").attr("fill", "#D5FF40");
       g.nodes.forEach((n) => defs.append("clipPath").attr("id", "clip-" + n.id).append("circle").attr("r", radio(n)));
       const raiz = svg.append("g");
       svg.call(d3.zoom().scaleExtent([0.4, 3]).on("zoom", (e) => raiz.attr("transform", e.transform)));
@@ -3105,13 +3107,26 @@ void main(){
       nodos.call(d3.drag()
         .on("start", (ev, n) => { if (!ev.active) sim.alphaTarget(0.25).restart(); n.fx = n.x; n.fy = n.y; })
         .on("drag", (ev, n) => { n.fx = ev.x; n.fy = ev.y; })
-        .on("end", (ev, n) => { if (!ev.active) sim.alphaTarget(0); n.fx = null; n.fy = null; }));
+        .on("end", (ev, n) => { if (!ev.active) sim.alphaTarget(0); if (n.fija) { n.fx = ev.x; n.fy = ev.y; } else { n.fx = null; n.fy = null; } }));
+      // Orden: las que no están conectadas se acomodan en una fila abajo; las conectadas se quedan dentro del recuadro
+      const sueltas = g.nodes.filter((n) => grado(n) === 0), unidas = g.nodes.filter((n) => grado(n) > 0);
+      const altoFila = sueltas.length ? 130 : 0, top = 60, bottom = H - 40 - altoFila;
+      if (sueltas.length) {
+        const y0 = H - 40 - altoFila + 8;
+        raiz.insert("rect", ":first-child").attr("class", "zona-sueltas").attr("x", 16).attr("y", y0).attr("width", W - 32).attr("height", altoFila - 16).attr("rx", 14);
+        raiz.insert("text", ":nth-child(2)").attr("class", "zona-sueltas-t").attr("x", 30).attr("y", y0 + 20).text("Sin conectar · arrastra o usa Conectar");
+        const paso = Math.min(140, (W - 80) / sueltas.length);
+        sueltas.forEach((n, i) => { n.fx = W / 2 + (i - (sueltas.length - 1) / 2) * paso; n.fy = y0 + 56; n.fija = true; });
+      }
+      const cx = W / 2, cy = (top + bottom) / 2;
       sim = d3.forceSimulation(g.nodes)
-        .force("enlace", d3.forceLink(g.links).id((n) => n.id).distance(190).strength(0.6))
-        .force("carga", d3.forceManyBody().strength(-900))
-        .force("centro", d3.forceCenter(W / 2, H / 2))
-        .force("choque", d3.forceCollide().radius((n) => radio(n) + 30))
+        .force("enlace", d3.forceLink(g.links).id((n) => n.id).distance(Math.min(170, Math.max(110, (bottom - top) / 3))).strength(0.7))
+        .force("carga", d3.forceManyBody().strength(unidas.length > 8 ? -420 : -600))
+        .force("x", d3.forceX(cx).strength((n) => (n.fija ? 0 : 0.07)))
+        .force("y", d3.forceY(cy).strength((n) => (n.fija ? 0 : 0.09)))
+        .force("choque", d3.forceCollide().radius((n) => radio(n) + 26))
         .on("tick", () => {
+          unidas.forEach((n) => { const rr = radio(n) + 12; n.x = Math.max(rr, Math.min(W - rr, n.x)); n.y = Math.max(top + rr - 30, Math.min(bottom - rr - 18, n.y)); });
           enlaces.attr("d", (l) => {
             const dx = l.target.x - l.source.x, dy = l.target.y - l.source.y, dist = Math.hypot(dx, dy) || 1;
             const rs = radio(l.source) + 6, rt = radio(l.target) + 8;
