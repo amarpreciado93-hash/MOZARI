@@ -260,6 +260,8 @@
   .panos-tira li:hover { background: var(--mz-lima-suave); }
   .panos-tira li[aria-current="true"] { border-color: var(--mz-lima); cursor: default; }
   .panos-tira li.arrastrando { opacity: 0.4; }
+  .panos-tira li { position: relative; }
+  .tira-inicio { position: absolute; top: 8px; left: 8px; z-index: 1; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; background: var(--mz-lima); color: var(--mz-negro); padding: 2px 6px; border-radius: 999px; pointer-events: none; }
   .panos-tira li.antes { box-shadow: 0 -3px 0 var(--mz-lima); }
   .panos-tira li.despues { box-shadow: 0 3px 0 var(--mz-lima); }
   .panos-tira img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 7px; display: block; pointer-events: none; }
@@ -1371,6 +1373,8 @@
     });
     delete est.proyecto.littlePlanet;
     if (!escenaOk(est.proyecto.escenaInicial)) est.proyecto.escenaInicial = est.escenas[0] ? est.escenas[0].id : "";
+    // La esfera de inicio siempre va primero en la lista
+    { const i = est.escenas.findIndex((e) => e.id === est.proyecto.escenaInicial); if (i > 0) est.escenas.unshift(est.escenas.splice(i, 1)[0]); }
     // Lotes: colores de estado del proyecto y datos de lote nuevos que traiga el archivo del proyecto
     if (!est.lotesEstados) est.lotesEstados = JSON.parse(JSON.stringify(base.lotesEstados || ESTADOS_DEF));
     const lotesBase = {};
@@ -1655,7 +1659,7 @@
       const fecha = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
       if (PLAN) pintarPlan();
       $("tours").innerHTML = toursNube.map((t) => {
-        const foto = t.inicial ? "t/" + t.id + "/escenas/" + t.inicial + "/1/f/0/0.jpg" : VACIA_IMG;
+        const foto = t.portada ? "t/" + t.id + "/" + t.portada : t.inicial ? "t/" + t.id + "/escenas/" + t.inicial + "/1/f/0/0.jpg" : VACIA_IMG;
         const conf = borrandoTour === t.id ? '<div class="card-confirma" role="alertdialog"><b>¿Borrar ' + esc(t.nombre) + "?</b><span>Se borran sus esferas y su link público. Esto no se puede deshacer.</span><div><button class=\"mini peligro-lleno\" data-si-borrar-tour=\"" + t.id + '">Borrar</button><button class="mini" data-no-borrar-tour>Cancelar</button></div></div>' : "";
         return '<div class="card" role="button" tabindex="0" data-tour="' + t.id + '"><div class="foto"><img src="' + foto + '" alt="" loading="lazy" onerror="this.style.opacity=0">' +
           (t.id === TOUR ? '<span class="badge">ABIERTO</span>' : t.publicado ? '<span class="badge pub">PUBLICADO</span>' : "") +
@@ -1826,6 +1830,13 @@
 
   // =================== PROYECTO ===================
   const P = () => est.proyecto;
+  // Elegir la esfera de inicio la sube al primer lugar (y la primera de la lista siempre es la de inicio)
+  function ponerInicial(id) {
+    const i = est.escenas.findIndex((e) => e.id === id);
+    if (i < 0) return;
+    if (i > 0) est.escenas.unshift(est.escenas.splice(i, 1)[0]);
+    P().escenaInicial = id;
+  }
   function thumbProyecto() { return urlArchivo(P().thumbnail) || thumbDe(P().escenaInicial); }
   // Sube un lienzo como archivo del tour (nube) o lo incrusta (demo). Devuelve lo que se guarda en el proyecto.
   async function medio(lienzo, tipo, calidad, nombre) {
@@ -1863,7 +1874,7 @@
     $("r-pol").textContent = todas.filter((c) => c.tipo === "poligono").length;
   }
   $("p-nombre").addEventListener("input", (e) => { P().nombre = e.target.value.trim() || "Tour sin nombre"; guardar(); });
-  $("p-inicial").addEventListener("change", (e) => { P().escenaInicial = e.target.value; guardar(); pintarProyecto(); });
+  $("p-inicial").addEventListener("change", (e) => { ponerInicial(e.target.value); guardar(); pintarProyecto(); });
   $("p-thumb-auto").addEventListener("click", () => { delete P().thumbnail; guardar(); pintarProyecto(); avisar("Thumbnail: panorama inicial"); });
   $("p-thumb-archivo").addEventListener("change", (e) => {
     const f = e.target.files[0];
@@ -2744,7 +2755,7 @@
     });
     est.escenas.forEach((e) => { if (e.piloto && e.piloto.siguiente === id) { e.piloto.siguiente = ""; if (e.piloto.alTerminar === "siguiente") e.piloto.alTerminar = "detener"; } });
     if (est.terreno && est.terreno.puntos[id]) { delete est.terreno.puntos[id]; if (est.terreno.base === id) est.terreno.base = Object.keys(est.terreno.puntos)[0] || null; trCache = {}; }
-    if (P().escenaInicial === id) P().escenaInicial = est.escenas[0].id;
+    if (P().escenaInicial === id || (est.escenas[0] && P().escenaInicial !== est.escenas[0].id)) P().escenaInicial = est.escenas[0].id;
     est.borradas = (est.borradas || []).filter((x) => x !== id).concat(id);
     if (edPano === id) edPano = null;
     borrandoPano = null;
@@ -3146,9 +3157,9 @@ void main(){
     if (!motorEd || !motorEd.actual) return;
     const aqui = motorEd.actual.id, conectadas = new Set(salidas(aqui).map((h) => h.destino));
     $("panos-tira").innerHTML = est.escenas.map((e) =>
-      '<li draggable="true" data-id="' + e.id + '" aria-current="' + (e.id === aqui) + '" title="' + esc(e.nombre) + '"><img src="' + thumbDe(e.id) + '" alt="" loading="lazy"><span>' +
+      '<li draggable="true" data-id="' + e.id + '" aria-current="' + (e.id === aqui) + '" title="' + esc(e.nombre) + '">' + (e.id === P().escenaInicial ? '<b class="tira-inicio">Inicio</b>' : "") + '<img src="' + thumbDe(e.id) + '" alt="" loading="lazy"><span>' +
       (conectadas.has(e.id) ? ICO_ENLACE : "") + "<em>" + esc(e.nombre) + "</em></span></li>").join("");
-    $("panos-nota").textContent = (motorEd.modo === "capas" ? "Arrastra uno a la esfera para conectarlo de ida y vuelta. " : "Clic para cambiar de panorama. ") + "Arriba o abajo cambia el orden (es el orden de la presentación).";
+    $("panos-nota").textContent = (motorEd.modo === "capas" ? "Arrastra uno a la esfera para conectarlo de ida y vuelta. " : "Clic para cambiar de panorama. ") + "Arrastra arriba o abajo para cambiar el orden. La primera es la de inicio.";
   }
   let panoArrastrado = null, ordenArrastrado = null;
   const limpiarOrden = () => document.querySelectorAll(".panos-tira li.antes, .panos-tira li.despues").forEach((x) => x.classList.remove("antes", "despues"));
@@ -3173,8 +3184,10 @@ void main(){
     const [m] = l.splice(de, 1);
     let a = l.findIndex((e) => e.id === li.dataset.id) + (despues ? 1 : 0);
     l.splice(a, 0, m);
+    const antes = P().escenaInicial;
+    P().escenaInicial = l[0].id;
     guardar(); pintarTira();
-    avisar("Orden actualizado: " + nombreDe(id) + " es la " + (l.indexOf(m) + 1) + "ª en la presentación");
+    avisar(l[0].id !== antes ? "Ahora el tour empieza en " + nombreDe(l[0].id) : "Orden actualizado: " + nombreDe(id) + " es la " + (l.indexOf(m) + 1) + "ª");
   });
   $("panos-tira").addEventListener("click", (ev) => {
     const li = ev.target.closest("li[data-id]");
@@ -3307,7 +3320,7 @@ void main(){
   let encuadreOn = true;
   $("pl-inicio").addEventListener("change", (ev) => {
     if (ev.target.id === "pl-encuadre") { encuadreOn = ev.target.checked; $("encuadre").hidden = !encuadreOn; }
-    if (ev.target.id === "pl-escena-ini") { P().escenaInicial = ev.target.value; guardar(); avisar("El tour empieza en " + nombreDe(ev.target.value)); }
+    if (ev.target.id === "pl-escena-ini") { ponerInicial(ev.target.value); guardar(); avisar("El tour empieza en " + nombreDe(ev.target.value)); }
   });
   $("pl-inicio").addEventListener("click", (ev) => accionRecorrido(ev));
   $("recorrido").addEventListener("click", (ev) => accionRecorrido(ev));

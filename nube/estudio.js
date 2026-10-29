@@ -163,7 +163,8 @@ async function api(request, env, partes, yo) {
       if (!p || !p.proyecto || !Array.isArray(p.escenas)) return error(400, "Proyecto incompleto");
       if (!pasa(plan.esferas, p.escenas.length)) return limite("Tu plan " + plan.nombre + " incluye " + plan.esferas + " esferas por tour. Mejora tu plan para subir más.", "esferas");
       await env.R2.put(base + "proyecto.json", txt, { httpMetadata: { contentType: tipoDe("x.json") } });
-      await guardarIndice(env, uid, id, { nombre: p.proyecto.nombre || "Tour", escenas: p.escenas.length, inicial: p.proyecto.escenaInicial || "" });
+      const portada = typeof p.proyecto.thumbnail === "string" && rutaValida(p.proyecto.thumbnail) ? p.proyecto.thumbnail : "";
+      await guardarIndice(env, uid, id, { nombre: p.proyecto.nombre || "Tour", escenas: p.escenas.length, inicial: p.proyecto.escenaInicial || "", portada });
       return json({ ok: true });
     }
     if (m === "DELETE") {

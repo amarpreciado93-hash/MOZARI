@@ -101,3 +101,5 @@
 | 2026-10-29 | Un plan pagado vence; al vencer la cuenta vuelve a Gratis sin borrar sus tours. Pagar el mismo plan vigente suma el tiempo al final. Lo que el dueño asigna a mano no caduca | Claro para el cliente y sin sorpresas |
 | 2026-10-29 | "Elegir Pro / Desarrollos" en el escaparate lleva a entrar con Google y abre directo el pago de ese plan | Menos pasos entre ver el precio y pagar |
 | 2026-10-29 | Dominio propio mozari.app (Cloudflare): el estudio y el escaparate en mozari.app, los tours publicados en tours.mozari.app. Las direcciones viejas de workers.dev mandan a mozari.app y los links de tours viejos siguen abriendo | Verse profesional y poder abrir la entrada con Google a todos |
+| 2026-10-29 | En Capas, la primera esfera de la tira es la de inicio (lleva la marca "Inicio"); arrastrar otra hasta arriba la vuelve la de inicio, y elegir la de inicio en Proyecto la sube al primer lugar | Un solo lugar y una sola regla para el orden y el inicio |
+| 2026-10-29 | La tarjeta del tour en Mis Tours usa el thumbnail del proyecto (si no hay, la esfera de inicio) | Reconocer cada tour como lo verá el cliente |
