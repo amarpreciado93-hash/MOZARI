@@ -7,6 +7,7 @@
   "main": "../estudio.js",
   "compatibility_date": "2026-10-01",
   "workers_dev": true,
+  "routes": [{ "pattern": "mozari.app", "custom_domain": true }, { "pattern": "www.mozari.app", "custom_domain": true }],
   "preview_urls": false,
   "assets": {
     "directory": "../../estudio",
@@ -16,6 +17,7 @@
   "r2_buckets": [{ "binding": "R2", "bucket_name": "mozari" }],
   "vars": {
     // Dueño de Mozari: se queda con los tours creados antes de las cuentas
+    "DOMINIO": "mozari.app",
     "ADMIN": "amarpreciado93@gmail.com",
     // ID público de la llave de Google (proyecto "Mozari" en Google Cloud). El secreto va aparte.
     "GOOGLE_CLIENT_ID": "714496356293-4du5n8fsqmr3hp8u7942en9dbucaoduf.apps.googleusercontent.com"

@@ -1143,7 +1143,7 @@
   // Plan de la cuenta (el servidor es quien pone los límites; aquí solo se avisa a tiempo)
   const PLAN = MODO === "nube" && NUBE.plan ? NUBE.plan : null;
   const sinLotif = () => !!(PLAN && !PLAN.lotificacion);
-  const ESCAPARATE = (MODO === "tour" ? "https://" + location.host.replace(/^mozari-tours\./, "mozari-estudio.") + "/" : "") + "escaparate#planes";
+  const ESCAPARATE = (MODO === "tour" ? "https://" + location.host.replace(/^tours\./, "").replace(/^mozari-tours\./, "mozari-estudio.") + "/" : "") + "escaparate#planes";
   // Tu cuenta (arriba a la derecha): foto de Google, nombre y Salir
   if (MODO === "nube" && NUBE.email) {
     const c = document.getElementById("cuenta"), btn = document.getElementById("cuenta-btn");
@@ -1609,7 +1609,8 @@
 
   // =================== PUBLICAR (nube) ===================
   // El link público vive en el Worker de tours; publicar congela una copia del borrador.
-  const hostTours = () => location.host.replace(/^mozari-estudio\./, "mozari-tours.");
+  // Con dominio propio: mozari.app → tours.mozari.app; en workers.dev: mozari-estudio → mozari-tours
+  const hostTours = () => /^mozari-estudio\./.test(location.host) ? location.host.replace(/^mozari-estudio\./, "mozari-tours.") : /^(localhost|127\.)/.test(location.host) ? location.host : "tours." + location.host.replace(/^www\./, "");
   const linkTour = () => location.protocol + "//" + hostTours() + "/" + TOUR + "/";
   function pintarPublicar() {
     const t = (toursNube || []).find((x) => x.id === TOUR) || {};

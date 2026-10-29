@@ -219,6 +219,12 @@ export default {
     const url = new URL(request.url);
     const segs = url.pathname.replace(/^\/+/, "").split("/");
 
+    // Dominio propio: las páginas viejas (workers.dev, www) mandan a mozari.app.
+    // La API, los archivos, el aviso de Mercado Pago y la entrada con Google en curso no se mueven.
+    if (env.DOMINIO && url.hostname !== env.DOMINIO && url.hostname !== "localhost" && request.method === "GET" && !["api", "t", "webhooks", "auth"].includes(segs[0])) {
+      return Response.redirect("https://" + env.DOMINIO + url.pathname + url.search, 302);
+    }
+
     const s = await rutasSesion(request, env, (p) => adoptarTours(env, p));
     if (s) return s;
 

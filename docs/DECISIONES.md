@@ -100,3 +100,4 @@
 | 2026-10-29 | El plan se activa solo cuando Mercado Pago confirma (aviso al servidor + revisión al regresar); el servidor consulta el pago directo a Mercado Pago y revisa monto y moneda; el mismo pago nunca suma dos veces | Nadie puede fingir un pago |
 | 2026-10-29 | Un plan pagado vence; al vencer la cuenta vuelve a Gratis sin borrar sus tours. Pagar el mismo plan vigente suma el tiempo al final. Lo que el dueño asigna a mano no caduca | Claro para el cliente y sin sorpresas |
 | 2026-10-29 | "Elegir Pro / Desarrollos" en el escaparate lleva a entrar con Google y abre directo el pago de ese plan | Menos pasos entre ver el precio y pagar |
+| 2026-10-29 | Dominio propio mozari.app (Cloudflare): el estudio y el escaparate en mozari.app, los tours publicados en tours.mozari.app. Las direcciones viejas de workers.dev mandan a mozari.app y los links de tours viejos siguen abriendo | Verse profesional y poder abrir la entrada con Google a todos |
