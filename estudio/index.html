@@ -906,6 +906,9 @@
     .movil .logo-m svg { width: 28px; height: 28px; color: var(--mz-lima); }
     .movil .logo-m b { font-weight: 300; letter-spacing: 0.42em; }
     .movil .tarjeta img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 10px; }
+    .movil .tarjeta[hidden] { display: none; }
+    .movil .mv-fila { display: flex; gap: 8px; flex-wrap: wrap; }
+    .movil .mv-fila > * { flex: 1; }
   }
   @media (prefers-reduced-motion: reduce) {
     .splash-centro, .splash-credito { animation: none; }
@@ -1198,7 +1201,8 @@
 <!-- ======================= MÓVIL ======================= -->
 <div class="movil">
   <div class="logo-m"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg><b>MOZARI</b></div>
-  <div class="tarjeta">
+  <div class="tarjeta" id="mv-plan" hidden></div>
+  <div class="tarjeta" id="mv-tour">
     <img id="mv-thumb" alt="">
     <h2 id="mv-nombre" style="margin:0;font-size:18px">—</h2>
     <p class="nota">El estudio de Mozari está pensado para compu. Desde aquí puedes ver el tour como lo verá tu cliente.</p>
@@ -1936,6 +1940,18 @@
       location.href = d.url;
     }
   });
+  // En el celular: el plan y su pago también están a la mano (el estudio es de compu)
+  if (MODO === "nube" && PLAN) {
+    const mp = $("mv-plan"), btnPlan = PLAN.vencido ? '<button class="btn-prim" data-comprar="' + PLAN.vencido + '">Renovar plan</button>'
+      : PLAN.vence ? '<button class="btn-sec" data-comprar="' + PLAN.id + '">Renovar</button>'
+      : PLAN.id !== "desarrollos" && !NUBE.admin ? '<button class="btn-prim" data-comprar="' + (PLAN.id === "pro" ? "desarrollos" : "pro") + '">Mejorar plan</button>' : "";
+    mp.innerHTML = '<span class="etiq" style="color:var(--mz-tenue);font-size:12px">' + esc(NUBE.email) + "</span>" +
+      '<h2 style="margin:0;font-size:18px">Plan ' + esc(PLAN.nombre) + "</h2>" +
+      (PLAN.vence ? '<p class="nota">Vigente hasta el ' + fechaLarga(PLAN.vence) + "</p>" : PLAN.vencido ? '<p class="nota" style="color:var(--mz-aviso)">Tu plan venció. Renuévalo para seguir sin límites.</p>' : "") +
+      '<div class="mv-fila">' + btnPlan + '<button class="btn-sec" data-reportar>Reportar un error</button><a class="btn-sec" href="salir" style="text-align:center;text-decoration:none">Salir</a></div>';
+    mp.hidden = false;
+    if (!TOUR) $("mv-tour").hidden = true;
+  }
   // Al volver del escaparate (?comprar=) o de Mercado Pago (?pago=)
   if (MODO === "nube") {
     const q = new URLSearchParams(location.search);
