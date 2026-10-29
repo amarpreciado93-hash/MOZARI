@@ -575,6 +575,23 @@
   .lupa-mira::before { left: -12px; top: -0.5px; width: 24px; height: 1px; }
   .lupa-mira::after { left: -0.5px; top: -12px; width: 1px; height: 24px; }
   .lupa-x { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 600; letter-spacing: 0.04em; background: rgba(11, 11, 11, 0.75); padding: 2px 8px; border-radius: 999px; color: var(--mz-lima); }
+  .foto-card .foto img { object-fit: cover; }
+  .foto-card .cuerpo input { width: 100%; font: 600 14px var(--mz-texto-ui); color: var(--mz-texto); background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 4px 6px; margin: -4px -6px; }
+  .foto-card .cuerpo input:hover, .foto-card .cuerpo input:focus { border-color: var(--mz-linea); outline: none; background: var(--mz-negro); }
+  .foto-card .card-borrar { opacity: 1; }
+  .gal-lista { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .gal-lista label { position: relative; display: block; cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent; }
+  .gal-lista label:has(input:checked) { border-color: var(--mz-lima); }
+  .gal-lista img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+  .gal-lista input { position: absolute; top: 4px; left: 4px; accent-color: var(--mz-lima); }
+  .gal-lista i { position: absolute; top: 4px; right: 4px; font-style: normal; font-size: 10px; font-weight: 700; background: var(--mz-lima); color: var(--mz-negro); border-radius: 999px; min-width: 16px; text-align: center; padding: 1px 4px; }
+  .pop-caja.gal { background: transparent; box-shadow: none; overflow: visible; align-items: center; gap: 12px; }
+  .pop-caja.gal img { display: block; max-width: min(1400px, calc(100cqw - 2 * clamp(14px, 4cqmin, 40px))); max-height: calc(100cqh - 2 * clamp(14px, 4cqmin, 40px) - 40px); width: auto; height: auto; object-fit: contain; border-radius: 12px; }
+  .pop-caja.gal .pop-x { position: absolute; top: 10px; right: 10px; background: #FFF; color: #111; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); }
+  .gal-flecha { position: absolute; top: calc(50% - 20px); transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.92); color: #111; font-size: 22px; cursor: pointer; display: grid; place-items: center; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); }
+  .gal-flecha.ant { left: 10px; } .gal-flecha.sig { right: 10px; }
+  .gal-pie { color: #FFF; font-size: 13px; display: flex; gap: 10px; align-items: center; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); }
+  .gal-pie span { opacity: 0.7; }
   .img-accion { display: grid; gap: 8px; }
   .img-accion img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 10px; border: 1px solid var(--mz-linea-neutra); display: block; }
   .img-accion .mini { justify-self: start; }
@@ -961,6 +978,13 @@
     </section>
 
     <!-- Panoramas / Lista -->
+    <section data-vista="media/fotos" hidden>
+      <div class="contenido" style="max-width:none">
+        <h1>Fotos</h1>
+        <p class="sub">Tu biblioteca de fotos del tour: renders, interiores, fichas. Úsalas en <b>Imagen en ventana</b> o en una <b>Galería</b> desde cualquier capa.</p>
+        <div class="rejilla" id="fotos-lista"></div>
+      </div>
+    </section>
     <section data-vista="panoramas/lista" hidden>
       <div class="contenido" style="max-width:none">
         <h1>Panoramas</h1>
@@ -1374,6 +1398,8 @@
       });
     });
     if (est.terreno === undefined) est.terreno = base.terreno ? JSON.parse(JSON.stringify(base.terreno)) : null;
+    if (!est.media) est.media = { fotos: [] };
+    if (!Array.isArray(est.media.fotos)) est.media.fotos = [];
     if (!est.terreno) est.terreno = { base: null, puntos: {} };
     Object.keys(est.terreno.puntos).forEach((id) => { if (!meta[id]) delete est.terreno.puntos[id]; });
     if (!est.terreno.puntos[est.terreno.base]) est.terreno.base = Object.keys(est.terreno.puntos)[0] || null;
@@ -1421,7 +1447,7 @@
   const t3 = (c) => Object.assign({}, T3_DEF, c.t3d);
   const tamHs = (c) => c.tamano || 48;
   const accionDe = (c) => c.accion || (c.tipo === "hotspot" ? "panorama" : c.lote ? "ficha" : "ninguna");
-  const ACCIONES = [["ninguna", "Nada"], ["panorama", "Ir a un panorama"], ["url", "Abrir enlace"], ["web", "Página en ventana"], ["imagen", "Imagen en ventana"]];
+  const ACCIONES = [["ninguna", "Nada"], ["panorama", "Ir a un panorama"], ["url", "Abrir enlace"], ["web", "Página en ventana"], ["imagen", "Imagen en ventana"], ["galeria", "Galería de fotos"]];
   const ICO_ACCION = {
     panorama: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
     url: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5h5v5M19 5l-8 8M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4"/></svg>',
@@ -1574,7 +1600,6 @@
     compartir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="m8.2 10.8 7.6-4M8.2 13.2l7.6 4"/></svg>',
   };
   const PROXIMO = {
-    "media/fotos": [ICO.foto, "Fotos", "Fotos fijas para galerías y puntos de información dentro del tour: renders, fichas de lote, interiores."],
     "media/videos": [ICO.video, "Videos", "Videos planos que se abren desde un hotspot: recorridos con dron, testimoniales, avances de obra."],
     "media/planos": [ICO.plano, "Planos", "Planos y masterplans con la ubicación de cada panorama y un radar que muestra hacia dónde estás viendo."],
     "media/audios": [ICO.audio, "Audios", "Narraciones y sonidos por panorama. La música de fondo del tour vive en Proyecto → Música."],
@@ -1622,6 +1647,7 @@
     if (sec === "proyecto") pintarProyecto();
     if (clave === "proyecto/presentacion") pintarPresentacion();
     if (clave === "panoramas/lista") pintarLista();
+    if (clave === "media/fotos") pintarFotos();
     if (clave === "panoramas/mapa") requestAnimationFrame(() => mapa.dibujar());
     if (enEditor) abrirEditor(edPano || P().escenaInicial, sub);
     if (clave === "panoramas/terreno") requestAnimationFrame(abrirTerreno);
@@ -3685,6 +3711,14 @@ void main(){
       if (fr) g += '<p class="nota">Llegas mirando hacia donde ibas. Se calcula con el hotspot de regreso; si lo mueves allá, el frente se ajusta solo. Doble clic en el hotspot para probarlo.</p>';
     }
     if (a === "url" || a === "web") g += campo("Enlace", '<input type="text" inputmode="url" data-k="url" placeholder="https://…" value="' + esc(c.url || "") + '">');
+    const fotos = est.media.fotos;
+    if (a === "imagen" && fotos.length) g += campo("De tus fotos", '<select data-k="imagen"><option value="">Elige una foto…</option>' + fotos.map((x) => '<option value="' + esc(x.archivo) + '"' + (c.imagen === x.archivo ? " selected" : "") + ">" + esc(x.nombre) + "</option>").join("") + "</select>");
+    if (a === "galeria") {
+      const sel = c.galeria || [];
+      g += fotos.length
+        ? '<p class="nota">Elige las fotos y su orden: se muestran en el orden en que las marcas.</p><div class="gal-lista">' + fotos.map((x) => { const i = sel.indexOf(x.id); return '<label title="' + esc(x.nombre) + '"><img src="' + esc(urlArchivo(x.archivo)) + '" alt="" loading="lazy"><input type="checkbox" data-gal-foto="' + x.id + '"' + (i >= 0 ? " checked" : "") + ">" + (i >= 0 ? "<i>" + (i + 1) + "</i>" : "") + "</label>"; }).join("") + "</div>"
+        : '<p class="nota">Aún no tienes fotos. Súbelas en <b>Media → Fotos</b>.</p>';
+    }
     if (a === "imagen") g += '<div class="img-accion">' + (c.imagen ? '<img src="' + esc(urlArchivo(c.imagen)) + '" alt="Imagen de la acción">' : '<span class="nota">Sin imagen todavía</span>') + '<label class="mini">' + (c.imagen ? "Cambiar imagen" : "Subir imagen") + '<input type="file" accept="image/*" data-subir="imagen" hidden></label></div>';
     if (a === "web") g += '<p class="nota">Si un sitio no se deja mostrar en ventana, el tour ofrece abrirlo en otra pestaña.</p>';
     if (a !== "ninguna") g += '<p class="nota">Funciona en la Vista previa y en el tour publicado.</p>';
@@ -3775,6 +3809,13 @@ void main(){
     if (ev.target.dataset.k === "_vinculo") { vincular(ev.target.checked); return; }
     if (ev.target.dataset.frente !== undefined) { const c = buscar(motorEd.elegida); c.lote.frente = +ev.target.dataset.frente; if (c.vinculo) propagar(c, motorEd.actual.id); guardar(); pintarProps(); return; }
     if (ev.target.dataset.subir === "imagen") { subirImagenAccion(ev.target); return; }
+    if (ev.target.dataset.galFoto) {
+      const c = buscar(motorEd.elegida), id = ev.target.dataset.galFoto;
+      c.galeria = (c.galeria || []).filter((x) => x !== id);
+      if (ev.target.checked) c.galeria.push(id);
+      if (c.vinculo) propagar(c, motorEd.actual.id);
+      guardar(); pintarProps(); return;
+    }
     if (ev.target.type === "checkbox" || ev.target.tagName === "SELECT") aplicar(ev.target, true); else if (ev.target.type === "color") pintarProps();
   });
   // Estado del lote: se aplica a todas sus apariciones (por número y manzana o por vínculo de terreno)
@@ -4479,6 +4520,19 @@ void main(){
       if (a === "ficha" && c.lote) { pop.innerHTML = fichaLote(c); pop.hidden = false; return; }
       if (a === "url") { if (url) window.open(url, "_blank", "noopener"); return; }
       if (a === "web" && url) pop.innerHTML = '<div class="pop-caja web" role="dialog" aria-label="Página"><div class="pop-cab"><a href="' + esc(url) + '" target="_blank" rel="noopener">Abrir en otra pestaña ↗</a><button class="pop-x" aria-label="Cerrar">×</button></div><iframe src="' + esc(url) + '" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe></div>';
+      else if (a === "galeria") {
+        const fs = (c.galeria || []).map((id) => est.media.fotos.find((x) => x.id === id)).filter(Boolean);
+        if (!fs.length) return;
+        let i = 0;
+        const pintarGal = () => {
+          pop.innerHTML = '<div class="pop-caja gal" role="dialog" aria-label="Galería"><img src="' + esc(urlArchivo(fs[i].archivo)) + '" alt="' + esc(fs[i].nombre) + '">' +
+            (fs.length > 1 ? '<button class="gal-flecha ant" data-gal="-1" aria-label="Anterior">‹</button><button class="gal-flecha sig" data-gal="1" aria-label="Siguiente">›</button>' : "") +
+            '<div class="gal-pie"><b>' + esc(fs[i].nombre) + "</b>" + (fs.length > 1 ? "<span>" + (i + 1) + " / " + fs.length + "</span>" : "") + '</div><button class="pop-x" aria-label="Cerrar">×</button></div>';
+          pop.querySelectorAll("[data-gal]").forEach((b) => b.addEventListener("click", (ev) => { ev.stopPropagation(); i = (i + +b.dataset.gal + fs.length) % fs.length; pintarGal(); }));
+          if (fs[i + 1]) new Image().src = urlArchivo(fs[i + 1].archivo);
+        };
+        pintarGal();
+      }
       else if (a === "imagen" && c.imagen) pop.innerHTML = '<div class="pop-caja img" role="dialog" aria-label="Imagen"><img src="' + esc(urlArchivo(c.imagen)) + '" alt=""><button class="pop-x" aria-label="Cerrar">×</button></div>';
       else return;
       pop.hidden = false;
@@ -4648,6 +4702,67 @@ void main(){
   let tourPv = null, orientPv = "h";
   const audioTour = new Audio();
   const orientacionPantalla = () => (window.innerWidth < window.innerHeight ? "v" : "h");
+  // =================== MEDIA: FOTOS ===================
+  // Biblioteca del tour: se suben una vez (reducidas a 2400 px) y se usan en cualquier capa.
+  function pintarFotos() {
+    const fs = est.media.fotos;
+    $("fotos-lista").innerHTML = fs.map((x) =>
+      '<div class="card foto-card" data-foto="' + x.id + '"><div class="foto"><img src="' + esc(urlArchivo(x.archivo)) + '" alt="" loading="lazy">' +
+      '<button class="card-borrar" data-borrar-foto="' + x.id + '" aria-label="Quitar ' + esc(x.nombre) + '" title="Quitar foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button></div>' +
+      '<div class="cuerpo"><input type="text" maxlength="60" data-nombre-foto="' + x.id + '" value="' + esc(x.nombre) + '" aria-label="Nombre de la foto"><div class="chips"><span class="chip-dato">' + x.ancho + " × " + x.alto + "</span>" +
+      '<span class="chip-dato">' + usosFoto(x).length + (usosFoto(x).length === 1 ? " uso" : " usos") + "</span></div></div></div>").join("") +
+      '<label class="hueco subir" id="fotos-zona"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir fotos</b><span class="nota">Arrastra aquí tus JPG o PNG, o haz clic. Puedes subir varias.</span><input type="file" id="fotos-archivo" accept="image/jpeg,image/png,image/webp" multiple hidden></label>';
+  }
+  const usosFoto = (x) => Object.values(est.capas).flat().filter((c) => c && (c.imagen === x.archivo || (c.galeria || []).includes(x.id)));
+  function leerImagen(f) {
+    return new Promise((ok, mal) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => mal(new Error("No se pudo leer " + f.name)); im.src = URL.createObjectURL(f); });
+  }
+  async function subirFotos(files) {
+    const lista = [...files].filter((f) => /^image\//.test(f.type));
+    if (!lista.length) return;
+    let n = 0;
+    for (const f of lista) {
+      avisar("Subiendo foto " + (++n) + " de " + lista.length + "…");
+      try {
+        const im = await leerImagen(f);
+        const k = Math.min(1, 2400 / Math.max(im.naturalWidth, im.naturalHeight));
+        const cv = document.createElement("canvas");
+        cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k);
+        cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(im.src);
+        const archivo = await medio(cv, "image/jpeg", 0.86, "foto");
+        est.media.fotos.push({ id: "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), nombre: f.name.replace(/\.[a-z0-9]+$/i, "").slice(0, 60), archivo, ancho: cv.width, alto: cv.height });
+        guardar(); pintarFotos();
+      } catch (err) { avisar(err.message || "No se pudo subir " + f.name); return; }
+    }
+    avisar(lista.length === 1 ? "Foto lista" : lista.length + " fotos listas");
+  }
+  $("fotos-lista").addEventListener("change", (ev) => { if (ev.target.id === "fotos-archivo") { subirFotos(ev.target.files); ev.target.value = ""; } });
+  $("fotos-lista").addEventListener("input", (ev) => {
+    const id = ev.target.dataset.nombreFoto; if (!id) return;
+    const x = est.media.fotos.find((y) => y.id === id); if (x) { x.nombre = ev.target.value.trim() || "Foto"; guardar(); }
+  });
+  $("fotos-lista").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-borrar-foto]"); if (!b) return;
+    ev.preventDefault();
+    const x = est.media.fotos.find((y) => y.id === b.dataset.borrarFoto); if (!x) return;
+    const u = usosFoto(x).length;
+    if (u && b.dataset.seguro !== "1") { b.dataset.seguro = "1"; avisar("Se usa en " + u + (u === 1 ? " capa" : " capas") + ". Toca de nuevo para quitarla."); setTimeout(() => (b.dataset.seguro = ""), 4000); return; }
+    est.media.fotos = est.media.fotos.filter((y) => y !== x);
+    Object.values(est.capas).flat().forEach((c) => { if (c && c.galeria) c.galeria = c.galeria.filter((id) => id !== x.id); if (c && c.imagen === x.archivo) delete c.imagen; });
+    guardar(); pintarFotos(); avisar("Foto quitada");
+  });
+  ["dragenter", "dragover"].forEach((t) => $("fotos-lista").addEventListener(t, (ev) => {
+    if (!ev.dataTransfer || ![...ev.dataTransfer.types].includes("Files")) return;
+    ev.preventDefault(); const z = $("fotos-zona"); if (z) z.classList.add("encima");
+  }));
+  $("fotos-lista").addEventListener("dragleave", (ev) => { const z = $("fotos-zona"); if (z && !z.contains(ev.relatedTarget)) z.classList.remove("encima"); });
+  $("fotos-lista").addEventListener("drop", (ev) => {
+    if (!ev.dataTransfer || !ev.dataTransfer.files.length) return;
+    ev.preventDefault(); const z = $("fotos-zona"); if (z) z.classList.remove("encima");
+    subirFotos(ev.dataTransfer.files);
+  });
+
   // =================== PRECARGA ===================
   // Antes de abrir el tour se bajan las piezas que se ven primero (la esfera de inicio a buena
   // resolución y una versión ligera de las vecinas). Mientras navegas, se adelantan las esferas a
