@@ -1330,7 +1330,10 @@
   const escena = (id) => est.escenas.find((e) => e.id === id);
   const nombreDe = (id) => (escena(id) ? escena(id).nombre : "—");
   const VACIA_IMG = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 10"><rect width="16" height="10" fill="#171916"/></svg>');
-  const thumbDe = (id) => (!id || !escena(id) ? VACIA_IMG : escena(id).thumb || R(id) + "1/f/0/0.jpg");
+  // Archivos del tour (imágenes, logo, música): en la nube se guardan como "archivos/…" dentro del tour;
+  // las fotos viejas incrustadas (data:) se siguen viendo igual.
+  const urlArchivo = (r) => (!r || /^(data:|https?:|blob:)/.test(r) ? r : MODO === "nube" ? "t/" + TOUR + "/" + r : r);
+  const thumbDe = (id) => (!id || !escena(id) ? VACIA_IMG : urlArchivo(escena(id).thumb) || R(id) + "1/f/0/0.jpg");
   const planetaDe = (id) => R(id) + "planeta.jpg";
   const vistaDe = (id) => escena(id).vista;
   // Textos y hotspots en 3D (pegados a la esfera) y acciones al hacer clic
@@ -1639,7 +1642,21 @@
 
   // =================== PROYECTO ===================
   const P = () => est.proyecto;
-  function thumbProyecto() { return P().thumbnail || thumbDe(P().escenaInicial); }
+  function thumbProyecto() { return urlArchivo(P().thumbnail) || thumbDe(P().escenaInicial); }
+  // Sube un lienzo como archivo del tour (nube) o lo incrusta (demo). Devuelve lo que se guarda en el proyecto.
+  async function medio(lienzo, tipo, calidad, nombre) {
+    if (MODO !== "nube") return lienzo.toDataURL(tipo, calidad);
+    const blob = await new Promise((ok) => lienzo.toBlob(ok, tipo, calidad));
+    const ruta = "archivos/" + nombre + "-" + Date.now().toString(36) + (tipo === "image/png" ? ".png" : ".jpg");
+    await subirArchivo(ruta, blob);
+    return ruta;
+  }
+  // Música del tour en la nube: viaja con el tour publicado
+  if (MODO !== "demo") {
+    musica = null; musicaUrl = null;
+    const m = P().musica || {};
+    if (m.archivo) { musica = { nombre: m.nombre || "Música", peso: m.peso || 0 }; musicaUrl = urlArchivo(m.archivo); }
+  }
   function pintarProyecto() {
     $("p-nombre").value = P().nombre;
     $("p-thumb").src = thumbProyecto();
@@ -1668,12 +1685,12 @@
     const f = e.target.files[0];
     if (!f) return;
     const img = new Image();
-    img.onload = () => {
+    img.onload = async () => {
       const w = Math.min(800, img.naturalWidth), h = Math.round((img.naturalHeight / img.naturalWidth) * w);
       const c = document.createElement("canvas"); c.width = w; c.height = h;
       c.getContext("2d").drawImage(img, 0, 0, w, h);
-      P().thumbnail = c.toDataURL("image/jpeg", 0.82);
       URL.revokeObjectURL(img.src);
+      try { P().thumbnail = await medio(c, "image/jpeg", 0.82, "portada"); } catch (err) { avisar(err.message); return; }
       guardar(); pintarProyecto(); avisar("Thumbnail actualizado");
     };
     img.onerror = () => avisar("No se pudo leer esa imagen");
@@ -1686,7 +1703,7 @@
   const ICO_STOP = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
   function pintarMusica() {
     $("m-nombre").textContent = musica ? musica.nombre : "Sin música";
-    $("m-detalle").textContent = musica ? (musica.blob.size / 1048576).toFixed(1) + " MB · suena al abrir el tour" : "Sube un MP3, WAV o M4A";
+    $("m-detalle").textContent = musica ? ((musica.peso || (musica.blob && musica.blob.size) || 0) / 1048576).toFixed(1) + " MB · suena al abrir el tour" : "Sube un MP3, WAV o M4A";
     $("m-play").disabled = !musica;
     $("m-quitar").hidden = !musica;
   }
@@ -1699,6 +1716,24 @@
   $("m-archivo").addEventListener("change", async (e) => {
     const f = e.target.files[0];
     if (!f) return;
+    if (MODO === "nube") {
+      // Se sube con el tour para que suene también en el link publicado
+      e.target.value = "";
+      const ext = (f.name.split(".").pop() || "").toLowerCase(), tipo = { mp3: "mp3", m4a: "m4a", wav: "wav" }[ext] || { "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/wav": "wav", "audio/x-wav": "wav" }[f.type];
+      if (!tipo) { avisar("Usa un archivo MP3, M4A o WAV"); return; }
+      if (f.size > 25 * 1048576) { avisar("La música pesa más de 25 MB. Usa un MP3 más ligero."); return; }
+      avisar("Subiendo música…");
+      try {
+        const ruta = "archivos/musica-" + Date.now().toString(36) + "." + tipo;
+        await subirArchivo(ruta, f);
+        Object.assign(P().musica, { archivo: ruta, nombre: f.name, peso: f.size });
+        musica = { nombre: f.name, peso: f.size };
+        if (musicaUrl && musicaUrl.startsWith("blob:")) URL.revokeObjectURL(musicaUrl);
+        musicaUrl = urlArchivo(ruta);
+        guardar(); pintarMusica(); avisar("Música agregada al tour");
+      } catch (err) { avisar(err.message); }
+      return;
+    }
     musica = { blob: f, nombre: f.name };
     if (musicaUrl) URL.revokeObjectURL(musicaUrl);
     musicaUrl = URL.createObjectURL(f);
@@ -1709,8 +1744,11 @@
   });
   $("m-quitar").addEventListener("click", async () => {
     audioPrueba.pause(); $("m-play").innerHTML = ICO_PLAY;
-    musica = null; if (musicaUrl) URL.revokeObjectURL(musicaUrl); musicaUrl = null;
-    await dbDel("musica"); pintarMusica(); avisar("Música quitada");
+    if (musicaUrl && musicaUrl.startsWith("blob:")) URL.revokeObjectURL(musicaUrl);
+    musica = null; musicaUrl = null;
+    if (MODO === "nube") { delete P().musica.archivo; delete P().musica.nombre; delete P().musica.peso; guardar(); }
+    else await dbDel("musica");
+    pintarMusica(); avisar("Música quitada");
   });
   $("m-vol").addEventListener("input", (e) => { P().musica.volumen = +e.target.value; $("m-vol-v").textContent = Math.round(e.target.value * 100) + "%"; audioPrueba.volume = +e.target.value; guardar(); });
   $("m-loop").addEventListener("change", (e) => { P().musica.repetir = e.target.checked; guardar(); });
@@ -1834,7 +1872,7 @@
           el.classList.add("hs");
           const texto = textoHotspot(c);
           el.innerHTML = '<button class="hs-boton' + (c.icono ? " con-icono" : "") + (estiloHs(c) ? " hs-" + estiloHs(c) : "") + '" aria-label="' + esc(texto) + '">' +
-            (c.icono ? '<img src="' + esc(c.icono) + '" alt="">' : "") + '<span class="hs-nucleo">' + icoHs(c) + "</span></button>" +
+            (c.icono ? '<img src="' + esc(urlArchivo(c.icono)) + '" alt="">' : "") + '<span class="hs-nucleo">' + icoHs(c) + "</span></button>" +
             '<span class="hs-texto">' + esc(texto) + "</span>";
           const b = el.querySelector(".hs-boton");
           b.addEventListener("pointerdown", (ev) => tomar(ev, c, "mover"));
@@ -3048,13 +3086,13 @@ void main(){
     let url;
     try { url = motorEd.captura(); } catch (e) { avisar("No se pudo tomar la miniatura en este navegador"); return; }
     const img = new Image();
-    img.onload = () => {
+    img.onload = async () => {
       const W = 640, H = 400, r = W / H;
       let cw = img.width, ch = img.width / r;
       if (ch > img.height) { ch = img.height; cw = img.height * r; }
       const c = document.createElement("canvas"); c.width = W; c.height = H;
       c.getContext("2d").drawImage(img, (img.width - cw) / 2, (img.height - ch) / 2, cw, ch, 0, 0, W, H);
-      escena(id).thumb = c.toDataURL("image/jpeg", 0.82);
+      try { escena(id).thumb = await medio(c, "image/jpeg", 0.82, "mini-" + id); } catch (err) { avisar(err.message); return; }
       guardar();
       if (motorEd && motorEd.modo === "piloto") pintarRecorrido();
     };
@@ -3326,7 +3364,7 @@ void main(){
       if (fr) g += '<p class="nota">Llegas mirando hacia donde ibas. Se calcula con el hotspot de regreso; si lo mueves allá, el frente se ajusta solo. Doble clic en el hotspot para probarlo.</p>';
     }
     if (a === "url" || a === "web") g += campo("Enlace", '<input type="text" inputmode="url" data-k="url" placeholder="https://…" value="' + esc(c.url || "") + '">');
-    if (a === "imagen") g += '<div class="img-accion">' + (c.imagen ? '<img src="' + esc(c.imagen) + '" alt="Imagen de la acción">' : '<span class="nota">Sin imagen todavía</span>') + '<label class="mini">' + (c.imagen ? "Cambiar imagen" : "Subir imagen") + '<input type="file" accept="image/*" data-subir="imagen" hidden></label></div>';
+    if (a === "imagen") g += '<div class="img-accion">' + (c.imagen ? '<img src="' + esc(urlArchivo(c.imagen)) + '" alt="Imagen de la acción">' : '<span class="nota">Sin imagen todavía</span>') + '<label class="mini">' + (c.imagen ? "Cambiar imagen" : "Subir imagen") + '<input type="file" accept="image/*" data-subir="imagen" hidden></label></div>';
     if (a === "web") g += '<p class="nota">Si un sitio no se deja mostrar en ventana, el tour ofrece abrirlo en otra pestaña.</p>';
     if (a !== "ninguna") g += '<p class="nota">Funciona en la Vista previa y en el tour publicado.</p>';
     return g + "</div>";
@@ -3427,13 +3465,14 @@ void main(){
     input.value = "";
     if (!f || !c) return;
     const img = new Image();
-    img.onload = () => {
+    img.onload = async () => {
       const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
       const cv = document.createElement("canvas");
       cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
       cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
-      c.imagen = cv.toDataURL("image/jpeg", 0.85);
       URL.revokeObjectURL(img.src);
+      if (MODO === "nube") avisar("Subiendo imagen…");
+      try { c.imagen = await medio(cv, "image/jpeg", 0.85, "imagen"); } catch (err) { avisar(err.message); return; }
       if (c.vinculo) propagar(c, motorEd.actual.id);
       guardar(); pintarProps(); avisar("Imagen lista");
     };
@@ -4004,7 +4043,7 @@ void main(){
     const btn = (k, etq, cls) => '<button class="sk-btn ' + cls + '" data-sk="' + k + '" aria-label="' + etq + '">' + ICO_SK[k] + "</button>";
     const c = {
       sk, vertical, escenas: est.escenas,
-      logo: sk.logo.tipo === "propio" && sk.logo.img ? '<span class="sk-logo"><img src="' + sk.logo.img + '" alt=""></span>' : sk.logo.tipo === "mozari" ? '<span class="sk-logo"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg></span>' : "",
+      logo: sk.logo.tipo === "propio" && sk.logo.img ? '<span class="sk-logo"><img src="' + esc(urlArchivo(sk.logo.img)) + '" alt=""></span>' : sk.logo.tipo === "mozari" ? '<span class="sk-logo"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg></span>' : "",
       botones: (cls) => (sk.botones.musica && o.hayMusica ? btn("musica", "Silenciar música", cls) : "") + (sk.botones.zoom ? btn("menos", "Alejar", cls) + btn("mas", "Acercar", cls) : "") + (sk.botones.pantalla ? btn("pantalla", "Pantalla completa", cls) : ""),
       cerrar: (cls) => (o.cerrable ? btn("cerrar", "Cerrar vista previa", cls) : ""),
       cta: (cls) => {
@@ -4110,7 +4149,7 @@ void main(){
       if (a === "ficha" && c.lote) { pop.innerHTML = fichaLote(c); pop.hidden = false; return; }
       if (a === "url") { if (url) window.open(url, "_blank", "noopener"); return; }
       if (a === "web" && url) pop.innerHTML = '<div class="pop-caja web" role="dialog" aria-label="Página"><div class="pop-cab"><a href="' + esc(url) + '" target="_blank" rel="noopener">Abrir en otra pestaña ↗</a><button class="pop-x" aria-label="Cerrar">×</button></div><iframe src="' + esc(url) + '" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe></div>';
-      else if (a === "imagen" && c.imagen) pop.innerHTML = '<div class="pop-caja img" role="dialog" aria-label="Imagen"><img src="' + esc(c.imagen) + '" alt=""><button class="pop-x" aria-label="Cerrar">×</button></div>';
+      else if (a === "imagen" && c.imagen) pop.innerHTML = '<div class="pop-caja img" role="dialog" aria-label="Imagen"><img src="' + esc(urlArchivo(c.imagen)) + '" alt=""><button class="pop-x" aria-label="Cerrar">×</button></div>';
       else return;
       pop.hidden = false;
     }
@@ -4201,7 +4240,7 @@ void main(){
   const tgl = (k, on, etq) => '<label class="interruptor"><span style="font-size:12px">' + etq + '</span><input type="checkbox" class="toggle" data-sk-k="' + k + '"' + (on ? " checked" : "") + "></label>";
   function pintarPanelSkin() {
     const sk = SK(), T = sk.plantilla;
-    const logoMuestra = sk.logo.tipo === "propio" && sk.logo.img ? '<img src="' + sk.logo.img + '" alt="Logo del cliente">' : sk.logo.tipo === "mozari" ? '<svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg>' : '<span style="font-size:11px;color:var(--mz-tenue)">—</span>';
+    const logoMuestra = sk.logo.tipo === "propio" && sk.logo.img ? '<img src="' + esc(urlArchivo(sk.logo.img)) + '" alt="Logo del cliente">' : sk.logo.tipo === "mozari" ? '<svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg>' : '<span style="font-size:11px;color:var(--mz-tenue)">—</span>';
     $("sk-panel").innerHTML =
       '<div class="grupo"><b>Plantilla base</b><div class="plantillas">' +
       Object.entries(PLANTILLAS).map(([id, p]) => '<button class="plantilla" data-sk-k="plantilla" data-v="' + id + '" aria-pressed="' + (id === T) + '">' + miniPlantilla(id, sk.acento) + "<b>" + p.nombre + "</b><span>" + p.desc + "</span></button>").join("") +
@@ -4256,13 +4295,13 @@ void main(){
     const f = input.files[0];
     if (!f) return;
     const img = new Image();
-    img.onload = () => {
+    img.onload = async () => {
       const s = Math.min(1, 480 / Math.max(img.naturalWidth || 480, 1));
       const c = document.createElement("canvas");
       c.width = Math.round((img.naturalWidth || 480) * s); c.height = Math.round((img.naturalHeight || 160) * s);
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-      setSk("logo.img", c.toDataURL("image/png"));
       URL.revokeObjectURL(img.src);
+      try { setSk("logo.img", await medio(c, "image/png", undefined, "logo")); } catch (err) { avisar(err.message); return; }
       pintarPanelSkin(); repintarSk();
       avisar("Logo del cliente aplicado");
     };

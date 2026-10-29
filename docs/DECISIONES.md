@@ -85,3 +85,4 @@
 | 2026-10-29 | Panoramas → Masterplan: plano de los lotes visto desde arriba, armado solo con el suelo del terreno; conteo por estado, % vendido, m² vendidos, cambio de estado al tocar y descarga en PNG | Ver y compartir el avance de la venta sin trabajo extra |
 | 2026-10-29 | Terreno con lupa ×3 y mira; desde el 5º punto marca "Aquí debería ir" en la otra esfera y gira hacia allá; avisa si un punto cae lejos de lo esperado o muy cerca del horizonte | Puntos más precisos y errores detectados al momento |
 | 2026-10-29 | Guía "Cómo lograr un trazo preciso" y límites del terreno (supone suelo plano y horizonte derecho) | Saber cuándo confiar en el trazo |
+| 2026-10-29 | En la nube, música, portada, miniaturas, imágenes de acciones y logo se suben como archivos del tour (archivos/…) en vez de ir incrustados en el proyecto | Suenan y se ven en el link publicado; el proyecto pesa KB, no MB |

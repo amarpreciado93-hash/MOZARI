@@ -9,7 +9,7 @@
 | Sáb 31 oct | ✅ Lotificación con puntos de referencia, estados de lote y fichas (adelantado el 28) |
 | Lun 2 nov | ✅ Piloto automático (adelantado el 28) |
 | Mar 3 nov | ✅ Skin 16:9 / 9:16 (adelantado el 28) |
-| Mié 4 nov | ✅ Publicar en internet: estudio en línea, subir esferas y publicar (adelantado el 28) · falta primer tour real |
+| Mié 4 nov | ✅ Publicar en internet: estudio en línea, subir esferas y publicar (adelantado el 28) · música e imágenes del tour en la nube (29 oct) · falta primer tour real |
 | Jue 5 nov | Revisión · Versión 0.1 |
 | Extra 27 oct | ✅ Estudio: ventanas Proyecto y Panoramas, mapa de nodos, vista previa con Little Planet y música |
 | Extra 28 oct | ✅ Navegación en dos niveles tipo 3DVista; se quita Little Planet al iniciar |
