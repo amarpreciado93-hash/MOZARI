@@ -36,15 +36,16 @@ export default {
       const pub = await env.R2.get("publicado/" + id + "/proyecto.json");
       if (!pub) return new Response(NO_PUBLICADO, { status: 404, headers: { "content-type": "text/html; charset=utf-8" } });
       // Al compartir el link se ve el nombre del tour y su portada (o la vista de su esfera de inicio)
-      let nombre = "Recorrido virtual 360", imagen = "";
+      let nombre = "Recorrido virtual 360", imagen = "", descripcion = "";
       try {
         const p = await pub.json(), pr = p.proyecto || {};
         if (pr.nombre) nombre = String(pr.nombre).slice(0, 90);
+        if (typeof pr.descripcion === "string") descripcion = pr.descripcion.replace(/\s+/g, " ").trim().slice(0, 200);
         const base = url.origin + "/" + id + "/";
         if (typeof pr.thumbnail === "string" && rutaValida(pr.thumbnail)) imagen = base + pr.thumbnail;
         else if (pr.escenaInicial && /^[A-Za-z0-9_-]{1,80}$/.test(pr.escenaInicial)) imagen = base + "escenas/" + pr.escenaInicial + "/1/f/0/0.jpg";
       } catch (e) { /* sin datos: textos genéricos */ }
-      const desc = "Recorrido virtual 360 · Muévete por el lugar como si estuvieras ahí.";
+      const desc = descripcion || "Recorrido virtual 360 · Muévete por el lugar como si estuvieras ahí.";
       const meta = (sel, v) => ({ element: (el) => el.setAttribute("content", v) });
       // El mismo programa del estudio, pero en modo "tour": solo el visor, sin herramientas
       const pagina = await env.ASSETS.fetch(new Request(url.origin + "/", { headers: request.headers }));

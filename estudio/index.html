@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="Sube tus esferas, conéctalas y comparte un link.">
 <meta property="og:title" content="Mozari · Arma tours 360 profesionales">
 <meta property="og:description" content="Sube tus esferas, conéctalas y comparte un link.">
@@ -215,6 +215,9 @@
   .tarjeta h2 svg { width: 18px; height: 18px; color: var(--mz-lima); }
   .fila-campo { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 14px; align-items: center; }
   .fila-campo > span { color: var(--mz-tenue); font-size: 12px; }
+  textarea.entrada { resize: vertical; font-family: var(--mz-texto-ui); line-height: 1.45; }
+  /* En el celular, pellizcar hace zoom en la esfera y no en toda la página */
+  .previa .stage, .previa .stage * { touch-action: none; }
   .entrada { width: 100%; box-sizing: border-box; background: var(--mz-negro); color: var(--mz-texto); border: 1px solid var(--mz-linea-neutra); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
   .entrada:focus { border-color: var(--mz-lima); outline: none; }
   .thumb-edit { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
@@ -1086,6 +1089,8 @@
             <section class="tarjeta">
               <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>Identidad</h2>
               <label class="fila-campo"><span>Nombre del tour</span><input class="entrada" id="p-nombre" maxlength="60"></label>
+              <label class="fila-campo"><span>Descripción</span><textarea class="entrada" id="p-desc" maxlength="200" rows="2" placeholder="Ej.: Parque industrial en León con lotes desde 1,000 m². Recorre el terreno en 360."></textarea></label>
+              <p class="nota" style="margin:-6px 0 0">El nombre, la descripción y el thumbnail son lo que se ve al compartir el link (WhatsApp, Facebook…). Si los cambias, vuelve a <b>Publicar</b> para que se actualicen.</p>
               <div class="fila-campo"><span>Thumbnail</span>
                 <div class="thumb-edit">
                   <img id="p-thumb" alt="Thumbnail del tour">
@@ -2428,6 +2433,7 @@
   }
   function pintarProyecto() {
     $("p-nombre").value = P().nombre;
+    $("p-desc").value = P().descripcion || "";
     $("p-thumb").src = thumbProyecto();
     $("p-inicial").innerHTML = est.escenas.map((e) => '<option value="' + e.id + '"' + (e.id === P().escenaInicial ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("");
     $("m-vol").value = P().musica.volumen;
@@ -2448,6 +2454,7 @@
     $("r-pol").textContent = todas.filter((c) => c.tipo === "poligono").length;
   }
   $("p-nombre").addEventListener("input", (e) => { P().nombre = e.target.value.trim() || "Tour sin nombre"; guardar(); });
+  $("p-desc").addEventListener("input", (e) => { const v = e.target.value.replace(/\s+/g, " ").trim(); if (v) P().descripcion = v; else delete P().descripcion; guardar(); });
   $("p-inicial").addEventListener("change", (e) => { ponerInicial(e.target.value); guardar(); pintarProyecto(); });
   $("p-thumb-auto").addEventListener("click", () => { delete P().thumbnail; guardar(); pintarProyecto(); avisar("Thumbnail: panorama inicial"); });
   $("p-thumb-archivo").addEventListener("change", (e) => {
@@ -6213,6 +6220,13 @@ void main(){
     it.addEventListener("click", fuera);
     setTimeout(fuera, matchMedia("(prefers-reduced-motion: reduce)").matches ? 800 : 2200);
   }
+  // Celular: el pellizco y el doble toque son para la esfera, nunca para agrandar la página (iOS ignora user-scalable)
+  (function () {
+    const enVisor = (t) => !$("previa").hidden && t && t.closest && t.closest("#previa");
+    const no = (e) => { if (enVisor(e.target)) e.preventDefault(); };
+    ["gesturestart", "gesturechange", "gestureend"].forEach((n) => document.addEventListener(n, no, { passive: false }));
+    document.addEventListener("touchmove", (e) => { if (e.touches.length > 1) no(e); }, { passive: false });
+  })();
   let previaGen = 0;
   async function abrirPrevia() {
     if (!est.escenas.length) { avisar("Primero sube una esfera"); return; }

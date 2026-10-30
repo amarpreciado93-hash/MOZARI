@@ -15,7 +15,7 @@ fin_style = txt.index("</style>") + len("</style>")
 cabeza, cuerpo = txt[:fin_style], txt[fin_style:]
 doc = (
     '<!doctype html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n'
-    '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
+    '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">\n'
     '<meta name="description" content="Sube tus esferas, conéctalas y comparte un link.">\n'
     '<meta property="og:title" content="Mozari · Arma tours 360 profesionales">\n'
     '<meta property="og:description" content="Sube tus esferas, conéctalas y comparte un link.">\n'
