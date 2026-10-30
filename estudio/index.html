@@ -2869,15 +2869,12 @@
           if (Hg > 0.55 * t / 0.6 * extV) Hg = 0.55 * t / 0.6 * extV;
           return (Hg * fijo * 40) / h;
         };
-        let elegido = versiones.length - 1, letraE = 0;
-        for (let i = 0; i < versiones.length; i++) {
-          letraE = estimada(versiones[i][1]);
-          if (letraE >= (i ? LETRA_CORTA : LETRA_MIN)) { elegido = i; break; }
-        }
-        letraE = estimada(versiones[elegido][1]);
-        let letra = poner(versiones[elegido][0], versiones[elegido][1], elegido > 0 ? Math.min(3, Math.max(1, LETRA_CORTA / (letraE || 1))) : 1);
+        // Siempre el rótulo completo, a escala del lote: al alejarte se hace chico junto con el lote,
+        // nunca cambia a una versión corta ni crece (así lo pidió el dueño de Mozari)
+        const elegido = 0;
+        const letra = poner(versiones[0][0], versiones[0][1], 1);
         versiones.forEach(([el], i) => { if (i !== elegido) el.style.display = "none"; });
-        if (elegido >= 0) versiones[elegido][0].style.visibility = letra >= 6 ? "" : "hidden";
+        versiones[0][0].style.visibility = letra >= 3 ? "" : "hidden";
       }
       R.lados.forEach((el, i) => {
         if (!el) return;
@@ -2910,11 +2907,10 @@
         if (C && l.etiqueta) {
           // Del más completo al más corto ("Lote 3 · Mz B" → "3 · B" → "3"): el número nunca se borra al alejarse
           const opciones = [nombreLote(c), nombreCorto(l), l.numero || "—"], cabe = (s) => (ancho * 0.92) / Math.max(1, s.length * 0.6);
-          let nivel = 0, tx = opciones[0], fs = Math.min(20 * t, lado * 0.17 * t, cabe(tx));
-          while (fs < (nivel ? LETRA_CORTA : LETRA_MIN) && nivel < 2) { nivel++; tx = opciones[nivel]; fs = Math.min(LETRA_CORTA, cabe(tx)); }
-          if (fs < LETRA_CORTA && nivel && lado >= 6) fs = LETRA_CORTA;
-          const area = l.verArea && nivel === 0 ? fmtArea(l.area) : "";
-          if (fs >= 7) {
+          // Siempre el rótulo completo, del tamaño que le toca al lote (sin versiones cortas)
+          const nivel = 0, tx = opciones[0], fs = Math.min(20 * t, lado * 0.17 * t, cabe(tx));
+          const area = l.verArea ? fmtArea(l.area) : "";
+          if (fs >= 4) {
             h += '<text class="lt-nom" x="' + C.x.toFixed(1) + '" y="' + (C.y - (area ? fs * 0.45 : 0)).toFixed(1) + '" font-size="' + fs.toFixed(1) + '">' + esc(tx) + "</text>";
             if (area && fs * 0.78 >= 7) h += '<text class="lt-area" x="' + C.x.toFixed(1) + '" y="' + (C.y + fs * 0.75).toFixed(1) + '" font-size="' + (fs * 0.78).toFixed(1) + '">' + esc(area) + "</text>";
           }
