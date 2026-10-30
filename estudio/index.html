@@ -447,6 +447,10 @@
   .cp-pol { pointer-events: all; cursor: pointer; stroke-linejoin: round; stroke-linecap: round; fill: var(--f); fill-opacity: var(--fo); stroke: var(--s); stroke-opacity: var(--so); stroke-width: var(--sw); transition: fill 0.2s, fill-opacity 0.2s, stroke 0.2s, stroke-width 0.2s; }
   .cp-pol.cp-camino { fill: none; pointer-events: visibleStroke; stroke-dasharray: var(--dash, none); }
   .cp-pol.cp-camino:hover { fill: none; }
+  .cp-pol.en-sel { stroke: var(--mz-lima) !important; stroke-opacity: 1 !important; stroke-width: 3px !important; }
+  .sel-multi { margin: 0 0 4px; padding: 12px 14px; border-radius: 12px; background: var(--mz-lima-suave); border: 1px solid var(--mz-linea); font-size: 12.5px; line-height: 1.5; display: grid; gap: 8px; }
+  .sel-multi b { color: var(--mz-lima); }
+  .sel-multi .mini { justify-self: start; }
   .cp-pol.cp-manzana { fill: none; stroke-dasharray: 7 5; pointer-events: visibleStroke; }
   .cp-pol.cp-manzana:hover { fill: none; }
   .cp-borrador.previo { fill: none; stroke: #fff; stroke-dasharray: 2 4; }
@@ -2543,6 +2547,7 @@
           const rec = recortar(enCam, cerrado);
           const d = rec.length < (cerrado ? 3 : 2) ? "" : trazo(cam, rec, cerrado);
           n.path.setAttribute("d", d);
+          n.path.classList.toggle("en-sel", !!(opciones.enSeleccion && opciones.enSeleccion(id)));
           if (n.toque) n.toque.setAttribute("d", d);
           if (n.etq) etiquetasLote(n, cam, enCam, rec);
           n.svg.querySelectorAll(".cp-sel, .cp-vert").forEach((x) => x.remove());
@@ -2715,7 +2720,9 @@
     function tomar(ev, c, modo, indice) {
       if (!editable || motor.modo !== "capas" || motor.dibujo) return;
       ev.stopPropagation(); ev.preventDefault();
-      if (motor.elegida !== c.id) opciones.alSeleccionar(c.id);
+      const sumar = ev.shiftKey || ev.metaKey || ev.ctrlKey;
+      if (sumar) { opciones.alSeleccionar(c.id, "sumar"); return; } // varias a la vez, sin mover
+      if (motor.elegida !== c.id || (opciones.enSeleccion && opciones.enSeleccion(c.id))) opciones.alSeleccionar(c.id);
       if (c.deManzana) return; // sus lados los manda la manzana
       const inicio = coordsEn(ev);
       if (!inicio) return;
@@ -3505,7 +3512,8 @@ void main(){
     if (!motorEd) {
       motorEd = crearMotor($("ed-stage"), {
         editable: true,
-        alSeleccionar: (cid) => seleccionar(cid),
+        alSeleccionar: (cid, modo) => seleccionar(cid, modo),
+        enSeleccion: (cid) => seleccion.size > 1 && seleccion.has(cid),
         alCambiar: () => cambio(),
         alSoltar: (c) => { if (c.manzana) { repartirManzana(c); cambio(); return; } if (c.vinculo) propagar(c, motorEd.actual.id); },
         alArrastrar: (c) => { if (c.manzana) repartirManzana(c); },
@@ -3522,7 +3530,7 @@ void main(){
     if (motorEd.dibujo) terminarDibujo(false);
     detenerPilotoEd();
     const cambia = !motorEd.actual || motorEd.actual.id !== id;
-    motorEd.elegida = null;
+    motorEd.elegida = null; seleccion = new Set();
     if (cambia) motorEd.mostrar(id, 0, vista);
     else motorEd.view().setParameters(vista || vistaDe(id));
     // Modo
@@ -4116,14 +4124,14 @@ void main(){
     const ul = $("lista"), l = cs();
     if (!l.length) { ul.innerHTML = '<li class="vacio" role="presentation">Este panorama no tiene capas. Agrega un polígono, un texto o un hotspot.</li>'; return; }
     ul.innerHTML = l.slice().reverse().map((c) =>
-      '<li role="option" draggable="true" data-id="' + c.id + '" aria-selected="' + (c.id === motorEd.elegida) + '"' + (c.visible ? "" : ' class="oculta"') + ">" +
+      '<li role="option" draggable="true" data-id="' + c.id + '" aria-selected="' + (c.id === motorEd.elegida || (seleccion.size > 1 && seleccion.has(c.id))) + '"' + (c.visible ? "" : ' class="oculta"') + ">" +
       (c.lote ? ICONOS.lote : c.manzana ? ICONOS.manzana : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.nombre)) + (c.vinculo ? ICO_VINC : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>").join("");
   }
   $("lista").addEventListener("click", (ev) => {
     const ojo = ev.target.closest("[data-ojo]");
     if (ojo) { const c = buscar(ojo.dataset.ojo); c.visible = !c.visible; cambio(); return; }
     const li = ev.target.closest("li[data-id]");
-    if (li) seleccionar(li.dataset.id);
+    if (li) seleccionar(li.dataset.id, ev.shiftKey ? "rango" : ev.metaKey || ev.ctrlKey ? "sumar" : null);
   });
   let arrastrandoId = null;
   $("lista").addEventListener("dragstart", (ev) => {
@@ -4235,7 +4243,10 @@ void main(){
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
     if (!c) { $("props-titulo").textContent = "Propiedades"; cont.innerHTML = '<p class="vacio">Selecciona una capa en la lista o sobre la esfera para editarla.</p>'; return; }
     $("props-titulo").textContent = c.lote ? nombreLote(c) : c.manzana ? "Manzana " + (c.manzana.mz || "") : c.camino ? "Ruta" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
-    let h = c.lote ? "" : '<div class="grupo">' + campo("Nombre", '<input type="text" data-k="nombre" value="' + esc(c.nombre) + '">') + "</div>";
+    const multi = seleccionadas().length > 1 ? seleccionadas() : null;
+    if (multi) $("props-titulo").textContent = multi.length + (c.lote ? " lotes" : " capas") + " seleccionados";
+    let h = (multi ? '<div class="sel-multi"><b>' + multi.length + ' seleccionados.</b> Lo que cambies aquí se aplica a todos' + (c.lote ? ": estado, precio, superficie y estilo (el número y la manzana no)." : ".") + ' <button class="mini" data-acc="sel-una">Solo este</button></div>' : "") +
+      (c.lote || multi ? "" : '<div class="grupo">' + campo("Nombre", '<input type="text" data-k="nombre" value="' + esc(c.nombre) + '">') + "</div>");
     if (c.lote) h += propsLote(c);
     else if (c.manzana) {
       const m = c.manzana, lotes = lotesDeManzana(c);
@@ -4300,6 +4311,17 @@ void main(){
     if (el.type === "range" || el.dataset.k === "peso") v = +v;
     if (el.dataset.k.startsWith("t3d.")) c.t3d = t3(c);
     escribir(c, el.dataset.k, v);
+    // Varias seleccionadas: el mismo cambio en todas (menos lo que identifica a cada una)
+    const otras = seleccionadas().filter((x) => x !== c);
+    if (otras.length && !/^(nombre|lote\.(numero|manzana|lados|frente))/.test(el.dataset.k)) {
+      otras.forEach((x) => {
+        if (el.dataset.k.startsWith("t3d.")) x.t3d = t3(x);
+        try { escribir(x, el.dataset.k, typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v); } catch (e) { return; }
+        if (x.lote && el.dataset.k.startsWith("lote.")) sincronizarLote(x);
+        if (x.vinculo) propagar(x, motorEd.actual.id);
+      });
+      if (!repintar) motorEd.construir();
+    }
     const etq = document.querySelector('[data-v-de="' + el.dataset.k + '"]');
     if (etq) etq.textContent = (FMTS[el.dataset.k] || px)(v);
     if (c.lote && el.dataset.k.startsWith("lote.")) {
@@ -4340,6 +4362,13 @@ void main(){
   // Estado del lote: se aplica a todas sus apariciones (por número y manzana o por vínculo de terreno)
   function cambiarEstado(c, estado) {
     if (!c || !c.lote) return;
+    const varios = seleccionadas().filter((x) => x.lote);
+    if (varios.length > 1) {
+      varios.forEach((x) => { x.lote.estado = estado; sincronizarLote(x); copiasLote(x).forEach(({ c: y }) => (y.lote.estado = estado)); });
+      guardar(); motorEd.construir(); pintarCapas(); pintarProps();
+      avisar(varios.length + " lotes: " + estadoDe(c).nombre);
+      return;
+    }
     c.lote.estado = estado;
     sincronizarLote(c);
     copiasLote(c).forEach(({ c: x }) => (x.lote.estado = estado));
@@ -4395,6 +4424,7 @@ void main(){
     if (a && a.dataset.acc === "a-lote") { const c = buscar(motorEd.elegida); const sig = siguienteLote(); c.lote = Object.assign({}, LOTE_DEF, sig, { lados: c.puntos.map(() => "") }); delete c.sinLote; if (!c.accion || c.accion === "ninguna") delete c.accion; est.ultimoLote = sig; cambio(); avisar(nombreLote(c) + ". Escribe sus datos."); return; }
     if (a && a.dataset.acc === "quitar-lote") { const c = buscar(motorEd.elegida); delete c.lote; c.sinLote = true; if (c.accion === "ficha") delete c.accion; cambio(); avisar("Ahora es un polígono normal"); return; }
     if (a && a.dataset.acc === "t3d-reset") { const c = buscar(motorEd.elegida); if (c) { c.t3d = Object.assign({}, T3_DEF); cambio(); } return; }
+    if (a && a.dataset.acc === "sel-una") { seleccionar(motorEd.elegida); return; }
     if (a && a.dataset.acc === "duplicar") duplicar();
     if (a && a.dataset.acc === "eliminar") eliminar();
   });
@@ -4417,6 +4447,15 @@ void main(){
     motorEd.elegida = copia.id; cambio(); avisar("Capa duplicada");
   }
   function eliminar() {
+    const varios = seleccionadas();
+    if (varios.length > 1) {
+      const quitar = varios.filter((x) => !x.deManzana), quedan = varios.length - quitar.length;
+      const ids = new Set(quitar.map((x) => x.id));
+      est.capas[motorEd.actual.id] = cs().filter((x) => !ids.has(x.id) && !(x.deManzana && ids.has(x.deManzana)));
+      seleccion = new Set(); motorEd.elegida = null; cambio();
+      avisar(quitar.length + " capas eliminadas" + (quedan ? ". Los lotes de una manzana se quitan desde la manzana." : ""));
+      return;
+    }
     const l = cs(), i = l.findIndex((c) => c.id === motorEd.elegida);
     if (i < 0) return;
     const v = l[i].vinculo;
@@ -4427,7 +4466,29 @@ void main(){
     if (v) Object.keys(est.capas).forEach((id) => { const antes = est.capas[id].length; est.capas[id] = est.capas[id].filter((x) => x.vinculo !== v); n += antes - est.capas[id].length; });
     cambio(); avisar(n ? "Eliminado en " + (n + 1) + " esferas" : "Capa eliminada");
   }
-  function seleccionar(id) { if (!motorEd) return; motorEd.elegida = id; pintarCapas(); pintarProps(); motorEd.render(); }
+  // Selección: una capa "elegida" (la que muestra sus propiedades) más otras del mismo tipo que se editan juntas.
+  // Shift + clic elige un rango en la lista; Cmd/Ctrl + clic suma o quita una (también sobre la esfera).
+  let seleccion = new Set();
+  const tipoSel = (c) => (c.lote ? "lote" : c.manzana ? "manzana" : c.camino ? "camino" : c.tipo);
+  const seleccionadas = () => { const l = cs(); return [...seleccion].map((id) => l.find((x) => x.id === id)).filter(Boolean); };
+  function seleccionar(id, modo) {
+    if (!motorEd) return;
+    const l = cs(), c = id && l.find((x) => x.id === id);
+    if (!c || !modo) seleccion = new Set(c ? [id] : []);
+    else {
+      const base = motorEd.elegida && l.find((x) => x.id === motorEd.elegida);
+      if (base && tipoSel(base) !== tipoSel(c)) seleccion = new Set([base.id].filter(() => false));
+      if (modo === "rango" && base) {
+        const orden = l.slice().reverse(), a = orden.indexOf(base), b = orden.indexOf(c);
+        orden.slice(Math.min(a, b), Math.max(a, b) + 1).forEach((x) => { if (tipoSel(x) === tipoSel(c)) seleccion.add(x.id); });
+      } else if (seleccion.has(id) && seleccion.size > 1) { seleccion.delete(id); motorEd.elegida = [...seleccion].pop(); pintarCapas(); pintarProps(); motorEd.render(); return; }
+      else seleccion.add(id);
+      if (base) seleccion.add(base.id);
+      [...seleccion].forEach((x) => { const y = l.find((z) => z.id === x); if (!y || tipoSel(y) !== tipoSel(c)) seleccion.delete(x); });
+    }
+    motorEd.elegida = id;
+    pintarCapas(); pintarProps(); motorEd.render();
+  }
   function cambio() {
     const c = motorEd.elegida && buscar(motorEd.elegida);
     if (c && c.manzana) repartirManzana(c);
