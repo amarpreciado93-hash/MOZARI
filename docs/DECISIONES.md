@@ -140,3 +140,4 @@
 | 2026-10-30 | Primera entrada: el Plan Gratis lleva a crear el primer tour (licencias como botón secundario); en el cel, tarjeta "Mozari se usa en computadora" con botón para mandarse el link |
 | 2026-10-30 | Panel de dueño: links de un solo uso (regalo al 100% o descuento) con vigencia y nota; el alumno entra con su link y activa o paga con descuento. Cortesía al asignar plan a mano. Pausar cuenta: no entra al estudio y sus tours dejan de verse, sin borrar nada |
 | 2026-10-30 | Tour en celular: hasta 2048 px por cara, caché de piezas de vistas anteriores 8 (antes 512 piezas de 1024 px = el navegador cerraba la página), sin precarga en alta; piezas que fallan se reintentan en 1.5 s. Servidor de tours: piezas en caché de Cloudflare y reintento si R2 falla (salía un 503 y la foto se veía cortada) |
+| 2026-10-30 | Etiqueta BETA junto al logo en el estudio (abre Reportar un error), en el celular y en el sitio; no va en los tours publicados |

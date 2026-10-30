@@ -66,6 +66,9 @@
   .marca-app { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; flex: none; }
   .marca-app svg { width: 24px; height: 24px; color: var(--mz-lima); }
   .marca-app b { font-weight: 300; font-size: 13px; letter-spacing: 0.42em; }
+  /* Beta: Mozari mejora cada semana; un clic abre "Reportar un error" */
+  .beta { display: inline-flex; align-items: center; font: 600 9px var(--mz-texto-ui); letter-spacing: 0.14em; color: var(--mz-tinta); background: var(--mz-lima); border: 0; border-radius: 999px; padding: 3px 7px; cursor: pointer; line-height: 1; }
+  .beta:hover { filter: brightness(0.92); }
   .nav { display: flex; align-items: flex-end; gap: 2px; min-width: 0; overflow-x: auto; flex: 1; justify-content: center; scrollbar-width: none; }
   .nav button {
     flex: none; border: 0; background: transparent; color: var(--mz-tenue); cursor: pointer;
@@ -1044,7 +1047,7 @@
 <!-- ======================= ESTUDIO ======================= -->
 <div class="app" id="app">
   <header class="barra">
-    <div class="marca-app"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg><b>MOZARI</b></div>
+    <div class="marca-app"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg><b>MOZARI</b><button class="beta" data-reportar title="Mozari está en beta: mejora cada semana. Si algo falla, repórtalo aquí.">BETA</button></div>
     <nav class="nav" id="nav" aria-label="Ventanas"></nav>
     <div class="barra-der">
       <span class="estado"><i></i><span id="b-estado">Guardado</span></span>
@@ -1320,7 +1323,7 @@
 
 <!-- ======================= MÓVIL ======================= -->
 <div class="movil">
-  <div class="logo-m"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg><b>MOZARI</b></div>
+  <div class="logo-m"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg><b>MOZARI</b><span class="beta">BETA</span></div>
   <div class="tarjeta" id="mv-compu" hidden>
     <h2 style="margin:0;font-size:18px">Mozari se usa en computadora</h2>
     <p class="nota">Para crear tus tours, entra a <b>mozari.app</b> desde tu compu con esta misma cuenta de Google. Ahí te espera tu plan Gratis.</p>
