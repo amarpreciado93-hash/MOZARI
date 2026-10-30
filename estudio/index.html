@@ -3818,30 +3818,34 @@ void main(){
       function pintarTierra() {
         pidio = false;
         capaTierra.selectAll("*").remove(); capaPlanta.selectAll("*").remove();
-        // Terreno: sigue la ruta. Curvas de nivel a lo largo de cada conexión (como un camino) y un pequeño cerro en cada aérea
+        // Terreno: un campo suave por cada aérea (y sus vecinas de piso) más "puentes" a lo largo de las conexiones; sus curvas de nivel son el terreno
         if (conTierra.length && tTierra > 0) {
-          const celda = 5, gw = Math.ceil(W / celda) + 1, gh = Math.ceil(H / celda) + 1, k = facil(Math.min(1, tTierra));
+          const celda = 6, gw = Math.ceil(W / celda) + 1, gh = Math.ceil(H / celda) + 1, k = facil(Math.min(1, tTierra));
           const geo = d3.geoPath(d3.geoIdentity().scale(celda));
           conTierra.forEach((gr) => {
             const ids = new Set(gr.map((n) => n.id));
-            const ancho = 20 * k;
-            const tramos = g.links.filter((l) => ids.has(l.source.id) && ids.has(l.target.id)).map((l) => ({ a: l.source, b: l.target }));
-            const cerros = gr.filter(esAerea).map((n) => ({ x: n.x, y: n.y, s: (radio(n) * 0.55 + ALCANCE[tipoK(n)] * 0.12) * k }));
-            const v = new Float64Array(gw * gh), lim = 9 * ancho * ancho;
+            const fuentes = gr.map((n) => ({ x: n.x, y: n.y, s: (esAerea(n) ? ALCANCE[tipoK(n)] * 0.56 : 30) * k }));
+            const puentes = g.links.filter((l) => ids.has(l.source.id) && ids.has(l.target.id)).map((l) => ({ a: l.source, b: l.target, s: 22 * k }));
+            const v = new Float64Array(gw * gh);
             for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) {
               const x = i * celda, y = j * celda; let f = 0;
-              // El camino: la cercanía al tramo más próximo (sin sumar, para que el ancho sea parejo)
-              for (const q of tramos) {
+              for (const q of fuentes) { const d2 = (x - q.x) ** 2 + (y - q.y) ** 2; if (d2 < 9 * q.s * q.s) f += Math.exp(-d2 / (2 * q.s * q.s)); }
+              for (const q of puentes) {
                 const ax = q.a.x, ay = q.a.y, bx = q.b.x - ax, by = q.b.y - ay, L2 = bx * bx + by * by || 1, u = Math.max(0, Math.min(1, ((x - ax) * bx + (y - ay) * by) / L2));
-                const d2 = (x - ax - bx * u) ** 2 + (y - ay - by * u) ** 2; if (d2 < lim) f = Math.max(f, Math.exp(-d2 / (2 * ancho * ancho)));
+                const d2 = (x - ax - bx * u) ** 2 + (y - ay - by * u) ** 2; if (d2 < 9 * q.s * q.s) f += 0.4 * Math.exp(-d2 / (2 * q.s * q.s));
               }
-              for (const q of cerros) { const d2 = (x - q.x) ** 2 + (y - q.y) ** 2; if (d2 < 9 * q.s * q.s) f = Math.max(f, Math.exp(-d2 / (2 * q.s * q.s))); }
               v[j * gw + i] = f;
             }
-            const niveles = [0.1, 0.3, 0.55, 0.8];
+            const niveles = [0.12, 0.26, 0.42, 0.58, 0.74, 0.9];
             d3.contours().size([gw, gh]).thresholds(niveles)(v).forEach((c, i) => {
               capaTierra.append("path").attr("d", geo(c)).attr("class", i ? "mp-curva" : "mp-tierra")
-                .attr("stroke-width", i ? Math.max(0.7, 1.4 - i * 0.2) : 1.8).attr("stroke-opacity", i ? Math.max(0.25, 0.65 - i * 0.12) : 0.9);
+                .attr("stroke-width", i ? Math.max(0.7, 1.6 - i * 0.18) : 2.2).attr("stroke-opacity", i ? Math.max(0.25, 0.75 - i * 0.1) : 0.95);
+            });
+            // Círculo de alcance de cada aérea, como en una planeación
+            gr.filter(esAerea).forEach((n) => {
+              const R = ALCANCE[tipoK(n)] * k;
+              capaTierra.append("circle").attr("class", "mp-alcance").attr("cx", n.x).attr("cy", n.y).attr("r", R);
+              capaTierra.append("text").attr("class", "mp-alcance-t").attr("x", n.x).attr("y", n.y - R - 5).text(tipoK(n).slice(1) + " M").attr("opacity", k);
             });
           });
         }
