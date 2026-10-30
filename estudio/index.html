@@ -295,6 +295,17 @@
   .tipo-fila select { width: 100%; font: 500 12px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); border-radius: 8px; padding: 5px 6px; }
   .tipo-medidas { grid-column: 2; display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--mz-tenue); }
   .tipo-medidas input { width: 54px; font: 500 12px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); border-radius: 8px; padding: 4px 6px; }
+  .mp-tierra { fill: rgba(213, 255, 64, 0.07); stroke: #D5FF40; stroke-width: 2.2; stroke-linejoin: round; }
+  .mp-curva { fill: none; stroke: #D5FF40; stroke-linejoin: round; }
+  .mp-alcance { fill: none; stroke: rgba(242, 245, 236, 0.45); stroke-width: 1; stroke-dasharray: 3 5; }
+  .mp-alcance-t { fill: rgba(242, 245, 236, 0.6); font-size: 9px; font-weight: 600; letter-spacing: 0.08em; text-anchor: middle; }
+  .mp-patio { fill: rgba(242, 245, 236, 0.05); stroke: rgba(242, 245, 236, 0.4); stroke-width: 1; stroke-dasharray: 2 4; }
+  .mp-cuarto { fill: rgba(17, 17, 17, 0.55); stroke: #F2F5EC; stroke-width: 2.4; }
+  .mp-cuarto.sin-medida { stroke-dasharray: 6 4; stroke-width: 1.6; }
+  .mp-puerta { stroke: #3A3C38; stroke-width: 4; stroke-linecap: butt; }
+  .mp-puerta-l { stroke: #D5FF40; stroke-width: 1.4; fill: none; }
+  .mp-cuarto-t { fill: #F2F5EC; font-size: 10px; font-weight: 600; }
+  .mp-cuarto-m { fill: rgba(242, 245, 236, 0.6); font-size: 9px; font-weight: 500; }
   .etq-tipo { fill: var(--mz-tenue); font-size: 10px; font-weight: 500; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: #3A3C38; stroke-width: 3px; letter-spacing: 0.02em; }
   .ruta { background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); padding: 16px; display: grid; gap: 12px; align-content: start; overflow: auto; }
   .ruta h3 { margin: 0; font-size: 14px; font-weight: 600; }
@@ -3471,12 +3482,14 @@ void main(){
       const el = $("mapa"), W = el.clientWidth, H = el.clientHeight;
       if (!W) return;
       if (sim) sim.stop();
+      el.classList.remove("enfoque");
       svg.selectAll("*").remove();
       svg.attr("viewBox", [0, 0, W, H]);
       const g = grafo();
       diagnostico(g);
       pintarTipos();
-      const grado = (n) => n.salen + n.entran, radio = (n) => 26 + Math.min(5, grado(n)) * 5;
+      const esInt = (n) => { const t = escena(n.id) && escena(n.id).tipo; return !!(t && t.k === "int"); };
+      const grado = (n) => n.salen + n.entran, radio = (n) => (esInt(n) && grado(n) ? 20 : 26 + Math.min(5, grado(n)) * 5);
       const defs = svg.append("defs");
       defs.append("marker").attr("id", "flecha").attr("viewBox", "0 -5 10 10").attr("refX", 8).attr("refY", 0).attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto-start-reverse")
         .append("path").attr("d", "M0,-5L10,0L0,5z").attr("fill", "#D5FF40");
@@ -3491,6 +3504,115 @@ void main(){
         .attr("tabindex", 0).attr("role", "button").attr("aria-label", (n) => n.nombre + ", " + n.salen + " salidas, " + n.entran + " entradas");
       nodos.append("image").attr("href", (n) => planetaDe(n.id)).attr("x", (n) => -radio(n)).attr("y", (n) => -radio(n)).attr("width", (n) => radio(n) * 2).attr("height", (n) => radio(n) * 2).attr("clip-path", (n) => "url(#clip-" + n.id + ")").attr("preserveAspectRatio", "xMidYMid slice");
       nodos.append("circle").attr("class", "aro").attr("r", radio);
+      // ---------- Mini plano vivo: terreno de las aéreas y planta de los interiores ----------
+      const capaTierra = raiz.insert("g", ":first-child"), capaPlanta = raiz.insert("g", ":nth-child(2)");
+      const tipoK = (n) => { const t = escena(n.id) && escena(n.id).tipo; return t && t.k ? t.k : ""; };
+      const ALCANCE = { a140: 150, a100: 125, a45: 92, a30: 76, a15: 60 };
+      const esAerea = (n) => !!ALCANCE[tipoK(n)];
+      // Grupos conectados (sin importar el sentido de la flecha)
+      const ady = new Map(g.nodes.map((n) => [n.id, []]));
+      g.links.forEach((l) => { const a = l.source.id || l.source, b = l.target.id || l.target; ady.get(a).push(b); ady.get(b).push(a); });
+      const grupoDe = new Map(); let ng = 0;
+      g.nodes.forEach((n) => { if (grupoDe.has(n.id)) return; const cola = [n.id]; grupoDe.set(n.id, ng); while (cola.length) { const x = cola.shift(); ady.get(x).forEach((y) => { if (!grupoDe.has(y)) { grupoDe.set(y, ng); cola.push(y); } }); } ng++; });
+      const porId = new Map(g.nodes.map((n) => [n.id, n]));
+      const grupos = [...Array(ng).keys()].map((k) => g.nodes.filter((n) => grupoDe.get(n.id) === k));
+      const conTierra = grupos.filter((gr) => gr.length > 1 && gr.some(esAerea));
+      // Planta: los interiores conectados entre sí se pegan como cuartos (largo a lo ancho, ancho hacia abajo)
+      const plantas = [];
+      grupos.forEach((gr) => {
+        const ints = gr.filter((n) => tipoK(n) === "int"); if (!ints.length) return;
+        const visto = new Set();
+        ints.forEach((raizN) => {
+          if (visto.has(raizN.id)) return;
+          const cuartos = [], cola = [[raizN, null]]; visto.add(raizN.id);
+          while (cola.length) {
+            const [n, padre] = cola.shift(), t = escena(n.id).tipo || {};
+            const largo = +t.largo || 4, ancho = +t.ancho || 4, c = { n, w: largo, h: ancho, sinMedida: !(+t.largo && +t.ancho), x: 0, y: 0, padre };
+            if (padre) {
+              const p = padre, choca = (q) => cuartos.some((o) => Math.abs(o.x - q.x) < (o.w + q.w) / 2 - 0.01 && Math.abs(o.y - q.y) < (o.h + q.h) / 2 - 0.01);
+              const op = [[p.x + p.w / 2 + c.w / 2, p.y - p.h / 2 + c.h / 2, "der"], [p.x - p.w / 2 + c.w / 2, p.y + p.h / 2 + c.h / 2, "abajo"], [p.x - p.w / 2 - c.w / 2, p.y - p.h / 2 + c.h / 2, "izq"], [p.x - p.w / 2 + c.w / 2, p.y - p.h / 2 - c.h / 2, "arriba"]];
+              const ok = op.find(([x, y]) => !choca({ x, y, w: c.w, h: c.h })) || op[0];
+              c.x = ok[0]; c.y = ok[1]; c.lado = ok[2];
+            }
+            cuartos.push(c);
+            ady.get(n.id).forEach((y) => { const m = porId.get(y); if (m && tipoK(m) === "int" && !visto.has(y)) { visto.add(y); cola.push([m, c]); } });
+          }
+          const minX = Math.min(...cuartos.map((c) => c.x - c.w / 2)), maxX = Math.max(...cuartos.map((c) => c.x + c.w / 2));
+          const minY = Math.min(...cuartos.map((c) => c.y - c.h / 2)), maxY = Math.max(...cuartos.map((c) => c.y + c.h / 2));
+          const escala = Math.max(5, Math.min(26, 260 / Math.max(maxX - minX, maxY - minY, 1)));
+          cuartos.forEach((c) => { c.dx = (c.x - cuartos[0].x) * escala; c.dy = (c.y - cuartos[0].y) * escala; c.pw = Math.max(c.w * escala, 70); c.ph = Math.max(c.h * escala, 60); });
+          if (cuartos.length) plantas.push({ cuartos, escala, raiz: cuartos[0].n });
+        });
+      });
+      // La planta ocupa su lugar en el mapa: las demás esferas se hacen a un lado
+      const radioPlanta = new Map(plantas.map((p) => [p.raiz.id, Math.max(...p.cuartos.map((c) => Math.hypot(Math.abs(c.dx) + c.pw / 2, Math.abs(c.dy) + c.ph / 2))) + 18]));
+      const enPlanta = new Map(); plantas.forEach((p) => p.cuartos.forEach((c, i) => { if (i) enPlanta.set(c.n.id, { raiz: p.raiz, c }); }));
+      let tTierra = 0, pidio = false, nuevaTierra = conTierra.length > 0;
+      const facil = (x) => 1 - Math.pow(1 - x, 3);
+      function pintarTierra() {
+        pidio = false;
+        capaTierra.selectAll("*").remove(); capaPlanta.selectAll("*").remove();
+        // Terreno: un campo suave por cada aérea (y sus vecinas de piso) más "puentes" a lo largo de las conexiones; sus curvas de nivel son el terreno
+        if (conTierra.length && tTierra > 0) {
+          const celda = 6, gw = Math.ceil(W / celda) + 1, gh = Math.ceil(H / celda) + 1, k = facil(Math.min(1, tTierra));
+          const geo = d3.geoPath(d3.geoIdentity().scale(celda));
+          conTierra.forEach((gr) => {
+            const ids = new Set(gr.map((n) => n.id));
+            const fuentes = gr.map((n) => ({ x: n.x, y: n.y, s: (esAerea(n) ? ALCANCE[tipoK(n)] * 0.56 : 30) * k }));
+            const puentes = g.links.filter((l) => ids.has(l.source.id) && ids.has(l.target.id)).map((l) => ({ a: l.source, b: l.target, s: 26 * k }));
+            const v = new Float64Array(gw * gh);
+            for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) {
+              const x = i * celda, y = j * celda; let f = 0;
+              for (const q of fuentes) { const d2 = (x - q.x) ** 2 + (y - q.y) ** 2; if (d2 < 9 * q.s * q.s) f += Math.exp(-d2 / (2 * q.s * q.s)); }
+              for (const q of puentes) {
+                const ax = q.a.x, ay = q.a.y, bx = q.b.x - ax, by = q.b.y - ay, L2 = bx * bx + by * by || 1, u = Math.max(0, Math.min(1, ((x - ax) * bx + (y - ay) * by) / L2));
+                const d2 = (x - ax - bx * u) ** 2 + (y - ay - by * u) ** 2; if (d2 < 9 * q.s * q.s) f += 0.75 * Math.exp(-d2 / (2 * q.s * q.s));
+              }
+              v[j * gw + i] = f;
+            }
+            const niveles = [0.12, 0.26, 0.42, 0.58, 0.74, 0.9];
+            d3.contours().size([gw, gh]).thresholds(niveles)(v).forEach((c, i) => {
+              capaTierra.append("path").attr("d", geo(c)).attr("class", i ? "mp-curva" : "mp-tierra")
+                .attr("stroke-width", i ? Math.max(0.7, 1.6 - i * 0.18) : 2.2).attr("stroke-opacity", i ? Math.max(0.25, 0.75 - i * 0.1) : 0.95);
+            });
+            // Círculo de alcance de cada aérea, como en una planeación
+            gr.filter(esAerea).forEach((n) => {
+              const R = ALCANCE[tipoK(n)] * k;
+              capaTierra.append("circle").attr("class", "mp-alcance").attr("cx", n.x).attr("cy", n.y).attr("r", R);
+              capaTierra.append("text").attr("class", "mp-alcance-t").attr("x", n.x).attr("y", n.y - R - 5).text(tipoK(n).slice(1) + " M").attr("opacity", k);
+            });
+          });
+        }
+        // Exteriores de piso sueltos de un terreno: su patio
+        g.nodes.filter((n) => tipoK(n) === "ext" && !conTierra.some((gr) => gr.includes(n)) && grado(n) > 0).forEach((n) => capaTierra.append("circle").attr("class", "mp-patio").attr("cx", n.x).attr("cy", n.y).attr("r", radio(n) + 22));
+        // Plantas de interiores
+        plantas.forEach((p) => {
+          const r0 = p.raiz, gp = capaPlanta.append("g").attr("opacity", Math.min(1, tTierra * 1.4 || 1));
+          p.cuartos.forEach((c) => {
+            const x = r0.x + c.dx - c.pw / 2, y = r0.y + c.dy - c.ph / 2;
+            gp.append("rect").attr("class", "mp-cuarto" + (c.sinMedida ? " sin-medida" : "")).attr("x", x).attr("y", y).attr("width", c.pw).attr("height", c.ph).attr("rx", 2);
+            gp.append("text").attr("class", "mp-cuarto-t").attr("x", x + 8).attr("y", y + 15).text(c.n.nombre.length > 18 ? c.n.nombre.slice(0, 17) + "…" : c.n.nombre);
+            gp.append("text").attr("class", "mp-cuarto-m").attr("x", x + 8).attr("y", y + c.ph - 8).text(c.sinMedida ? "Pon sus medidas" : c.h + " × " + c.w + " m");
+          });
+          // Puertas: un hueco en la pared compartida entre cada cuarto y el que lo conecta
+          p.cuartos.forEach((c) => {
+            if (!c.padre) return;
+            const a = c.padre, ax = r0.x + a.dx, ay = r0.y + a.dy, bx = r0.x + c.dx, by = r0.y + c.dy;
+            const vertical = c.lado === "der" || c.lado === "izq";
+            const mx = vertical ? (c.lado === "der" ? ax + a.pw / 2 : ax - a.pw / 2) : (Math.max(ax - a.pw / 2, bx - c.pw / 2) + Math.min(ax + a.pw / 2, bx + c.pw / 2)) / 2;
+            const my = vertical ? (Math.max(ay - a.ph / 2, by - c.ph / 2) + Math.min(ay + a.ph / 2, by + c.ph / 2)) / 2 : (c.lado === "abajo" ? ay + a.ph / 2 : ay - a.ph / 2);
+            gp.append("line").attr("class", "mp-puerta").attr("x1", vertical ? mx : mx - 13).attr("x2", vertical ? mx : mx + 13).attr("y1", vertical ? my - 13 : my).attr("y2", vertical ? my + 13 : my);
+            gp.append("path").attr("class", "mp-puerta-l").attr("d", vertical ? "M" + mx + "," + (my - 13) + "A26,26 0 0 1 " + (mx + 26 * (c.lado === "der" ? 1 : -1)) + "," + (my + 13) : "M" + (mx - 13) + "," + my + "A26,26 0 0 0 " + (mx + 13) + "," + (my + 26 * (c.lado === "abajo" ? 1 : -1)));
+          });
+        });
+      }
+      const pedirTierra = () => { if (!pidio) { pidio = true; requestAnimationFrame(pintarTierra); } };
+      // Crece con una animación cada vez que se dibuja el mapa (al entrar o al conectar)
+      if (nuevaTierra || plantas.length) {
+        const t0 = performance.now(), dur = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1 : 1100;
+        const paso = (t) => { tTierra = Math.min(1, (t - t0) / dur); pintarTierra(); if (tTierra < 1) requestAnimationFrame(paso); };
+        requestAnimationFrame(paso);
+      }
       const vecinos = (id) => new Set(g.links.flatMap((l) => (l.source.id === id ? [l.target.id] : l.target.id === id ? [l.source.id] : [])).concat(id));
       nodos.on("mouseenter", (ev, n) => {
         document.querySelectorAll(".tipo-fila").forEach((f) => f.classList.toggle("foco", f.dataset.tipoDe === n.id));
@@ -3523,9 +3645,12 @@ void main(){
         .force("carga", d3.forceManyBody().strength(unidas.length > 8 ? -420 : -600))
         .force("x", d3.forceX(cx).strength((n) => (n.fija ? 0 : 0.07)))
         .force("y", d3.forceY(cy).strength((n) => (n.fija ? 0 : 0.09)))
-        .force("choque", d3.forceCollide().radius((n) => radio(n) + 26))
+        .force("choque", d3.forceCollide().radius((n) => (radioPlanta.has(n.id) ? radioPlanta.get(n.id) : enPlanta.has(n.id) ? 0 : radio(n) + 26)))
         .on("tick", () => {
           unidas.forEach((n) => { const rr = radio(n) + 12; n.x = Math.max(rr, Math.min(W - rr, n.x)); n.y = Math.max(top + rr - 30, Math.min(bottom - rr - 18, n.y)); });
+          // Cada interior se queda dentro de su cuarto de la planta (la planta se mueve con su primer cuarto)
+          enPlanta.forEach(({ raiz: r0, c }, id) => { const n = porId.get(id); n.x = r0.x + c.dx; n.y = r0.y + c.dy; n.vx = 0; n.vy = 0; });
+          if (tTierra >= 1) pedirTierra();
           enlaces.attr("d", (l) => {
             const dx = l.target.x - l.source.x, dy = l.target.y - l.source.y, dist = Math.hypot(dx, dy) || 1;
             const rs = radio(l.source) + 6, rt = radio(l.target) + 8;
@@ -3534,6 +3659,7 @@ void main(){
           nodos.attr("transform", (n) => "translate(" + n.x + "," + n.y + ")");
           etiquetas.attr("x", (n) => n.x).attr("y", (n) => n.y + radio(n) + 20);
           etqTipo.attr("x", (n) => n.x).attr("y", (n) => n.y + radio(n) + 34);
+          if (plantas.length) { etiquetas.attr("display", (n) => (esInt(n) && grado(n) ? "none" : null)); etqTipo.attr("display", (n) => (esInt(n) && grado(n) ? "none" : null)); }
         });
     }
     function elegirParaConectar(n) {
