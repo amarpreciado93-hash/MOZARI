@@ -17,7 +17,7 @@ const EN_PAUSA = pagina("Tour no disponible", "Este tour no está disponible por
 const html = (cuerpo, status) => new Response(cuerpo, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     if (request.method !== "GET" && request.method !== "HEAD") return error(405, "Solo lectura");
     const url = new URL(request.url);
     const segs = url.pathname.replace(/^\/+/, "").split("/");
@@ -67,6 +67,20 @@ export default {
     if (ruta === "proyecto.json") return servirR2(env, request, "publicado/" + id + "/proyecto.json", "no-cache");
     // Solo se sirven piezas de esferas y archivos del tour, nunca el borrador
     if (!ruta.startsWith("escenas/") && !ruta.startsWith("archivos/")) return error(404, "No existe");
-    return servirR2(env, request, "tours/" + id + "/" + ruta, ruta.endsWith(".json") ? "no-cache" : "public, max-age=31536000, immutable");
+    if (ruta.endsWith(".json") || request.headers.has("range")) return servirR2(env, request, "tours/" + id + "/" + ruta, ruta.endsWith(".json") ? "no-cache" : "public, max-age=31536000, immutable");
+    // Piezas de las esferas: nunca cambian. Se guardan en la caché de Cloudflare cerca del visitante
+    // (la segunda vez ya no se pide a R2) y, si R2 falla un instante, se reintenta antes de rendirse.
+    const cache = caches.default, llave = new Request(url.origin + url.pathname, { method: "GET" });
+    const guardada = await cache.match(llave);
+    if (guardada) return guardada;
+    let r = null;
+    for (let i = 0; i < 3; i++) {
+      try { r = await servirR2(env, new Request(llave), "tours/" + id + "/" + ruta, "public, max-age=31536000, immutable"); } catch (e) { r = null; }
+      if (r && (r.status === 200 || r.status === 404)) break;
+      await new Promise((ok) => setTimeout(ok, 150 * (i + 1)));
+    }
+    if (!r) return error(503, "Intenta de nuevo");
+    if (r.status === 200) ctx.waitUntil(cache.put(llave, r.clone()));
+    return r;
   },
 };
