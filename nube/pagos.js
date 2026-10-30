@@ -91,7 +91,7 @@ export async function apiPagos(request, env, partes, yo) {
     if (!montoHoy) return error(400, "Ya tienes esa licencia");
     if (!env.MP_ACCESS_TOKEN && !simulado(env)) return error(503, "Los pagos aún no están activos. Escríbenos y te activamos el plan.");
     const ref = "mz-" + Date.now().toString(36) + crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
-    const monto = montoHoy, plan = c.plan === "espacio" ? { nombre: "+20 GB de espacio" } : PLANES[c.plan], periodo = PERIODOS.unico;
+    const monto = montoHoy, plan = c.plan === "espacio" ? { nombre: "+10 GB de espacio" } : PLANES[c.plan], periodo = PERIODOS.unico;
     const orden = { ref, uid: yo.uid, email: yo.email, plan: c.plan, periodo: c.periodo, monto, moneda: "MXN", estado: "creado", creado: new Date().toISOString() };
     await guardar(env, ordenClave(ref), orden);
     if (simulado(env)) return json({ ref, url: url.origin + "/api/pagos/simular?ref=" + ref });

@@ -1840,7 +1840,7 @@
     const aviso = PLAN.vencido ? '<span style="color:var(--mz-aviso)">Tu plan ' + esc(PLANES_TXT[PLAN.vencido] || "") + " venció. Tus tours siguen ahí; renuévalo para seguir sin límites.</span>" : "";
     const boton = NUBE.admin ? "" : PLAN.vencido ? '<button class="btn-prim" data-comprar="' + PLAN.vencido + '">Obtener licencia</button>'
       : PLAN.id === "gratis" ? '<button class="btn-prim" data-comprar="pro">Obtener licencia</button>'
-      : '<div style="display:flex;gap:8px;flex-wrap:wrap">' + (PLAN.id === "pro" || PLAN.vence ? '<button class="btn-sec" data-comprar="desarrollos">Subir a Desarrollos</button>' : "") + '<button class="btn-sec" data-comprar="espacio">+20 GB</button></div>';
+      : '<div style="display:flex;gap:8px;flex-wrap:wrap">' + (PLAN.id === "pro" || PLAN.vence ? '<button class="btn-sec" data-comprar="desarrollos">Subir a Desarrollos</button>' : "") + '<button class="btn-sec" data-comprar="espacio">+10 GB</button></div>';
     caja.innerHTML = '<div><b>' + (PLAN.id === "gratis" ? "Plan Gratis" : "Licencia " + esc(PLAN.nombre)) + "</b><span>" + partes.join(" · ") + "</span>" + aviso + (PLAN.bytes !== null ? '<span class="uso-barra"><span class="uso-lleno" style="width:' + pct.toFixed(1) + '%"></span></span>' : "") + "</div>" +
       boton +
       (NUBE.admin ? '<button class="btn-sec" id="ver-cuentas">Panel de dueño</button>' : "");
@@ -1895,7 +1895,7 @@
   const PLANES_TXT = { gratis: "Gratis", pro: "Pro", desarrollos: "Desarrollos" };
   const fechaLarga = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return ""; } };
   // Licencias de pago único: se pagan una vez y no vencen. Si ya tienes Pro, subir a Desarrollos cuesta la diferencia.
-  const COBRO = { pro: 990, desarrollos: 4990, espacio: 290 };
+  const COBRO = { pro: 990, desarrollos: 4990, espacio: 390 };
   const QUE_INCLUYE = {
     pro: ["Tours y esferas sin límite", "Hosting incluido: 10 GB", "Sin marca de agua"],
     desarrollos: ["Todo lo de Pro", "Hosting incluido: 50 GB", "Lotificación: manzanas, lotes, terreno y masterplan"],
@@ -1907,7 +1907,7 @@
   function pintarPago() {
     if (pago.plan === "espacio") {
       $("dp-cuerpo").innerHTML = '<button class="dp-cerrar" data-dp-cerrar aria-label="Cerrar">×</button>' +
-        '<div><h2 id="dp-titulo">Más espacio</h2><p>Suma 20 GB a tu cuenta para siempre (unas 400 esferas más). Pago único.</p></div>' +
+        '<div><h2 id="dp-titulo">Más espacio</h2><p>Suma 10 GB a tu cuenta para siempre (unas 200 esferas más). Pago único.</p></div>' +
         '<button class="btn-prim dp-pagar" data-dp-pagar>Pagar ' + pesos(COBRO.espacio) + " con Mercado Pago</button>" +
         '<p class="dp-nota">Tarjeta, OXXO o saldo de Mercado Pago. Precios en pesos mexicanos.</p>';
       return;
@@ -1952,7 +1952,7 @@
   // En el celular: el plan y su pago también están a la mano (el estudio es de compu)
   if (MODO === "nube" && PLAN) {
     const mp = $("mv-plan"), btnPlan = NUBE.admin ? "" : PLAN.id === "gratis" || PLAN.vencido ? '<button class="btn-prim" data-comprar="pro">Obtener licencia</button>'
-      : PLAN.id === "pro" ? '<button class="btn-prim" data-comprar="desarrollos">Subir a Desarrollos</button>' : '<button class="btn-sec" data-comprar="espacio">+20 GB</button>';
+      : PLAN.id === "pro" ? '<button class="btn-prim" data-comprar="desarrollos">Subir a Desarrollos</button>' : '<button class="btn-sec" data-comprar="espacio">+10 GB</button>';
     mp.innerHTML = '<span class="etiq" style="color:var(--mz-tenue);font-size:12px">' + esc(NUBE.email) + "</span>" +
       '<h2 style="margin:0;font-size:18px">' + (PLAN.id === "gratis" ? "Plan Gratis" : "Licencia " + esc(PLAN.nombre)) + "</h2>" +
       (PLAN.vence ? '<p class="nota">Vigente hasta el ' + fechaLarga(PLAN.vence) + "</p>" : PLAN.vencido ? '<p class="nota" style="color:var(--mz-aviso)">Tu plan venció. Renuévalo para seguir sin límites.</p>' : "") +
@@ -1979,7 +1979,7 @@
           if (estado === "pendiente") break;
           await new Promise((ok) => setTimeout(ok, 2000));
         }
-        if (d && d.estado === "aprobado") avisoPago(d.plan === "espacio" ? "¡Listo! Tienes 20 GB más" : "¡Listo! Ya tienes " + PLANES_TXT[d.plan], d.plan === "espacio" ? "El espacio ya está en tu cuenta, para siempre. Te llega el comprobante de Mercado Pago a tu correo." : "Tu licencia ya está activa y es para siempre. Te llega el comprobante de Mercado Pago a tu correo.", true);
+        if (d && d.estado === "aprobado") avisoPago(d.plan === "espacio" ? "¡Listo! Tienes 10 GB más" : "¡Listo! Ya tienes " + PLANES_TXT[d.plan], d.plan === "espacio" ? "El espacio ya está en tu cuenta, para siempre. Te llega el comprobante de Mercado Pago a tu correo." : "Tu licencia ya está activa y es para siempre. Te llega el comprobante de Mercado Pago a tu correo.", true);
         else if (estado === "pendiente" || (d && d.estado === "pendiente")) avisoPago("Tu pago está pendiente", "Si pagaste en OXXO, se acredita en unas horas. Tu plan se activa solo en cuanto llegue; no tienes que hacer nada.", true);
         else avisoPago("Aún no vemos tu pago", "Si ya pagaste, en unos minutos se activa solo. Si no, puedes intentarlo de nuevo.", true);
       }

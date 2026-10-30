@@ -16,9 +16,9 @@ export const PLANES = {
 export const COBROS = {
   pro:         { unico: 990 },
   desarrollos: { unico: 4990 },
-  espacio:     { unico: 290 },      // +20 GB para siempre
+  espacio:     { unico: 390 },      // +10 GB para siempre (aunque se llene, 10 años de hosting quedan pagados)
 };
-export const ESPACIO_PAQUETE = 20 * GB;
+export const ESPACIO_PAQUETE = 10 * GB;
 export const PERIODOS = { unico: { nombre: "pago único", meses: 0 }, mes: { nombre: "1 mes", meses: 1 }, anio: { nombre: "1 año", meses: 12 } };
 // Lo que paga hoy una cuenta por una licencia (si ya tiene Pro, para subir a Desarrollos paga la diferencia)
 export function montoLicencia(cuenta, plan) {
