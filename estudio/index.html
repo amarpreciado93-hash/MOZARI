@@ -649,6 +649,14 @@
   .lotes-excel { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
   .lx-moneda { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--mz-tenue); margin-right: 6px; }
   .lx-moneda select { width: auto; padding: 8px 10px; }
+  .lotes-terminos { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 16px; font-size: 12px; color: var(--mz-tenue); }
+  .lotes-terminos > span:first-child { align-self: center; }
+  .lotes-terminos label { display: grid; gap: 4px; }
+  .lotes-terminos .entrada { width: auto; padding: 8px 10px; }
+  .lotes-terminos input.entrada { width: 110px; }
+  .lotes-terminos #lt-corto { width: 70px; }
+  .lotes-terminos .nota { align-self: center; margin: 0; }
+  .lotes-terminos .nota b { color: var(--mz-texto); }
   .lotes-excel .nota { flex-basis: 100%; margin: 0; }
   .lotes-import { margin-bottom: 16px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 13px; display: grid; gap: 6px; }
   .lotes-import b { color: var(--mz-lima); }
@@ -1297,6 +1305,14 @@
           <label class="btn-sec">Importar de Excel<input type="file" id="lx-archivo" accept=".xlsx,.xls,.csv,.tsv,.txt" hidden></label>
           <span class="nota">Columnas: Manzana, Lote, Superficie (m²), Precio y Estado (opcional). Se llenan los lotes que ya dibujaste con ese número y manzana.</span>
         </div>
+        <div class="lotes-terminos">
+          <span>Cómo se dice:</span>
+          <select class="entrada" id="lt-preset" aria-label="Nombres de uso común"></select>
+          <label>Lote<input class="entrada" id="lt-lote" maxlength="16"></label>
+          <label>Manzana<input class="entrada" id="lt-mz" maxlength="16"></label>
+          <label>Abreviatura<input class="entrada" id="lt-corto" maxlength="4" placeholder="M"></label>
+          <span class="nota" id="lt-ejemplo"></span>
+        </div>
         <div class="lotes-import" id="lx-resultado" hidden></div>
         <div class="lotes-resumen" id="lotes-resumen"></div>
         <div class="lotes-tabla-wrap" id="lotes-tabla"></div>
@@ -1533,10 +1549,17 @@
   const monedaTour = () => { try { return (est && est.proyecto && est.proyecto.moneda) || "MXN"; } catch (e) { return "MXN"; } };
   const SIMBOLO = { EUR: "€", PEN: "S/", GTQ: "Q", CRC: "₡", BOB: "Bs " };
   const fmtPrecio = (v) => { if (!String(v || "").trim()) return ""; const n = numES(String(v).replace(/^[$€]|^S\/|^Q|^₡/, "")); if (n === null) return String(v); const m = monedaTour(); return (SIMBOLO[m] || "$") + n.toLocaleString("es-MX", { maximumFractionDigits: 0 }) + " " + m; };
+  // Cómo se dice en cada país: lote, solar, predio, sitio…; manzana, bloque…; y su abreviatura (por defecto "M")
+  const TERMINOS_DEF = { lote: "Lote", manzana: "Manzana", corto: "M" };
+  const TERMINOS_PRESETS = [["Lote", "Manzana", "M", "México"], ["Lote", "Manzana", "Mz", ""], ["Solar", "Manzana", "Mz", ""], ["Predio", "Bloque", "B", ""], ["Sitio", "Manzana", "Mz", ""], ["Terreno", "Sección", "S", ""], ["Parcela", "Bloque", "B", ""]];
+  const terminos = () => { let t = {}; try { t = (est && est.proyecto && est.proyecto.terminos) || {}; } catch (e) { t = {}; } return { lote: t.lote || TERMINOS_DEF.lote, manzana: t.manzana || TERMINOS_DEF.manzana, corto: t.corto !== undefined ? t.corto : TERMINOS_DEF.corto }; };
+  const plural = (w) => (/[aeiouáéíóú]$/i.test(w) ? w + "s" : /z$/i.test(w) ? w.slice(0, -1) + "ces" : w + "es");
+  // "M1" con una letra y número; "M B" o "Mz 1" en los demás casos; sin abreviatura se usa la palabra completa
+  const mzCorta = (mz) => { const T = terminos(), k = T.corto || T.manzana; return k.length === 1 && /^\d/.test(String(mz)) ? k + mz : k + " " + mz; };
   function nombreLote(c) {
-    const l = loteDe(c);
-    if (!l.numero && !l.manzana) return "Lote sin número";
-    return "Lote " + (l.numero || "—") + (l.manzana ? " · Mz " + l.manzana : "");
+    const l = loteDe(c), T = terminos();
+    if (!l.numero && !l.manzana) return T.lote + " sin número";
+    return T.lote + " " + (l.numero || "—") + (l.manzana ? " · " + mzCorta(l.manzana) : "");
   }
   // El mismo lote en varias esferas: por número y manzana (o por su vínculo de terreno)
   const claveLote = (c) => { const l = loteDe(c); return l.numero ? "mz:" + String(l.manzana).trim().toLowerCase() + "|" + String(l.numero).trim().toLowerCase() : "v:" + (c.vinculo || c.id); };
@@ -4086,7 +4109,7 @@ void main(){
           const n0 = mpMapa.n, gm = capaTierra.append("g").attr("opacity", Math.min(1, tTierra * 1.2 || 1));
           mpMapa.lotes.forEach((l) => gm.append("path").attr("class", "mp-lote").attr("d", "M" + l.pts.map(([x, y]) => (n0.x + x).toFixed(1) + "," + (n0.y + y).toFixed(1)).join("L") + "Z").attr("fill", estadoDe(l.c).color).attr("fill-opacity", 0.8));
           const ys = mpMapa.lotes.flatMap((l) => l.pts.map((p) => p[1]));
-          gm.append("text").attr("class", "mp-plano-t").attr("x", n0.x).attr("y", n0.y + Math.min(...ys) - 8).text("MASTERPLAN · " + mpMapa.lotes.length + " LOTES");
+          gm.append("text").attr("class", "mp-plano-t").attr("x", n0.x).attr("y", n0.y + Math.min(...ys) - 8).text("MASTERPLAN · " + mpMapa.lotes.length + " " + plural(terminos().lote).toUpperCase());
         }
         // Exteriores de piso sueltos de un terreno: su patio
         g.nodes.filter((n) => tipoK(n) === "ext" && !conTierra.some((gr) => gr.includes(n)) && grado(n) > 0).forEach((n) => capaTierra.append("circle").attr("class", "mp-patio").attr("cx", n.x).attr("cy", n.y).attr("r", radio(n) + 22));
@@ -4677,7 +4700,7 @@ void main(){
     const sig = siguienteLote();
     const mz = String(sig.manzana || "1");
     const c = {
-      id: nuevoId(), tipo: "poligono", nombre: "Manzana " + mz, visible: true,
+      id: nuevoId(), tipo: "poligono", nombre: terminos().manzana + " " + mz, visible: true,
       puntos: frente.concat(fondo.slice().reverse()).map((p) => [+p[0].toFixed(5), +p[1].toFixed(5)]),
       manzana: { mz, n: 10, inicio: 1, nFrente: frente.length, cortes: null },
       relleno: { color: BLANCO, opacidad: 0 }, trazo: { color: BLANCO, grosor: 2, opacidad: 0.9 },
@@ -4687,7 +4710,7 @@ void main(){
     repartirManzana(c, true);
     est.ultimoLote = { manzana: mz, numero: String(c.manzana.n) };
     motorEd.elegida = c.id;
-    avisar("Manzana " + mz + " con 10 lotes. Cambia la cantidad a la derecha.");
+    avisar(terminos().manzana + " " + mz + " con 10 " + plural(terminos().lote).toLowerCase() + ". Cambia la cantidad a la derecha.");
   }
   $("props").addEventListener("click", (ev) => {
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
@@ -4719,7 +4742,7 @@ void main(){
     const v = ev.target.value.trim();
     if (k === "n") { const n = parseInt(v, 10); if (n >= 1 && n <= 60 && n !== c.manzana.n) { c.manzana.n = n; c.manzana.cortes = null; } }
     if (k === "inicio") { const n = parseInt(v, 10); if (n >= 0) c.manzana.inicio = n; }
-    if (k === "mz") { c.manzana.mz = v; c.nombre = "Manzana " + v; }
+    if (k === "mz") { c.manzana.mz = v; c.nombre = terminos().manzana + " " + v; }
     cambio();
   });
   // Numeración automática: cada lote nuevo sigue al anterior en la misma manzana
@@ -4879,8 +4902,8 @@ void main(){
     const varios = seleccionadas().filter((x) => x.lote).length > 1;
     let h = '<div class="grupo"><b>Datos del lote</b><div class="lote-datos">' +
       (varios ? '<label>Numerar desde<input type="text" inputmode="numeric" data-numerar placeholder="1" title="Les pone números seguidos en su orden actual"></label>'
-        : '<label>Lote<input type="text" data-k="lote.numero" value="' + val("numero") + '" placeholder="12"></label>') +
-      '<label>Manzana<input type="text" data-k="lote.manzana" value="' + val("manzana") + '" placeholder="3"></label>' +
+        : '<label>' + esc(terminos().lote) + '<input type="text" data-k="lote.numero" value="' + val("numero") + '" placeholder="12"></label>') +
+      '<label>' + esc(terminos().manzana) + '<input type="text" data-k="lote.manzana" value="' + val("manzana") + '" placeholder="3"></label>' +
       '<label>Superficie (m²)<input type="text" inputmode="decimal" data-k="lote.area" value="' + val("area") + '" placeholder="1250"></label>' +
       '<label>Precio (' + monedaTour() + ')<input type="text" inputmode="decimal" data-k="lote.precio" value="' + val("precio") + '" placeholder="$"></label></div></div>';
     h += '<div class="grupo"><b>Estado</b><div class="estados">' + estadosLote().map((e) =>
@@ -4955,7 +4978,7 @@ void main(){
     const cont = $("props");
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
     if (!c) { $("props-titulo").textContent = "Propiedades"; cont.innerHTML = '<p class="vacio">Selecciona una capa en la lista o sobre la esfera para editarla.</p>'; return; }
-    $("props-titulo").textContent = c.lote ? nombreLote(c) : c.manzana ? "Manzana " + (c.manzana.mz || "") : c.camino ? "Ruta" : c.tipo === "interes" ? "Punto de interés" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
+    $("props-titulo").textContent = c.lote ? nombreLote(c) : c.manzana ? terminos().manzana + " " + (c.manzana.mz || "") : c.camino ? "Ruta" : c.tipo === "interes" ? "Punto de interés" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
     const multi = seleccionadas().length > 1 ? seleccionadas() : null;
     if (multi) $("props-titulo").textContent = multi.length + (c.lote ? " lotes" : " capas") + " seleccionados";
     let h = (multi ? '<div class="sel-multi"><b>' + multi.length + ' seleccionados.</b> Lo que cambies aquí se aplica a todos' + (c.lote ? ": manzana, estado, precio, superficie y estilo. Para los números usa «Numerar desde»." : ".") + ' <button class="mini" data-acc="sel-una">Solo este</button></div>' : "") +
@@ -5072,7 +5095,7 @@ void main(){
     // Lotes que salen de una manzana: su manzana manda (si no, al repartirla se regresaría el número viejo)
     if (el.dataset.k === "lote.manzana") {
       const padres = new Set([c].concat(otras).filter((x) => x.deManzana).map((x) => x.deManzana));
-      padres.forEach((pid) => { const m = buscar(pid); if (!m || !m.manzana) return; m.manzana.mz = v; m.nombre = "Manzana " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); });
+      padres.forEach((pid) => { const m = buscar(pid); if (!m || !m.manzana) return; m.manzana.mz = v; m.nombre = terminos().manzana + " " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); });
       if (otras.length) pintarCapas();
     }
     const etq = document.querySelector('[data-v-de="' + el.dataset.k + '"]');
@@ -5316,6 +5339,12 @@ void main(){
   }
   function pintarLotes() {
     const todos = lotesUnicos(), E = estadosLote();
+    const T = terminos();
+    $("lt-preset").innerHTML = '<option value="">Elegir…</option>' + TERMINOS_PRESETS.map((p, i) => '<option value="' + i + '"' + (p[0] === T.lote && p[1] === T.manzana && p[2] === T.corto ? " selected" : "") + ">" + p.slice(0, 3).join(" · ") + (p[3] ? " (" + p[3] + ")" : "") + "</option>").join("");
+    if (document.activeElement !== $("lt-lote")) $("lt-lote").value = T.lote;
+    if (document.activeElement !== $("lt-mz")) $("lt-mz").value = T.manzana;
+    if (document.activeElement !== $("lt-corto")) $("lt-corto").value = T.corto;
+    $("lt-ejemplo").innerHTML = "Así se ve: <b>" + esc(T.lote + " 12 · " + mzCorta("3")) + "</b>";
     $("lx-moneda").innerHTML = MONEDAS.map(([v, n]) => '<option value="' + v + '"' + (monedaTour() === v ? " selected" : "") + ">" + n + "</option>").join("");
     const cuenta = (id) => todos.filter((x) => estadoDe(x.c).id === id).length;
     $("lotes-resumen").innerHTML =
@@ -5324,7 +5353,7 @@ void main(){
       (todos.length ? '<span class="lr-vendido">' + Math.round((cuenta("vendido") / todos.length) * 100) + "% vendido</span>" : "");
     const filas = todos.filter((x) => filtroLotes === "todos" || estadoDe(x.c).id === filtroLotes);
     if (!todos.length) { $("lotes-tabla").innerHTML = '<p class="vacio">Aún no hay lotes. En Panoramas → Capas usa el botón <b>Lote</b> y dibuja el primero.</p>'; return; }
-    $("lotes-tabla").innerHTML = '<table class="lotes-tabla"><thead><tr><th>Manzana</th><th>Lote</th><th>Superficie (m²)</th><th>Precio (' + monedaTour() + ')</th><th>Estado</th><th>Aparece en</th></tr></thead><tbody>' +
+    $("lotes-tabla").innerHTML = '<table class="lotes-tabla"><thead><tr><th>' + esc(terminos().manzana) + "</th><th>" + esc(terminos().lote) + '</th><th>Superficie (m²)</th><th>Precio (' + monedaTour() + ')</th><th>Estado</th><th>Aparece en</th></tr></thead><tbody>' +
       filas.map((x) => {
         const l = loteDe(x.c), esferas = [...new Set(x.m.map((m) => m.id))];
         return '<tr data-k="' + esc(x.k) + '"><td>' + esc(l.manzana || "—") + "</td><td><b>" + esc(l.numero || "—") + "</b></td>" +
@@ -5359,11 +5388,20 @@ void main(){
   // Plantilla: un CSV que Excel abre directo (con acentos), con los lotes que ya están dibujados.
   // Importar: .xlsx, .xls o .csv; se empata por manzana y número; las celdas vacías no borran nada.
   const sinPrefijo = (v, re) => String(v ?? "").trim().replace(re, "").trim().replace(/\.0+$/, "").toUpperCase();
-  const llaveMz = (v) => sinPrefijo(v, /^(manzana|mz\.?)\s*/i), llaveLt = (v) => sinPrefijo(v, /^(lote|lt\.?|#)\s*/i);
+  const llaveMz = (v) => sinPrefijo(v, /^(manzana|bloque|secci[oó]n|mz\.?|m\.?|b\.?)\s*-?\s*/i), llaveLt = (v) => sinPrefijo(v, /^(lote|solar|predio|sitio|terreno|parcela|lt\.?|#)\s*-?\s*/i);
   const limpiarNum = (v) => { const t = String(v ?? "").trim().replace(/\$|m2|m²|mxn|usd/gi, "").replace(/\s/g, ""); if (!t) return ""; const n = parseFloat(t.replace(/,/g, "")); return isFinite(n) ? String(Math.round(n * 100) / 100) : ""; };
+  // Nombres del tour: cambian rótulos, fichas, masterplan y tablas; los datos no se tocan
+  function ponerTerminos(t) {
+    const T = Object.assign(terminos(), t);
+    P().terminos = { lote: (T.lote || "").trim() || TERMINOS_DEF.lote, manzana: (T.manzana || "").trim() || TERMINOS_DEF.manzana, corto: (T.corto || "").trim() };
+    Object.keys(est.capas).forEach((id) => (est.capas[id] || []).forEach((c) => { if (c.manzana) c.nombre = P().terminos.manzana + " " + c.manzana.mz; }));
+    guardar(); pintarLotes(); if (motorEd) motorEd.construir(); pintarCapas();
+  }
+  $("lt-preset").addEventListener("change", (ev) => { const p = TERMINOS_PRESETS[+ev.target.value]; if (!p) return; ponerTerminos({ lote: p[0], manzana: p[1], corto: p[2] }); avisar("Ahora dice: " + nombreLote({ lote: { numero: "12", manzana: "3" } }) + ". Vuelve a Publicar para verlo en el tour."); });
+  ["lt-lote", "lt-mz", "lt-corto"].forEach((id) => $(id).addEventListener("input", (ev) => ponerTerminos({ [{ "lt-lote": "lote", "lt-mz": "manzana", "lt-corto": "corto" }[id]]: ev.target.value })));
   $("lx-moneda").addEventListener("change", (ev) => { P().moneda = ev.target.value; guardar(); pintarLotes(); if (motorEd) motorEd.construir(); avisar("Precios en " + ev.target.value + ". Vuelve a Publicar para que se vea en el tour."); });
   $("lx-plantilla").addEventListener("click", () => {
-    const filas = [["Manzana", "Lote", "Superficie m2", "Precio", "Estado"]].concat(lotesUnicos().map((x) => { const l = loteDe(x.c); return [l.manzana, l.numero, l.area, l.precio, estadoDe(x.c).nombre]; }));
+    const filas = [[terminos().manzana, terminos().lote, "Superficie m2", "Precio", "Estado"]].concat(lotesUnicos().map((x) => { const l = loteDe(x.c); return [l.manzana, l.numero, l.area, l.precio, estadoDe(x.c).nombre]; }));
     const csv = "\ufeff" + filas.map((f) => f.map((v) => { const t = String(v ?? ""); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }).join(",")).join("\r\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -5396,7 +5434,7 @@ void main(){
     // Columnas por su encabezado; sin encabezado: Manzana, Lote, Superficie, Precio, Estado
     const cab = filas[0].map((v) => String(v).toLowerCase());
     const col = (re) => cab.findIndex((h) => re.test(h));
-    let cM = col(/manz|^mz/), cL = col(/lote|^lt|n[uú]m/), cA = col(/m2|m²|superf|[aá]rea|metros/), cP = col(/precio|valor|costo|\$/), cE = col(/estado|estatus|status/);
+    let cM = col(/manz|^mz|bloque|secci/), cL = col(/lote|^lt|solar|predio|sitio|parcela|n[uú]m/), cA = col(/m2|m²|superf|[aá]rea|metros/), cP = col(/precio|valor|costo|\$/), cE = col(/estado|estatus|status/);
     const conCab = cM >= 0 && cL >= 0;
     if (!conCab) { cM = 0; cL = 1; cA = 2; cP = 3; cE = 4; }
     const datos = conCab ? filas.slice(1) : filas;
@@ -5407,7 +5445,7 @@ void main(){
       const mz = llaveMz(r[cM]), lt = llaveLt(r[cL]);
       if (!lt) return;
       const x = mapa.get(mz + "|" + lt);
-      if (!x) { sinLote.push((mz ? "Mz " + mz + " · " : "") + "Lote " + lt); return; }
+      if (!x) { sinLote.push(terminos().lote + " " + lt + (mz ? " · " + mzCorta(mz) : "")); return; }
       const area = cA >= 0 ? limpiarNum(r[cA]) : "", precio = cP >= 0 ? limpiarNum(r[cP]) : "", e = cE >= 0 ? estadoPor(r[cE]) : null;
       x.m.forEach(({ c }) => { if (area) c.lote.area = area; if (precio) c.lote.precio = precio; if (e) c.lote.estado = e.id; });
       if (!hechosKeys.has(x.k)) { hechosKeys.add(x.k); hechos++; }
@@ -5473,7 +5511,7 @@ void main(){
   function pintarMasterplan() {
     const { lotes, fuera } = planLotes(), E = estadosLote(), todos = lotes.map((l) => l.x).concat(fuera);
     const cuenta = (id) => todos.filter((x) => estadoDe(x.c).id === id).length;
-    $("mp-resumen").innerHTML = '<span class="lr-chip"><b>' + todos.length + "</b>Lotes</span>" +
+    $("mp-resumen").innerHTML = '<span class="lr-chip"><b>' + todos.length + "</b>" + esc(plural(terminos().lote)) + "</span>" +
       E.map((e) => '<span class="lr-chip estado" style="--c:' + e.color + '"><button tabindex="-1"><i></i><b>' + cuenta(e.id) + "</b>" + esc(e.nombre) + "</button></span>").join("");
     if (!todos.length) {
       $("mp-avance").innerHTML = ""; $("mp-ficha").hidden = true; $("mp-nota").textContent = "";
@@ -5925,7 +5963,7 @@ void main(){
     const cta = est.skin.cta, enlace = urlSegura(cta.enlace);
     return '<div class="pop-caja ficha" role="dialog" aria-label="' + esc(nombreLote(c)) + '"><button class="pop-x" aria-label="Cerrar">×</button>' +
       '<span class="ficha-estado" style="--c:' + e.color + '"><i></i>' + esc(e.nombre) + "</span>" +
-      "<h3>Lote " + esc(l.numero || "—") + "</h3>" + (l.manzana ? '<p class="ficha-mz">Manzana ' + esc(l.manzana) + "</p>" : "") +
+      "<h3>" + esc(terminos().lote) + " " + esc(l.numero || "—") + "</h3>" + (l.manzana ? '<p class="ficha-mz">' + esc(terminos().manzana) + " " + esc(l.manzana) + "</p>" : "") +
       '<dl class="ficha-datos">' + fila("Superficie", fmtArea(l.area)) + fila("Frente", lados[+l.frente] || "") + fila(otros.length > 1 ? "Otros lados" : "Otro lado", otros.join(" · ")) + fila("Precio", e.id === "vendido" ? "" : fmtPrecio(l.precio)) + "</dl>" +
       (cta.mostrar && enlace && e.id !== "vendido" ? '<a class="ficha-cta" href="' + esc(enlace) + '" target="_blank" rel="noopener" style="background:' + est.skin.acento + ";color:" + textoSobre(est.skin.acento) + '">' + esc(cta.texto || "Me interesa") + "</a>" : "") +
       "</div>";
