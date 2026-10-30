@@ -2662,7 +2662,9 @@
           if (c.lote) {
             el.classList.add("cp-lote");
             etq = document.createElementNS(SVGNS, "g"); etq.setAttribute("class", "lote-etq"); svgEtq.appendChild(etq);
-            if (loteDe(c).rotulo !== "frente") { planos = crearRotulosPlanos(c); capaEtq.appendChild(planos.cont); }
+            // En el celular los rótulos van siempre en SVG (ligeros): los "planchados" usan una capa 3D por
+            // texto y con muchos lotes el celular se queda sin memoria y cierra la página.
+            if (loteDe(c).rotulo !== "frente" && !MOVIL) { planos = crearRotulosPlanos(c); capaEtq.appendChild(planos.cont); }
             const lq = loteDe(c);
             estiloRotulo(etq, lq); if (planos) estiloRotulo(planos.cont, lq);
             if (lq.fuente) fuentesPendientes.add(lq.fuente);
@@ -2806,6 +2808,10 @@
     function colocarPlano(cam, el, w, h, C, u, v, a, b) {
       const q = [[-a, b], [a, b], [a, -b], [-a, -b]].map(([x, y]) => pantallaSuelo(cam, [C[0] + u[0] * x + v[0] * y, C[1] + u[1] * x + v[1] * y]));
       if (q.some((p) => !p)) { el.style.display = "none"; return 0; }
+      // Un texto que se estira mucho más que la pantalla (muy cerca del horizonte o debajo de la cámara)
+      // no se lee y le cuesta muchísima memoria al navegador: se oculta
+      const lim = 3 * Math.max(cam.W, cam.H);
+      if (q.some((p) => Math.abs(p.x - cam.W / 2) > lim || Math.abs(p.y - cam.H / 2) > lim)) { el.style.display = "none"; return 0; }
       const m = matrizQuad(w, h, q);
       if (!m) { el.style.display = "none"; return 0; }
       el.style.display = ""; el.style.transform = m;
