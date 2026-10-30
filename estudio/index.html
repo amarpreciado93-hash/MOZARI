@@ -646,6 +646,16 @@
   .pr-orden { display: flex; gap: 2px; }
   .pr-orden button:disabled { opacity: 0.25; cursor: default; }
   @media (max-width: 1100px) { .pr-lista li { grid-template-columns: 22px 60px minmax(0, 1fr) auto; } .pr-modos { grid-column: 2 / -1; } }
+  .lotes-excel { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .lotes-excel .nota { flex-basis: 100%; margin: 0; }
+  .lotes-import { margin-bottom: 16px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 13px; display: grid; gap: 6px; }
+  .lotes-import b { color: var(--mz-lima); }
+  .lotes-import small { color: var(--mz-tenue); }
+  .pub-revision { text-align: left; max-width: 560px; margin: 18px auto 0; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(242, 169, 0, 0.45); background: rgba(242, 169, 0, 0.08); font-size: 13px; display: grid; gap: 8px; }
+  .pub-revision b { color: #F2A900; }
+  .pub-revision ul { margin: 0; padding-left: 18px; color: var(--mz-tenue); }
+  .pub-revision.ok { border-color: var(--mz-linea-neutra); background: transparent; }
+  .pub-revision.ok b { color: var(--mz-lima); }
   .lotes-resumen { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 18px; }
   .lr-chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); color: var(--mz-tenue); border-radius: var(--mz-pastilla); padding: 7px 14px; font: 500 12px var(--mz-texto-ui); cursor: pointer; }
   .lr-chip b { color: var(--mz-texto); font-size: 15px; font-weight: 600; }
@@ -1279,6 +1289,12 @@
       <div class="contenido" style="max-width:1100px">
         <h1>Lotes</h1>
         <p class="sub">Cambia aquí el estado de cada lote. Se actualiza en todas las esferas y en su ficha.</p>
+        <div class="lotes-excel">
+          <button class="btn-sec" id="lx-plantilla">Descargar plantilla de Excel</button>
+          <label class="btn-sec">Importar de Excel<input type="file" id="lx-archivo" accept=".xlsx,.xls,.csv,.tsv,.txt" hidden></label>
+          <span class="nota">Columnas: Manzana, Lote, Superficie (m²), Precio y Estado (opcional). Se llenan los lotes que ya dibujaste con ese número y manzana.</span>
+        </div>
+        <div class="lotes-import" id="lx-resultado" hidden></div>
         <div class="lotes-resumen" id="lotes-resumen"></div>
         <div class="lotes-tabla-wrap" id="lotes-tabla"></div>
       </div>
@@ -1974,11 +1990,13 @@
       '<div class="pub-caja"><code id="pub-link">' + esc(linkTour()) + '</code><button class="btn-sec" id="pub-copiar">Copiar link</button></div>' +
       '<div class="pub-acc"><button class="btn-prim" id="pub-publicar"' + (est.escenas.length ? "" : " disabled") + ">" + (pub ? "Publicar cambios" : "Publicar tour") + "</button>" +
       (pub ? '<a class="btn-sec" href="' + esc(linkTour()) + '" target="_blank" rel="noopener">Abrir tour ↗</a>' : "") + "</div>" +
-      '<p class="nota" id="pub-estado">' + (pub ? "Última publicación: " + pub : est.escenas.length ? "Aún no está publicado." : "Sube al menos una esfera para publicar.") + "</p>";
+      '<p class="nota" id="pub-estado">' + (pub ? "Última publicación: " + pub : est.escenas.length ? "Aún no está publicado." : "Sube al menos una esfera para publicar.") + "</p>" +
+      cajaRevision();
     $("v-proximo").hidden = false;
     if (!toursNube) cargarToursNube().then(() => nav.sec === "publicar" && pintarPublicar());
   }
   $("proximo").addEventListener("click", async (ev) => {
+    if (ev.target.id === "pub-ir-lotes") { ir("panoramas", "lotes"); return; }
     if (ev.target.id === "pub-copiar") {
       try { await navigator.clipboard.writeText(linkTour()); avisar("Link copiado"); } catch (e) { avisar("Copia el link manualmente"); }
     }
@@ -4931,7 +4949,7 @@ void main(){
         '<div class="orden"><button class="mini" data-mz-parejo>Repartir parejo</button></div>' +
         '<p class="nota">Los lotes se reparten del mismo ancho en el suelo, no en la imagen. Arrastra las esquinas de la manzana para ajustarla: los ' + lotes.length + ' lotes la siguen. Doble clic en una esquina la quita.</p>' +
         '<p class="nota"><b>Ajuste fino:</b> los puntos verdes recorren cada división por el frente o el fondo. Los <b>+</b> agregan un nodo para doblar una división o la orilla; arrástralo. Doble clic en un nodo blanco lo quita.</p></div>';
-      h += '<div class="grupo"><b>Estado</b><p class="nota">Toca cada lote en la esfera para cambiar su estado, precio y superficie.</p></div>';
+      h += '<div class="grupo"><b>Estado</b><p class="nota">Toca cada lote en la esfera para cambiar su estado, precio y superficie.</p><div class="orden"><button class="mini" data-acc="ir-lotes">Llenar precios y m² desde Excel</button></div></div>';
       // Estilo de TODOS los lotes de la manzana a la vez (los nuevos lo heredan)
       const l0 = Object.assign({}, LOTE_DEF, (lotes[0] && lotes[0].lote) || {}), g0 = lotes[0] && lotes[0].trazo ? lotes[0].trazo.grosor : 1.5;
       h += '<p class="nota mz-aviso">Lo de abajo cambia los ' + lotes.length + ' lotes de esta manzana.</p>';
@@ -5132,6 +5150,7 @@ void main(){
     if (a && a.dataset.acc === "quitar-lote") { const c = buscar(motorEd.elegida); delete c.lote; c.sinLote = true; if (c.accion === "ficha") delete c.accion; cambio(); avisar("Ahora es un polígono normal"); return; }
     if (a && a.dataset.acc === "t3d-reset") { const c = buscar(motorEd.elegida); if (c) { c.t3d = Object.assign({}, T3_DEF); cambio(); } return; }
     if (a && a.dataset.acc === "sel-una") { seleccionar(motorEd.elegida); return; }
+    if (a && a.dataset.acc === "ir-lotes") { ir("panoramas", "lotes"); return; }
     if (a && a.dataset.acc === "duplicar") duplicar();
     if (a && a.dataset.acc === "eliminar") eliminar();
   });
@@ -5287,6 +5306,88 @@ void main(){
     est.lotesEstados = estadosLote().map((e) => (e.id === id ? Object.assign({}, e, { color: ev.target.value }) : e));
     guardar(); pintarLotes();
   });
+
+  // ---------- Lotes desde Excel ----------
+  // Plantilla: un CSV que Excel abre directo (con acentos), con los lotes que ya están dibujados.
+  // Importar: .xlsx, .xls o .csv; se empata por manzana y número; las celdas vacías no borran nada.
+  const sinPrefijo = (v, re) => String(v ?? "").trim().replace(re, "").trim().replace(/\.0+$/, "").toUpperCase();
+  const llaveMz = (v) => sinPrefijo(v, /^(manzana|mz\.?)\s*/i), llaveLt = (v) => sinPrefijo(v, /^(lote|lt\.?|#)\s*/i);
+  const limpiarNum = (v) => { const t = String(v ?? "").trim().replace(/\$|m2|m²|mxn|usd/gi, "").replace(/\s/g, ""); if (!t) return ""; const n = parseFloat(t.replace(/,/g, "")); return isFinite(n) ? String(Math.round(n * 100) / 100) : ""; };
+  $("lx-plantilla").addEventListener("click", () => {
+    const filas = [["Manzana", "Lote", "Superficie m2", "Precio", "Estado"]].concat(lotesUnicos().map((x) => { const l = loteDe(x.c); return [l.manzana, l.numero, l.area, l.precio, estadoDe(x.c).nombre]; }));
+    const csv = "\ufeff" + filas.map((f) => f.map((v) => { const t = String(v ?? ""); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }).join(",")).join("\r\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    a.download = "lotes-" + (P().nombre || "tour").toLowerCase().replace(/[^a-z0-9]+/gi, "-") + ".csv";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  });
+  let libXlsx = null;
+  const cargarXlsx = () => libXlsx || (libXlsx = new Promise((ok, mal) => { const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"; sc.onload = () => ok(window.XLSX); sc.onerror = () => { libXlsx = null; mal(new Error("No se pudo cargar el lector de Excel")); }; document.head.appendChild(sc); }));
+  function filasCSV(txt) {
+    const sep = (txt.split("\n")[0].match(/\t/g) || []).length ? "\t" : (txt.split("\n")[0].match(/;/g) || []).length > (txt.split("\n")[0].match(/,/g) || []).length ? ";" : ",";
+    const out = []; let fila = [], campo = "", comillas = false;
+    for (let i = 0; i < txt.length; i++) {
+      const ch = txt[i];
+      if (comillas) { if (ch === '"' && txt[i + 1] === '"') { campo += '"'; i++; } else if (ch === '"') comillas = false; else campo += ch; continue; }
+      if (ch === '"') comillas = true; else if (ch === sep) { fila.push(campo); campo = ""; } else if (ch === "\n") { fila.push(campo); out.push(fila); fila = []; campo = ""; } else if (ch !== "\r") campo += ch;
+    }
+    if (campo || fila.length) { fila.push(campo); out.push(fila); }
+    return out;
+  }
+  $("lx-archivo").addEventListener("change", async (ev) => {
+    const f = ev.target.files[0]; ev.target.value = "";
+    if (!f) return;
+    let filas;
+    try {
+      if (/\.xlsx?$/i.test(f.name)) { const X = await cargarXlsx(); const wb = X.read(await f.arrayBuffer(), { type: "array" }); filas = X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: "" }); }
+      else filas = filasCSV((await f.text()).replace(/^\ufeff/, ""));
+    } catch (e) { avisar(e.message || "No se pudo leer el archivo"); return; }
+    filas = filas.filter((r) => r.some((v) => String(v).trim()));
+    if (!filas.length) { avisar("El archivo está vacío"); return; }
+    // Columnas por su encabezado; sin encabezado: Manzana, Lote, Superficie, Precio, Estado
+    const cab = filas[0].map((v) => String(v).toLowerCase());
+    const col = (re) => cab.findIndex((h) => re.test(h));
+    let cM = col(/manz|^mz/), cL = col(/lote|^lt|n[uú]m/), cA = col(/m2|m²|superf|[aá]rea|metros/), cP = col(/precio|valor|costo|\$/), cE = col(/estado|estatus|status/);
+    const conCab = cM >= 0 && cL >= 0;
+    if (!conCab) { cM = 0; cL = 1; cA = 2; cP = 3; cE = 4; }
+    const datos = conCab ? filas.slice(1) : filas;
+    const mapa = new Map(lotesUnicos().map((x) => { const l = loteDe(x.c); return [llaveMz(l.manzana) + "|" + llaveLt(l.numero), x]; }));
+    const E = estadosLote(), estadoPor = (v) => { const t = String(v || "").trim().toLowerCase(); return t ? E.find((e) => e.nombre.toLowerCase() === t || e.id === t || e.nombre.toLowerCase().startsWith(t.slice(0, 4))) : null; };
+    let hechos = 0; const sinLote = [], hechosKeys = new Set();
+    datos.forEach((r) => {
+      const mz = llaveMz(r[cM]), lt = llaveLt(r[cL]);
+      if (!lt) return;
+      const x = mapa.get(mz + "|" + lt);
+      if (!x) { sinLote.push((mz ? "Mz " + mz + " · " : "") + "Lote " + lt); return; }
+      const area = cA >= 0 ? limpiarNum(r[cA]) : "", precio = cP >= 0 ? limpiarNum(r[cP]) : "", e = cE >= 0 ? estadoPor(r[cE]) : null;
+      x.m.forEach(({ c }) => { if (area) c.lote.area = area; if (precio) c.lote.precio = precio; if (e) c.lote.estado = e.id; });
+      if (!hechosKeys.has(x.k)) { hechosKeys.add(x.k); hechos++; }
+    });
+    guardar(); pintarLotes(); if (motorEd) motorEd.construir();
+    const faltan = lotesUnicos().filter((x) => !hechosKeys.has(x.k)).map((x) => nombreLote(x.c));
+    $("lx-resultado").hidden = false;
+    $("lx-resultado").innerHTML = "<span><b>" + hechos + " lotes actualizados</b> desde " + esc(f.name) + ".</span>" +
+      (sinLote.length ? "<small>" + sinLote.length + " filas del Excel no tienen lote dibujado: " + esc(sinLote.slice(0, 12).join(", ")) + (sinLote.length > 12 ? "…" : "") + "</small>" : "") +
+      (faltan.length ? "<small>" + faltan.length + " lotes dibujados no venían en el Excel: " + esc(faltan.slice(0, 12).join(", ")) + (faltan.length > 12 ? "…" : "") + "</small>" : "");
+    avisar(hechos + " lotes actualizados");
+  });
+
+  // ---------- Revisión antes de publicar ----------
+  function revisionLotes() {
+    const todos = lotesUnicos(), vacio = (v) => !String(v ?? "").trim();
+    const sinPrecio = todos.filter((x) => estadoDe(x.c).id !== "vendido" && vacio(x.c.lote.precio)), sinArea = todos.filter((x) => vacio(x.c.lote.area));
+    return { total: todos.length, sinPrecio, sinArea };
+  }
+  function cajaRevision() {
+    const r = revisionLotes();
+    if (!r.total) return "";
+    const lista = (xs) => esc(xs.slice(0, 10).map((x) => nombreLote(x.c)).join(", ")) + (xs.length > 10 ? " y " + (xs.length - 10) + " más" : "");
+    if (!r.sinPrecio.length && !r.sinArea.length) return '<div class="pub-revision ok"><span><b>Revisión:</b> los ' + r.total + " lotes tienen precio y superficie.</span></div>";
+    return '<div class="pub-revision"><span><b>Antes de publicar, revisa:</b></span><ul>' +
+      (r.sinPrecio.length ? "<li>" + r.sinPrecio.length + (r.sinPrecio.length === 1 ? " lote sin precio: " : " lotes sin precio: ") + lista(r.sinPrecio) + "</li>" : "") +
+      (r.sinArea.length ? "<li>" + r.sinArea.length + (r.sinArea.length === 1 ? " lote sin superficie (m²): " : " lotes sin superficie (m²): ") + lista(r.sinArea) + "</li>" : "") +
+      '</ul><div><button class="btn-sec" id="pub-ir-lotes">Completar en Lotes</button></div><small style="color:var(--mz-tenue)">Puedes publicar así; en la ficha de esos lotes no saldrá ese dato.</small></div>';
+  }
 
   // =================== PANORAMAS: MASTERPLAN ===================
   // Cada lote se pasa al suelo visto desde arriba. Con terreno, todos van al plano de la esfera base
