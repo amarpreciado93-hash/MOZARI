@@ -138,3 +138,4 @@
 | 2026-10-30 | Sitio: ejemplos de lotificación con capturas reales del estudio (manzana, lotes por estado, mapa con masterplan), en marco con profundidad y etiqueta flotante |
 | 2026-10-30 | Plan Gratis: sin marca de agua sobre todo el tour; ahora etiqueta discreta "Hecho con Mozari · Crea el tuyo" y presentación de 2 s al abrir. Lo que se paga es quitarla y los límites | Los alumnos deben poder usarlo y enseñarlo a un cliente sin que estorbe |
 | 2026-10-30 | Primera entrada: el Plan Gratis lleva a crear el primer tour (licencias como botón secundario); en el cel, tarjeta "Mozari se usa en computadora" con botón para mandarse el link |
+| 2026-10-30 | Panel de dueño: links de un solo uso (regalo al 100% o descuento) con vigencia y nota; el alumno entra con su link y activa o paga con descuento. Cortesía al asignar plan a mano. Pausar cuenta: no entra al estudio y sus tours dejan de verse, sin borrar nada |

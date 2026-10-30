@@ -13,6 +13,8 @@ const pagina = (titulo, texto) => `<!doctype html><html lang="es"><head><meta ch
 <body><div><h1 style="font-weight:600;letter-spacing:.2em">${titulo}</h1><p>${texto}</p></div></body></html>`;
 const INICIO = pagina("MOZARI", "Abre el link completo de tu tour.");
 const NO_PUBLICADO = pagina("Tour no disponible", "Este tour todavía no está publicado.");
+const EN_PAUSA = pagina("Tour no disponible", "Este tour no está disponible por ahora.");
+const html = (cuerpo, status) => new Response(cuerpo, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
 
 export default {
   async fetch(request, env) {
@@ -27,6 +29,8 @@ export default {
     if (segs.length === 1) return Response.redirect(url.origin + "/" + id + "/" + url.search, 301);
 
     const ruta = segs.slice(1).join("/");
+    // Cuenta en pausa (lo decide el dueño de Mozari): sus tours no se muestran
+    if ((ruta === "" || ruta === "index.html" || ruta === "proyecto.json") && (await env.R2.head("pausados/" + id))) return ruta === "proyecto.json" ? error(404, "No disponible") : html(EN_PAUSA, 403);
     // Página del visor (la misma para todos los tours; ella lee proyecto.json de su carpeta)
     if (ruta === "" || ruta === "index.html") {
       const pub = await env.R2.get("publicado/" + id + "/proyecto.json");

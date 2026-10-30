@@ -13,7 +13,17 @@
 
 const COOKIE = "mz_sesion", ESTADO = "mz_estado", COMPRAR = "mz_comprar", DIAS = 30;
 // Si venía de "Elegir Pro" en el escaparate, después de entrar abre el pago de ese plan
-const destino = (url, c) => url.origin + "/" + (/^(pro|desarrollos)$/.test(c || "") ? "?comprar=" + c : "");
+// "desarrollos" o "desarrollos:ALUMNOS" (plan y cupón que eligió antes de entrar)
+const COMPRA = /^(pro|desarrollos)?(?::([A-Z0-9-]{3,24}))?$/;
+const destino = (url, c) => {
+  const m = c ? COMPRA.exec(c) : null, q = [];
+  if (m && m[1]) q.push("comprar=" + m[1]);
+  if (m && m[2]) q.push("cupon=" + m[2]);
+  return url.origin + "/" + (q.length ? "?" + q.join("&") : "");
+};
+const PAUSADA = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Cuenta en pausa · Mozari</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0B0B0B;color:#F2F5EC;font:15px/1.5 system-ui,sans-serif;text-align:center;padding:24px;box-sizing:border-box}p{color:#9CA38F;max-width:420px}a{color:#F2F5EC}</style></head>
+<body><div><h1 style="font-weight:600;letter-spacing:.2em">MOZARI</h1><p>Tu cuenta está en pausa. Si crees que es un error, escríbenos a <a href="mailto:hola@mozari.app">hola@mozari.app</a>.</p></div></body></html>`;
 
 const b64u = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const deB64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(s.length / 4) * 4, "=")), (c) => c.charCodeAt(0));
@@ -85,6 +95,7 @@ async function guardarCuenta(env, g) {
 
 async function iniciarSesion(url, env, g, adopcion, comprar) {
   const { p, nueva } = await guardarCuenta(env, g);
+  if (p.bloqueado) return new Response(PAUSADA, { status: 403, headers: { "content-type": "text/html; charset=utf-8", "set-cookie": cookie(url, COMPRAR, "", 0) } });
   if (nueva && adopcion) await adopcion(p);
   const token = await firmar(env, { uid: p.uid, exp: Math.floor(Date.now() / 1000) + DIAS * 86400 });
   return new Response(null, { status: 302, headers: [["location", destino(url, comprar)], ["set-cookie", cookie(url, COOKIE, token, DIAS * 86400)], ["set-cookie", cookie(url, ESTADO, "", 0)], ["set-cookie", cookie(url, COMPRAR, "", 0)]] });
@@ -97,10 +108,10 @@ export async function rutasSesion(request, env, adopcion) {
     return new Response(null, { status: 302, headers: { location: url.origin + "/", "set-cookie": cookie(url, COOKIE, "", 0) } });
   }
   if (url.pathname === "/entrar") {
-    const q = url.searchParams.get("comprar") || "";
-    const comprar = /^(pro|desarrollos)$/.test(q) ? q : "";
+    const q = url.searchParams.get("comprar") || "", cq = (url.searchParams.get("cupon") || "").trim().toUpperCase();
+    const comprar = (/^(pro|desarrollos)$/.test(q) ? q : "") + (/^[A-Z0-9-]{3,24}$/.test(cq) ? ":" + cq : "");
     // Ya con sesión: directo al estudio (y al pago, si eligió un plan)
-    if (await cuentaDe(request, env)) return Response.redirect(url.origin + "/" + (comprar ? "?comprar=" + comprar : ""), 302);
+    if (await cuentaDe(request, env)) return Response.redirect(destino(url, comprar), 302);
     // Solo para probar en la computadora: entra con cualquier correo sin Google
     if (env.DEV === "1" && url.hostname === "localhost" && url.searchParams.get("dev")) {
       const email = url.searchParams.get("dev");

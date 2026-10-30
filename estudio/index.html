@@ -108,6 +108,25 @@
   .dp-metodo button:disabled { opacity: 0.4; cursor: not-allowed; }
   .dp-pagar { width: 100%; padding: 12px 18px; font-size: 14px; }
   .dp-nota { font-size: 12px !important; text-align: center; }
+  .dp-cupon { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; font-size: 12px; color: var(--mz-tenue); }
+  .dp-cupon input { flex: 1; min-width: 140px; text-transform: uppercase; font: 500 13px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 10px; padding: 8px 10px; }
+  .dp-cupon.ok { justify-content: space-between; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--mz-lima); color: var(--mz-texto); }
+  .dp-cupon.ok b { color: var(--mz-lima); font-weight: 600; }
+  .dp-link { background: none; border: 0; padding: 0; color: var(--mz-tenue); text-decoration: underline; font: 12px var(--mz-texto-ui); cursor: pointer; }
+  .dp-precio s { font-size: 13px; font-weight: 400; color: var(--mz-tenue); margin-right: 4px; }
+  .links-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; padding: 14px 16px; border-bottom: 1px solid var(--mz-linea-neutra); }
+  .links-form label { display: grid; gap: 4px; font-size: 11px; color: var(--mz-tenue); }
+  .links-form input, .links-form select { font: 13px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 10px; padding: 8px 10px; }
+  .links-lote { padding: 12px 16px; border-bottom: 1px solid var(--mz-linea-neutra); display: grid; gap: 8px; }
+  .links-lote > b { font-size: 13px; }
+  .links-lote > b small { font-weight: 400; color: var(--mz-tenue); margin-left: 6px; }
+  .link-fila { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; font-size: 12px; }
+  .link-fila code { font: 600 12px ui-monospace, monospace; }
+  .link-fila .estado { color: var(--mz-tenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .link-fila .estado.usado { color: var(--mz-texto); }
+  .link-fila.apagado { opacity: 0.45; }
+  tr.pausada td { opacity: 0.5; }
+  tr.pausada td:last-child { opacity: 1; }
   .cuentas-titulo { margin: 0; padding: 14px 16px; font-size: 13px; color: var(--mz-tenue); border-bottom: 1px solid var(--mz-linea-neutra); }
   .cuentas-titulo b { color: var(--mz-lima); font-weight: 600; }
   .cuentas { margin-bottom: 18px; overflow: auto; border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); background: var(--mz-superficie); }
@@ -2047,7 +2066,57 @@
   }
   // Panel del dueño: todas las cuentas y su plan (para dar acceso a tus alumnos)
   let vistaDueno = "cuentas";
-  const TABS_DUENO = (n) => '<div class="rep-tabs"><button class="mini' + (vistaDueno === "cuentas" ? " primario" : "") + '" data-dueno="cuentas">Cuentas</button><button class="mini' + (vistaDueno === "reportes" ? " primario" : "") + '" data-dueno="reportes">Reportes' + (n ? " (" + n + " nuevos)" : "") + "</button></div>";
+  const TABS_DUENO = (n) => '<div class="rep-tabs"><button class="mini' + (vistaDueno === "cuentas" ? " primario" : "") + '" data-dueno="cuentas">Cuentas</button><button class="mini' + (vistaDueno === "links" ? " primario" : "") + '" data-dueno="links">Links de regalo y descuento</button><button class="mini' + (vistaDueno === "reportes" ? " primario" : "") + '" data-dueno="reportes">Reportes' + (n ? " (" + n + " nuevos)" : "") + "</button></div>";
+  // Links de un solo uso: cada alumno recibe el suyo (licencia de regalo o descuento)
+  const TIPOS_LINK = { "pro-100": ["Pro de regalo", 100, ["pro"]], "des-100": ["Desarrollos de regalo", 100, ["desarrollos"]], "des-50": ["Desarrollos con 50% de descuento", 50, ["desarrollos"]], "todo-30": ["30% en Pro y Desarrollos", 30, ["pro", "desarrollos"]] };
+  const linkDe = (codigo) => location.origin + "/entrar?cupon=" + codigo;
+  async function pintarLinks() {
+    const r = await fetch("api/admin/cupones", { cache: "no-store" }).catch(() => null);
+    if (!r || !r.ok) { avisar("No se pudieron leer los links"); return; }
+    const { cupones } = await r.json();
+    const caja = $("cuentas");
+    const en30 = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
+    const lotes = []; cupones.forEach((c) => { const k = c.lote || c.codigo; let l = lotes.find((x) => x.k === k); if (!l) lotes.push((l = { k, c: [] })); l.c.push(c); });
+    const queEs = (c) => (c.pct >= 100 ? "Regalo: " : c.pct + "% en ") + c.planes.map((p) => (p === "espacio" ? "+10 GB" : PLANES_TXT[p])).join(" y ");
+    caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) +
+      '<div class="links-form"><label>Cuántos<input type="number" id="ln-n" min="1" max="100" value="10" style="width:70px"></label>' +
+      '<label>Qué incluyen<select id="ln-tipo">' + Object.entries(TIPOS_LINK).map(([k, [n]]) => '<option value="' + k + '">' + n + "</option>").join("") + "</select></label>" +
+      '<label>Válidos hasta<input type="date" id="ln-vence" value="' + en30 + '"></label>' +
+      '<label>Para quién (nota)<input type="text" id="ln-nota" maxlength="60" placeholder="Alumnos octubre"></label>' +
+      '<button class="btn-prim" id="ln-crear">Crear links</button></div>' +
+      (lotes.length ? lotes.map((l) => {
+        const c0 = l.c[0], usados = l.c.filter((c) => c.usos).length;
+        return '<div class="links-lote"><b>' + esc(c0.nota || queEs(c0)) + "<small>" + esc(queEs(c0)) + " · " + usados + " de " + l.c.length + " usados" + (c0.vence ? " · vence el " + fechaLarga(c0.vence) : "") + '</small></b>' +
+          l.c.map((c) => '<div class="link-fila' + (c.activo ? "" : " apagado") + '"><code>' + esc(c.codigo) + '</code><span class="estado' + (c.usos ? " usado" : "") + '">' + (c.usos ? "Usado por " + esc((c.usadoPorCorreo || [])[0] || "") : c.activo ? "Libre" : "Desactivado") + "</span>" +
+            (c.usos ? "<span></span>" : '<button class="mini" data-ln-copiar="' + esc(c.codigo) + '">Copiar link</button>') +
+            (c.usos ? "<span></span>" : '<button class="mini" data-ln-activo="' + esc(c.codigo) + '" data-v="' + (c.activo ? "0" : "1") + '">' + (c.activo ? "Desactivar" : "Activar") + "</button>") + "</div>").join("") +
+          (l.c.some((c) => !c.usos && c.activo) ? '<div><button class="mini" data-ln-copiar-todos="' + esc(l.k) + '">Copiar todos los libres</button></div>' : "") + "</div>";
+      }).join("") : '<p class="nota" style="padding:16px">Aún no has creado links. Cada link sirve una sola vez: mándale uno a cada alumno.</p>');
+    caja._cupones = cupones;
+  }
+  document.addEventListener("click", async (ev) => {
+    if (ev.target.id === "ln-crear") {
+      const [, pct, planes] = TIPOS_LINK[$("ln-tipo").value], b = ev.target;
+      b.disabled = true; b.textContent = "Creando…";
+      const r = await fetch("api/admin/cupones", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cantidad: +$("ln-n").value, pct, planes, vence: $("ln-vence").value, nota: $("ln-nota").value }) }).catch(() => null);
+      const d = r ? await r.json().catch(() => ({})) : {};
+      if (!r || !r.ok) { avisar(d.error || "No se pudieron crear"); b.disabled = false; b.textContent = "Crear links"; return; }
+      avisar(d.cupones.length + " links listos"); pintarLinks(); return;
+    }
+    const cp = ev.target.closest("[data-ln-copiar]");
+    if (cp) { try { await navigator.clipboard.writeText(linkDe(cp.dataset.lnCopiar)); avisar("Link copiado"); } catch (e) { avisar(linkDe(cp.dataset.lnCopiar)); } return; }
+    const ct = ev.target.closest("[data-ln-copiar-todos]");
+    if (ct) {
+      const lista = ($("cuentas")._cupones || []).filter((c) => (c.lote || c.codigo) === ct.dataset.lnCopiarTodos && !c.usos && c.activo).map((c) => linkDe(c.codigo));
+      try { await navigator.clipboard.writeText(lista.join("\n")); avisar(lista.length + " links copiados, uno por renglón"); } catch (e) { avisar("No se pudo copiar"); }
+      return;
+    }
+    const ac = ev.target.closest("[data-ln-activo]");
+    if (ac) {
+      const r = await fetch("api/admin/cupones/" + ac.dataset.lnActivo, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ activo: ac.dataset.v === "1" }) }).catch(() => null);
+      avisar(r && r.ok ? (ac.dataset.v === "1" ? "Link activado" : "Link desactivado") : "No se pudo cambiar"); pintarLinks();
+    }
+  });
   async function pintarReportes() {
     const r = await fetch("api/admin/reportes", { cache: "no-store" }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudieron leer los reportes"); return; }
@@ -2064,7 +2133,7 @@
   }
   document.addEventListener("click", (ev) => {
     const t = ev.target.closest("[data-dueno]"); if (!t) return;
-    vistaDueno = t.dataset.dueno; vistaDueno === "reportes" ? pintarReportes() : pintarCuentas();
+    vistaDueno = t.dataset.dueno; vistaDueno === "reportes" ? pintarReportes() : vistaDueno === "links" ? pintarLinks() : pintarCuentas();
   });
   document.addEventListener("change", async (ev) => {
     const id = ev.target.dataset && ev.target.dataset.rep; if (!id) return;
@@ -2072,38 +2141,46 @@
     avisar(r && r.ok ? "Reporte actualizado" : "No se pudo actualizar"); if (r && r.ok) pintarReportes();
   });
   // Lo que pagó cada cuenta y por dónde (Mercado Pago en pesos, PayPal en dólares)
-  const METODO_TXT = { mercadopago: "Mercado Pago", paypal: "PayPal" };
+  const METODO_TXT = { mercadopago: "Mercado Pago", paypal: "PayPal", cupon: "Link de regalo" };
   const dinero = (n, mon) => "$" + Number(n || 0).toLocaleString("es-MX", { maximumFractionDigits: 2 }) + " " + (mon || "MXN");
   const sumaPorMoneda = (pagos) => pagos.reduce((t, x) => { const m = x.moneda || "MXN"; t[m] = (t[m] || 0) + (+x.monto || 0); return t; }, {});
   function pagoDe(c) {
-    const ps = c.pagos || [];
-    if (!ps.length) return c.plan && c.plan !== "gratis" ? '<span class="pago-nada">Sin pago · lo asignaste tú</span>' : '<span class="pago-nada">—</span>';
+    const ps = (c.pagos || []).filter((x) => +x.monto > 0), regalos = (c.pagos || []).filter((x) => x.metodo === "cupon");
+    if (!ps.length) return regalos.length ? '<span class="pago-monto"><i class="pago-via">Link de regalo</i><small>' + esc(regalos[0].cupon || "") + "</small></span>" : c.plan && c.plan !== "gratis" ? '<span class="pago-monto"><i class="pago-via">Cortesía</i></span>' : '<span class="pago-nada">—</span>';
     const t = sumaPorMoneda(ps), metodos = [...new Set(ps.map((x) => x.metodo || "mercadopago"))];
     const detalle = ps.map((x) => (x.fecha ? new Date(x.fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" }) + ": " : "") + dinero(x.monto, x.moneda) + " por " + (METODO_TXT[x.metodo] || "Mercado Pago") + (x.plan ? " (" + (x.plan === "espacio" ? "+10 GB" : PLANES_TXT[x.plan] || x.plan) + ")" : "")).join("\n");
     return '<span class="pago-monto" title="' + esc(detalle) + '"><b>' + Object.entries(t).map(([m, n]) => dinero(n, m)).join(" + ") + "</b>" +
       metodos.map((m) => '<i class="pago-via ' + m + '">' + (METODO_TXT[m] || m) + "</i>").join("") + (ps.length > 1 ? '<small>' + ps.length + " pagos</small>" : "") + "</span>";
   }
   function totalPagos(cuentas) {
-    const t = sumaPorMoneda(cuentas.flatMap((c) => c.pagos || [])), n = cuentas.filter((c) => (c.pagos || []).length).length;
+    const t = sumaPorMoneda(cuentas.flatMap((c) => (c.pagos || []).filter((x) => +x.monto > 0))), n = cuentas.filter((c) => (c.pagos || []).some((x) => +x.monto > 0)).length;
     return n ? "Has cobrado <b>" + Object.entries(t).map(([m, x]) => dinero(x, m)).join(" + ") + "</b> de " + n + (n === 1 ? " cuenta" : " cuentas") + "." : "Todavía no hay pagos.";
   }
   async function pintarCuentas() {
     if (vistaDueno === "reportes") return pintarReportes();
+    if (vistaDueno === "links") return pintarLinks();
     const r = await fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudieron leer las cuentas"); return; }
     const { cuentas } = await r.json();
     let caja = $("cuentas");
     if (!caja) { caja = document.createElement("div"); caja.id = "cuentas"; caja.className = "cuentas"; $("mi-plan").after(caja); }
-    caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p>' + TABS_DUENO(0) + '<p class="cuentas-total">' + totalPagos(cuentas) + '</p><table class="lotes-tabla"><thead><tr><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Pagó</th><th>Última entrada</th></tr></thead><tbody>' + cuentas.map((c) =>
-      "<tr><td><b>" + esc(c.nombre || "") + "</b></td><td>" + esc(c.email) + "</td><td>" + (c.admin ? "Dueño" : '<select data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
-      "</td><td>" + (c.admin ? "" : pagoDe(c)) + "</td><td>" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td></tr>").join("") + "</tbody></table>";
+    caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p>' + TABS_DUENO(0) + '<p class="cuentas-total">' + totalPagos(cuentas) + '</p><table class="lotes-tabla"><thead><tr><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Pagó</th><th>Última entrada</th><th></th></tr></thead><tbody>' + cuentas.map((c) =>
+      '<tr' + (c.pausada ? ' class="pausada"' : "") + "><td><b>" + esc(c.nombre || "") + "</b></td><td>" + esc(c.email) + "</td><td>" + (c.admin ? "Dueño" : '<select data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
+      "</td><td>" + (c.admin ? "" : pagoDe(c)) + "</td><td>" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td><td>" + (c.admin ? "" : '<button class="mini' + (c.pausada ? " primario" : "") + '" data-pausar="' + esc(c.uid) + '" data-v="' + (c.pausada ? "0" : "1") + '">' + (c.pausada ? "Reactivar" : "Pausar") + "</button>") + "</td></tr>").join("") + "</tbody></table>";
   }
   document.addEventListener("click", (ev) => { if (ev.target.id === "ver-cuentas") { const c = $("cuentas"); if (c && !c.hidden) { c.hidden = true; return; } if (c) c.hidden = false; pintarCuentas(); } });
+  document.addEventListener("click", async (ev) => {
+    const b = ev.target.closest("[data-pausar]"); if (!b) return;
+    const pausar = b.dataset.v === "1", fila = b.closest("tr"), quien = fila ? fila.children[1].textContent : "";
+    if (pausar && !confirm("¿Pausar a " + quien + "? No podrá entrar al estudio y sus tours dejarán de verse. No se borra nada y lo puedes reactivar.")) return;
+    const r = await fetch("api/admin/cuentas/" + b.dataset.pausar, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ pausada: pausar }) }).catch(() => null);
+    avisar(r && r.ok ? (pausar ? "Cuenta en pausa" : "Cuenta reactivada") : "No se pudo cambiar"); pintarCuentas();
+  });
   document.addEventListener("change", async (ev) => {
     const uid = ev.target.dataset && ev.target.dataset.planDe;
     if (!uid) return;
     const r = await fetch("api/admin/cuentas/" + uid, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ plan: ev.target.value }) }).catch(() => null);
-    avisar(r && r.ok ? "Plan actualizado" : "No se pudo cambiar el plan");
+    avisar(r && r.ok ? "Plan actualizado" : "No se pudo cambiar el plan"); pintarCuentas();
   });
   // =================== PAGO (Mercado Pago) ===================
   // Se paga 1 mes o 1 año; no se renueva solo. El plan se activa cuando Mercado Pago confirma.
@@ -2121,7 +2198,27 @@
   };
   const yaPro = () => PLAN && PLAN.id === "pro" && !PLAN.vence;
   const precioHoy = (id) => { const t = tablaPago(); return id === "desarrollos" && yaPro() ? t.desarrollos - t.pro : t[id]; };
-  const pago = { plan: "pro", metodo: "mercadopago" };
+  const pago = { plan: "pro", metodo: "mercadopago", cupon: "" };
+  let cuponPago = null, cuponAbierto = false; // cupón revisado por el servidor: { codigo, pct, planes, mxn, usd }
+  const conCupon = (id) => cuponPago && cuponPago.planes.includes(id) ? (enUSD() ? cuponPago.usd : cuponPago.mxn)[id] : null;
+  const precioFinal = (id) => { const c = conCupon(id); return c !== null && c !== undefined ? c : precioHoy(id); };
+  const regalo = () => cuponPago && cuponPago.pct >= 100;
+  const etiquetaPrecio = (id) => conCupon(id) !== null && conCupon(id) !== undefined && !regalo() ? "<s>" + pesos(precioHoy(id)) + "</s>" + pesos(conCupon(id)) : regalo() && cuponPago.planes.includes(id) ? "Gratis" : pesos(precioHoy(id));
+  function bloqueCupon() {
+    if (cuponPago) return '<div class="dp-cupon ok"><span>Cupón <b>' + esc(cuponPago.codigo) + "</b> · " + (regalo() ? "licencia de regalo" : cuponPago.pct + "% de descuento") + '</span><button class="dp-link" data-dp-cupon-quitar>Quitar</button></div>';
+    if (!cuponAbierto) return '<div class="dp-cupon"><button class="dp-link" data-dp-cupon-abrir>¿Tienes un cupón?</button></div>';
+    return '<div class="dp-cupon"><input id="dp-cupon-txt" maxlength="24" placeholder="Escribe tu cupón" value="' + esc(pago.cupon) + '"><button class="btn-sec" data-dp-cupon-aplicar>Aplicar</button></div>';
+  }
+  async function aplicarCupon(codigo) {
+    const c = String(codigo || "").trim().toUpperCase();
+    if (!c) return;
+    const r = await fetch("api/pagos/cupon?codigo=" + encodeURIComponent(c), { cache: "no-store" }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    if (!r || !r.ok) { cuponPago = null; pago.cupon = c; cuponAbierto = true; avisar(d.error || "No pudimos revisar el cupón"); if ($("dlg-pago").open) pintarPago(); return; }
+    cuponPago = d; pago.cupon = d.codigo;
+    if (!d.planes.includes(pago.plan)) pago.plan = d.planes.find((p) => p !== "espacio") || d.planes[0];
+    if ($("dlg-pago").open) pintarPago();
+  }
   const pesos = (n) => "$" + n.toLocaleString("es-MX") + (enUSD() ? " USD" : "");
   const NOM_METODO = { mercadopago: "Mercado Pago", paypal: "PayPal" };
   const notaPago = () => enUSD() ? "Pago con PayPal en dólares: tarjeta de crédito o débito, o tu saldo de PayPal." : "Tarjeta, OXXO o saldo de Mercado Pago. Precios en pesos mexicanos.";
@@ -2135,8 +2232,7 @@
     if (pago.plan === "espacio") {
       $("dp-cuerpo").innerHTML = '<button class="dp-cerrar" data-dp-cerrar aria-label="Cerrar">×</button>' +
         '<div><h2 id="dp-titulo">Más espacio</h2><p>Suma 10 GB a tu cuenta para siempre (unas 200 esferas más). Pago único.</p></div>' +
-        elegirMetodo() +
-        '<button class="btn-prim dp-pagar" data-dp-pagar>Pagar ' + pesos(tablaPago().espacio) + " con " + NOM_METODO[pago.metodo] + "</button>" +
+        (regalo() && cuponPago.planes.includes("espacio") ? "" : elegirMetodo()) + bloqueCupon() + botonPagar() +
         '<p class="dp-nota">' + notaPago() + "</p>";
       return;
     }
@@ -2146,16 +2242,21 @@
       '<div><h2 id="dp-titulo">' + (yaPro() ? "Sube a Desarrollos" : "Tu licencia Mozari") + '</h2><p>Pagas una sola vez y es tuya: sin mensualidades y con el hosting de tus tours incluido.</p></div>' +
       '<div class="dp-planes"' + (opciones.length === 1 ? ' style="grid-template-columns:1fr"' : "") + ">" + opciones.map((id) =>
         '<button class="dp-plan" data-dp-plan="' + id + '" aria-pressed="' + (pago.plan === id) + '"><b>' + PLANES_TXT[id] + "</b>" +
-        '<span class="dp-precio">' + pesos(precioHoy(id)) + " <small>" + (id === "desarrollos" && yaPro() ? "pagas la diferencia" : "pago único") + "</small></span>" +
+        '<span class="dp-precio">' + etiquetaPrecio(id) + " <small>" + (regalo() && cuponPago.planes.includes(id) ? "con tu link" : id === "desarrollos" && yaPro() ? "pagas la diferencia" : "pago único") + "</small></span>" +
         "<ul>" + QUE_INCLUYE[id].map((x) => "<li>" + x + "</li>").join("") + "</ul></button>").join("") + "</div>" +
-      elegirMetodo() +
-      '<button class="btn-prim dp-pagar" data-dp-pagar>Pagar ' + pesos(precioHoy(pago.plan)) + " con " + NOM_METODO[pago.metodo] + "</button>" +
-      '<p class="dp-nota">' + notaPago() + "</p>";
+      (regalo() && cuponPago.planes.includes(pago.plan) ? "" : elegirMetodo()) + bloqueCupon() + botonPagar() +
+      '<p class="dp-nota">' + (regalo() && cuponPago.planes.includes(pago.plan) ? "Este link es de un solo uso: la licencia queda en tu cuenta para siempre." : notaPago()) + "</p>";
+  }
+  function botonPagar() {
+    if (regalo() && cuponPago.planes.includes(pago.plan)) return '<button class="btn-prim dp-pagar" data-dp-canjear>Activar ' + (pago.plan === "espacio" ? "+10 GB" : PLANES_TXT[pago.plan]) + " gratis</button>";
+    const id = pago.plan === "espacio" ? "espacio" : pago.plan;
+    return '<button class="btn-prim dp-pagar" data-dp-pagar>Pagar ' + pesos(id === "espacio" && !conCupon(id) ? tablaPago().espacio : precioFinal(id)) + " con " + NOM_METODO[pago.metodo] + "</button>";
   }
   function abrirPago(plan) {
     if (MODO !== "nube") { window.open(ESCAPARATE, "_blank", "noopener"); return; }
     if (COBRO[plan] !== undefined) pago.plan = plan;
     pintarPago(); $("dlg-pago").showModal();
+    if (pago.cupon && !cuponPago) aplicarCupon(pago.cupon);
     // Según su país: fuera de México se sugiere PayPal en dólares (el cliente puede cambiarlo)
     if (!preciosPago) fetch("api/pagos/precios", { cache: "no-store" }).then((r) => r.json()).then((d) => {
       preciosPago = d;
@@ -2176,16 +2277,29 @@
     if (ev.target === $("dlg-pago") || ev.target.closest("[data-dp-cerrar]")) { $("dlg-pago").close(); return; }
     if (ev.target.closest("[data-dp-recargar]")) { location.replace(location.pathname + location.hash); return; }
     const pl = ev.target.closest("[data-dp-plan]"); if (pl) { pago.plan = pl.dataset.dpPlan; pintarPago(); return; }
+    if (ev.target.closest("[data-dp-cupon-abrir]")) { cuponAbierto = true; pintarPago(); setTimeout(() => $("dp-cupon-txt") && $("dp-cupon-txt").focus(), 30); return; }
+    if (ev.target.closest("[data-dp-cupon-aplicar]")) { aplicarCupon($("dp-cupon-txt").value); return; }
+    if (ev.target.closest("[data-dp-cupon-quitar]")) { cuponPago = null; pago.cupon = ""; cuponAbierto = false; pintarPago(); return; }
+    const cj = ev.target.closest("[data-dp-canjear]");
+    if (cj) {
+      cj.disabled = true; cj.textContent = "Activando…";
+      const r = await fetch("api/pagos/canjear", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cupon: pago.cupon, plan: pago.plan }) }).catch(() => null);
+      const d = r ? await r.json().catch(() => ({})) : {};
+      if (!r || !r.ok) { avisar(d.error || "No se pudo activar. Intenta de nuevo."); pintarPago(); return; }
+      avisoPago(d.plan === "espacio" ? "¡Listo! Tienes 10 GB más" : "¡Listo! Ya tienes " + PLANES_TXT[d.plan], "Tu licencia ya está activa y es para siempre. Gracias por ser parte.", true);
+      return;
+    }
     const me = ev.target.closest("[data-dp-metodo]"); if (me && !me.disabled) { pago.metodo = me.dataset.dpMetodo; pintarPago(); return; }
     const b = ev.target.closest("[data-dp-pagar]");
     if (b) {
       b.disabled = true; b.textContent = "Abriendo " + NOM_METODO[pago.metodo] + "…";
-      const r = await fetch("api/pagos/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(pago) }).catch(() => null);
+      const r = await fetch("api/pagos/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ plan: pago.plan, metodo: pago.metodo, cupon: cuponPago ? cuponPago.codigo : "" }) }).catch(() => null);
       const d = r ? await r.json().catch(() => ({})) : {};
       if (!r || !r.ok || !d.url) { b.disabled = false; pintarPago(); avisar(d.error || "No se pudo abrir el pago. Intenta de nuevo."); return; }
       location.href = d.url;
     }
   });
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && ev.target.id === "dp-cupon-txt") { ev.preventDefault(); aplicarCupon(ev.target.value); } });
   // En el celular: el plan y su pago también están a la mano (el estudio es de compu)
   if (MODO === "nube" && PLAN) {
     const mp = $("mv-plan"), btnPlan = NUBE.admin ? "" : PLAN.vencido ? '<button class="btn-prim" data-comprar="pro">Obtener licencia</button>' : PLAN.id === "gratis" ? '<button class="btn-sec" data-comprar="pro">Ver licencias</button>'
@@ -2208,7 +2322,8 @@
   if (MODO === "nube") {
     const q = new URLSearchParams(location.search);
     const limpiar = () => history.replaceState(null, "", location.pathname + location.hash);
-    if (q.get("comprar")) { limpiar(); if (!NUBE.admin) setTimeout(() => abrirPago(q.get("comprar")), 300); }
+    if (q.get("cupon") && !NUBE.admin) pago.cupon = q.get("cupon").toUpperCase();
+    if (q.get("comprar") || q.get("cupon")) { limpiar(); if (!NUBE.admin) setTimeout(() => abrirPago(q.get("comprar") || (PLAN && PLAN.id === "pro" ? "desarrollos" : "pro")), 300); }
     else if (q.get("pago")) setTimeout(async () => {
       const estado = q.get("pago"), cuerpo = { payment_id: q.get("payment_id") || q.get("collection_id") || "", ref: q.get("external_reference") || "" };
       limpiar();

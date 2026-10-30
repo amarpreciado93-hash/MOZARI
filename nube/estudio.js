@@ -22,7 +22,7 @@
 import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR } from "./comun.js";
 import { rutasSesion, cuentaDe, perfil } from "./sesion.js";
 import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
-import { apiPagos, webhookMercadoPago } from "./pagos.js";
+import { apiPagos, webhookMercadoPago, CODIGO, cuponClave } from "./pagos.js";
 import { EmailMessage } from "cloudflare:email";
 
 const MAX_PROYECTO = 8 * 1024 * 1024;   // 8 MB de JSON
@@ -157,6 +157,47 @@ async function admin(request, env, partes) {
     }
     return error(405, "Método no permitido");
   }
+  if (partes[2] === "cupones") {
+    if (partes.length === 3 && m === "GET") {
+      const l = await env.R2.list({ prefix: "cupones/", limit: 1000 });
+      const cupones = await Promise.all(l.objects.filter((o) => o.key.endsWith(".json")).map(async (o) => (await env.R2.get(o.key)).json()));
+      cupones.sort((a, b) => String(b.creado).localeCompare(String(a.creado)) || String(a.codigo).localeCompare(String(b.codigo)));
+      // Quién usó cada link (correo de la cuenta)
+      const uids = [...new Set(cupones.flatMap((c) => c.usadoPor || []))];
+      const correos = Object.fromEntries(await Promise.all(uids.map(async (u) => { const p = await perfil(env, u); return [u, p ? p.email : u]; })));
+      cupones.forEach((c) => { c.usadoPorCorreo = (c.usadoPor || []).map((u) => correos[u] || u); });
+      return json({ cupones });
+    }
+    // Crea N links de un solo uso (cada uno con su código), con el mismo descuento y vigencia
+    if (partes.length === 3 && m === "POST") {
+      const c = await request.json().catch(() => ({}));
+      const pct = Math.round(+c.pct), cantidad = Math.round(+c.cantidad || 1);
+      if (!(pct >= 1 && pct <= 100)) return error(400, "El descuento va de 1% a 100%");
+      if (!(cantidad >= 1 && cantidad <= 100)) return error(400, "De 1 a 100 links a la vez");
+      const planes = ["pro", "desarrollos", "espacio"].filter((p) => (c.planes || []).includes(p));
+      if (!planes.length) return error(400, "Elige al menos un plan");
+      const vence = c.vence && /^\d{4}-\d{2}-\d{2}$/.test(c.vence) ? new Date(c.vence + "T23:59:59-06:00").toISOString() : null;
+      const nota = String(c.nota || "").slice(0, 60), lote = Date.now().toString(36), creado = new Date().toISOString();
+      const LETRAS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", cupones = [];
+      while (cupones.length < cantidad) {
+        const r = crypto.getRandomValues(new Uint8Array(6)), codigo = (pct >= 100 ? "MZ-" : "AL-") + [...r].map((x) => LETRAS[x % LETRAS.length]).join("");
+        if (await env.R2.head(cuponClave(codigo))) continue;
+        const cupon = { codigo, pct, planes, max: 1, vence, usos: 0, usadoPor: [], activo: true, nota, lote, creado };
+        await env.R2.put(cuponClave(codigo), JSON.stringify(cupon), { httpMetadata: { contentType: "application/json" } });
+        cupones.push(cupon);
+      }
+      return json({ cupones });
+    }
+    const codigo = String(partes[3] || "").toUpperCase();
+    if (partes.length === 4 && m === "PUT" && CODIGO.test(codigo)) {
+      const o = await env.R2.get(cuponClave(codigo)); if (!o) return error(404, "No existe");
+      const cupon = await o.json(), cuerpo = await request.json().catch(() => ({}));
+      if (typeof cuerpo.activo === "boolean") cupon.activo = cuerpo.activo;
+      await env.R2.put(cuponClave(codigo), JSON.stringify(cupon), { httpMetadata: { contentType: "application/json" } });
+      return json(cupon);
+    }
+    return error(405, "Método no permitido");
+  }
   if (partes[2] !== "cuentas") return error(404, "Ruta desconocida");
   if (partes.length === 3 && m === "GET") {
     const cuentas = [];
@@ -169,15 +210,27 @@ async function admin(request, env, partes) {
     cuentas.sort((a, b) => String(b.ultimaEntrada).localeCompare(String(a.ultimaEntrada)));
     return json({ cuentas: cuentas.map((p) => ({ uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada,
       // Lo que pagó y por dónde (los pagos de antes del historial salen de su último pago, que fue por Mercado Pago)
+      pausada: !!p.bloqueado, cortesia: !!p.cortesia,
       pagos: Array.isArray(p.pagos) ? p.pagos : p.ultimoPago ? [Object.assign({ moneda: "MXN", metodo: "mercadopago" }, p.ultimoPago)] : [] })) });
   }
   if (partes.length === 4 && m === "PUT") {
     const uid = partes[3], cuerpo = await request.json().catch(() => ({}));
-    if (!/^[A-Za-z0-9_-]{2,80}$/.test(uid) || !PLANES[cuerpo.plan]) return error(400, "Datos inválidos");
+    if (!/^[A-Za-z0-9_-]{2,80}$/.test(uid) || !(PLANES[cuerpo.plan] || typeof cuerpo.pausada === "boolean")) return error(400, "Datos inválidos");
     const p = await perfil(env, uid);
     if (!p) return error(404, "No existe esa cuenta");
-    p.plan = cuerpo.plan;
-    delete p.vence;   // lo que asigna el dueño a mano no caduca
+    if (p.admin) return error(400, "La cuenta del dueño no se cambia aquí");
+    if (PLANES[cuerpo.plan]) {
+      p.plan = cuerpo.plan;
+      delete p.vence;   // lo que asigna el dueño a mano no caduca
+      p.cortesia = cuerpo.plan !== "gratis"; // dado por el dueño sin pago
+    }
+    // Pausar: no entra al estudio y sus tours publicados dejan de mostrarse (no se borra nada)
+    if (typeof cuerpo.pausada === "boolean") {
+      if (cuerpo.pausada) p.bloqueado = true; else delete p.bloqueado;
+      const l = await env.R2.list({ prefix: "cuentas/" + uid + "/tours/", limit: 1000 });
+      const ids = l.objects.map((o) => o.key.split("/").pop()).filter((x) => ID_TOUR.test(x));
+      await Promise.all(ids.map((id) => (cuerpo.pausada ? env.R2.put("pausados/" + id, uid) : env.R2.delete("pausados/" + id))));
+    }
     await env.R2.put("cuentas/" + uid + "/perfil.json", JSON.stringify(p), { httpMetadata: { contentType: "application/json" } });
     return json({ ok: true });
   }

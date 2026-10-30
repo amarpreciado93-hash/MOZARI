@@ -79,10 +79,18 @@ async function activar(env, orden, pagoId) {
   }
   p.ultimoPago = { ref: orden.ref, fecha: ahora.toISOString(), monto: orden.monto };
   // Historial para el panel de dueño: cuánto pagó y por dónde
-  p.pagos = (Array.isArray(p.pagos) ? p.pagos : []).concat([{ ref: orden.ref, fecha: ahora.toISOString(), monto: orden.monto, moneda: orden.moneda || "MXN", metodo: orden.metodo || "mercadopago", plan: orden.plan }]).slice(-50);
+  p.pagos = (Array.isArray(p.pagos) ? p.pagos : []).concat([{ ref: orden.ref, fecha: ahora.toISOString(), monto: orden.monto, moneda: orden.moneda || "MXN", metodo: orden.metodo || "mercadopago", plan: orden.plan, cupon: orden.cupon || undefined }]).slice(-50);
   await guardar(env, "cuentas/" + p.uid + "/perfil.json", p);
   Object.assign(orden, { estado: "aprobado", aplicado: ahora.toISOString(), pago: String(pagoId), vence: p.vence || null });
   await guardar(env, ordenClave(orden.ref), orden);
+  // Cupón usado: cuenta un uso y la cuenta ya no lo puede volver a usar
+  if (orden.cupon) {
+    const cupon = await leer(env, cuponClave(orden.cupon));
+    if (cupon && !(cupon.usadoPor || []).includes(orden.uid)) {
+      cupon.usos = (cupon.usos || 0) + 1; cupon.usadoPor = (cupon.usadoPor || []).concat(orden.uid);
+      await guardar(env, cuponClave(orden.cupon), cupon);
+    }
+  }
   return orden;
 }
 
@@ -110,6 +118,22 @@ async function revisarPago(env, pagoId) {
   return orden;
 }
 
+// ---------- Cupones ----------
+// cupones/<CODIGO>.json: { codigo, pct, planes, max, usos, usadoPor, vence, activo }. Una vez por cuenta.
+export const CODIGO = /^[A-Z0-9-]{3,24}$/;
+export const cuponClave = (c) => "cupones/" + c + ".json";
+export async function leerCupon(env, codigo) { const c = String(codigo || "").trim().toUpperCase(); return CODIGO.test(c) ? leer(env, cuponClave(c)) : null; }
+// ¿Sirve este cupón para esta cuenta y este plan? Devuelve el motivo si no.
+function motivoCupon(cupon, plan, uid) {
+  if (!cupon || !cupon.activo) return "Ese cupón no existe o ya no está activo";
+  if (cupon.vence && new Date(cupon.vence) < new Date()) return "Ese cupón ya venció";
+  if (cupon.max && (cupon.usos || 0) >= cupon.max) return cupon.max === 1 ? "Este link ya se usó. Pídele uno nuevo a quien te lo mandó" : "Ese cupón ya se usó todas las veces";
+  if ((cupon.usadoPor || []).includes(uid)) return "Ya usaste ese cupón";
+  if (plan && !(cupon.planes || []).includes(plan)) return "Ese cupón no aplica a este plan";
+  return "";
+}
+const conDescuento = (monto, pct, moneda) => Math.max(1, Math.round(monto * (1 - pct / 100)));
+
 const resumen = (o) => ({ ref: o.ref, plan: o.plan, periodo: o.periodo, monto: o.monto, estado: o.estado, vence: o.vence || null });
 
 // /api/pagos/... (con sesión)
@@ -122,19 +146,53 @@ export async function apiPagos(request, env, partes, yo) {
       metodos: { mercadopago: !!env.MP_ACCESS_TOKEN || simulado(env), paypal: !!(env.PAYPAL_CLIENT_ID && env.PAYPAL_SECRET) || ppSimulado(env) } });
   }
 
+  // Revisa un cupón y devuelve los precios con descuento para esta cuenta
+  if (partes[2] === "cupon" && m === "GET") {
+    const cupon = await leerCupon(env, url.searchParams.get("codigo"));
+    const motivo = motivoCupon(cupon, "", yo.uid);
+    if (motivo) return error(400, motivo);
+    const precios = (mon) => Object.fromEntries(["pro", "desarrollos", "espacio"].map((p) => { const b = montoLicencia(yo, p, mon); return [p, b && cupon.planes.includes(p) ? conDescuento(b, cupon.pct, mon) : null]; }));
+    return json({ codigo: cupon.codigo, pct: cupon.pct, planes: cupon.planes, mxn: precios("MXN"), usd: precios("USD") });
+  }
+
+  // Link de cortesía (cupón al 100%): se activa sin pasar por el pago
+  if (partes[2] === "canjear" && m === "POST") {
+    const c = await request.json().catch(() => ({}));
+    if (yo.admin) return error(400, "Tu cuenta ya tiene todo incluido");
+    const cupon = await leerCupon(env, c.cupon);
+    const plan = cupon && (cupon.planes || []).find((p) => p === c.plan) ? c.plan : cupon && cupon.planes[0];
+    const motivo = motivoCupon(cupon, plan, yo.uid);
+    if (motivo) return error(400, motivo);
+    if (cupon.pct < 100) return error(400, "Este cupón es de descuento: se aplica al pagar");
+    if (!montoLicencia(yo, plan, "MXN")) return error(400, "Ya tienes esa licencia");
+    const ref = "mz-" + Date.now().toString(36) + crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
+    const orden = { ref, uid: yo.uid, email: yo.email, plan, periodo: "unico", monto: 0, moneda: "MXN", metodo: "cupon", cupon: cupon.codigo, descuento: 100, estado: "creado", creado: new Date().toISOString() };
+    await guardar(env, ordenClave(ref), orden);
+    return json(resumen(await activar(env, orden, "cupon")));
+  }
+
   if (partes[2] === "checkout" && m === "POST") {
     const c = await request.json().catch(() => ({}));
     if (!COBROS[c.plan]) return error(400, "Plan inválido");
     c.periodo = "unico";
     if (yo.admin) return error(400, "Tu cuenta ya tiene todo incluido");
     const conPayPal = c.metodo === "paypal";
-    const montoHoy = montoLicencia(yo, c.plan, conPayPal ? "USD" : "MXN");
-    if (!montoHoy) return error(400, "Ya tienes esa licencia");
+    const lista = montoLicencia(yo, c.plan, conPayPal ? "USD" : "MXN");
+    if (!lista) return error(400, "Ya tienes esa licencia");
+    let cupon = null, montoHoy = lista;
+    if (c.cupon) {
+      cupon = await leerCupon(env, c.cupon);
+      const motivo = motivoCupon(cupon, c.plan, yo.uid);
+      if (motivo) return error(400, motivo);
+      if (cupon.pct >= 100) return error(400, "Este link activa tu licencia sin pagar: usa Activar");
+      montoHoy = conDescuento(lista, cupon.pct, conPayPal ? "USD" : "MXN");
+    }
+    const conCupon = cupon ? { cupon: cupon.codigo, descuento: cupon.pct, montoLista: lista } : {};
     const ref = "mz-" + Date.now().toString(36) + crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
     if (conPayPal) {
       if (!(env.PAYPAL_CLIENT_ID && env.PAYPAL_SECRET) && !ppSimulado(env)) return error(503, "El pago con PayPal aún no está activo. Usa Mercado Pago o escríbenos.");
       const nombre = c.plan === "espacio" ? "Mozari +10 GB de espacio" : "Mozari " + PLANES[c.plan].nombre + " · licencia de pago único";
-      const orden = { ref, uid: yo.uid, email: yo.email, plan: c.plan, periodo: "unico", monto: montoHoy, moneda: "USD", metodo: "paypal", estado: "creado", creado: new Date().toISOString() };
+      const orden = Object.assign({ ref, uid: yo.uid, email: yo.email, plan: c.plan, periodo: "unico", monto: montoHoy, moneda: "USD", metodo: "paypal", estado: "creado", creado: new Date().toISOString() }, conCupon);
       await guardar(env, ordenClave(ref), orden);
       if (ppSimulado(env)) return json({ ref, url: url.origin + "/api/pagos/simular?ref=" + ref });
       const r = await paypal(env, "/v2/checkout/orders", {
@@ -152,7 +210,7 @@ export async function apiPagos(request, env, partes, yo) {
     }
     if (!env.MP_ACCESS_TOKEN && !simulado(env)) return error(503, "Los pagos aún no están activos. Escríbenos y te activamos el plan.");
     const monto = montoHoy, plan = c.plan === "espacio" ? { nombre: "+10 GB de espacio" } : PLANES[c.plan], periodo = PERIODOS.unico;
-    const orden = { ref, uid: yo.uid, email: yo.email, plan: c.plan, periodo: c.periodo, monto, moneda: "MXN", estado: "creado", creado: new Date().toISOString() };
+    const orden = Object.assign({ ref, uid: yo.uid, email: yo.email, plan: c.plan, periodo: c.periodo, monto, moneda: "MXN", estado: "creado", creado: new Date().toISOString() }, conCupon);
     await guardar(env, ordenClave(ref), orden);
     if (simulado(env)) return json({ ref, url: url.origin + "/api/pagos/simular?ref=" + ref });
     const pref = await mp(env, "/checkout/preferences", {
