@@ -19,15 +19,19 @@ export const COBROS = {
   espacio:     { unico: 390 },      // +10 GB para siempre (aunque se llene, 10 años de hosting quedan pagados)
 };
 export const ESPACIO_PAQUETE = 10 * GB;
+// Los mismos productos en dólares para quien paga fuera de México con PayPal. Suben lo necesario para que,
+// tras la comisión de PayPal (~4.45% + 0.30 USD + IVA) y el cambio a pesos (~3.5%), quede lo mismo que en México.
+export const COBROS_USD = { pro: 59, desarrollos: 299, espacio: 25 };
 export const PERIODOS = { unico: { nombre: "pago único", meses: 0 }, mes: { nombre: "1 mes", meses: 1 }, anio: { nombre: "1 año", meses: 12 } };
 // Lo que paga hoy una cuenta por una licencia (si ya tiene Pro, para subir a Desarrollos paga la diferencia)
-export function montoLicencia(cuenta, plan) {
-  if (plan === "espacio") return COBROS.espacio.unico;
-  const base = COBROS[plan] && COBROS[plan].unico;
+export function montoLicencia(cuenta, plan, moneda) {
+  const tabla = moneda === "USD" ? COBROS_USD : { pro: COBROS.pro.unico, desarrollos: COBROS.desarrollos.unico, espacio: COBROS.espacio.unico };
+  if (plan === "espacio") return tabla.espacio;
+  const base = tabla[plan];
   if (!base) return null;
   const actual = planDe(cuenta);
   if (actual.id === plan && !actual.vence) return null;              // ya la tiene
-  if (plan === "desarrollos" && actual.id === "pro" && !actual.vence) return base - COBROS.pro.unico;
+  if (plan === "desarrollos" && actual.id === "pro" && !actual.vence) return base - tabla.pro;
   return base;
 }
 

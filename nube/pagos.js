@@ -1,4 +1,5 @@
-// Mozari · cobros con Mercado Pago (Checkout Pro, licencias de pago único y paquetes de espacio)
+// Mozari · cobros: Mercado Pago (México, en pesos) y PayPal (resto del mundo, en dólares).
+// Licencias de pago único y paquetes de espacio; el cliente elige cómo pagar.
 //
 // 1. El estudio pide /api/pagos/checkout {plan, periodo} → se crea una orden en R2 (pagos/<ref>.json)
 //    y una "preferencia" en Mercado Pago → el cliente paga en Mercado Pago (tarjeta, OXXO, saldo).
@@ -7,17 +8,49 @@
 //    con nuestra llave y solo si está aprobado, en pesos y por el monto exacto, se activa el plan.
 // 3. Activar es idempotente: el mismo pago nunca suma tiempo dos veces.
 //
-// Secreto del Worker: MP_ACCESS_TOKEN (Access Token de producción de Mercado Pago).
-// Sin ese secreto y con DEV=1 (solo en la computadora) los pagos se simulan.
+// Secretos del Worker: MP_ACCESS_TOKEN (Mercado Pago) y PAYPAL_CLIENT_ID + PAYPAL_SECRET (PayPal, app "Live").
+// PayPal: se crea una orden con el monto en USD, el cliente la aprueba en PayPal y al regresar el servidor
+// la CAPTURA (ahí se cobra); solo si quedó COMPLETED, en USD y por el monto exacto, se activa la licencia.
+// Si el cliente no regresa, la orden no se captura y no se le cobra nada.
+// Sin secretos y con DEV=1 (solo en la computadora) los pagos se simulan.
 
 import { json, error } from "./comun.js";
 import { perfil } from "./sesion.js";
-import { PLANES, COBROS, PERIODOS, sumarMeses, montoLicencia, ESPACIO_PAQUETE } from "./planes.js";
+import { PLANES, COBROS, COBROS_USD, PERIODOS, sumarMeses, montoLicencia, ESPACIO_PAQUETE } from "./planes.js";
 
 const MP = "https://api.mercadopago.com";
 const ordenClave = (ref) => "pagos/" + ref + ".json";
 const REF = /^mz-[a-z0-9]{6,40}$/;
 const simulado = (env) => !env.MP_ACCESS_TOKEN && env.DEV === "1";
+const ppSimulado = (env) => !(env.PAYPAL_CLIENT_ID && env.PAYPAL_SECRET) && env.DEV === "1";
+const PP = (env) => (env.PAYPAL_ENV === "sandbox" ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com");
+let ppToken = null;
+async function paypal(env, ruta, opciones = {}) {
+  if (!ppToken || ppToken.vence < Date.now()) {
+    const t = await fetch(PP(env) + "/v1/oauth2/token", { method: "POST", headers: { authorization: "Basic " + btoa(env.PAYPAL_CLIENT_ID + ":" + env.PAYPAL_SECRET), "content-type": "application/x-www-form-urlencoded" }, body: "grant_type=client_credentials" });
+    if (!t.ok) throw new Error("PayPal no aceptó las llaves (" + t.status + ")");
+    const d = await t.json();
+    ppToken = { valor: d.access_token, vence: Date.now() + (d.expires_in - 120) * 1000 };
+  }
+  const r = await fetch(PP(env) + ruta, Object.assign({}, opciones, { headers: Object.assign({ authorization: "Bearer " + ppToken.valor, "content-type": "application/json" }, opciones.headers || {}) }));
+  const d = await r.json().catch(() => ({}));
+  return { ok: r.ok, status: r.status, d };
+}
+// Captura (cobra) una orden de PayPal aprobada y, si quedó pagada por lo correcto, activa la licencia
+async function capturarPayPal(env, orden) {
+  if (orden.aplicado) return orden;
+  if (!/^[A-Z0-9]{8,40}$/.test(orden.paypal || "")) return orden;
+  let r = await paypal(env, "/v2/checkout/orders/" + orden.paypal + "/capture", { method: "POST", headers: { "paypal-request-id": orden.ref + "-cap" } });
+  if (!r.ok) r = await paypal(env, "/v2/checkout/orders/" + orden.paypal); // ya capturada antes, o aún sin aprobar
+  const o = r.d || {}, pu = (o.purchase_units || [])[0] || {}, cap = ((pu.payments || {}).captures || [])[0];
+  if (o.status === "COMPLETED" && cap && cap.status === "COMPLETED") {
+    const ok = (pu.custom_id || pu.reference_id) === orden.ref && cap.amount && cap.amount.currency_code === "USD" && Math.abs(+cap.amount.value - orden.monto) < 0.01;
+    if (!ok) { orden.estado = "revisar"; orden.nota = "Monto, moneda u orden no coinciden"; await guardar(env, ordenClave(orden.ref), orden); return orden; }
+    return activar(env, orden, cap.id);
+  }
+  if (cap && cap.status === "PENDING") { orden.estado = "pendiente"; await guardar(env, ordenClave(orden.ref), orden); }
+  return orden;
+}
 
 async function leer(env, clave) { const o = await env.R2.get(clave); return o ? o.json() : null; }
 const guardar = (env, clave, datos) => env.R2.put(clave, JSON.stringify(datos), { httpMetadata: { contentType: "application/json" } });
@@ -80,17 +113,42 @@ const resumen = (o) => ({ ref: o.ref, plan: o.plan, periodo: o.periodo, monto: o
 // /api/pagos/... (con sesión)
 export async function apiPagos(request, env, partes, yo) {
   const m = request.method, url = new URL(request.url);
-  if (partes[2] === "precios" && m === "GET") return json({ cobros: COBROS, pro: montoLicencia(yo, "pro"), desarrollos: montoLicencia(yo, "desarrollos"), espacio: COBROS.espacio.unico });
+  if (partes[2] === "precios" && m === "GET") {
+    const pais = (request.cf && request.cf.country) || "";
+    const precios = (mon) => ({ pro: montoLicencia(yo, "pro", mon), desarrollos: montoLicencia(yo, "desarrollos", mon), espacio: montoLicencia(yo, "espacio", mon) });
+    return json({ pais, sugerido: pais && pais !== "MX" ? "paypal" : "mercadopago", mxn: precios("MXN"), usd: precios("USD"),
+      metodos: { mercadopago: !!env.MP_ACCESS_TOKEN || simulado(env), paypal: !!(env.PAYPAL_CLIENT_ID && env.PAYPAL_SECRET) || ppSimulado(env) } });
+  }
 
   if (partes[2] === "checkout" && m === "POST") {
     const c = await request.json().catch(() => ({}));
     if (!COBROS[c.plan]) return error(400, "Plan inválido");
     c.periodo = "unico";
     if (yo.admin) return error(400, "Tu cuenta ya tiene todo incluido");
-    const montoHoy = montoLicencia(yo, c.plan);
+    const conPayPal = c.metodo === "paypal";
+    const montoHoy = montoLicencia(yo, c.plan, conPayPal ? "USD" : "MXN");
     if (!montoHoy) return error(400, "Ya tienes esa licencia");
-    if (!env.MP_ACCESS_TOKEN && !simulado(env)) return error(503, "Los pagos aún no están activos. Escríbenos y te activamos el plan.");
     const ref = "mz-" + Date.now().toString(36) + crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
+    if (conPayPal) {
+      if (!(env.PAYPAL_CLIENT_ID && env.PAYPAL_SECRET) && !ppSimulado(env)) return error(503, "El pago con PayPal aún no está activo. Usa Mercado Pago o escríbenos.");
+      const nombre = c.plan === "espacio" ? "Mozari +10 GB de espacio" : "Mozari " + PLANES[c.plan].nombre + " · licencia de pago único";
+      const orden = { ref, uid: yo.uid, email: yo.email, plan: c.plan, periodo: "unico", monto: montoHoy, moneda: "USD", metodo: "paypal", estado: "creado", creado: new Date().toISOString() };
+      await guardar(env, ordenClave(ref), orden);
+      if (ppSimulado(env)) return json({ ref, url: url.origin + "/api/pagos/simular?ref=" + ref });
+      const r = await paypal(env, "/v2/checkout/orders", {
+        method: "POST", headers: { "paypal-request-id": ref },
+        body: JSON.stringify({
+          intent: "CAPTURE",
+          purchase_units: [{ reference_id: ref, custom_id: ref, description: nombre, amount: { currency_code: "USD", value: montoHoy.toFixed(2) } }],
+          payment_source: { paypal: { experience_context: { brand_name: "Mozari", locale: "es-MX", shipping_preference: "NO_SHIPPING", user_action: "PAY_NOW", return_url: url.origin + "/?pago=ok&metodo=paypal&external_reference=" + ref, cancel_url: url.origin + "/?pago=error" } } },
+        }),
+      });
+      const link = r.ok && (r.d.links || []).find((l) => l.rel === "payer-action" || l.rel === "approve");
+      if (!link) return error(502, "PayPal no respondió. Intenta de nuevo en un momento.");
+      orden.paypal = r.d.id; await guardar(env, ordenClave(ref), orden);
+      return json({ ref, url: link.href });
+    }
+    if (!env.MP_ACCESS_TOKEN && !simulado(env)) return error(503, "Los pagos aún no están activos. Escríbenos y te activamos el plan.");
     const monto = montoHoy, plan = c.plan === "espacio" ? { nombre: "+10 GB de espacio" } : PLANES[c.plan], periodo = PERIODOS.unico;
     const orden = { ref, uid: yo.uid, email: yo.email, plan: c.plan, periodo: c.periodo, monto, moneda: "MXN", estado: "creado", creado: new Date().toISOString() };
     await guardar(env, ordenClave(ref), orden);
@@ -120,11 +178,12 @@ export async function apiPagos(request, env, partes, yo) {
     if (c.payment_id && env.MP_ACCESS_TOKEN) orden = await revisarPago(env, c.payment_id).catch(() => null);
     if (!orden && REF.test(c.ref || "")) orden = await leer(env, ordenClave(c.ref));
     if (!orden || orden.uid !== yo.uid) return error(404, "No encontramos ese pago");
+    if (orden.metodo === "paypal" && !orden.aplicado && env.PAYPAL_CLIENT_ID) orden = await capturarPayPal(env, orden).catch(() => orden);
     return json(resumen(orden));
   }
 
   // Solo en la computadora: hace como que Mercado Pago aprobó el pago
-  if (partes[2] === "simular" && m === "GET" && simulado(env)) {
+  if (partes[2] === "simular" && m === "GET" && (simulado(env) || ppSimulado(env))) {
     const ref = url.searchParams.get("ref") || "";
     const orden = REF.test(ref) ? await leer(env, ordenClave(ref)) : null;
     if (!orden || orden.uid !== yo.uid) return error(404, "No existe esa orden");

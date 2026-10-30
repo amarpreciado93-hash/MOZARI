@@ -100,6 +100,12 @@
   .dp-plan .dp-precio { font-size: 22px; font-weight: 600; }
   .dp-plan .dp-precio small { font-size: 12px; font-weight: 400; color: var(--mz-tenue); }
   .dp-plan ul { margin: 4px 0 0; padding-left: 16px; color: var(--mz-tenue); font-size: 12px; line-height: 1.6; }
+  .dp-metodo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .dp-metodo button { display: grid; gap: 2px; text-align: left; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); color: var(--mz-texto); font-family: var(--mz-texto-ui); cursor: pointer; }
+  .dp-metodo button b { font-size: 13px; font-weight: 600; }
+  .dp-metodo button small { font-size: 11px; color: var(--mz-tenue); }
+  .dp-metodo button[aria-pressed="true"] { border-color: var(--mz-lima); box-shadow: 0 0 0 1px var(--mz-lima) inset; }
+  .dp-metodo button:disabled { opacity: 0.4; cursor: not-allowed; }
   .dp-pagar { width: 100%; padding: 12px 18px; font-size: 14px; }
   .dp-nota { font-size: 12px !important; text-align: center; }
   .cuentas-titulo { margin: 0; padding: 14px 16px; font-size: 13px; color: var(--mz-tenue); border-bottom: 1px solid var(--mz-linea-neutra); }
@@ -2038,21 +2044,34 @@
   const PLANES_TXT = { gratis: "Gratis", pro: "Pro", desarrollos: "Desarrollos" };
   const fechaLarga = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return ""; } };
   // Licencias de pago único: se pagan una vez y no vencen. Si ya tienes Pro, subir a Desarrollos cuesta la diferencia.
-  const COBRO = { pro: 990, desarrollos: 4990, espacio: 390 };
+  const COBRO = { pro: 990, desarrollos: 4990, espacio: 390 }, COBRO_USD = { pro: 59, desarrollos: 299, espacio: 25 };
+  // Cómo paga: Mercado Pago en pesos (México) o PayPal en dólares (resto del mundo). Se sugiere según el país.
+  let preciosPago = null;
+  const enUSD = () => pago.metodo === "paypal";
+  const tablaPago = () => (enUSD() ? COBRO_USD : COBRO);
   const QUE_INCLUYE = {
     pro: ["Tours y esferas sin límite", "Hosting incluido: 10 GB", "Sin marca de agua"],
     desarrollos: ["Todo lo de Pro", "Hosting incluido: 50 GB", "Lotificación: manzanas, lotes, terreno y masterplan"],
   };
   const yaPro = () => PLAN && PLAN.id === "pro" && !PLAN.vence;
-  const precioHoy = (id) => (id === "desarrollos" && yaPro() ? COBRO.desarrollos - COBRO.pro : COBRO[id]);
-  const pago = { plan: "pro" };
-  const pesos = (n) => "$" + n.toLocaleString("es-MX");
+  const precioHoy = (id) => { const t = tablaPago(); return id === "desarrollos" && yaPro() ? t.desarrollos - t.pro : t[id]; };
+  const pago = { plan: "pro", metodo: "mercadopago" };
+  const pesos = (n) => "$" + n.toLocaleString("es-MX") + (enUSD() ? " USD" : "");
+  const NOM_METODO = { mercadopago: "Mercado Pago", paypal: "PayPal" };
+  const notaPago = () => enUSD() ? "Pago con PayPal en dólares: tarjeta de crédito o débito, o tu saldo de PayPal." : "Tarjeta, OXXO o saldo de Mercado Pago. Precios en pesos mexicanos.";
+  const elegirMetodo = () => {
+    const m = preciosPago && preciosPago.metodos;
+    const otro = enUSD() ? "mercadopago" : "paypal";
+    return '<div class="dp-metodo" role="group" aria-label="Forma de pago">' + ["mercadopago", "paypal"].map((k) =>
+      '<button data-dp-metodo="' + k + '" aria-pressed="' + (pago.metodo === k) + '"' + (m && !m[k] ? " disabled" : "") + "><b>" + NOM_METODO[k] + "</b><small>" + (k === "paypal" ? "Fuera de México · USD" : "México · MXN") + "</small></button>").join("") + "</div>";
+  };
   function pintarPago() {
     if (pago.plan === "espacio") {
       $("dp-cuerpo").innerHTML = '<button class="dp-cerrar" data-dp-cerrar aria-label="Cerrar">×</button>' +
         '<div><h2 id="dp-titulo">Más espacio</h2><p>Suma 10 GB a tu cuenta para siempre (unas 200 esferas más). Pago único.</p></div>' +
-        '<button class="btn-prim dp-pagar" data-dp-pagar>Pagar ' + pesos(COBRO.espacio) + " con Mercado Pago</button>" +
-        '<p class="dp-nota">Tarjeta, OXXO o saldo de Mercado Pago. Precios en pesos mexicanos.</p>';
+        elegirMetodo() +
+        '<button class="btn-prim dp-pagar" data-dp-pagar>Pagar ' + pesos(tablaPago().espacio) + " con " + NOM_METODO[pago.metodo] + "</button>" +
+        '<p class="dp-nota">' + notaPago() + "</p>";
       return;
     }
     const opciones = ["pro", "desarrollos"].filter((id) => !(id === "pro" && yaPro()));
@@ -2063,13 +2082,21 @@
         '<button class="dp-plan" data-dp-plan="' + id + '" aria-pressed="' + (pago.plan === id) + '"><b>' + PLANES_TXT[id] + "</b>" +
         '<span class="dp-precio">' + pesos(precioHoy(id)) + " <small>" + (id === "desarrollos" && yaPro() ? "pagas la diferencia" : "pago único") + "</small></span>" +
         "<ul>" + QUE_INCLUYE[id].map((x) => "<li>" + x + "</li>").join("") + "</ul></button>").join("") + "</div>" +
-      '<button class="btn-prim dp-pagar" data-dp-pagar>Pagar ' + pesos(precioHoy(pago.plan)) + " con Mercado Pago</button>" +
-      '<p class="dp-nota">Tarjeta, OXXO o saldo de Mercado Pago. Precios en pesos mexicanos.</p>';
+      elegirMetodo() +
+      '<button class="btn-prim dp-pagar" data-dp-pagar>Pagar ' + pesos(precioHoy(pago.plan)) + " con " + NOM_METODO[pago.metodo] + "</button>" +
+      '<p class="dp-nota">' + notaPago() + "</p>";
   }
   function abrirPago(plan) {
     if (MODO !== "nube") { window.open(ESCAPARATE, "_blank", "noopener"); return; }
     if (COBRO[plan] !== undefined) pago.plan = plan;
     pintarPago(); $("dlg-pago").showModal();
+    // Según su país: fuera de México se sugiere PayPal en dólares (el cliente puede cambiarlo)
+    if (!preciosPago) fetch("api/pagos/precios", { cache: "no-store" }).then((r) => r.json()).then((d) => {
+      preciosPago = d;
+      if (d.sugerido && d.metodos && d.metodos[d.sugerido]) pago.metodo = d.sugerido;
+      else if (d.metodos && !d.metodos[pago.metodo]) pago.metodo = d.metodos.mercadopago ? "mercadopago" : "paypal";
+      if ($("dlg-pago").open && $("dp-cuerpo").querySelector("[data-dp-pagar]")) pintarPago();
+    }).catch(() => {});
   }
   function avisoPago(titulo, texto, recargar) {
     $("dp-cuerpo").innerHTML = '<div><h2 id="dp-titulo">' + titulo + "</h2><p>" + texto + "</p></div>" +
@@ -2083,9 +2110,10 @@
     if (ev.target === $("dlg-pago") || ev.target.closest("[data-dp-cerrar]")) { $("dlg-pago").close(); return; }
     if (ev.target.closest("[data-dp-recargar]")) { location.replace(location.pathname + location.hash); return; }
     const pl = ev.target.closest("[data-dp-plan]"); if (pl) { pago.plan = pl.dataset.dpPlan; pintarPago(); return; }
+    const me = ev.target.closest("[data-dp-metodo]"); if (me && !me.disabled) { pago.metodo = me.dataset.dpMetodo; pintarPago(); return; }
     const b = ev.target.closest("[data-dp-pagar]");
     if (b) {
-      b.disabled = true; b.textContent = "Abriendo Mercado Pago…";
+      b.disabled = true; b.textContent = "Abriendo " + NOM_METODO[pago.metodo] + "…";
       const r = await fetch("api/pagos/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(pago) }).catch(() => null);
       const d = r ? await r.json().catch(() => ({})) : {};
       if (!r || !r.ok || !d.url) { b.disabled = false; pintarPago(); avisar(d.error || "No se pudo abrir el pago. Intenta de nuevo."); return; }
@@ -2113,7 +2141,7 @@
       limpiar();
       if (estado === "error") avisoPago("No se completó el pago", "No se hizo ningún cargo. Puedes intentarlo de nuevo cuando quieras.", false);
       else {
-        avisoPago("Confirmando tu pago…", "Un momento, estamos revisando con Mercado Pago.", false);
+        avisoPago("Confirmando tu pago…", "Un momento, estamos confirmando tu pago.", false);
         let d = null;
         for (let i = 0; i < 6; i++) {
           const r = await fetch("api/pagos/verificar", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(cuerpo) }).catch(() => null);
@@ -2122,7 +2150,7 @@
           if (estado === "pendiente") break;
           await new Promise((ok) => setTimeout(ok, 2000));
         }
-        if (d && d.estado === "aprobado") avisoPago(d.plan === "espacio" ? "¡Listo! Tienes 10 GB más" : "¡Listo! Ya tienes " + PLANES_TXT[d.plan], d.plan === "espacio" ? "El espacio ya está en tu cuenta, para siempre. Te llega el comprobante de Mercado Pago a tu correo." : "Tu licencia ya está activa y es para siempre. Te llega el comprobante de Mercado Pago a tu correo.", true);
+        if (d && d.estado === "aprobado") avisoPago(d.plan === "espacio" ? "¡Listo! Tienes 10 GB más" : "¡Listo! Ya tienes " + PLANES_TXT[d.plan], d.plan === "espacio" ? "El espacio ya está en tu cuenta, para siempre. Te llega el comprobante del pago a tu correo." : "Tu licencia ya está activa y es para siempre. Te llega el comprobante del pago a tu correo.", true);
         else if (estado === "pendiente" || (d && d.estado === "pendiente")) avisoPago("Tu pago está pendiente", "Si pagaste en OXXO, se acredita en unas horas. Tu plan se activa solo en cuanto llegue; no tienes que hacer nada.", true);
         else avisoPago("Aún no vemos tu pago", "Si ya pagaste, en unos minutos se activa solo. Si no, puedes intentarlo de nuevo.", true);
       }
