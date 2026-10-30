@@ -215,6 +215,11 @@
   .tarjeta h2 svg { width: 18px; height: 18px; color: var(--mz-lima); }
   .fila-campo { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 14px; align-items: center; }
   .fila-campo > span { color: var(--mz-tenue); font-size: 12px; }
+  .cortina-esfera { position: absolute; inset: 0; z-index: 30; background: #0B0B0B center / cover no-repeat; transition: opacity 0.6s ease; pointer-events: none; }
+  .cortina-esfera.fuera { opacity: 0; }
+  .cortina-carga { position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.25); border-top-color: #fff; opacity: 0; transition: opacity 0.2s; animation: girar 0.8s linear infinite; box-shadow: 0 0 12px rgba(0, 0, 0, 0.4); }
+  .cortina-esfera.tarda .cortina-carga { opacity: 1; }
+  .cortina-esfera.fuera .cortina-carga { opacity: 0; }
   textarea.entrada { resize: vertical; font-family: var(--mz-texto-ui); line-height: 1.45; }
   /* En el celular, pellizcar hace zoom en la esfera y no en toda la página */
   .previa .stage, .previa .stage * { touch-action: none; }
@@ -3327,17 +3332,51 @@
 
     const ro = new ResizeObserver(programar);
     ro.observe(stage);
+    // Avisa cuando la esfera visible ya cargó todas sus piezas (Marzipano: renderComplete estable)
+    let cortina = null, turnoCambio = 0;
+    function nitido(ms) {
+      return new Promise((fin) => {
+        const st = viewer.stage();
+        let listo = false;
+        const acabar = () => { if (listo) return; listo = true; st.removeEventListener("renderComplete", h); clearTimeout(t); fin(); };
+        const h = (estable) => { if (estable) acabar(); };
+        const t = setTimeout(acabar, ms || 10000);
+        st.addEventListener("renderComplete", h);
+      });
+    }
 
     const motor = {
       modo: editable ? "capas" : "ver", elegida: null, dibujo: null, ruta: null, rutaActivo: -1,
       get actual() { return actual; },
+      // Cambiar de esfera: la nueva se muestra hasta que se ve nítida. Mientras carga queda la imagen
+      // de la anterior (y un indicador si tarda); al estar lista, se funde. Nunca espera más de 10 s.
       mostrar(id, transicion, vista) {
+        const antes = actual, dur = transicion ?? 600;
+        let foto = "";
+        if (antes && antes.id !== id) { try { foto = viewer.stage().takeSnapshot({ quality: 75 }); } catch (e) { foto = ""; } }
         actual = escenaM(id);
         actual.view.setParameters(vista || vistaDe(id)); // arranca en su vista de inicio, o de frente si se llega por un hotspot
-        actual.scene.switchTo({ transitionDuration: transicion ?? 600 });
+        const turno = ++turnoCambio;
+        if (cortina) { cortina.remove(); cortina = null; }
+        if (foto) {
+          cortina = document.createElement("div");
+          cortina.className = "cortina-esfera";
+          cortina.style.backgroundImage = "url(" + foto + ")";
+          cortina.innerHTML = '<span class="cortina-carga" aria-label="Cargando"></span>';
+          stage.appendChild(cortina);
+          const c = cortina, aviso = setTimeout(() => c.classList.add("tarda"), 350);
+          actual.scene.switchTo({ transitionDuration: 0 });
+          nitido(10000).then(() => {
+            clearTimeout(aviso);
+            if (turno !== turnoCambio) return;
+            c.style.transitionDuration = Math.max(250, dur) + "ms";
+            c.classList.add("fuera"); setTimeout(() => { c.remove(); if (cortina === c) cortina = null; }, Math.max(250, dur) + 50);
+          });
+        } else actual.scene.switchTo({ transitionDuration: antes ? dur : 0 });
         construir();
         if (opciones.alMostrar) opciones.alMostrar(id);
       },
+      nitido: (ms) => nitido(ms),
       setModo(m) { motor.modo = m; capasEl.classList.toggle("solo-ver", m === "piloto"); render(); },
       construir, render: programar, estiloPoligono: (id, c) => { const n = nodos.get(id); if (n && n.path) estiloPoligono(n.path, c); },
       view: () => actual && actual.view,
@@ -5826,6 +5865,7 @@ void main(){
     });
     motor.mostrar(o.inicio || P().escenaInicial, 0);
     return {
+      nitido: (ms) => (motor ? motor.nitido(ms) : Promise.resolve()),
       repintar(orientacion) { pintar(orientacion); if (piloto) api.piloto(true); },
       cerrarPop,
       destruir() {
@@ -6251,7 +6291,10 @@ void main(){
       },
     });
     sonar();
-    setTimeout(() => ($("pv-carga").hidden = true), 300);
+    // La pantalla de carga se quita cuando la primera esfera ya se ve nítida (máximo 8 s más)
+    if (tourPv && tourPv.nitido) await tourPv.nitido(8000);
+    if (g !== previaGen) return;
+    setTimeout(() => ($("pv-carga").hidden = true), 150);
   }
   window.addEventListener("resize", () => {
     if (!tourPv) return;
