@@ -245,6 +245,11 @@
   .card .badge { position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: var(--mz-pastilla); background: var(--mz-lima); color: var(--mz-negro); font-size: 10px; font-weight: 600; letter-spacing: 0.06em; }
   .card .cuerpo { padding: 12px 14px 14px; display: grid; gap: 8px; }
   .card .nombre { font-weight: 600; font-size: 14px; }
+  .nombre-esfera { display: flex; align-items: center; min-width: 0; }
+  .nombre-esfera input, .panos-tira input.renombrando { flex: 1; min-width: 0; font: 600 14px var(--mz-texto-ui); color: var(--mz-texto); background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 3px 6px; margin: -3px 0 -3px -6px; cursor: text; }
+  .nombre-esfera input:hover { border-color: var(--mz-linea); }
+  .nombre-esfera input:focus, .panos-tira input.renombrando { outline: none; border-color: var(--mz-lima); background: var(--mz-negro); }
+  .panos-tira input.renombrando { font-size: 11px; margin: 0; padding: 2px 4px; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip-dato { font-size: 11px; color: var(--mz-tenue); padding: 3px 9px; border-radius: var(--mz-pastilla); border: 1px solid var(--mz-linea-neutra); font-variant-numeric: tabular-nums; }
   .chip-dato.aviso { color: var(--mz-aviso); border-color: rgba(255, 176, 32, 0.4); }
@@ -3031,7 +3036,7 @@
       return '<div class="card" role="button" tabindex="0" draggable="true" data-abrir="' + e.id + '" aria-label="Abrir ' + esc(e.nombre) + '">' +
         '<div class="foto"><img src="' + thumbDe(e.id) + '" alt="" loading="lazy">' + (e.id === P().escenaInicial ? '<span class="badge">INICIO</span>' : "") +
         '<button class="card-borrar" data-borrar="' + e.id + '" aria-label="Borrar ' + esc(e.nombre) + '" title="Borrar panorama"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>' + confirma + "</div>" +
-        '<div class="cuerpo"><span class="nombre"><i class="orden-n">' + (est.escenas.indexOf(e) + 1) + "</i>" + esc(e.nombre) + "</span>" +
+        '<div class="cuerpo"><span class="nombre nombre-esfera"><i class="orden-n">' + (est.escenas.indexOf(e) + 1) + '</i><input type="text" maxlength="60" data-renombrar="' + e.id + '" value="' + esc(e.nombre) + '" aria-label="Nombre de la esfera" title="Clic para cambiar el nombre"></span>' +
         '<div class="chips"><span class="chip-dato">' + mp(d.origen.ancho, d.origen.alto) + "</span>" +
         '<span class="chip-dato' + (hs === 0 || hs > MAX_HS ? " aviso" : "") + '">' + hs + (hs === 1 ? " salida" : " salidas") + "</span>" +
         '<span class="chip-dato">' + pol + (pol === 1 ? " polígono" : " polígonos") + "</span>" +
@@ -3041,6 +3046,29 @@
         ? '<label class="hueco subir" id="subir-zona"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir esferas</b><span class="nota">Arrastra aquí tus JPG 360 (2:1) o haz clic. Mozari las prepara para la web en tu computadora.</span><input type="file" id="subir-archivo" accept="image/jpeg,image/png,image/webp" multiple hidden></label>'
         : '<div class="hueco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir esfera</b><span class="nota">En el estudio en línea puedes subir tus propias esferas.</span></div>');
   }
+  // Cambiar el nombre de una esfera: en la Lista (escribiendo sobre el nombre) o en la tira de Capas (doble clic)
+  function renombrarEsfera(id, nuevo) {
+    const e = escena(id); nuevo = String(nuevo || "").trim().slice(0, 60);
+    if (!e || !nuevo || nuevo === e.nombre) return false;
+    const viejo = e.nombre; e.nombre = nuevo;
+    // Las capas que se llaman "Hotspot → nombre viejo" siguen el nombre nuevo
+    Object.values(est.capas).flat().forEach((c) => { if (c && c.tipo === "hotspot" && c.destino === id && c.nombre === "Hotspot → " + viejo) c.nombre = "Hotspot → " + nuevo; });
+    guardar();
+    return true;
+  }
+  $("pano-lista").addEventListener("click", (ev) => { if (ev.target.dataset && ev.target.dataset.renombrar) ev.stopPropagation(); }, true);
+  $("pano-lista").addEventListener("keydown", (ev) => {
+    if (!ev.target.dataset || !ev.target.dataset.renombrar) return;
+    ev.stopPropagation();
+    if (ev.key === "Enter") ev.target.blur();
+    if (ev.key === "Escape") { ev.target.value = nombreDe(ev.target.dataset.renombrar); ev.target.blur(); }
+  }, true);
+  $("pano-lista").addEventListener("focusout", (ev) => {
+    const id = ev.target.dataset && ev.target.dataset.renombrar; if (!id) return;
+    if (!ev.target.value.trim()) { ev.target.value = nombreDe(id); return; }
+    if (renombrarEsfera(id, ev.target.value)) avisar("Nombre cambiado");
+  });
+  $("pano-lista").addEventListener("dragstart", (ev) => { if (ev.target.dataset && ev.target.dataset.renombrar) ev.preventDefault(); }, true);
   let borrandoPano = null;
   $("pano-lista").addEventListener("click", (ev) => {
     const b = ev.target.closest("[data-borrar]");
@@ -3526,7 +3554,7 @@ void main(){
     $("panos-tira").innerHTML = est.escenas.map((e) =>
       '<li draggable="true" data-id="' + e.id + '" aria-current="' + (e.id === aqui) + '" title="' + esc(e.nombre) + '">' + (e.id === P().escenaInicial ? '<b class="tira-inicio">Inicio</b>' : "") + '<img src="' + thumbDe(e.id) + '" alt="" loading="lazy"><span>' +
       (conectadas.has(e.id) ? ICO_ENLACE : "") + "<em>" + esc(e.nombre) + "</em></span></li>").join("");
-    $("panos-nota").textContent = (motorEd.modo === "capas" ? "Arrastra uno a la esfera para conectarlo de ida y vuelta. " : "Clic para cambiar de panorama. ") + "Arrastra arriba o abajo para cambiar el orden. La primera es la de inicio.";
+    $("panos-nota").textContent = (motorEd.modo === "capas" ? "Arrastra uno a la esfera para conectarlo de ida y vuelta. " : "Clic para cambiar de panorama. ") + "Arrastra arriba o abajo para cambiar el orden. La primera es la de inicio. Doble clic en el nombre para cambiarlo.";
   }
   let panoArrastrado = null, ordenArrastrado = null;
   const limpiarOrden = () => document.querySelectorAll(".panos-tira li.antes, .panos-tira li.despues").forEach((x) => x.classList.remove("antes", "despues"));
@@ -3556,7 +3584,20 @@ void main(){
     guardar(); pintarTira();
     avisar(l[0].id !== antes ? "Ahora el tour empieza en " + nombreDe(l[0].id) : "Orden actualizado: " + nombreDe(id) + " es la " + (l.indexOf(m) + 1) + "ª");
   });
+  $("panos-tira").addEventListener("dblclick", (ev) => {
+    const em = ev.target.closest("li[data-id] em"); if (!em) return;
+    ev.preventDefault(); ev.stopPropagation();
+    const li = em.closest("li[data-id]"), id = li.dataset.id, inp = document.createElement("input");
+    inp.className = "renombrando"; inp.value = nombreDe(id); inp.maxLength = 60; inp.setAttribute("aria-label", "Nombre de la esfera");
+    li.draggable = false; em.replaceWith(inp); inp.focus(); inp.select();
+    let listo = false;
+    const fin = (guardarlo) => { if (listo) return; listo = true; if (guardarlo && renombrarEsfera(id, inp.value)) { avisar("Nombre cambiado"); if (motorEd) { pintarCapas(); $("sel-pano").querySelectorAll("option").forEach((o) => { if (o.value === id) o.textContent = nombreDe(id); }); } } pintarTira(); };
+    inp.addEventListener("keydown", (e) => { e.stopPropagation(); if (e.key === "Enter") fin(true); if (e.key === "Escape") fin(false); });
+    inp.addEventListener("blur", () => fin(true));
+    inp.addEventListener("click", (e) => e.stopPropagation());
+  });
   $("panos-tira").addEventListener("click", (ev) => {
+    if (ev.target.closest("input.renombrando")) return;
     const li = ev.target.closest("li[data-id]");
     if (li && li.dataset.id !== motorEd.actual.id) abrirEditor(li.dataset.id, nav.sub);
   });
@@ -3667,6 +3708,8 @@ void main(){
       try { escena(id).thumb = await medio(c, "image/jpeg", 0.82, "mini-" + id); } catch (err) { avisar(err.message); return; }
       guardar();
       if (motorEd && motorEd.modo === "piloto") pintarRecorrido();
+      pintarTira(); // la tira y la lista ya muestran la vista elegida
+      if (nav.sec === "panoramas" && nav.sub === "lista") pintarLista();
     };
     img.src = url;
   }
