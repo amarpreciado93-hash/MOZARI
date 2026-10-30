@@ -305,9 +305,9 @@ async function api(request, env, partes, yo) {
     const obj = await env.R2.get(base + "proyecto.json");
     if (!obj) return error(404, "No existe ese tour");
     const p = await obj.json();
-    if (!plan.lotificacion && usaLotificacion(p)) return limite("Este tour tiene lotes. La lotificación es del plan Desarrollos.", "lotificacion");
-    // El plan Gratis publica con la marca "Hecho con Mozari"; lo decide el servidor, no la página
-    p.proyecto.marcaMozari = !!plan.marca;
+    // Versión de prueba: todo se puede usar y publicar, pero lo que el plan no cubre sale con marca de agua
+    // (Gratis siempre; un tour con lotes sin el plan Desarrollos). Lo decide el servidor, no la página.
+    p.proyecto.marcaMozari = !!plan.marca || (!plan.lotificacion && usaLotificacion(p));
     await env.R2.put("publicado/" + id + "/proyecto.json", JSON.stringify(p), { httpMetadata: { contentType: tipoDe("x.json"), cacheControl: "no-cache" } });
     await guardarIndice(env, uid, id, { publicado: new Date().toISOString() });
     return json({ ok: true });

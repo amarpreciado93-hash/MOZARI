@@ -139,6 +139,8 @@
   .marca-mozari b { font-weight: 600; }
   .marca-mozari span { opacity: 0.7; }
   .marca-mozari svg { width: 15px; height: 15px; color: #D5FF40; }
+  /* Versión de prueba: mosaico sobre todo el tour (Gratis, o lotes sin el plan Desarrollos). No se puede entregar así. */
+  .agua-mozari { position: absolute; inset: 0; z-index: 39; pointer-events: none; background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22380%22%20height%3D%22240%22%20viewBox%3D%220%200%20380%20240%22%3E%3Cg%20transform%3D%22rotate%28-24%20190%20120%29%22%20fill%3D%22%23fff%22%20fill-opacity%3D%22.34%22%20stroke%3D%22%23000%22%20stroke-opacity%3D%22.18%22%20stroke-width%3D%221%22%3E%3Csvg%20x%3D%2270%22%20y%3D%22100%22%20width%3D%2234%22%20height%3D%2234%22%20viewBox%3D%220%200%20613%20613%22%3E%3Cpath%20d%3D%22M89.0%20540.5C52.3%20536.4%2019.8%20511.8%206.5%20478.0C3.5%20470.4%200.1%20453.0%200.0%20445.0C-0.0%20433.4%203.9%20416.1%209.1%20404.8C16.2%20389.1%2028.5%20373.6%2041.3%20363.9C49.0%20358.1%2067.1%20349.3%2076.9%20346.6C119.8%20334.8%20165.9%20351.4%20189.1%20387.0C200.5%20404.5%20204.4%20418.2%20204.4%20440.5C204.4%20452.5%20204.0%20456.5%20202.1%20463.5C199.5%20473.0%20191.9%20489.9%20186.9%20497.2C178.2%20509.8%20162.1%20523.5%20147.1%20531.0C131.2%20538.9%20108.4%20542.7%2089.0%20540.5ZM454.4%20538.9C437.0%20536.0%20419.2%20528.3%20404.2%20517.3C386.4%20504.2%20371.5%20484.7%20362.5%20462.7C358.1%20451.9%20356.9%20448.0%20348.4%20417.0C337.4%20377.0%20323.2%20351.4%20299.2%20328.4C276.3%20306.3%20245.6%20291.3%20206.0%20282.5C174.5%20275.6%20166.3%20273.2%20154.5%20267.3C131.4%20255.6%20114.6%20239.4%20104.4%20218.9C97.5%20204.9%2094.9%20194.6%2094.3%20178.5C93.8%20166.5%2094.1%20163.7%2096.3%20153.7C100.7%20134.5%20107.8%20121.3%20121.4%20106.9C150.6%2075.9%20196.1%2065.4%20237.3%2080.1C261.2%2088.7%20282.6%20105.7%20297.4%20128.1C305.7%20140.4%20309.9%20149.9%20318.5%20175.8C334.3%20223.5%20346.9%20246.4%20369.5%20269.0C382.6%20282.1%20394.0%20290.6%20411.2%20300.2C428.3%20309.8%20441.1%20314.7%20484.5%20328.5C525.8%20341.6%20551.4%20361.5%20566.2%20392.0C585.4%20431.8%20577.9%20477.9%20547.1%20508.6C522.5%20533.0%20487.6%20544.5%20454.4%20538.9ZM515.3%20243.4C499.8%20241.6%20481.7%20233.4%20469.2%20222.6C455.3%20210.5%20445.5%20194.6%20440.9%20176.5C438.6%20167.5%20439.1%20145.7%20441.8%20136.2C450.7%20104.9%20473.3%2082.7%20504.8%2074.3C515.7%2071.5%20536.3%2071.5%20547.2%2074.3C579.3%2082.9%20603.7%20108.1%20610.6%20139.7C612.6%20148.7%20612.8%20167.1%20611.1%20174.5C608.4%20186.2%20602.7%20199.3%20596.7%20208.0C592.8%20213.6%20581.5%20224.7%20575.6%20228.7C558.7%20240.3%20535.7%20245.9%20515.3%20243.4Z%22%2F%3E%3C%2Fsvg%3E%3Ctext%20x%3D%22114%22%20y%3D%22126%22%20font-family%3D%22Poppins%2CArial%2Csans-serif%22%20font-size%3D%2219%22%20font-weight%3D%22600%22%20letter-spacing%3D%222%22%3EVERSI%C3%93N%20DE%20PRUEBA%3C%2Ftext%3E%3Ctext%20x%3D%22114%22%20y%3D%22146%22%20font-family%3D%22Poppins%2CArial%2Csans-serif%22%20font-size%3D%2211%22%20font-weight%3D%22500%22%20letter-spacing%3D%221.5%22%3EHecho%20con%20Mozari%20%C2%B7%20mozari.app%3C%2Ftext%3E%3C%2Fg%3E%3C%2Fsvg%3E") 0 0 / 380px 240px repeat; mix-blend-mode: normal; }
   /* Plan Gratis: al abrir el tour, una presentación breve de Mozari (un clic la salta) */
   .intro-mozari { position: absolute; inset: 0; z-index: 45; display: grid; place-content: center; justify-items: center; gap: 12px; background: #0B0B0B; color: #F2F5EC; font-family: var(--mz-texto-ui); transition: opacity 0.6s; cursor: pointer; }
   .intro-mozari svg { width: 44px; height: 44px; color: #D5FF40; }
@@ -1476,6 +1478,10 @@
   // Plan de la cuenta (el servidor es quien pone los límites; aquí solo se avisa a tiempo)
   const PLAN = MODO === "nube" && NUBE.plan ? NUBE.plan : null;
   const sinLotif = () => !!(PLAN && !PLAN.lotificacion);
+  let avisoLotes = false;
+  const tieneLotes = () => Object.values(est.capas || {}).some((l) => (l || []).some((c) => c && c.lote));
+  // ¿Este tour sale con marca de agua? Gratis siempre; Pro si tiene lotes (la lotificación es de Desarrollos)
+  const conMarcaPrueba = () => MODO === "nube" && !!PLAN && !NUBE.admin && (!!PLAN.marca || (sinLotif() && tieneLotes()));
   const ESCAPARATE = (MODO === "tour" ? "https://" + location.host.replace(/^tours\./, "").replace(/^mozari-tours\./, "mozari-estudio.") + "/" : "") + "escaparate#planes";
   // Tu cuenta (arriba a la derecha): foto de Google, nombre y Salir
   if (MODO === "nube" && NUBE.email) {
@@ -1984,14 +1990,7 @@
     document.querySelectorAll("#contenedor > section").forEach((s) => (s.hidden = !s.dataset.vista.split(" ").includes(clave)));
     $("sel-pano-wrap").hidden = !enEditor;
     if (clave === "publicar/web" && MODO === "nube") { pintarPublicar(); }
-    else if (sinLotif() && ["panoramas/terreno", "panoramas/lotes", "panoramas/masterplan"].includes(clave)) {
-      document.querySelectorAll("#contenedor > section").forEach((s) => (s.hidden = true));
-      $("proximo").innerHTML = '<div class="icono">' + ICO.foto + '</div><span class="etiq">Plan Desarrollos</span><h1>Lotificación</h1>' +
-        "<p>Lotes con su estado en todas las esferas, terreno para pasar los lotes de una vista a otra y masterplan con el avance de tu venta.</p>" +
-        '<div class="pub-acc"><button class="btn-prim" data-comprar="desarrollos">Obtener Desarrollos</button></div>';
-      $("v-proximo").hidden = false;
-      return;
-    }
+
     else if (PROXIMO[clave]) {
       const [ico, t, d] = PROXIMO[clave];
       $("proximo").innerHTML = '<div class="icono">' + ico + "</div><span class=\"etiq\">Próximo bloque</span><h1>" + t + "</h1><p>" + d + "</p>";
@@ -2025,7 +2024,8 @@
       '<div class="pub-acc"><button class="btn-prim" id="pub-publicar"' + (est.escenas.length ? "" : " disabled") + ">" + (pub ? "Publicar cambios" : "Publicar tour") + "</button>" +
       (pub ? '<a class="btn-sec" href="' + esc(linkTour()) + '" target="_blank" rel="noopener">Abrir tour ↗</a>' : "") + "</div>" +
       '<p class="nota" id="pub-estado">' + (pub ? "Última publicación: " + pub : est.escenas.length ? "Aún no está publicado." : "Sube al menos una esfera para publicar.") + "</p>" +
-      cajaRevision();
+      cajaRevision() +
+      (conMarcaPrueba() ? '<div class="pub-revision"><span><b>Se publica con marca de agua.</b> ' + (PLAN.marca ? "Tu plan Gratis es para probar todo; tus clientes verán el tour con «Versión de prueba»." : "Este tour tiene lotes y la lotificación es del plan Desarrollos.") + '</span><div><button class="btn-prim" data-comprar="' + (tieneLotes() ? "desarrollos" : "pro") + '">' + (tieneLotes() ? "Obtener Desarrollos" : "Quitar la marca") + "</button></div></div>" : "");
     $("v-proximo").hidden = false;
     if (!toursNube) cargarToursNube().then(() => nav.sec === "publicar" && pintarPublicar());
   }
@@ -4816,9 +4816,9 @@ void main(){
   });
   const centro = () => { const v = motorEd.view(); return { yaw: v.yaw(), pitch: v.pitch() }; };
   $("add-pol").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "poligono") empezarDibujo("poligono"); });
-  $("add-lote").addEventListener("click", (ev) => { if (sinLotif()) { ev.stopImmediatePropagation(); avisar("Los lotes son del plan Desarrollos. Mejora tu plan para usarlos."); } }, true);
+  $("add-lote").addEventListener("click", () => { if (sinLotif() && !avisoLotes) { avisoLotes = true; avisar("Prueba la lotificación libremente. Al publicar, un tour con lotes sale con marca de agua hasta que tengas Desarrollos."); } }, true);
   $("add-lote").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "lote") empezarDibujo("lote"); });
-  $("add-manzana").addEventListener("click", (ev) => { if (sinLotif()) { ev.stopImmediatePropagation(); avisar("Las manzanas son del plan Desarrollos. Mejora tu plan para usarlas."); } }, true);
+  $("add-manzana").addEventListener("click", () => { if (sinLotif() && !avisoLotes) { avisoLotes = true; avisar("Prueba la lotificación libremente. Al publicar, un tour con lotes sale con marca de agua hasta que tengas Desarrollos."); } }, true);
   $("add-manzana").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "manzana") empezarDibujo("manzana"); });
   $("add-camino").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "camino") empezarDibujo("camino"); });
   $("add-txt").addEventListener("click", () => {
@@ -6478,8 +6478,9 @@ void main(){
   let previaGen = 0;
   async function abrirPrevia() {
     if (!est.escenas.length) { avisar("Primero sube una esfera"); return; }
-    // En el plan Gratis la Vista previa también lleva la etiqueta de Mozari: así se verá publicado
-    if (MODO === "nube" && PLAN && PLAN.marca) marcaGratis($("previa"), false, false);
+    // Vista previa: igual que se verá publicado (con marca si es versión de prueba)
+    $("previa").querySelectorAll(".agua-mozari, .marca-mozari").forEach((x) => x.remove());
+    if (conMarcaPrueba()) { const agua = document.createElement("div"); agua.className = "agua-mozari"; agua.setAttribute("aria-hidden", "true"); $("previa").appendChild(agua); marcaGratis($("previa"), false, false); }
     if (motorEd && motorEd.dibujo) terminarDibujo(false);
     detenerPilotoEd();
     $("previa").hidden = false;
@@ -6532,7 +6533,7 @@ void main(){
     document.title = P().nombre || "Tour 360";
     abrirPrevia();
     // Plan Gratis: etiqueta "Hecho con Mozari" y presentación breve al abrir (lo decide el servidor al publicar)
-    if (P().marcaMozari) marcaGratis($("previa"), true, true);
+    if (P().marcaMozari) { const agua = document.createElement("div"); agua.className = "agua-mozari"; agua.setAttribute("aria-hidden", "true"); $("previa").appendChild(agua); marcaGratis($("previa"), true, true); }
     return;
   }
   // Pantalla de arranque con el crédito de R360 Team; un clic la salta.
