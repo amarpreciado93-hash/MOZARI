@@ -136,3 +136,4 @@
 | 2026-10-29 | Mapa: vuelve el terreno topográfico (un cerro por aérea según su altura, círculos de alcance) con puentes más suaves entre esferas; se quita el terreno que seguía la ruta | Con dos esferas el camino se veía como una cápsula, no como topografía |
 | 2026-10-30 | Sitio: precios en dólares (Pro $59, Desarrollos $299, +10 GB $25); en México se sigue pudiendo pagar en pesos |
 | 2026-10-30 | Sitio: ejemplos de lotificación con capturas reales del estudio (manzana, lotes por estado, mapa con masterplan), en marco con profundidad y etiqueta flotante |
+| 2026-10-30 | Plan Gratis: sin marca de agua sobre todo el tour; ahora etiqueta discreta "Hecho con Mozari · Crea el tuyo" y presentación de 2 s al abrir. Lo que se paga es quitarla y los límites | Los alumnos deben poder usarlo y enseñarlo a un cliente sin que estorbe |
