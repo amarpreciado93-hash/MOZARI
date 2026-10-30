@@ -135,3 +135,4 @@
 | 2026-10-29 | Lotes: rótulos de una manzana leen todos hacia el mismo lado; tipografía, peso, color y sombra del rótulo; estilo de todos los lotes desde la manzana. Polígono invisible hasta pasar el mouse. Panel de dueño: cuánto pagó cada cuenta y por dónde |
 | 2026-10-29 | Mapa: vuelve el terreno topográfico (un cerro por aérea según su altura, círculos de alcance) con puentes más suaves entre esferas; se quita el terreno que seguía la ruta | Con dos esferas el camino se veía como una cápsula, no como topografía |
 | 2026-10-30 | Sitio: precios en dólares (Pro $59, Desarrollos $299, +10 GB $25); en México se sigue pudiendo pagar en pesos |
+| 2026-10-30 | Sitio: ejemplos de lotificación con capturas reales del estudio (manzana, lotes por estado, mapa con masterplan), en marco con profundidad y etiqueta flotante |

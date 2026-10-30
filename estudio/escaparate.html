@@ -103,7 +103,17 @@
   #esfera-lotes { position: absolute; inset: 0; cursor: grab; }
   .lotif-esfera span { position: absolute; top: 16px; right: 16px; font-size: 12px; color: #fff; background: rgba(11, 11, 11, 0.5); padding: 7px 14px; border-radius: 999px; pointer-events: none; }
   .lotif-tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
-  .lotif-tres img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 14px; background: #171916; margin-bottom: 14px; }
+  .lotif-tres figure { position: relative; margin: 0 0 18px; padding: 6px; border-radius: 18px; background: linear-gradient(160deg, #2B2E27 0%, #141612 60%); box-shadow: 0 40px 70px -40px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.08); transition: transform 0.5s cubic-bezier(.2,.7,.2,1), box-shadow 0.5s; }
+  .lotif-tres .marco { position: relative; overflow: hidden; border-radius: 13px; aspect-ratio: 16 / 10; background: #171916; }
+  .lotif-tres .marco.mapa::after { display: none; }
+  .lotif-tres .marco::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11, 11, 11, 0) 55%, rgba(11, 11, 11, 0.55) 100%); pointer-events: none; }
+  .lotif-tres img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.9s cubic-bezier(.2,.7,.2,1); }
+  .lotif-tres > div:hover figure { transform: translateY(-6px); box-shadow: 0 50px 80px -40px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+  .lotif-tres > div:hover img { transform: scale(1.05); }
+  .chip { position: absolute; left: 18px; bottom: 18px; z-index: 1; display: inline-flex; align-items: center; gap: 10px; font-size: 12px; color: #F2F5EC; background: rgba(14, 16, 12, 0.72); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 999px; padding: 7px 13px; white-space: nowrap; }
+  .chip.arriba { top: 18px; bottom: auto; }
+  .chip i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: -4px; }
+  .chip b { font-weight: 600; }
   .lotif-tres h4 { margin: 0 0 4px; font-size: 17px; font-weight: 500; }
   .lotif-tres p { margin: 0; color: #A7AC9F; font-size: 14px; }
   #planes { padding-top: 96px; }
@@ -220,9 +230,9 @@
     </div>
     <div class="lotif-esfera"><div id="esfera-lotes" role="img" aria-label="Ballestrinque Parque Industrial con sus lotes numerados. Arrastra para mirar alrededor."></div><span>Ballestrinque Parque Industrial · Arrastra para mirar</span></div>
     <div class="lotif-tres">
-      <div><img src="escaparate-tour.webp" width="1600" height="900" alt="Lotes marcados por estado en un tour" loading="lazy"><h4>Lotes con su estado</h4><p>Disponible, apartado o vendido, con medidas, precio y ficha de contacto.</p></div>
-      <div><img src="escaparate-terreno.webp" width="1142" height="783" alt="Puntos de referencia en dos esferas del mismo terreno" loading="lazy"><h4>Terreno</h4><p>Lotificas una esfera y las demás vistas del dron se llenan solas.</p></div>
-      <div><img src="escaparate-masterplan.webp" width="663" height="577" alt="Masterplan con lotes por estado" loading="lazy"><h4>Masterplan</h4><p>El avance de tu venta visto desde arriba, listo para descargar.</p></div>
+      <div><figure><div class="marco"><img src="escaparate-manzana.webp" width="1600" height="1000" alt="Manzana dividida en 7 lotes dentro del editor de Mozari, con lupa para clavar cada esquina" loading="lazy"></div><span class="chip"><b>7 lotes</b> del mismo ancho en el suelo</span></figure><h4>Manzanas que se dividen solas</h4><p>Trazas la manzana, eliges cuántos lotes y Mozari la reparte. La lupa te deja clavar cada esquina.</p></div>
+      <div><figure><div class="marco"><img src="escaparate-tour.webp" width="1600" height="900" alt="Lotes marcados por estado en un tour publicado" loading="lazy"></div><span class="chip"><i style="background:#22B573"></i>Disponible <i style="background:#F2A900"></i>Apartado <i style="background:#E5484D"></i>Vendido</span></figure><h4>Lotes con su estado</h4><p>Medidas, precio y ficha de contacto. Lotificas una esfera y las demás vistas del dron se llenan solas.</p></div>
+      <div><figure><div class="marco mapa"><img src="escaparate-mapa.webp" width="1200" height="751" alt="Mapa del tour con dos esferas aéreas, su distancia y el masterplan sobre el terreno" loading="lazy"></div><span class="chip arriba">Se arma solo al conectar</span></figure><h4>Mapa y masterplan</h4><p>Cómo se conecta tu tour, con distancias reales y el avance de venta sobre el terreno.</p></div>
     </div>
   </div>
 </section>
