@@ -219,6 +219,8 @@
   .fila-campo > span { color: var(--mz-tenue); font-size: 12px; }
   .cortina-esfera { position: absolute; inset: 0; z-index: 30; background: #0B0B0B center / cover no-repeat; transition: opacity 0.6s ease; pointer-events: none; }
   .cortina-esfera.fuera { opacity: 0; }
+  .capas { transition: opacity 0.6s ease 0.25s; }
+  .capas.entrando { opacity: 0; transition: none; }
   /* Avanzar por un hotspot: la imagen anterior sigue acercándose (y se desenfoca un poco) mientras se va */
   .cortina-esfera.avanza { transform-origin: 50% 50%; transition: transform 1.6s cubic-bezier(0.25, 0.5, 0.35, 1), opacity 0.9s ease, filter 0.9s ease; }
   .cortina-esfera.avanza.andando { transform: scale(1.12); }
@@ -3437,12 +3439,33 @@
       nitido: (ms) => nitido(ms),
       // Ir por un hotspot: la vista avanza hacia él mientras la siguiente esfera ya se está bajando
       viajar(id, vista, hacia) {
-        if (opciones.alPreparar) opciones.alPreparar(id);
+        const prep = opciones.alPreparar ? opciones.alPreparar(id) : null;
         const reducido = matchMedia("(prefers-reduced-motion: reduce)").matches;
         if (editable || !hacia || !actual || reducido) { motor.mostrar(id, undefined, vista); return; }
         const v = actual.view, fov = v.fov();
         let listo = false;
-        const seguir = () => { if (listo) return; listo = true; motor.mostrar(id, 450, vista, true); };
+        // Compu: como Kuula y 3DVista. Avanza hacia el hotspot, espera (poco) a que la siguiente esté en caché
+        // y las dos esferas se funden en vivo, sin foto congelada, mientras la nueva se acerca suave.
+        const fundir = () => {
+          const ant = actual;
+          ++turnoCambio; if (cortina) { cortina.remove(); cortina = null; }
+          actual = escenaM(id);
+          const vf = Object.assign({}, vista || vistaDe(id));
+          actual.view.setParameters(Object.assign({}, vf, { fov: vf.fov * 1.12 }));
+          capasEl.classList.add("entrando");
+          actual.scene.switchTo({ transitionDuration: 750 });
+          actual.scene.lookTo({ fov: vf.fov }, { transitionDuration: 1100, ease: (t) => 1 - Math.pow(1 - t, 3) });
+          construir();
+          setTimeout(() => capasEl.classList.remove("entrando"), 30);
+          if (opciones.alMostrar) opciones.alMostrar(id);
+          void ant;
+        };
+        const seguir = () => {
+          if (listo) return; listo = true;
+          if (MOVIL) { motor.mostrar(id, 450, vista, true); return; }
+          const espera = new Promise((ok) => setTimeout(ok, 450));
+          Promise.race([Promise.resolve(prep).catch(() => null), espera]).then(fundir);
+        };
         actual.scene.lookTo({ yaw: hacia.yaw, pitch: v.pitch() * 0.55 + hacia.pitch * 0.45, fov: Math.max(fov * 0.7, (40 * Math.PI) / 180) }, { transitionDuration: 480, ease: (t) => t * t * (3 - 2 * t) * 0.6 + t * t * 0.4 }, seguir);
         setTimeout(seguir, 750);
       },
@@ -6054,7 +6077,7 @@ void main(){
     motor = crearMotor(stage, {
       editable: false,
       alMostrar: (id) => { actualId = id; tQuieto = Date.now(); api.escena(id); api.vista(motor.view()); arrancarPiloto(id); if (!o.sinPrecarga) precarga.alrededor(id); },
-      alPreparar: (id) => { if (!o.sinPrecarga) precarga.ya(id); },
+      alPreparar: (id) => (o.sinPrecarga ? Promise.resolve() : precarga.ya(id)),
       alInteractuar: () => { if (piloto) piloto.interrumpir(true); },
       alMoverVista: () => api && motor && api.vista(motor.view()),
       alAccion: accion,
@@ -6442,10 +6465,12 @@ void main(){
       },
       parar() { gen++; cola = []; },
       // Ya: esta esfera primero (al pasar el mouse sobre un hotspot o al tocarlo)
+      // Devuelve una promesa que se cumple cuando la esfera ya está en caché a la resolución que se va a ver
       ya(id) {
-        if (!meta[id]) return;
+        if (!meta[id]) return Promise.resolve();
         const urls = piezas(id, Math.min(1, meta[id].niveles.length - 1)).concat(piezas(id, nivelPara(id))).filter((u) => !hechas.has(u));
-        cola = urls.concat(cola.filter((u) => !urls.includes(u))); siguiente();
+        cola = cola.filter((u) => !urls.includes(u));
+        return Promise.all(urls.map(bajar));
       },
     };
   })();
