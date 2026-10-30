@@ -301,6 +301,10 @@ export default {
 
     if (url.pathname === "/webhooks/mercadopago") return webhookMercadoPago(request, env);
 
+    // Links cortos para compartir: mozari.app/planes, /pro y /desarrollos
+    const corto = { "/planes": "/#planes", "/precios": "/#planes", "/pro": "/entrar?comprar=pro", "/desarrollos": "/entrar?comprar=desarrollos" }[url.pathname.replace(/\/$/, "")];
+    if (corto && request.method === "GET") return Response.redirect(url.origin + corto, 302);
+
     if (segs[0] === "api" || segs[0] === "t") {
       const yo = await cuentaDe(request, env);
       if (!yo) return error(401, "Tu sesión terminó. Vuelve a entrar.");
