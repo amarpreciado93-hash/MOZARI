@@ -613,6 +613,10 @@
   .pago-via.paypal { color: #7FB2FF; border-color: rgba(127, 178, 255, 0.4); }
   .pago-via.mercadopago { color: #6FD3F5; border-color: rgba(111, 211, 245, 0.4); }
   .pago-monto small, .pago-nada { font-size: 11px; color: var(--mz-tenue); }
+  .lt-ps text { font-family: var(--lt-fuente, var(--mz-texto-ui)); font-size: 40px; fill: var(--lt-color, #fff); paint-order: stroke; stroke: var(--lt-trazo, rgba(0, 0, 0, 0.62)); stroke-width: var(--lt-trazo-g, 3px); stroke-linejoin: round; pointer-events: none; }
+  .lt-ps .nom text { font-weight: var(--lt-peso, 600); }
+  .lt-ps .chica { font-size: 0.74em; font-weight: 400; }
+  .lt-ps .lt-medida text { font-weight: 600; }
   .lote-etq text { pointer-events: none; font-family: var(--lt-fuente, var(--mz-texto-ui)); fill: var(--lt-color, #fff); paint-order: stroke; stroke: var(--lt-trazo, rgba(0, 0, 0, 0.62)); stroke-width: var(--lt-trazo-g, 3px); stroke-linejoin: round; text-anchor: middle; dominant-baseline: central; }
   .lote-etq .lt-nom { font-weight: var(--lt-peso, 600); }
   .lote-etq .lt-area { font-weight: 400; }
@@ -2730,7 +2734,10 @@
             etq = document.createElementNS(SVGNS, "g"); etq.setAttribute("class", "lote-etq"); svgEtq.appendChild(etq);
             // En el celular los rótulos van siempre en SVG (ligeros): los "planchados" usan una capa 3D por
             // texto y con muchos lotes el celular se queda sin memoria y cierra la página.
-            if (loteDe(c).rotulo !== "frente" && !MOVIL) { planos = crearRotulosPlanos(c); capaEtq.appendChild(planos.cont); }
+            if (loteDe(c).rotulo !== "frente") {
+              if (MOVIL) { planos = crearRotulosPlanosSVG(c); svgEtq.appendChild(planos.cont); }
+              else { planos = crearRotulosPlanos(c); capaEtq.appendChild(planos.cont); }
+            }
             const lq = loteDe(c);
             estiloRotulo(etq, lq); if (planos) estiloRotulo(planos.cont, lq);
             if (lq.fuente) fuentesPendientes.add(lq.fuente);
@@ -2791,6 +2798,28 @@
     // "Planchado": el texto se pinta sobre el suelo del lote con la perspectiva real (no sigue a la cámara).
     // "Siempre de frente": el texto mira a la cámara y se ajusta al tamaño del lote en pantalla.
     // Medidas: cada una va dentro del lote, abajo de su borde, para que el trazo no la tape.
+    // Celular: el mismo rótulo planchado pero dibujado en SVG (sin capas 3D): se ajusta al lote con una
+    // transformación plana. Gasta casi nada de memoria y se ve igual de pegado al suelo.
+    function crearRotulosPlanosSVG(c) {
+      const l = loteDe(c), cont = document.createElementNS(SVGNS, "g");
+      cont.setAttribute("class", "lt-ps");
+      const pieza = (lineas, clase) => {
+        const g = document.createElementNS(SVGNS, "g"), t = document.createElementNS(SVGNS, "text");
+        g.setAttribute("class", "lt-ps-p " + clase); t.setAttribute("text-anchor", "middle");
+        lineas.forEach(([tx, chica], i) => { const ts = document.createElementNS(SVGNS, "tspan"); ts.setAttribute("x", "0"); if (i) ts.setAttribute("dy", "1.05em"); if (chica) ts.setAttribute("class", "chica"); ts.textContent = tx; t.appendChild(ts); });
+        g.appendChild(t); cont.appendChild(g); return g;
+      };
+      const area = l.verArea ? fmtArea(l.area) : "";
+      const nom = l.etiqueta ? pieza([[nombreLote(c)]].concat(area ? [[area, true]] : []), "nom") : null;
+      const lados = c.puntos.map((_, i) => { const v = l.medidas ? fmtLado((l.lados || [])[i]) : ""; return v ? pieza([[v]], "lt-medida") : null; });
+      return { cont, nom, cortos: [], lados, med: null, svg: true };
+    }
+    // Mide una pieza SVG y la recorre para que ocupe (0,0)-(w,h), como los rótulos de compu
+    function medirSVG(g) {
+      const t = g.firstChild, b = t.getBBox();
+      t.setAttribute("transform", "translate(" + (-b.x).toFixed(2) + "," + (-b.y).toFixed(2) + ")");
+      return [Math.max(1, b.width), Math.max(1, b.height)];
+    }
     function crearRotulosPlanos(c) {
       const l = loteDe(c), cont = document.createElement("div");
       cont.className = "lt-planos";
@@ -2880,6 +2909,12 @@
       // no se lee y le cuesta muchísima memoria al navegador: se oculta
       const lim = 3 * Math.max(cam.W, cam.H);
       if (q.some((p) => Math.abs(p.x - cam.W / 2) > lim || Math.abs(p.y - cam.H / 2) > lim)) { el.style.display = "none"; return 0; }
+      if (el instanceof SVGElement) {
+        // Plano: mapea el rectángulo a 3 esquinas del cuadrilátero (en un lote chico se ve igual que en 3D)
+        const A = (q[1].x - q[0].x) / w, B = (q[1].y - q[0].y) / w, Cc = (q[3].x - q[0].x) / h, D = (q[3].y - q[0].y) / h;
+        el.style.display = ""; el.setAttribute("transform", "matrix(" + [A, B, Cc, D, q[0].x, q[0].y].map((x) => +x.toFixed(4)).join(",") + ")");
+        return Math.hypot(q[3].x - q[0].x, q[3].y - q[0].y);
+      }
       const m = matrizQuad(w, h, q);
       if (!m) { el.style.display = "none"; return 0; }
       el.style.display = ""; el.style.transform = m;
@@ -2890,7 +2925,8 @@
       const G = c.puntos.map(([y, p]) => aSuelo(y, p));
       if (G.some((g) => !g) || n.el.hidden) { R.cont.style.display = "none"; return false; }
       R.cont.style.display = "";
-      if (!R.med) R.med = { nom: R.nom ? [R.nom.offsetWidth, R.nom.offsetHeight] : null, cortos: R.cortos.map((e) => [e.offsetWidth, e.offsetHeight]), lados: R.lados.map((e) => (e ? [e.offsetWidth, e.offsetHeight] : null)) };
+      if (!R.med) R.med = R.svg ? { nom: R.nom ? medirSVG(R.nom) : null, cortos: [], lados: R.lados.map((e) => (e ? medirSVG(e) : null)) }
+        : { nom: R.nom ? [R.nom.offsetWidth, R.nom.offsetHeight] : null, cortos: R.cortos.map((e) => [e.offsetWidth, e.offsetHeight]), lados: R.lados.map((e) => (e ? [e.offsetWidth, e.offsetHeight] : null)) };
       // Centroide y tamaño del lote en el suelo
       let A2 = 0, cx = 0, cz = 0;
       G.forEach((p, i) => { const q = G[(i + 1) % G.length], k = p[0] * q[1] - q[0] * p[1]; A2 += k; cx += (p[0] + q[0]) * k; cz += (p[1] + q[1]) * k; });
