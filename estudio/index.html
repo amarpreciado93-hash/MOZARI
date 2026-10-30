@@ -3695,6 +3695,7 @@ void main(){
           const cx0 = (Math.min(...xs) + Math.max(...xs)) / 2, cy0 = (Math.min(...ys) + Math.max(...ys)) / 2, ext = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) || 1;
           const n0 = porId.get(mp.marco), lado = (ALCANCE[tipoK(n0)] || 90) * 1.35;
           mpMapa = { n: n0, lotes: mp.lotes.map((l) => ({ c: l.x.c, pts: l.pts.map(([x, y]) => [(x - cx0) / ext * lado, (y - cy0) / ext * lado]) })) };
+          mpMapa.bajo = Math.max(...mpMapa.lotes.flatMap((l) => l.pts.map((p) => p[1])));
         }
       } catch (e) { mpMapa = null; }
       // Distancia entre esferas (la escribes tú): se ve en cada conexión y acomoda el mapa a escala
@@ -3735,34 +3736,30 @@ void main(){
       function pintarTierra() {
         pidio = false;
         capaTierra.selectAll("*").remove(); capaPlanta.selectAll("*").remove();
-        // Terreno: un campo suave por cada aérea (y sus vecinas de piso) más "puentes" a lo largo de las conexiones; sus curvas de nivel son el terreno
+        // Terreno: sigue la ruta. Curvas de nivel a lo largo de cada conexión (como un camino) y un pequeño cerro en cada aérea
         if (conTierra.length && tTierra > 0) {
-          const celda = 6, gw = Math.ceil(W / celda) + 1, gh = Math.ceil(H / celda) + 1, k = facil(Math.min(1, tTierra));
+          const celda = 5, gw = Math.ceil(W / celda) + 1, gh = Math.ceil(H / celda) + 1, k = facil(Math.min(1, tTierra));
           const geo = d3.geoPath(d3.geoIdentity().scale(celda));
           conTierra.forEach((gr) => {
             const ids = new Set(gr.map((n) => n.id));
-            const fuentes = gr.map((n) => ({ x: n.x, y: n.y, s: (esAerea(n) ? ALCANCE[tipoK(n)] * 0.56 : 30) * k }));
-            const puentes = g.links.filter((l) => ids.has(l.source.id) && ids.has(l.target.id)).map((l) => ({ a: l.source, b: l.target, s: 26 * k }));
-            const v = new Float64Array(gw * gh);
+            const ancho = 20 * k;
+            const tramos = g.links.filter((l) => ids.has(l.source.id) && ids.has(l.target.id)).map((l) => ({ a: l.source, b: l.target }));
+            const cerros = gr.filter(esAerea).map((n) => ({ x: n.x, y: n.y, s: (radio(n) * 0.55 + ALCANCE[tipoK(n)] * 0.12) * k }));
+            const v = new Float64Array(gw * gh), lim = 9 * ancho * ancho;
             for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) {
               const x = i * celda, y = j * celda; let f = 0;
-              for (const q of fuentes) { const d2 = (x - q.x) ** 2 + (y - q.y) ** 2; if (d2 < 9 * q.s * q.s) f += Math.exp(-d2 / (2 * q.s * q.s)); }
-              for (const q of puentes) {
+              // El camino: la cercanía al tramo más próximo (sin sumar, para que el ancho sea parejo)
+              for (const q of tramos) {
                 const ax = q.a.x, ay = q.a.y, bx = q.b.x - ax, by = q.b.y - ay, L2 = bx * bx + by * by || 1, u = Math.max(0, Math.min(1, ((x - ax) * bx + (y - ay) * by) / L2));
-                const d2 = (x - ax - bx * u) ** 2 + (y - ay - by * u) ** 2; if (d2 < 9 * q.s * q.s) f += 0.75 * Math.exp(-d2 / (2 * q.s * q.s));
+                const d2 = (x - ax - bx * u) ** 2 + (y - ay - by * u) ** 2; if (d2 < lim) f = Math.max(f, Math.exp(-d2 / (2 * ancho * ancho)));
               }
+              for (const q of cerros) { const d2 = (x - q.x) ** 2 + (y - q.y) ** 2; if (d2 < 9 * q.s * q.s) f = Math.max(f, Math.exp(-d2 / (2 * q.s * q.s))); }
               v[j * gw + i] = f;
             }
-            const niveles = [0.12, 0.26, 0.42, 0.58, 0.74, 0.9];
+            const niveles = [0.1, 0.3, 0.55, 0.8];
             d3.contours().size([gw, gh]).thresholds(niveles)(v).forEach((c, i) => {
               capaTierra.append("path").attr("d", geo(c)).attr("class", i ? "mp-curva" : "mp-tierra")
-                .attr("stroke-width", i ? Math.max(0.7, 1.6 - i * 0.18) : 2.2).attr("stroke-opacity", i ? Math.max(0.25, 0.75 - i * 0.1) : 0.95);
-            });
-            // Círculo de alcance de cada aérea, como en una planeación
-            gr.filter(esAerea).forEach((n) => {
-              const R = ALCANCE[tipoK(n)] * k;
-              capaTierra.append("circle").attr("class", "mp-alcance").attr("cx", n.x).attr("cy", n.y).attr("r", R);
-              capaTierra.append("text").attr("class", "mp-alcance-t").attr("x", n.x).attr("y", n.y - R - 5).text(tipoK(n).slice(1) + " M").attr("opacity", k);
+                .attr("stroke-width", i ? Math.max(0.7, 1.4 - i * 0.2) : 1.8).attr("stroke-opacity", i ? Math.max(0.25, 0.65 - i * 0.12) : 0.9);
             });
           });
         }
@@ -3770,7 +3767,7 @@ void main(){
           const n0 = mpMapa.n, gm = capaTierra.append("g").attr("opacity", Math.min(1, tTierra * 1.2 || 1));
           mpMapa.lotes.forEach((l) => gm.append("path").attr("class", "mp-lote").attr("d", "M" + l.pts.map(([x, y]) => (n0.x + x).toFixed(1) + "," + (n0.y + y).toFixed(1)).join("L") + "Z").attr("fill", estadoDe(l.c).color).attr("fill-opacity", 0.8));
           const ys = mpMapa.lotes.flatMap((l) => l.pts.map((p) => p[1]));
-          gm.append("text").attr("class", "mp-plano-t").attr("x", n0.x).attr("y", n0.y + Math.max(...ys) + 14).text("MASTERPLAN · " + mpMapa.lotes.length + " LOTES");
+          gm.append("text").attr("class", "mp-plano-t").attr("x", n0.x).attr("y", n0.y + Math.min(...ys) - 8).text("MASTERPLAN · " + mpMapa.lotes.length + " LOTES");
         }
         // Exteriores de piso sueltos de un terreno: su patio
         g.nodes.filter((n) => tipoK(n) === "ext" && !conTierra.some((gr) => gr.includes(n)) && grado(n) > 0).forEach((n) => capaTierra.append("circle").attr("class", "mp-patio").attr("cx", n.x).attr("cy", n.y).attr("r", radio(n) + 22));
@@ -3847,8 +3844,9 @@ void main(){
           });
           nodos.attr("transform", (n) => "translate(" + n.x + "," + n.y + ")");
           pastillas.attr("transform", (l) => "translate(" + ((l.source.x + l.target.x) / 2).toFixed(1) + "," + ((l.source.y + l.target.y) / 2 - 12).toFixed(1) + ")");
-          etiquetas.attr("x", (n) => n.x).attr("y", (n) => n.y + radio(n) + 20);
-          etqTipo.attr("x", (n) => n.x).attr("y", (n) => n.y + radio(n) + 34);
+          const bajo = (n) => (mpMapa && n === mpMapa.n ? Math.max(radio(n), mpMapa.bajo) : radio(n));
+          etiquetas.attr("x", (n) => n.x).attr("y", (n) => n.y + bajo(n) + 20);
+          etqTipo.attr("x", (n) => n.x).attr("y", (n) => n.y + bajo(n) + 34);
           if (plantas.length) { etiquetas.attr("display", (n) => (esInt(n) && grado(n) ? "none" : null)); etqTipo.attr("display", (n) => (esInt(n) && grado(n) ? "none" : null)); }
         });
     }
