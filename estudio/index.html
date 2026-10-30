@@ -4855,8 +4855,10 @@ void main(){
     const l = c.lote;
     l.lados = c.puntos.map((_, i) => (l.lados || [])[i] || "");
     const val = (k) => esc(l[k] === undefined ? "" : l[k]);
+    const varios = seleccionadas().filter((x) => x.lote).length > 1;
     let h = '<div class="grupo"><b>Datos del lote</b><div class="lote-datos">' +
-      '<label>Lote<input type="text" data-k="lote.numero" value="' + val("numero") + '" placeholder="12"></label>' +
+      (varios ? '<label>Numerar desde<input type="text" inputmode="numeric" data-numerar placeholder="1" title="Les pone números seguidos en su orden actual"></label>'
+        : '<label>Lote<input type="text" data-k="lote.numero" value="' + val("numero") + '" placeholder="12"></label>') +
       '<label>Manzana<input type="text" data-k="lote.manzana" value="' + val("manzana") + '" placeholder="3"></label>' +
       '<label>Superficie (m²)<input type="text" inputmode="decimal" data-k="lote.area" value="' + val("area") + '" placeholder="1250"></label>' +
       '<label>Precio<input type="text" inputmode="decimal" data-k="lote.precio" value="' + val("precio") + '" placeholder="$"></label></div></div>';
@@ -4935,7 +4937,7 @@ void main(){
     $("props-titulo").textContent = c.lote ? nombreLote(c) : c.manzana ? "Manzana " + (c.manzana.mz || "") : c.camino ? "Ruta" : c.tipo === "interes" ? "Punto de interés" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
     const multi = seleccionadas().length > 1 ? seleccionadas() : null;
     if (multi) $("props-titulo").textContent = multi.length + (c.lote ? " lotes" : " capas") + " seleccionados";
-    let h = (multi ? '<div class="sel-multi"><b>' + multi.length + ' seleccionados.</b> Lo que cambies aquí se aplica a todos' + (c.lote ? ": estado, precio, superficie y estilo (el número y la manzana no)." : ".") + ' <button class="mini" data-acc="sel-una">Solo este</button></div>' : "") +
+    let h = (multi ? '<div class="sel-multi"><b>' + multi.length + ' seleccionados.</b> Lo que cambies aquí se aplica a todos' + (c.lote ? ": manzana, estado, precio, superficie y estilo. Para los números usa «Numerar desde»." : ".") + ' <button class="mini" data-acc="sel-una">Solo este</button></div>' : "") +
       (c.lote || multi ? "" : '<div class="grupo">' + campo("Nombre", '<input type="text" data-k="nombre" value="' + esc(c.nombre) + '">') + "</div>");
     if (c.lote) h += propsLote(c);
     else if (c.manzana) {
@@ -5037,7 +5039,7 @@ void main(){
     escribir(c, el.dataset.k, v);
     // Varias seleccionadas: el mismo cambio en todas (menos lo que identifica a cada una)
     const otras = seleccionadas().filter((x) => x !== c);
-    if (otras.length && !/^(nombre|lote\.(numero|manzana|lados|frente))/.test(el.dataset.k)) {
+    if (otras.length && !/^(nombre|lote\.(numero|lados|frente))/.test(el.dataset.k)) {
       otras.forEach((x) => {
         if (el.dataset.k.startsWith("t3d.")) x.t3d = t3(x);
         try { escribir(x, el.dataset.k, typeof v === "object" ? JSON.parse(JSON.stringify(v)) : v); } catch (e) { return; }
@@ -5045,6 +5047,12 @@ void main(){
         if (x.vinculo) propagar(x, motorEd.actual.id);
       });
       if (!repintar) motorEd.construir();
+    }
+    // Lotes que salen de una manzana: su manzana manda (si no, al repartirla se regresaría el número viejo)
+    if (el.dataset.k === "lote.manzana") {
+      const padres = new Set([c].concat(otras).filter((x) => x.deManzana).map((x) => x.deManzana));
+      padres.forEach((pid) => { const m = buscar(pid); if (!m || !m.manzana) return; m.manzana.mz = v; m.nombre = "Manzana " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); });
+      if (otras.length) pintarCapas();
     }
     const etq = document.querySelector('[data-v-de="' + el.dataset.k + '"]');
     if (etq) etq.textContent = (FMTS[el.dataset.k] || px)(v);
@@ -5061,6 +5069,24 @@ void main(){
     else motorEd.construir();
     if (repintar) pintarProps();
   }
+  // Varios lotes: números seguidos en su orden actual (por número, y si no tienen, por su lugar en la lista)
+  $("props").addEventListener("change", (ev) => {
+    if (ev.target.dataset.numerar === undefined) return;
+    const desde = parseInt(ev.target.value, 10); if (!(desde >= 0)) return;
+    const l = cs(), lotes = seleccionadas().filter((x) => x.lote);
+    const n = (x) => { const v = parseFloat(x.lote.numero); return isFinite(v) ? v : Infinity; };
+    lotes.sort((a, b) => n(a) - n(b) || l.indexOf(a) - l.indexOf(b));
+    const deMz = lotes.filter((x) => x.deManzana);
+    lotes.filter((x) => !x.deManzana).forEach((x) => { x.lote.numero = String(desde + lotes.indexOf(x)); if (x.vinculo) propagar(x, motorEd.actual.id); });
+    let avisoMz = "";
+    new Set(deMz.map((x) => x.deManzana)).forEach((pid) => {
+      const m = buscar(pid), todosMz = m ? lotesDeManzana(m) : [];
+      if (m && todosMz.every((x) => lotes.includes(x))) { m.manzana.inicio = desde + Math.min(...todosMz.map((x) => lotes.indexOf(x))); repartirManzana(m); }
+      else avisoMz = " Los lotes de una manzana se numeran con «Primer número» en la manzana.";
+    });
+    guardar(); motorEd.construir(); pintarCapas(); pintarProps();
+    avisar(lotes.length + " lotes numerados desde " + desde + "." + avisoMz);
+  });
   $("props").addEventListener("input", (ev) => {
     if (ev.target.dataset.colorEstado) { colorEstado(ev.target.dataset.colorEstado, ev.target.value); return; }
     if (ev.target.type !== "checkbox" && ev.target.tagName !== "SELECT") aplicar(ev.target, false);
