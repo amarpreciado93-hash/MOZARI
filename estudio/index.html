@@ -217,6 +217,10 @@
   .fila-campo > span { color: var(--mz-tenue); font-size: 12px; }
   .cortina-esfera { position: absolute; inset: 0; z-index: 30; background: #0B0B0B center / cover no-repeat; transition: opacity 0.6s ease; pointer-events: none; }
   .cortina-esfera.fuera { opacity: 0; }
+  /* Avanzar por un hotspot: la imagen anterior sigue acercándose (y se desenfoca un poco) mientras se va */
+  .cortina-esfera.avanza { transform-origin: 50% 50%; transition: transform 1.6s cubic-bezier(0.25, 0.5, 0.35, 1), opacity 0.9s ease, filter 0.9s ease; }
+  .cortina-esfera.avanza.andando { transform: scale(1.12); }
+  .cortina-esfera.avanza.fuera { transform: scale(1.3); opacity: 0; filter: blur(3px); }
   .cortina-carga { position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.25); border-top-color: #fff; opacity: 0; transition: opacity 0.2s; animation: girar 0.8s linear infinite; box-shadow: 0 0 12px rgba(0, 0, 0, 0.4); }
   .cortina-esfera.tarda .cortina-carga { opacity: 1; }
   .cortina-esfera.fuera .cortina-carga { opacity: 0; }
@@ -819,7 +823,7 @@
 
   /* ---------- Vista previa (lo que ve el cliente) ---------- */
   .previa { position: fixed; inset: 0; z-index: 50; background: var(--mz-negro); }
-  .previa .stage { position: absolute; inset: 0; }
+  .previa .stage { position: absolute; inset: 0; isolation: isolate; } /* la transición entre esferas no tapa los botones del tour */
   .previa .arriba { position: absolute; z-index: 5; top: calc(env(safe-area-inset-top, 0px) + 14px); left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; pointer-events: none; }
   .previa .arriba > * { pointer-events: auto; }
   .previa .marca { display: flex; align-items: center; gap: 12px; padding: 10px 18px 10px 14px; border-radius: var(--mz-radio); background: var(--mz-vidrio); border: 1px solid var(--mz-linea); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); min-width: 0; }
@@ -1023,7 +1027,7 @@
   .pantalla { position: relative; overflow: hidden; background: #000; }
   .marco--h .pantalla { width: 1280px; height: 720px; border-radius: 10px; }
   .marco--v .pantalla { width: 390px; height: 844px; border-radius: 44px; }
-  .pantalla .stage { position: absolute; inset: 0; }
+  .pantalla .stage { position: absolute; inset: 0; isolation: isolate; }
 
   /* ---------- Pantalla de arranque: Mozari, creado por R360 Team ---------- */
   .splash { position: fixed; inset: 0; z-index: 100; background: var(--mz-negro); display: grid; place-items: center; cursor: pointer; transition: opacity 0.6s ease, visibility 0.6s; }
@@ -3409,15 +3413,22 @@
           cortina.className = "cortina-esfera";
           cortina.style.backgroundImage = "url(" + foto + ")";
           stage.appendChild(cortina);
-          const c = cortina;
+          const c = cortina, avanzar = llegada && !editable;
           actual.scene.switchTo({ transitionDuration: 0 });
-          // Llegando por un hotspot: la nueva esfera arranca un poco cerca y se abre (sensación de avanzar)
-          if (llegada && !editable) { const v0 = actual.view.parameters(); actual.view.setParameters({ fov: v0.fov * 0.82 }); actual.scene.lookTo({ fov: v0.fov }, { transitionDuration: 900 }); }
+          // Llegando por un hotspot se siente como caminar hacia adelante sin cortes: la imagen anterior
+          // sigue acercándose mientras se desvanece y la nueva entra un poco más abierta y también se acerca
+          let fovFinal = null;
+          if (avanzar) {
+            const v0 = actual.view.parameters(); fovFinal = v0.fov;
+            actual.view.setParameters({ fov: v0.fov * 1.22 });
+            c.classList.add("avanza"); void c.offsetWidth; c.classList.add("andando");
+          }
           // Espera poco: lo que ya está precargado sale nítido; lo demás se afina mientras ya te mueves
           nitido(editable ? 1500 : 650).then(() => {
             if (turno !== turnoCambio) return;
-            c.style.transitionDuration = Math.max(250, dur) + "ms";
-            c.classList.add("fuera"); setTimeout(() => { c.remove(); if (cortina === c) cortina = null; }, Math.max(250, dur) + 50);
+            if (fovFinal !== null) actual.scene.lookTo({ fov: fovFinal }, { transitionDuration: 1100, ease: (t) => 1 - Math.pow(1 - t, 3) });
+            if (!avanzar) c.style.transitionDuration = Math.max(250, dur) + "ms";
+            c.classList.add("fuera"); setTimeout(() => { c.remove(); if (cortina === c) cortina = null; }, avanzar ? 950 : Math.max(250, dur) + 50);
           });
         } else actual.scene.switchTo({ transitionDuration: antes ? dur : 0 });
         construir();
@@ -3432,8 +3443,8 @@
         const v = actual.view, fov = v.fov();
         let listo = false;
         const seguir = () => { if (listo) return; listo = true; motor.mostrar(id, 450, vista, true); };
-        actual.scene.lookTo({ yaw: hacia.yaw, pitch: v.pitch() * 0.5 + hacia.pitch * 0.5, fov: Math.max(fov * 0.62, (35 * Math.PI) / 180) }, { transitionDuration: 420, ease: (t) => t * t }, seguir);
-        setTimeout(seguir, 700);
+        actual.scene.lookTo({ yaw: hacia.yaw, pitch: v.pitch() * 0.55 + hacia.pitch * 0.45, fov: Math.max(fov * 0.7, (40 * Math.PI) / 180) }, { transitionDuration: 480, ease: (t) => t * t * (3 - 2 * t) * 0.6 + t * t * 0.4 }, seguir);
+        setTimeout(seguir, 750);
       },
       setModo(m) { motor.modo = m; capasEl.classList.toggle("solo-ver", m === "piloto"); render(); },
       construir, render: programar, estiloPoligono: (id, c) => { const n = nodos.get(id); if (n && n.path) estiloPoligono(n.path, c); },
