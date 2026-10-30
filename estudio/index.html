@@ -279,10 +279,23 @@
   .nodo.suelta image { filter: grayscale(1) brightness(0.6); }
   .nodo.sin-salida .aro { stroke: var(--mz-aviso); }
   .nodo { cursor: pointer; transition: opacity 0.2s; }
+  .nodo.resalta .aro { stroke: var(--mz-lima); stroke-width: 4; }
   .nodo.origen .aro { stroke: var(--mz-lima); stroke-width: 4; stroke-dasharray: none; }
   .mapa.enfoque .nodo:not(.vecino), .mapa.enfoque .etq-nodo:not(.vecino) { opacity: 0.25; }
   .mapa.enfoque .enlace:not(.vecino) { opacity: 0.12; }
   .mapa.enfoque .enlace.vecino { stroke: var(--mz-lima); stroke-opacity: 1; stroke-width: 3.4; }
+  .tipos-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+  .tipos-cab h3 { margin: 0; }
+  .tipos-lista { display: grid; gap: 6px; }
+  .tipo-fila { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 4px 10px; align-items: center; padding: 8px; border-radius: 10px; background: var(--mz-negro); border: 1px solid transparent; }
+  .tipo-fila.foco { border-color: var(--mz-lima); }
+  .tipo-fila img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; grid-row: span 2; }
+  .tipo-fila b { font-size: 12px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tipo-fila b small { color: var(--mz-aviso); font-weight: 500; margin-left: 6px; }
+  .tipo-fila select { width: 100%; font: 500 12px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); border-radius: 8px; padding: 5px 6px; }
+  .tipo-medidas { grid-column: 2; display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--mz-tenue); }
+  .tipo-medidas input { width: 54px; font: 500 12px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); border-radius: 8px; padding: 4px 6px; }
+  .etq-tipo { fill: var(--mz-tenue); font-size: 10px; font-weight: 500; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: #3A3C38; stroke-width: 3px; letter-spacing: 0.02em; }
   .ruta { background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-radio); padding: 16px; display: grid; gap: 12px; align-content: start; overflow: auto; }
   .ruta h3 { margin: 0; font-size: 14px; font-weight: 600; }
   .diag { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px; border-radius: 10px; background: var(--mz-negro); }
@@ -1083,6 +1096,9 @@
           <aside class="ruta" aria-label="Revisión de la ruta">
             <h3>Ruta del tour</h3>
             <div id="diagnostico" style="display:grid;gap:8px"></div>
+            <div class="tipos-cab"><h3>Tipo de cada esfera</h3><button class="mini" id="tipos-auto">Detectar</button></div>
+            <p class="nota" style="margin:0">Con el tipo, el mapa dibuja tu terreno y tus interiores mientras conectas.</p>
+            <div id="tipos-esferas" class="tipos-lista"></div>
             <div class="leyenda">
               <span class="etiq">Leyenda</span>
               <div><i style="border-color:var(--mz-lima)"></i>Panorama inicial</div>
@@ -3381,6 +3397,12 @@ void main(){
   });
 
   // =================== PANORAMAS: MAPA DE NODOS ===================
+  const TIPOS_ESFERA = [["a140", "Aérea 140 m"], ["a100", "Aérea 100 m"], ["a45", "Aérea 45 m"], ["a30", "Aérea 30 m"], ["a15", "Aérea 15 m"], ["ext", "Exterior de piso"], ["int", "Interior"]];
+  const textoTipo = (e) => {
+    const t = e && e.tipo; if (!t || !t.k) return "";
+    if (t.k === "int") return "Interior" + (t.ancho && t.largo ? " " + t.ancho + "×" + t.largo + " m" : "");
+    return (TIPOS_ESFERA.find((x) => x[0] === t.k) || [, ""])[1];
+  };
   const mapa = (function () {
     const svg = d3.select("#mapa-svg");
     let sim = null, origen = null, conectando = false;
@@ -3412,6 +3434,39 @@ void main(){
       if (sueltas.length) items.push(["aviso", "Sueltos: " + lst(sueltas), "No tienen ninguna conexión."]);
       $("diagnostico").innerHTML = items.map(([t, b, s]) => '<div class="diag ' + t + '">' + (t === "ok" ? ICO_OK : ICO_AV) + "<div><b>" + esc(b) + "</b><span>" + esc(s) + "</span></div></div>").join("");
     }
+    // Tipo de cada esfera (como se enseña en el curso): aéreas por altura, exterior de piso o interior con medidas
+    function pintarTipos() {
+      $("tipos-esferas").innerHTML = est.escenas.map((e) => {
+        const t = e.tipo || {}, k = t.k || "";
+        return '<div class="tipo-fila" data-tipo-de="' + e.id + '"><img src="' + esc(planetaDe(e.id)) + '" alt="" loading="lazy" onerror="this.src=\'' + esc(thumbDe(e.id)) + '\'">' +
+          "<b>" + esc(e.nombre) + (k && t.auto ? "<small>sugerido</small>" : "") + "</b>" +
+          '<select data-tipo="' + e.id + '" aria-label="Tipo de ' + esc(e.nombre) + '"><option value="">Sin tipo</option>' +
+          TIPOS_ESFERA.map(([v, n]) => '<option value="' + v + '"' + (k === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select>" +
+          (k === "int" ? '<div class="tipo-medidas"><input type="text" inputmode="decimal" data-medida="ancho" data-de="' + e.id + '" value="' + esc(t.ancho || "") + '" placeholder="4" aria-label="Ancho en metros"> × <input type="text" inputmode="decimal" data-medida="largo" data-de="' + e.id + '" value="' + esc(t.largo || "") + '" placeholder="10" aria-label="Largo en metros"> m</div>' : "") +
+          "</div>";
+      }).join("");
+    }
+    // Sugerencia: si la vista de inicio mira hacia abajo, casi seguro es aérea
+    function detectarTipos(todas) {
+      let n = 0;
+      est.escenas.forEach((e) => {
+        if (e.tipo && e.tipo.k && !(todas && e.tipo.auto)) return;
+        const p = (e.vista && e.vista.pitch) || 0;
+        const k = p > 0.6 ? "a100" : p > 0.32 ? "a45" : "ext";
+        e.tipo = { k, auto: true }; n++;
+      });
+      return n;
+    }
+    $("tipos-auto").addEventListener("click", () => { const n = detectarTipos(true); guardar(); dibujar(); avisar(n ? "Tipos sugeridos para " + n + (n === 1 ? " esfera" : " esferas") + ". Corrígelos si hace falta." : "Todas tus esferas ya tienen tipo"); });
+    $("tipos-esferas").addEventListener("change", (ev) => {
+      const id = ev.target.dataset.tipo || ev.target.dataset.de; if (!id || !escena(id)) return;
+      const e = escena(id);
+      if (ev.target.dataset.tipo) { e.tipo = ev.target.value ? Object.assign({}, e.tipo || {}, { k: ev.target.value, auto: false }) : null; if (!e.tipo) delete e.tipo; }
+      else { const v = parseFloat(String(ev.target.value).replace(",", ".")); e.tipo = Object.assign({}, e.tipo || {}, { [ev.target.dataset.medida]: isFinite(v) && v > 0 ? v : "" }); }
+      guardar(); dibujar();
+    });
+    $("tipos-esferas").addEventListener("mouseover", (ev) => { const f = ev.target.closest("[data-tipo-de]"); d3.selectAll(".nodo").classed("resalta", (m) => !!f && m.id === f.dataset.tipoDe); });
+    $("tipos-esferas").addEventListener("mouseleave", () => d3.selectAll(".nodo").classed("resalta", false));
     function dibujar() {
       const el = $("mapa"), W = el.clientWidth, H = el.clientHeight;
       if (!W) return;
@@ -3420,6 +3475,7 @@ void main(){
       svg.attr("viewBox", [0, 0, W, H]);
       const g = grafo();
       diagnostico(g);
+      pintarTipos();
       const grado = (n) => n.salen + n.entran, radio = (n) => 26 + Math.min(5, grado(n)) * 5;
       const defs = svg.append("defs");
       defs.append("marker").attr("id", "flecha").attr("viewBox", "0 -5 10 10").attr("refX", 8).attr("refY", 0).attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto-start-reverse")
@@ -3428,6 +3484,7 @@ void main(){
       const raiz = svg.append("g");
       svg.call(d3.zoom().scaleExtent([0.4, 3]).on("zoom", (e) => raiz.attr("transform", e.transform)));
       const etiquetas = raiz.append("g").selectAll("text").data(g.nodes).join("text").attr("class", "etq-nodo").text((n) => n.nombre);
+      const etqTipo = raiz.append("g").selectAll("text").data(g.nodes).join("text").attr("class", "etq-tipo").text((n) => textoTipo(escena(n.id)));
       const enlaces = raiz.append("g").selectAll("path").data(g.links).join("path").attr("class", "enlace").attr("marker-end", "url(#flecha)").attr("marker-start", (d) => (d.doble ? "url(#flecha)" : null));
       const nodos = raiz.append("g").selectAll("g").data(g.nodes).join("g")
         .attr("class", (n) => "nodo" + (n.id === P().escenaInicial ? " inicio" : "") + (grado(n) === 0 ? " suelta" : n.salen === 0 ? " sin-salida" : ""))
@@ -3436,6 +3493,7 @@ void main(){
       nodos.append("circle").attr("class", "aro").attr("r", radio);
       const vecinos = (id) => new Set(g.links.flatMap((l) => (l.source.id === id ? [l.target.id] : l.target.id === id ? [l.source.id] : [])).concat(id));
       nodos.on("mouseenter", (ev, n) => {
+        document.querySelectorAll(".tipo-fila").forEach((f) => f.classList.toggle("foco", f.dataset.tipoDe === n.id));
         const v = vecinos(n.id);
         el.classList.add("enfoque");
         nodos.classed("vecino", (m) => v.has(m.id));
@@ -3475,6 +3533,7 @@ void main(){
           });
           nodos.attr("transform", (n) => "translate(" + n.x + "," + n.y + ")");
           etiquetas.attr("x", (n) => n.x).attr("y", (n) => n.y + radio(n) + 20);
+          etqTipo.attr("x", (n) => n.x).attr("y", (n) => n.y + radio(n) + 34);
         });
     }
     function elegirParaConectar(n) {
