@@ -1,4 +1,4 @@
-// Mozari · cobros con Mercado Pago (Checkout Pro, pago por periodo)
+// Mozari · cobros con Mercado Pago (Checkout Pro, licencias de pago único y paquetes de espacio)
 //
 // 1. El estudio pide /api/pagos/checkout {plan, periodo} → se crea una orden en R2 (pagos/<ref>.json)
 //    y una "preferencia" en Mercado Pago → el cliente paga en Mercado Pago (tarjeta, OXXO, saldo).
@@ -12,7 +12,7 @@
 
 import { json, error } from "./comun.js";
 import { perfil } from "./sesion.js";
-import { PLANES, COBROS, PERIODOS, sumarMeses } from "./planes.js";
+import { PLANES, COBROS, PERIODOS, sumarMeses, montoLicencia, ESPACIO_PAQUETE } from "./planes.js";
 
 const MP = "https://api.mercadopago.com";
 const ordenClave = (ref) => "pagos/" + ref + ".json";
@@ -36,13 +36,17 @@ async function activar(env, orden, pagoId) {
   const p = await perfil(env, orden.uid);
   if (!p) return orden;
   const ahora = new Date();
-  const vigente = p.plan === orden.plan && p.vence && new Date(p.vence) > ahora;
-  const desde = vigente ? new Date(p.vence) : ahora;
-  p.plan = orden.plan;
-  p.vence = sumarMeses(desde, PERIODOS[orden.periodo].meses).toISOString();
+  if (orden.plan === "espacio") p.extraBytes = (+p.extraBytes || 0) + ESPACIO_PAQUETE * (orden.cantidad || 1);
+  else if (orden.periodo === "unico") { p.plan = orden.plan; delete p.vence; } // licencia para siempre
+  else {
+    const vigente = p.plan === orden.plan && p.vence && new Date(p.vence) > ahora;
+    const desde = vigente ? new Date(p.vence) : ahora;
+    p.plan = orden.plan;
+    p.vence = sumarMeses(desde, PERIODOS[orden.periodo].meses).toISOString();
+  }
   p.ultimoPago = { ref: orden.ref, fecha: ahora.toISOString(), monto: orden.monto };
   await guardar(env, "cuentas/" + p.uid + "/perfil.json", p);
-  Object.assign(orden, { estado: "aprobado", aplicado: ahora.toISOString(), pago: String(pagoId), vence: p.vence });
+  Object.assign(orden, { estado: "aprobado", aplicado: ahora.toISOString(), pago: String(pagoId), vence: p.vence || null });
   await guardar(env, ordenClave(orden.ref), orden);
   return orden;
 }
@@ -76,15 +80,18 @@ const resumen = (o) => ({ ref: o.ref, plan: o.plan, periodo: o.periodo, monto: o
 // /api/pagos/... (con sesión)
 export async function apiPagos(request, env, partes, yo) {
   const m = request.method, url = new URL(request.url);
-  if (partes[2] === "precios" && m === "GET") return json({ cobros: COBROS, periodos: PERIODOS });
+  if (partes[2] === "precios" && m === "GET") return json({ cobros: COBROS, pro: montoLicencia(yo, "pro"), desarrollos: montoLicencia(yo, "desarrollos"), espacio: COBROS.espacio.unico });
 
   if (partes[2] === "checkout" && m === "POST") {
     const c = await request.json().catch(() => ({}));
-    if (!COBROS[c.plan] || !PERIODOS[c.periodo]) return error(400, "Plan o periodo inválido");
+    if (!COBROS[c.plan]) return error(400, "Plan inválido");
+    c.periodo = "unico";
     if (yo.admin) return error(400, "Tu cuenta ya tiene todo incluido");
+    const montoHoy = montoLicencia(yo, c.plan);
+    if (!montoHoy) return error(400, "Ya tienes esa licencia");
     if (!env.MP_ACCESS_TOKEN && !simulado(env)) return error(503, "Los pagos aún no están activos. Escríbenos y te activamos el plan.");
     const ref = "mz-" + Date.now().toString(36) + crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
-    const monto = COBROS[c.plan][c.periodo], plan = PLANES[c.plan], periodo = PERIODOS[c.periodo];
+    const monto = montoHoy, plan = c.plan === "espacio" ? { nombre: "+20 GB de espacio" } : PLANES[c.plan], periodo = PERIODOS.unico;
     const orden = { ref, uid: yo.uid, email: yo.email, plan: c.plan, periodo: c.periodo, monto, moneda: "MXN", estado: "creado", creado: new Date().toISOString() };
     await guardar(env, ordenClave(ref), orden);
     if (simulado(env)) return json({ ref, url: url.origin + "/api/pagos/simular?ref=" + ref });
@@ -92,7 +99,7 @@ export async function apiPagos(request, env, partes, yo) {
       method: "POST",
       headers: { "x-idempotency-key": ref },
       body: JSON.stringify({
-        items: [{ id: c.plan + "-" + c.periodo, title: "Mozari " + plan.nombre + " · " + periodo.nombre, quantity: 1, unit_price: monto, currency_id: "MXN" }],
+        items: [{ id: c.plan + "-unico", title: "Mozari " + plan.nombre + (c.plan === "espacio" ? "" : " · licencia de pago único"), quantity: 1, unit_price: monto, currency_id: "MXN" }],
         payer: { email: yo.email },
         external_reference: ref,
         back_urls: { success: url.origin + "/?pago=ok", pending: url.origin + "/?pago=pendiente", failure: url.origin + "/?pago=error" },

@@ -7,16 +7,29 @@ const GB = 1024 ** 3;
 
 export const PLANES = {
   gratis:      { nombre: "Gratis",      tours: 1,    esferas: 5,    bytes: 2 * GB,   lotificacion: false, marca: true,  precio: 0,   lanzamiento: 0 },
-  pro:         { nombre: "Pro",         tours: null, esferas: null, bytes: 20 * GB,  lotificacion: false, marca: false, precio: 399, lanzamiento: 299 },
-  desarrollos: { nombre: "Desarrollos", tours: null, esferas: null, bytes: 100 * GB, lotificacion: true,  marca: false, precio: 999, lanzamiento: 799 },
+  pro:         { nombre: "Pro",         tours: null, esferas: null, bytes: 10 * GB,  lotificacion: false, marca: false, precio: 990,  lanzamiento: 990 },
+  desarrollos: { nombre: "Desarrollos", tours: null, esferas: null, bytes: 50 * GB,  lotificacion: true,  marca: false, precio: 4990, lanzamiento: 4990 },
 };
 
-// Lo que se cobra (pesos MXN). Precio de lanzamiento; el año cuesta 10 meses.
+// Licencias de PAGO ÚNICO (pesos MXN): se paga una vez y el plan no vence. El hosting va incluido
+// dentro de los GB de cada licencia; quien necesita más compra paquetes de espacio (también de una vez).
 export const COBROS = {
-  pro:         { mes: 299, anio: 2990 },
-  desarrollos: { mes: 799, anio: 7990 },
+  pro:         { unico: 990 },
+  desarrollos: { unico: 4990 },
+  espacio:     { unico: 290 },      // +20 GB para siempre
 };
-export const PERIODOS = { mes: { nombre: "1 mes", meses: 1 }, anio: { nombre: "1 año", meses: 12 } };
+export const ESPACIO_PAQUETE = 20 * GB;
+export const PERIODOS = { unico: { nombre: "pago único", meses: 0 }, mes: { nombre: "1 mes", meses: 1 }, anio: { nombre: "1 año", meses: 12 } };
+// Lo que paga hoy una cuenta por una licencia (si ya tiene Pro, para subir a Desarrollos paga la diferencia)
+export function montoLicencia(cuenta, plan) {
+  if (plan === "espacio") return COBROS.espacio.unico;
+  const base = COBROS[plan] && COBROS[plan].unico;
+  if (!base) return null;
+  const actual = planDe(cuenta);
+  if (actual.id === plan && !actual.vence) return null;              // ya la tiene
+  if (plan === "desarrollos" && actual.id === "pro" && !actual.vence) return base - COBROS.pro.unico;
+  return base;
+}
 
 // Suma meses a una fecha (si cae en un día que no existe, se va al último del mes)
 export function sumarMeses(desde, meses) {
@@ -36,7 +49,11 @@ export function planDe(cuenta) {
   const vence = cuenta.vence || null, vencido = !!vence && new Date(vence) < new Date();
   const anterior = vencido && id !== "gratis" ? id : null;
   if (vencido) id = "gratis";
-  return Object.assign({ id }, PLANES[id], { vence: vencido ? null : vence, vencido: anterior });
+  const extra = +cuenta.extraBytes || 0; // paquetes de espacio comprados (se quedan aunque cambie el plan)
+  const base = Object.assign({ id }, PLANES[id], { vence: vencido ? null : vence, vencido: anterior });
+  if (extra && base.bytes !== null) base.bytes += extra;
+  base.extraBytes = extra;
+  return base;
 }
 
 export const pasa = (limite, valor) => limite === null || valor <= limite;
