@@ -306,6 +306,14 @@
   .mp-alcance { fill: none; stroke: rgba(242, 245, 236, 0.45); stroke-width: 1; stroke-dasharray: 3 5; }
   .mp-alcance-t { fill: rgba(242, 245, 236, 0.6); font-size: 9px; font-weight: 600; letter-spacing: 0.08em; text-anchor: middle; }
   .mp-patio { fill: rgba(242, 245, 236, 0.05); stroke: rgba(242, 245, 236, 0.4); stroke-width: 1; stroke-dasharray: 2 4; }
+  .mp-dist rect { fill: rgba(11, 11, 11, 0.78); stroke: rgba(213, 255, 64, 0.5); stroke-width: 1; cursor: pointer; }
+  .mp-dist.vacia rect { fill: rgba(11, 11, 11, 0.45); stroke: rgba(242, 245, 236, 0.25); stroke-dasharray: 3 3; }
+  .mp-dist text { fill: #F2F5EC; font-size: 10.5px; font-weight: 600; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .mp-dist.vacia text { fill: rgba(242, 245, 236, 0.55); font-weight: 500; }
+  .mp-dist:hover rect { stroke: #D5FF40; }
+  .mp-dist-input { position: absolute; z-index: 5; width: 92px; transform: translate(-50%, -50%); font: 600 13px var(--mz-texto-ui); color: #F2F5EC; background: #111; border: 1.5px solid #D5FF40; border-radius: 999px; padding: 5px 10px; text-align: center; }
+  .mp-lote { stroke: rgba(11, 11, 11, 0.85); stroke-width: 0.8; }
+  .mp-plano-t { fill: #F2F5EC; font-size: 9px; font-weight: 600; letter-spacing: 0.08em; text-anchor: middle; paint-order: stroke; stroke: #3A3C38; stroke-width: 3px; }
   .mp-cuarto { fill: rgba(17, 17, 17, 0.55); stroke: #F2F5EC; stroke-width: 2.4; }
   .mp-cuarto.sin-medida { stroke-dasharray: 6 4; stroke-width: 1.6; }
   .mp-puerta { stroke: #3A3C38; stroke-width: 4; stroke-linecap: butt; }
@@ -3536,7 +3544,8 @@ void main(){
       diagnostico(g);
       pintarTipos();
       const esInt = (n) => { const t = escena(n.id) && escena(n.id).tipo; return !!(t && t.k === "int"); };
-      const grado = (n) => n.salen + n.entran, radio = (n) => (esInt(n) && grado(n) ? 20 : 26 + Math.min(5, grado(n)) * 5);
+      let idMasterplan = null; try { const mp0 = planLotes(); if (mp0.lotes.length) idMasterplan = mp0.marco; } catch (e) { /* sin lotes */ }
+      const grado = (n) => n.salen + n.entran, radio = (n) => (n.id === idMasterplan && grado(n) ? 18 : esInt(n) && grado(n) ? 20 : 26 + Math.min(5, grado(n)) * 5);
       const defs = svg.append("defs");
       defs.append("marker").attr("id", "flecha").attr("viewBox", "0 -5 10 10").attr("refX", 8).attr("refY", 0).attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto-start-reverse")
         .append("path").attr("d", "M0,-5L10,0L0,5z").attr("fill", "#D5FF40");
@@ -3591,6 +3600,47 @@ void main(){
           if (cuartos.length) plantas.push({ cuartos, escala, raiz: cuartos[0].n });
         });
       });
+      // Masterplan: los lotes dibujados en una esfera aparecen sobre su terreno, a escala y con el color de su estado
+      let mpMapa = null;
+      try {
+        const mp = planLotes();
+        if (mp.lotes.length && porId.has(mp.marco) && grado(porId.get(mp.marco)) > 0) {
+          const xs = mp.lotes.flatMap((l) => l.pts.map((p) => p[0])), ys = mp.lotes.flatMap((l) => l.pts.map((p) => p[1]));
+          const cx0 = (Math.min(...xs) + Math.max(...xs)) / 2, cy0 = (Math.min(...ys) + Math.max(...ys)) / 2, ext = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) || 1;
+          const n0 = porId.get(mp.marco), lado = (ALCANCE[tipoK(n0)] || 90) * 1.35;
+          mpMapa = { n: n0, lotes: mp.lotes.map((l) => ({ c: l.x.c, pts: l.pts.map(([x, y]) => [(x - cx0) / ext * lado, (y - cy0) / ext * lado]) })) };
+        }
+      } catch (e) { mpMapa = null; }
+      // Distancia entre esferas (la escribes tú): se ve en cada conexión y acomoda el mapa a escala
+      if (!est.distancias) est.distancias = {};
+      const claveDist = (a, b) => [a, b].sort().join("|");
+      const dists = g.links.map((l) => +est.distancias[claveDist(l.source.id || l.source, l.target.id || l.target)] || 0).filter((d) => d > 0);
+      const maxDist = dists.length ? Math.max(...dists) : 0;
+      const largoDe = (l) => { const d = +est.distancias[claveDist(l.source.id || l.source, l.target.id || l.target)] || 0; return d && maxDist ? 110 + (d / maxDist) * 190 : null; };
+      const capaDist = raiz.append("g");
+      // En la planta de un interior la distancia ya la dan las medidas: ahí no va pastilla
+      const nodoDe = (x) => (typeof x === "object" ? x : porId.get(x));
+      const ligasDist = g.links.filter((l) => !(tipoK(nodoDe(l.source)) === "int" && tipoK(nodoDe(l.target)) === "int"));
+      const pastillas = capaDist.selectAll("g").data(ligasDist).join("g").attr("class", (l) => "mp-dist" + (+est.distancias[claveDist(l.source.id || l.source, l.target.id || l.target)] ? "" : " vacia"));
+      pastillas.append("rect").attr("rx", 9).attr("height", 18);
+      pastillas.append("text").text((l) => { const d = +est.distancias[claveDist(l.source.id || l.source, l.target.id || l.target)]; return d ? (d >= 1000 ? (d / 1000).toFixed(1) + " km" : d + " m") : "+ distancia"; });
+      pastillas.each(function () { const t = this.querySelector("text"), w = Math.max(44, (t.getComputedTextLength ? t.getComputedTextLength() : 50) + 16); d3.select(this).select("rect").attr("width", w).attr("x", -w / 2).attr("y", -9); });
+      pastillas.on("click", (ev, l) => {
+        ev.stopPropagation();
+        const k = claveDist(l.source.id, l.target.id), r0 = el.getBoundingClientRect(), r1 = ev.currentTarget.getBoundingClientRect();
+        const inp = document.createElement("input");
+        inp.className = "mp-dist-input"; inp.type = "text"; inp.inputMode = "decimal"; inp.placeholder = "metros"; inp.value = est.distancias[k] || "";
+        inp.style.left = (r1.left + r1.width / 2 - r0.left) + "px"; inp.style.top = (r1.top + r1.height / 2 - r0.top) + "px";
+        el.appendChild(inp); inp.focus(); inp.select();
+        let listo = false;
+        const fin = (ok) => {
+          if (listo) return; listo = true;
+          if (ok) { const v = parseFloat(String(inp.value).replace(",", ".")); if (isFinite(v) && v > 0) est.distancias[k] = Math.round(v * 10) / 10; else delete est.distancias[k]; guardar(); }
+          inp.remove(); if (ok) dibujar();
+        };
+        inp.addEventListener("keydown", (e) => { if (e.key === "Enter") fin(true); if (e.key === "Escape") fin(false); });
+        inp.addEventListener("blur", () => fin(true));
+      });
       // La planta ocupa su lugar en el mapa: las demás esferas se hacen a un lado
       const radioPlanta = new Map(plantas.map((p) => [p.raiz.id, Math.max(...p.cuartos.map((c) => Math.hypot(Math.abs(c.dx) + c.pw / 2, Math.abs(c.dy) + c.ph / 2))) + 18]));
       const enPlanta = new Map(); plantas.forEach((p) => p.cuartos.forEach((c, i) => { if (i) enPlanta.set(c.n.id, { raiz: p.raiz, c }); }));
@@ -3630,6 +3680,12 @@ void main(){
             });
           });
         }
+        if (mpMapa) {
+          const n0 = mpMapa.n, gm = capaTierra.append("g").attr("opacity", Math.min(1, tTierra * 1.2 || 1));
+          mpMapa.lotes.forEach((l) => gm.append("path").attr("class", "mp-lote").attr("d", "M" + l.pts.map(([x, y]) => (n0.x + x).toFixed(1) + "," + (n0.y + y).toFixed(1)).join("L") + "Z").attr("fill", estadoDe(l.c).color).attr("fill-opacity", 0.8));
+          const ys = mpMapa.lotes.flatMap((l) => l.pts.map((p) => p[1]));
+          gm.append("text").attr("class", "mp-plano-t").attr("x", n0.x).attr("y", n0.y + Math.max(...ys) + 14).text("MASTERPLAN · " + mpMapa.lotes.length + " LOTES");
+        }
         // Exteriores de piso sueltos de un terreno: su patio
         g.nodes.filter((n) => tipoK(n) === "ext" && !conTierra.some((gr) => gr.includes(n)) && grado(n) > 0).forEach((n) => capaTierra.append("circle").attr("class", "mp-patio").attr("cx", n.x).attr("cy", n.y).attr("r", radio(n) + 22));
         // Plantas de interiores
@@ -3655,7 +3711,7 @@ void main(){
       }
       const pedirTierra = () => { if (!pidio) { pidio = true; requestAnimationFrame(pintarTierra); } };
       // Crece con una animación cada vez que se dibuja el mapa (al entrar o al conectar)
-      if (nuevaTierra || plantas.length) {
+      if (nuevaTierra || plantas.length || mpMapa) {
         const t0 = performance.now(), dur = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1 : 1100;
         const paso = (t) => { tTierra = Math.min(1, (t - t0) / dur); pintarTierra(); if (tTierra < 1) requestAnimationFrame(paso); };
         requestAnimationFrame(paso);
@@ -3688,7 +3744,7 @@ void main(){
       }
       const cx = W / 2, cy = (top + bottom) / 2;
       sim = d3.forceSimulation(g.nodes)
-        .force("enlace", d3.forceLink(g.links).id((n) => n.id).distance(Math.min(170, Math.max(110, (bottom - top) / 3))).strength(0.7))
+        .force("enlace", d3.forceLink(g.links).id((n) => n.id).distance((l) => largoDe(l) || Math.min(170, Math.max(110, (bottom - top) / 3))).strength((l) => (largoDe(l) ? 0.9 : 0.7)))
         .force("carga", d3.forceManyBody().strength(unidas.length > 8 ? -420 : -600))
         .force("x", d3.forceX(cx).strength((n) => (n.fija ? 0 : 0.07)))
         .force("y", d3.forceY(cy).strength((n) => (n.fija ? 0 : 0.09)))
@@ -3704,6 +3760,7 @@ void main(){
             return "M" + (l.source.x + (dx / dist) * rs) + "," + (l.source.y + (dy / dist) * rs) + "L" + (l.target.x - (dx / dist) * rt) + "," + (l.target.y - (dy / dist) * rt);
           });
           nodos.attr("transform", (n) => "translate(" + n.x + "," + n.y + ")");
+          pastillas.attr("transform", (l) => "translate(" + ((l.source.x + l.target.x) / 2).toFixed(1) + "," + ((l.source.y + l.target.y) / 2 - 12).toFixed(1) + ")");
           etiquetas.attr("x", (n) => n.x).attr("y", (n) => n.y + radio(n) + 20);
           etqTipo.attr("x", (n) => n.x).attr("y", (n) => n.y + radio(n) + 34);
           if (plantas.length) { etiquetas.attr("display", (n) => (esInt(n) && grado(n) ? "none" : null)); etqTipo.attr("display", (n) => (esInt(n) && grado(n) ? "none" : null)); }
