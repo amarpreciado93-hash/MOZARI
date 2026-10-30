@@ -1302,6 +1302,11 @@
 <!-- ======================= MÓVIL ======================= -->
 <div class="movil">
   <div class="logo-m"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg><b>MOZARI</b></div>
+  <div class="tarjeta" id="mv-compu" hidden>
+    <h2 style="margin:0;font-size:18px">Mozari se usa en computadora</h2>
+    <p class="nota">Para crear tus tours, entra a <b>mozari.app</b> desde tu compu con esta misma cuenta de Google. Ahí te espera tu plan Gratis.</p>
+    <button class="btn-prim" id="mv-link">Mandarme el link</button>
+  </div>
   <div class="tarjeta" id="mv-plan" hidden></div>
   <div class="tarjeta" id="mv-tour">
     <img id="mv-thumb" alt="">
@@ -2029,9 +2034,11 @@
     if (u) partes.push(gbTxt(u.bytes) + (PLAN.bytes !== null ? " de " + gbTxt(PLAN.bytes) : ""));
     const pct = u && PLAN.bytes ? Math.min(100, (u.bytes / PLAN.bytes) * 100) : 0;
     if (PLAN.vence) partes.push("vigente hasta el " + fechaLarga(PLAN.vence));
+    // Primera vez (Gratis y sin tours): lo primero es crear su tour, no pagar
+    if (PLAN.id === "gratis" && !PLAN.vencido && toursNube && !n) partes.unshift("Bienvenido. Ponle nombre a tu primer tour aquí abajo y dale Crear");
     const aviso = PLAN.vencido ? '<span style="color:var(--mz-aviso)">Tu plan ' + esc(PLANES_TXT[PLAN.vencido] || "") + " venció. Tus tours siguen ahí; renuévalo para seguir sin límites.</span>" : "";
     const boton = NUBE.admin ? "" : PLAN.vencido ? '<button class="btn-prim" data-comprar="' + PLAN.vencido + '">Obtener licencia</button>'
-      : PLAN.id === "gratis" ? '<button class="btn-prim" data-comprar="pro">Obtener licencia</button>'
+      : PLAN.id === "gratis" ? '<button class="btn-sec" data-comprar="pro">Ver licencias</button>'
       : '<div style="display:flex;gap:8px;flex-wrap:wrap">' + (PLAN.id === "pro" || PLAN.vence ? '<button class="btn-sec" data-comprar="desarrollos">Subir a Desarrollos</button>' : "") + '<button class="btn-sec" data-comprar="espacio">+10 GB</button></div>';
     caja.innerHTML = '<div><b>' + (PLAN.id === "gratis" ? "Plan Gratis" : "Licencia " + esc(PLAN.nombre)) + "</b><span>" + partes.join(" · ") + "</span>" + aviso + (PLAN.bytes !== null ? '<span class="uso-barra"><span class="uso-lleno" style="width:' + pct.toFixed(1) + '%"></span></span>' : "") + "</div>" +
       boton +
@@ -2181,7 +2188,7 @@
   });
   // En el celular: el plan y su pago también están a la mano (el estudio es de compu)
   if (MODO === "nube" && PLAN) {
-    const mp = $("mv-plan"), btnPlan = NUBE.admin ? "" : PLAN.id === "gratis" || PLAN.vencido ? '<button class="btn-prim" data-comprar="pro">Obtener licencia</button>'
+    const mp = $("mv-plan"), btnPlan = NUBE.admin ? "" : PLAN.vencido ? '<button class="btn-prim" data-comprar="pro">Obtener licencia</button>' : PLAN.id === "gratis" ? '<button class="btn-sec" data-comprar="pro">Ver licencias</button>'
       : PLAN.id === "pro" ? '<button class="btn-prim" data-comprar="desarrollos">Subir a Desarrollos</button>' : '<button class="btn-sec" data-comprar="espacio">+10 GB</button>';
     mp.innerHTML = '<span class="etiq" style="color:var(--mz-tenue);font-size:12px">' + esc(NUBE.email) + "</span>" +
       '<h2 style="margin:0;font-size:18px">' + (PLAN.id === "gratis" ? "Plan Gratis" : "Licencia " + esc(PLAN.nombre)) + "</h2>" +
@@ -2189,6 +2196,13 @@
       '<div class="mv-fila">' + btnPlan + '<button class="btn-sec" data-reportar>Reportar un error</button><a class="btn-sec" href="salir" style="text-align:center;text-decoration:none">Salir</a></div>';
     mp.hidden = false;
     if (!TOUR) $("mv-tour").hidden = true;
+    $("mv-compu").hidden = false;
+    // Desde el cel: se manda el link para abrirlo en la compu (WhatsApp, correo…) o se copia
+    $("mv-link").addEventListener("click", async () => {
+      const link = location.origin + "/";
+      try { if (navigator.share) { await navigator.share({ title: "Mozari", text: "Abrir Mozari en la compu", url: link }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
+      try { await navigator.clipboard.writeText(link); avisar("Link copiado: " + link); } catch (e) { avisar(link); }
+    });
   }
   // Al volver del escaparate (?comprar=) o de Mercado Pago (?pago=)
   if (MODO === "nube") {
