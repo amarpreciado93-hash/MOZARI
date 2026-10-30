@@ -2733,6 +2733,8 @@
           const b = el.querySelector(".hs-boton");
           b.addEventListener("pointerdown", (ev) => tomar(ev, c, "mover"));
           if (editable && opciones.alEntrar) b.addEventListener("dblclick", (ev) => { ev.stopPropagation(); if (accionDe(c) === "panorama" && escena(c.destino)) opciones.alEntrar(c, actual.id); });
+          // En el tour: al acercar el mouse a un hotspot, su esfera empieza a bajarse
+          if (!editable && accionDe(c) === "panorama" && opciones.alPreparar) b.addEventListener("pointerenter", () => opciones.alPreparar(c.destino), { once: true });
           nodos.set(c.id, { el, c });
         }
         if (c.tipo !== "poligono") {
@@ -2961,7 +2963,7 @@
     // Acción al hacer clic (solo en el tour, no en el editor)
     function ejecutar(c) {
       const a = accionDe(c);
-      if (a === "panorama") { if (escena(c.destino)) motor.mostrar(c.destino, undefined, vistaLlegada(c, actual.id)); return; }
+      if (a === "panorama") { if (escena(c.destino)) motor.viajar(c.destino, vistaLlegada(c, actual.id), c.tipo === "hotspot" ? { yaw: c.yaw, pitch: c.pitch } : null); return; }
       if (opciones.alAccion) opciones.alAccion(c);
     }
 
@@ -3371,7 +3373,7 @@
       get actual() { return actual; },
       // Cambiar de esfera: la nueva se muestra hasta que se ve nítida. Mientras carga queda la imagen
       // de la anterior (y un indicador si tarda); al estar lista, se funde. Nunca espera más de 10 s.
-      mostrar(id, transicion, vista) {
+      mostrar(id, transicion, vista, llegada) {
         const antes = actual, dur = transicion ?? 600;
         let foto = "";
         if (antes && antes.id !== id) { try { foto = viewer.stage().takeSnapshot({ quality: 75 }); } catch (e) { foto = ""; } }
@@ -3383,12 +3385,13 @@
           cortina = document.createElement("div");
           cortina.className = "cortina-esfera";
           cortina.style.backgroundImage = "url(" + foto + ")";
-          cortina.innerHTML = '<span class="cortina-carga" aria-label="Cargando"></span>';
           stage.appendChild(cortina);
-          const c = cortina, aviso = setTimeout(() => c.classList.add("tarda"), 350);
+          const c = cortina;
           actual.scene.switchTo({ transitionDuration: 0 });
-          nitido(10000).then(() => {
-            clearTimeout(aviso);
+          // Llegando por un hotspot: la nueva esfera arranca un poco cerca y se abre (sensación de avanzar)
+          if (llegada && !editable) { const v0 = actual.view.parameters(); actual.view.setParameters({ fov: v0.fov * 0.82 }); actual.scene.lookTo({ fov: v0.fov }, { transitionDuration: 900 }); }
+          // Espera poco: lo que ya está precargado sale nítido; lo demás se afina mientras ya te mueves
+          nitido(editable ? 1500 : 650).then(() => {
             if (turno !== turnoCambio) return;
             c.style.transitionDuration = Math.max(250, dur) + "ms";
             c.classList.add("fuera"); setTimeout(() => { c.remove(); if (cortina === c) cortina = null; }, Math.max(250, dur) + 50);
@@ -3398,6 +3401,17 @@
         if (opciones.alMostrar) opciones.alMostrar(id);
       },
       nitido: (ms) => nitido(ms),
+      // Ir por un hotspot: la vista avanza hacia él mientras la siguiente esfera ya se está bajando
+      viajar(id, vista, hacia) {
+        if (opciones.alPreparar) opciones.alPreparar(id);
+        const reducido = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (editable || !hacia || !actual || reducido) { motor.mostrar(id, undefined, vista); return; }
+        const v = actual.view, fov = v.fov();
+        let listo = false;
+        const seguir = () => { if (listo) return; listo = true; motor.mostrar(id, 450, vista, true); };
+        actual.scene.lookTo({ yaw: hacia.yaw, pitch: v.pitch() * 0.5 + hacia.pitch * 0.5, fov: Math.max(fov * 0.62, (35 * Math.PI) / 180) }, { transitionDuration: 420, ease: (t) => t * t }, seguir);
+        setTimeout(seguir, 700);
+      },
       setModo(m) { motor.modo = m; capasEl.classList.toggle("solo-ver", m === "piloto"); render(); },
       construir, render: programar, estiloPoligono: (id, c) => { const n = nodos.get(id); if (n && n.path) estiloPoligono(n.path, c); },
       view: () => actual && actual.view,
@@ -5991,6 +6005,7 @@ void main(){
     motor = crearMotor(stage, {
       editable: false,
       alMostrar: (id) => { actualId = id; tQuieto = Date.now(); api.escena(id); api.vista(motor.view()); arrancarPiloto(id); if (!o.sinPrecarga) precarga.alrededor(id); },
+      alPreparar: (id) => { if (!o.sinPrecarga) precarga.ya(id); },
       alInteractuar: () => { if (piloto) piloto.interrumpir(true); },
       alMoverVista: () => api && motor && api.vista(motor.view()),
       alAccion: accion,
@@ -6319,10 +6334,16 @@ void main(){
     let cola = [], activos = 0, gen = 0;
     const PARALELO = 4;
     const caras = "bdflru";
-    function nivelPara(id) {
-      const nv = meta[id].niveles, alto = Math.max(window.innerHeight, window.innerWidth * 0.56);
-      const quiero = Math.min(nv[nv.length - 1].size, MOVIL ? 1024 : Math.max(1024, alto * 1.3));
-      for (let z = 1; z < nv.length; z++) if (nv[z].size >= quiero) return z;
+    // El mismo nivel que va a pedir el visor al llegar (Marzipano: tamaño ≥ alto en pixeles reales / tan(fov/2)),
+    // así la esfera ya está en caché y sale nítida al instante
+    function nivelPara(id, ligero) {
+      const nv = meta[id].niveles;
+      if (ligero) return Math.min(1, nv.length - 1);
+      const v = vistaDe(id) || {}, fov = v.fov || (100 * Math.PI) / 180;
+      const alto = Math.max(window.innerHeight, 300) * Math.min(window.devicePixelRatio || 1, 3);
+      const tope = MOVIL ? 2048 : nv[nv.length - 1].size, quiero = Math.min(tope, alto / Math.tan(fov / 2));
+      let z = 1;
+      for (; z < nv.length; z++) if (nv[z].size >= quiero || nv[z].size >= tope) return z;
       return nv.length - 1;
     }
     function piezas(id, z) {
@@ -6371,6 +6392,12 @@ void main(){
         if (!MOVIL) vecinas(id).forEach((x) => encolar(piezas(x, nivelPara(x))));
       },
       parar() { gen++; cola = []; },
+      // Ya: esta esfera primero (al pasar el mouse sobre un hotspot o al tocarlo)
+      ya(id) {
+        if (!meta[id]) return;
+        const urls = piezas(id, Math.min(1, meta[id].niveles.length - 1)).concat(piezas(id, nivelPara(id))).filter((u) => !hechas.has(u));
+        cola = urls.concat(cola.filter((u) => !urls.includes(u))); siguiente();
+      },
     };
   })();
 
