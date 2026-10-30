@@ -167,7 +167,9 @@ async function admin(request, env, partes) {
       cur = l.truncated ? l.cursor : undefined;
     } while (cur);
     cuentas.sort((a, b) => String(b.ultimaEntrada).localeCompare(String(a.ultimaEntrada)));
-    return json({ cuentas: cuentas.map((p) => ({ uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada })) });
+    return json({ cuentas: cuentas.map((p) => ({ uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada,
+      // Lo que pagó y por dónde (los pagos de antes del historial salen de su último pago, que fue por Mercado Pago)
+      pagos: Array.isArray(p.pagos) ? p.pagos : p.ultimoPago ? [Object.assign({ moneda: "MXN", metodo: "mercadopago" }, p.ultimoPago)] : [] })) });
   }
   if (partes.length === 4 && m === "PUT") {
     const uid = partes[3], cuerpo = await request.json().catch(() => ({}));

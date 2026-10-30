@@ -78,6 +78,8 @@ async function activar(env, orden, pagoId) {
     p.vence = sumarMeses(desde, PERIODOS[orden.periodo].meses).toISOString();
   }
   p.ultimoPago = { ref: orden.ref, fecha: ahora.toISOString(), monto: orden.monto };
+  // Historial para el panel de dueño: cuánto pagó y por dónde
+  p.pagos = (Array.isArray(p.pagos) ? p.pagos : []).concat([{ ref: orden.ref, fecha: ahora.toISOString(), monto: orden.monto, moneda: orden.moneda || "MXN", metodo: orden.metodo || "mercadopago", plan: orden.plan }]).slice(-50);
   await guardar(env, "cuentas/" + p.uid + "/perfil.json", p);
   Object.assign(orden, { estado: "aprobado", aplicado: ahora.toISOString(), pago: String(pagoId), vence: p.vence || null });
   await guardar(env, ordenClave(orden.ref), orden);

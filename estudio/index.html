@@ -488,7 +488,8 @@
   .cp { position: absolute; left: 0; top: 0; }
   .cp.cp-poligono { inset: 0; }
   .cp-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-  .cp-pol { pointer-events: all; cursor: pointer; stroke-linejoin: round; stroke-linecap: round; fill: var(--f); fill-opacity: var(--fo); stroke: var(--s); stroke-opacity: var(--so); stroke-width: var(--sw); transition: fill 0.2s, fill-opacity 0.2s, stroke 0.2s, stroke-width 0.2s; }
+  .cp-pol { pointer-events: all; cursor: pointer; stroke-linejoin: round; stroke-linecap: round; fill: var(--f); fill-opacity: var(--fo); stroke: var(--s); stroke-opacity: var(--so); stroke-width: var(--sw); transition: fill 0.2s, fill-opacity 0.2s, stroke 0.2s, stroke-opacity 0.2s, stroke-width 0.2s; }
+  .cp-pol.oculto { transition-duration: 0.35s; }
   .cp-pol.cp-camino { fill: none; pointer-events: visibleStroke; stroke-dasharray: var(--dash, none); }
   .cp-pol.cp-camino:hover { fill: none; }
   .cp-pol.en-sel { stroke: var(--mz-lima) !important; stroke-opacity: 1 !important; stroke-width: 3px !important; }
@@ -553,17 +554,24 @@
   /* Lotes: rótulos sobre la esfera, panel de datos, ficha y tabla */
   .capa-etq { position: absolute; inset: 0; pointer-events: none; }
   .lt-planos { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
-  .lt-p { position: absolute; left: 0; top: 0; transform-origin: 0 0; white-space: nowrap; font-family: var(--mz-texto-ui); color: #fff; line-height: 1.08; text-align: center; text-shadow: 0 0 2px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.45); }
-  .lt-p.nom { font-size: 40px; font-weight: 600; }
+  .lt-p { position: absolute; left: 0; top: 0; transform-origin: 0 0; white-space: nowrap; font-family: var(--lt-fuente, var(--mz-texto-ui)); color: var(--lt-color, #fff); line-height: 1.08; text-align: center; text-shadow: var(--lt-sombra, 0 0 2px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.45)); }
+  .lt-p.nom { font-size: 40px; font-weight: var(--lt-peso, 600); }
   .lt-p.nom small { display: block; font-size: 0.74em; font-weight: 400; }
-  .lt-p.lt-medida { font-size: 40px; font-weight: 600; color: #fff; }
+  .lt-p.lt-medida { font-size: 40px; font-weight: 600; }
   .estado-colores { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 11px; color: var(--mz-tenue); }
   .estado-colores label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
   .estado-colores input[type="color"] { width: 24px; height: 24px; border: 1px solid var(--mz-linea-neutra); border-radius: 50%; padding: 0; background: none; cursor: pointer; }
-  .lote-etq text { pointer-events: none; font-family: var(--mz-texto-ui); fill: #fff; paint-order: stroke; stroke: rgba(0, 0, 0, 0.62); stroke-width: 3px; stroke-linejoin: round; text-anchor: middle; dominant-baseline: central; }
-  .lote-etq .lt-nom { font-weight: 600; }
+  .cuentas-total { margin: 4px 16px 10px; font-size: 13px; color: var(--mz-tenue); }
+  .cuentas-total b { color: var(--mz-texto); }
+  .pago-monto { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; cursor: help; }
+  .pago-via { font-style: normal; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 99px; border: 1px solid var(--mz-linea-neutra); color: var(--mz-tenue); }
+  .pago-via.paypal { color: #7FB2FF; border-color: rgba(127, 178, 255, 0.4); }
+  .pago-via.mercadopago { color: #6FD3F5; border-color: rgba(111, 211, 245, 0.4); }
+  .pago-monto small, .pago-nada { font-size: 11px; color: var(--mz-tenue); }
+  .lote-etq text { pointer-events: none; font-family: var(--lt-fuente, var(--mz-texto-ui)); fill: var(--lt-color, #fff); paint-order: stroke; stroke: var(--lt-trazo, rgba(0, 0, 0, 0.62)); stroke-width: var(--lt-trazo-g, 3px); stroke-linejoin: round; text-anchor: middle; dominant-baseline: central; }
+  .lote-etq .lt-nom { font-weight: var(--lt-peso, 600); }
   .lote-etq .lt-area { font-weight: 400; }
-  .lote-etq .lt-lado { font-weight: 600; stroke-width: 2.8px; }
+  .lote-etq .lt-lado { font-weight: 600; }
   .lado-res { fill: none; stroke: var(--mz-lima); stroke-width: 4; stroke-linecap: round; filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.9)); }
   .punto-estado { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.25); }
   .lote-datos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -1423,7 +1431,35 @@
   ];
   const estadosLote = () => est.lotesEstados || ESTADOS_DEF;
   const estadoDe = (c) => estadosLote().find((e) => e.id === (c.lote && c.lote.estado)) || estadosLote()[0];
-  const LOTE_DEF = { numero: "", manzana: "", area: "", precio: "", lados: [], frente: 0, estado: "disponible", etiqueta: true, verArea: true, medidas: true, opacidad: 0.35, borde: "blanco", rollover: true, rotulo: "plano", tamRotulo: 0.6, giroRotulo: 0 };
+  const LOTE_DEF = { numero: "", manzana: "", area: "", precio: "", lados: [], frente: 0, estado: "disponible", etiqueta: true, verArea: true, medidas: true, opacidad: 0.35, borde: "blanco", rollover: true, rotulo: "plano", tamRotulo: 0.6, giroRotulo: 0, fuente: "", pesoRotulo: 600, colorRotulo: "#FFFFFF", sombra: "suave" };
+  // Tipografías para los rótulos de los lotes (se cargan solo si alguien las usa)
+  const FUENTES_LOTE = [["", "Poppins"], ["Inter", "Inter"], ["Montserrat", "Montserrat"], ["DM Sans", "DM Sans"], ["Space Grotesk", "Space Grotesk"], ["Oswald", "Oswald"], ["Bebas Neue", "Bebas Neue"], ["Playfair Display", "Playfair Display"], ["Cormorant Garamond", "Cormorant Garamond"]];
+  const SOMBRAS_LOTE = {
+    ninguna: { css: "none", trazo: "transparent", g: "0px" },
+    suave: { css: "0 0 2px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.45)", trazo: "rgba(0, 0, 0, 0.62)", g: "3px" },
+    fuerte: { css: "0 1px 3px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.75)", trazo: "rgba(0, 0, 0, 0.85)", g: "4.5px" },
+  };
+  const fuentesCargadas = new Map();
+  function cargarFuente(f) {
+    if (!f || !FUENTES_LOTE.some(([v]) => v === f)) return Promise.resolve();
+    if (!fuentesCargadas.has(f)) {
+      const ln = document.createElement("link");
+      ln.rel = "stylesheet";
+      ln.href = "https://fonts.googleapis.com/css2?family=" + f.replace(/ /g, "+") + (f === "Bebas Neue" ? "" : ":wght@400;500;600;700") + "&display=swap";
+      const listo = new Promise((ok) => { ln.onload = ok; ln.onerror = ok; }).then(() => (document.fonts ? Promise.all([400, 600, 700].map((w) => document.fonts.load(w + ' 40px "' + f + '"').catch(() => null))) : null));
+      document.head.appendChild(ln); fuentesCargadas.set(f, listo);
+    }
+    return fuentesCargadas.get(f);
+  }
+  // Estilo de letra del rótulo de un lote: tipografía, peso, color y sombra
+  function estiloRotulo(el, l) {
+    if (!el) return;
+    const s = el.style, sb = SOMBRAS_LOTE[l.sombra] || SOMBRAS_LOTE.suave;
+    if (l.fuente) s.setProperty("--lt-fuente", '"' + l.fuente + '", system-ui, sans-serif'); else s.removeProperty("--lt-fuente");
+    s.setProperty("--lt-peso", +l.pesoRotulo || 600);
+    s.setProperty("--lt-color", l.colorRotulo || "#FFFFFF");
+    s.setProperty("--lt-sombra", sb.css); s.setProperty("--lt-trazo", sb.trazo); s.setProperty("--lt-trazo-g", sb.g);
+  }
   const loteDe = (c) => Object.assign({}, LOTE_DEF, c.lote);
   const numES = (v) => { const n = parseFloat(String(v).replace(/,/g, "")); return isFinite(n) && /^[\d.,\s]+$/.test(String(v).trim()) ? n : null; };
   const fmtNum = (n) => n.toLocaleString("es-MX", { maximumFractionDigits: 2 });
@@ -2021,6 +2057,22 @@
     const r = await fetch("api/admin/reportes/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ estado: ev.target.value }) }).catch(() => null);
     avisar(r && r.ok ? "Reporte actualizado" : "No se pudo actualizar"); if (r && r.ok) pintarReportes();
   });
+  // Lo que pagó cada cuenta y por dónde (Mercado Pago en pesos, PayPal en dólares)
+  const METODO_TXT = { mercadopago: "Mercado Pago", paypal: "PayPal" };
+  const dinero = (n, mon) => "$" + Number(n || 0).toLocaleString("es-MX", { maximumFractionDigits: 2 }) + " " + (mon || "MXN");
+  const sumaPorMoneda = (pagos) => pagos.reduce((t, x) => { const m = x.moneda || "MXN"; t[m] = (t[m] || 0) + (+x.monto || 0); return t; }, {});
+  function pagoDe(c) {
+    const ps = c.pagos || [];
+    if (!ps.length) return c.plan && c.plan !== "gratis" ? '<span class="pago-nada">Sin pago · lo asignaste tú</span>' : '<span class="pago-nada">—</span>';
+    const t = sumaPorMoneda(ps), metodos = [...new Set(ps.map((x) => x.metodo || "mercadopago"))];
+    const detalle = ps.map((x) => (x.fecha ? new Date(x.fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" }) + ": " : "") + dinero(x.monto, x.moneda) + " por " + (METODO_TXT[x.metodo] || "Mercado Pago") + (x.plan ? " (" + (x.plan === "espacio" ? "+10 GB" : PLANES_TXT[x.plan] || x.plan) + ")" : "")).join("\n");
+    return '<span class="pago-monto" title="' + esc(detalle) + '"><b>' + Object.entries(t).map(([m, n]) => dinero(n, m)).join(" + ") + "</b>" +
+      metodos.map((m) => '<i class="pago-via ' + m + '">' + (METODO_TXT[m] || m) + "</i>").join("") + (ps.length > 1 ? '<small>' + ps.length + " pagos</small>" : "") + "</span>";
+  }
+  function totalPagos(cuentas) {
+    const t = sumaPorMoneda(cuentas.flatMap((c) => c.pagos || [])), n = cuentas.filter((c) => (c.pagos || []).length).length;
+    return n ? "Has cobrado <b>" + Object.entries(t).map(([m, x]) => dinero(x, m)).join(" + ") + "</b> de " + n + (n === 1 ? " cuenta" : " cuentas") + "." : "Todavía no hay pagos.";
+  }
   async function pintarCuentas() {
     if (vistaDueno === "reportes") return pintarReportes();
     const r = await fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null);
@@ -2028,9 +2080,9 @@
     const { cuentas } = await r.json();
     let caja = $("cuentas");
     if (!caja) { caja = document.createElement("div"); caja.id = "cuentas"; caja.className = "cuentas"; $("mi-plan").after(caja); }
-    caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p>' + TABS_DUENO(0) + '<table class="lotes-tabla"><thead><tr><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Vence</th><th>Última entrada</th></tr></thead><tbody>' + cuentas.map((c) =>
+    caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p>' + TABS_DUENO(0) + '<p class="cuentas-total">' + totalPagos(cuentas) + '</p><table class="lotes-tabla"><thead><tr><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Pagó</th><th>Última entrada</th></tr></thead><tbody>' + cuentas.map((c) =>
       "<tr><td><b>" + esc(c.nombre || "") + "</b></td><td>" + esc(c.email) + "</td><td>" + (c.admin ? "Dueño" : '<select data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
-      "</td><td>" + (c.admin ? "" : c.vence ? fechaLarga(c.vence) : c.plan && c.plan !== "gratis" ? "No caduca" : "") + "</td><td>" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td></tr>").join("") + "</tbody></table>";
+      "</td><td>" + (c.admin ? "" : pagoDe(c)) + "</td><td>" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td></tr>").join("") + "</tbody></table>";
   }
   document.addEventListener("click", (ev) => { if (ev.target.id === "ver-cuentas") { const c = $("cuentas"); if (c && !c.hidden) { c.hidden = true; return; } if (c) c.hidden = false; pintarCuentas(); } });
   document.addEventListener("change", async (ev) => {
@@ -2413,8 +2465,12 @@
       }
       const ro = c.rollover && c.rollover.activo ? c.rollover : { relleno: c.relleno, trazo: c.trazo };
       const s = path.style;
-      s.setProperty("--f", c.relleno.color); s.setProperty("--fo", c.relleno.opacidad);
-      s.setProperty("--s", c.trazo.color); s.setProperty("--so", c.trazo.opacidad); s.setProperty("--sw", c.trazo.grosor);
+      // "Invisible hasta pasar el mouse": en el tour no se ve nada; al pasar se prende con el rollover.
+      // En el editor queda una sombra tenue para poder encontrarlo.
+      const oculto = !!(c.rollover && c.rollover.activo && c.rollover.oculto);
+      s.setProperty("--f", c.relleno.color); s.setProperty("--fo", oculto ? (editable ? 0.06 : 0) : c.relleno.opacidad);
+      s.setProperty("--s", c.trazo.color); s.setProperty("--so", oculto ? (editable ? 0.35 : 0) : c.trazo.opacidad); s.setProperty("--sw", c.trazo.grosor);
+      path.classList.toggle("oculto", oculto);
       s.setProperty("--hf", ro.relleno.color); s.setProperty("--hfo", ro.relleno.opacidad);
       s.setProperty("--hs", ro.trazo.color); s.setProperty("--hso", ro.trazo.opacidad ?? 1); s.setProperty("--hsw", ro.trazo.grosor);
     }
@@ -2423,6 +2479,7 @@
       capasEl.innerHTML = "";
       nodos.clear();
       if (!actual) return;
+      const fuentesPendientes = new Set();
       // Rótulos y medidas de los lotes van en su propia capa, encima de todos los rellenos
       const capaEtq = document.createElement("div"), svgEtq = document.createElementNS(SVGNS, "svg");
       capaEtq.className = "capa-etq"; svgEtq.setAttribute("class", "cp-svg");
@@ -2460,6 +2517,9 @@
             el.classList.add("cp-lote");
             etq = document.createElementNS(SVGNS, "g"); etq.setAttribute("class", "lote-etq"); svgEtq.appendChild(etq);
             if (loteDe(c).rotulo !== "frente") { planos = crearRotulosPlanos(c); capaEtq.appendChild(planos.cont); }
+            const lq = loteDe(c);
+            estiloRotulo(etq, lq); if (planos) estiloRotulo(planos.cont, lq);
+            if (lq.fuente) fuentesPendientes.add(lq.fuente);
           }
           nodos.set(c.id, { el, c, svg, path, etq, planos, toque });
           if (!editable && accionDe(c) !== "ninguna") { path.classList.add("con-accion"); path.addEventListener("click", (ev) => { ev.stopPropagation(); ejecutar(c); }); }
@@ -2499,6 +2559,8 @@
       const pols = capasEl.querySelectorAll(".cp-poligono"), ultimo = pols[pols.length - 1];
       capasEl.insertBefore(capaEtq, ultimo ? ultimo.nextSibling : capasEl.firstChild);
       render();
+      // Al llegar una tipografía nueva, los rótulos se vuelven a medir con ella
+      if (fuentesPendientes.size) Promise.all([...fuentesPendientes].map(cargarFuente)).then(() => { nodos.forEach((n) => { if (n.planos) n.planos.med = null; }); render(); });
     }
     // Tamaño de textos y hotspots. En 3D se dibujan 2.5 veces más grandes y más lejos:
     // se ven del mismo tamaño pero quedan nítidos al acercarse.
@@ -2561,6 +2623,26 @@
       if (G.some((g) => !g)) return null;
       return [G.reduce((s, g) => s + g[0], 0) / G.length, G.reduce((s, g) => s + g[1], 0) / G.length];
     }
+    // Ejes de lectura de una manzana: se calculan una vez con la dirección de su calle de frente, así
+    // TODOS sus lotes (de frente y de fondo, en recta o en curva) leen hacia el mismo lado
+    function marcoManzana(id) {
+      const m = lista().find((x) => x.id === id);
+      if (!m || !m.manzana) return null;
+      const F = Math.max(2, Math.min(m.puntos.length, +m.manzana.nFrente || 2)), G = m.puntos.slice(0, F).map(([y, p]) => aSuelo(y, p));
+      if (G.some((g) => !g)) return null;
+      const a = G[0], b = G[G.length - 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (!(L > 1e-9)) return null;
+      const C = centroManzana(id);
+      return C ? orientar(refLote(C), [(b[0] - a[0]) / L, (b[1] - a[1]) / L]) : null;
+    }
+    // Orienta un borde con los ejes de su manzana: a lo largo de la calle lee de izquierda a derecha;
+    // en las divisiones (de frente a fondo) lee de abajo hacia arriba. Nunca en espejo.
+    function alinearMarco([U, V], e) {
+      let u = Math.abs(e[0] * U[0] + e[1] * U[1]) >= Math.abs(e[0] * V[0] + e[1] * V[1]) ? (e[0] * U[0] + e[1] * U[1] < 0 ? [-e[0], -e[1]] : e) : (e[0] * V[0] + e[1] * V[1] < 0 ? [-e[0], -e[1]] : e);
+      let v = [-u[1], u[0]];
+      if ((u[0] * v[1] - u[1] * v[0]) * (U[0] * V[1] - U[1] * V[0]) < 0) v = [-v[0], -v[1]];
+      return [u, v];
+    }
     function refLote(C) {
       const yi = vistaDe(actual.id).yaw, f = [Math.sin(yi), Math.cos(yi)];
       const d = Math.hypot(C[0], C[1]) || 1, rad = [C[0] / d, C[1] / d];
@@ -2593,13 +2675,13 @@
       let A2 = 0, cx = 0, cz = 0;
       G.forEach((p, i) => { const q = G[(i + 1) % G.length], k = p[0] * q[1] - q[0] * p[1]; A2 += k; cx += (p[0] + q[0]) * k; cz += (p[1] + q[1]) * k; });
       const C = Math.abs(A2) > 1e-12 ? [cx / (3 * A2), cz / (3 * A2)] : [G.reduce((s, g) => s + g[0], 0) / G.length, G.reduce((s, g) => s + g[1], 0) / G.length];
-      const S = Math.sqrt(Math.abs(A2) / 2), t = +l.tamRotulo || 0.6, ref = refLote(c.deManzana ? centroManzana(c.deManzana) || C : C); // misma orientación para todos los rótulos del lote (y de toda su manzana)
+      const S = Math.sqrt(Math.abs(A2) / 2), t = +l.tamRotulo || 0.6, ref = refLote(c.deManzana ? centroManzana(c.deManzana) || C : C), marco = c.deManzana ? marcoManzana(c.deManzana) : null; // misma orientación para todos los rótulos del lote (y de toda su manzana)
       if (R.nom && R.med.nom) {
         const f = +l.frente || 0, A = G[f % G.length], B = G[(f + 1) % G.length], L = Math.hypot(B[0] - A[0], B[1] - A[1]) || 1;
         const ang = ((+l.giroRotulo || 0) * Math.PI) / 180, e0 = [(B[0] - A[0]) / L, (B[1] - A[1]) / L];
         // Primero se orienta solo (derecho y legible desde esta esfera) y DESPUÉS se aplica el giro manual:
         // así el giro es suave, en sentido del reloj, y el programa ya no lo voltea por su cuenta.
-        const [u0, v0] = orientar(ref, e0), ca = Math.cos(ang), sa = Math.sin(ang);
+        const [u0, v0] = marco ? alinearMarco(marco, e0) : orientar(ref, e0), ca = Math.cos(ang), sa = Math.sin(ang);
         const gira = (p) => [p[0] * ca + p[1] * sa, p[1] * ca - p[0] * sa], u = gira(u0), v = gira(v0);
         const pu = G.map((g) => (g[0] - C[0]) * u[0] + (g[1] - C[1]) * u[1]), pv = G.map((g) => (g[0] - C[0]) * v[0] + (g[1] - C[1]) * v[1]);
         const extU = Math.max(...pu) - Math.min(...pu), extV = Math.max(...pv) - Math.min(...pv);
@@ -2642,7 +2724,7 @@
         let Hg = 0.085 * S * (t / 0.6), Wg = Hg / r;
         if (Wg > 0.8 * L) { Wg = 0.8 * L; Hg = Wg * r; }
         const Cm = [M[0] + nrm[0] * Hg * 0.85, M[1] + nrm[1] * Hg * 0.85];
-        const [u, v] = orientar(ref, [(B[0] - A[0]) / L, (B[1] - A[1]) / L]);
+        const eL = [(B[0] - A[0]) / L, (B[1] - A[1]) / L], [u, v] = marco ? alinearMarco(marco, eL) : orientar(ref, eL);
         const alto = colocarPlano(cam, el, w, h, Cm, u, v, Wg / 2, Hg / 2);
         el.style.visibility = alto < 6 ? "hidden" : "";
       });
@@ -4291,6 +4373,7 @@ void main(){
           relleno: { color: LIMA, opacidad: 0.35 }, trazo: { color: LIMA, grosor: 1.5, opacidad: 1 },
           rollover: { activo: true, relleno: { color: LIMA, opacidad: 0.6 }, trazo: { color: BLANCO, grosor: 3, opacidad: 1 } },
           lote: Object.assign({}, LOTE_DEF, { manzana: m.mz, numero: String((+m.inicio || 1) + k), frente: 0 }) };
+        Object.entries(m.estiloLotes || {}).forEach(([ruta, v]) => { try { escribir(x, ruta, v); } catch (e) { /* ruta vieja */ } });
         const iz = l.indexOf(viejos[viejos.length - 1] || c);
         l.splice(iz + 1, 0, x); viejos.push(x);
       }
@@ -4568,17 +4651,27 @@ void main(){
     h += '<div class="grupo"><b>Medidas por lado</b><div class="lados">' + l.lados.map((v, i) =>
       '<label class="lado"><span><input type="radio" name="frente" data-frente="' + i + '"' + (+l.frente === i ? " checked" : "") + ' aria-label="Este lado es el frente">' + (+l.frente === i ? "Frente" : "Lado " + (i + 1)) + '</span><input type="text" inputmode="decimal" data-k="lote.lados.' + i + '" data-lado="' + i + '" value="' + esc(v) + '" placeholder="m"></label>').join("") + "</div>" +
       '<p class="nota">Al escribir, el lado se marca en la esfera. El círculo marca cuál es el frente.</p></div>';
-    const plano = (l.rotulo || "plano") !== "frente";
-    h += '<div class="grupo"><b>Rótulo en la esfera</b>' + interruptor("Número y manzana", "lote.etiqueta", l.etiqueta !== false) + interruptor("Superficie", "lote.verArea", l.verArea !== false) + interruptor("Medidas de los lados", "lote.medidas", l.medidas !== false) +
-      campo("Rótulo", '<select data-k="lote.rotulo"><option value="plano"' + (plano ? " selected" : "") + '>Planchado en el lote</option><option value="frente"' + (plano ? "" : " selected") + ">Siempre de frente</option></select>") +
-      campo("Tamaño", campoRango("lote.tamRotulo", l.tamRotulo ?? 0.6, 0.2, 1, 0.05, pct)) +
-      (plano ? campo("Giro", campoRango("lote.giroRotulo", l.giroRotulo || 0, -180, 180, 5, deg)) : "") +
-      '<p class="nota">' + (plano ? "Pegado al suelo del lote con su perspectiva: no te sigue al moverte." : "Siempre mirando a la cámara.") + "</p></div>";
+    h += grupoRotulo("lote.", l);
     h += '<div class="grupo"><b>Estilo</b>' + campo("Color", campoRango("lote.opacidad", l.opacidad ?? 0.35, 0, 1, 0.05, pct)) + campo("Borde", campoRango("trazo.grosor", c.trazo.grosor, 0, 8, 0.5, px)) +
       campo("Borde de", '<select data-k="lote.borde"><option value="blanco"' + (l.borde !== "estado" ? " selected" : "") + '>Blanco</option><option value="estado"' + (l.borde === "estado" ? " selected" : "") + ">Color del estado</option></select>") +
       interruptor("Rollover (se ilumina al pasar el mouse)", "lote.rollover", l.rollover !== false) +
       '<p class="nota">Arrastra el lote para moverlo y sus esquinas para ajustarlo. Doble clic en una esquina la quita.</p></div>';
     return h;
+  }
+  // Rótulo del lote: qué se ve, cómo se acomoda y su letra. pre = "lote." (un lote) o "_lotes.lote." (toda la manzana)
+  function grupoRotulo(pre, l) {
+    const plano = (l.rotulo || "plano") !== "frente", sb = l.sombra || "suave";
+    return '<div class="grupo"><b>Rótulo en la esfera</b>' + interruptor("Número y manzana", pre + "etiqueta", l.etiqueta !== false) + interruptor("Superficie", pre + "verArea", l.verArea !== false) + interruptor("Medidas de los lados", pre + "medidas", l.medidas !== false) +
+      campo("Rótulo", '<select data-k="' + pre + 'rotulo"><option value="plano"' + (plano ? " selected" : "") + '>Planchado en el lote</option><option value="frente"' + (plano ? "" : " selected") + ">Siempre de frente</option></select>") +
+      campo("Tamaño", campoRango(pre + "tamRotulo", l.tamRotulo ?? 0.6, 0.2, 1, 0.05, pct)) +
+      (plano ? campo("Giro", campoRango(pre + "giroRotulo", l.giroRotulo || 0, -180, 180, 5, deg)) : "") +
+      '<p class="nota">' + (plano ? "Pegado al suelo del lote con su perspectiva: no te sigue al moverte." : "Siempre mirando a la cámara.") + "</p></div>" +
+      '<div class="grupo"><b>Letra del rótulo</b>' +
+      campo("Tipografía", '<select data-k="' + pre + 'fuente">' + FUENTES_LOTE.map(([v, n]) => '<option value="' + v + '"' + ((l.fuente || "") === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select>") +
+      campo("Peso", '<select data-k="' + pre + 'pesoRotulo">' + [[400, "Regular"], [500, "Medium"], [600, "Semibold"], [700, "Bold"]].map(([v, n]) => '<option value="' + v + '"' + ((+l.pesoRotulo || 600) === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select>") +
+      campo("Color", campoColor(pre + "colorRotulo", l.colorRotulo || "#FFFFFF")) +
+      '<div class="campo"><span>Sombra</span><div class="hs-estilos" style="grid-template-columns:repeat(3,1fr)">' + [["ninguna", "Sin sombra"], ["suave", "Suave"], ["fuerte", "Fuerte"]].map(([v, n]) => '<button class="hs-estilo" data-k="' + pre + 'sombra" data-v="' + v + '" aria-pressed="' + (sb === v) + '">' + n + "</button>").join("") + "</div></div>" +
+      '<p class="nota">Sin sombra se ve más limpio y elegante; con sombra se lee mejor sobre el pasto o la tierra clara.</p></div>';
   }
   function grupo3d(c) {
     let g = '<div class="grupo">' + interruptor("Fijo en la esfera (3D)", "en3d", es3d(c));
@@ -4641,6 +4734,14 @@ void main(){
         '<p class="nota">Los lotes se reparten del mismo ancho en el suelo, no en la imagen. Arrastra las esquinas de la manzana para ajustarla: los ' + lotes.length + ' lotes la siguen. Doble clic en una esquina la quita.</p>' +
         '<p class="nota"><b>Ajuste fino:</b> los puntos verdes recorren cada división por el frente o el fondo. Los <b>+</b> agregan un nodo para doblar una división o la orilla; arrástralo. Doble clic en un nodo blanco lo quita.</p></div>';
       h += '<div class="grupo"><b>Estado</b><p class="nota">Toca cada lote en la esfera para cambiar su estado, precio y superficie.</p></div>';
+      // Estilo de TODOS los lotes de la manzana a la vez (los nuevos lo heredan)
+      const l0 = Object.assign({}, LOTE_DEF, (lotes[0] && lotes[0].lote) || {}), g0 = lotes[0] && lotes[0].trazo ? lotes[0].trazo.grosor : 1.5;
+      h += '<p class="nota mz-aviso">Lo de abajo cambia los ' + lotes.length + ' lotes de esta manzana.</p>';
+      h += grupoRotulo("_lotes.lote.", l0);
+      h += '<div class="grupo"><b>Estilo de los lotes</b>' + campo("Color", campoRango("_lotes.lote.opacidad", l0.opacidad ?? 0.35, 0, 1, 0.05, pct)) + campo("Borde", campoRango("_lotes.trazo.grosor", g0, 0, 8, 0.5, px)) +
+        campo("Borde de", '<select data-k="_lotes.lote.borde"><option value="blanco"' + (l0.borde !== "estado" ? " selected" : "") + '>Blanco</option><option value="estado"' + (l0.borde === "estado" ? " selected" : "") + ">Color del estado</option></select>") +
+        interruptor("Rollover (se ilumina al pasar el mouse)", "_lotes.lote.rollover", l0.rollover !== false) + "</div>";
+      h += '<div class="grupo"><b>Contorno de la manzana</b>' + campo("Color", campoColor("trazo.color", c.trazo.color)) + campo("Grosor", campoRango("trazo.grosor", c.trazo.grosor, 0, 12, 0.5, px)) + campo("Opacidad", campoRango("trazo.opacidad", c.trazo.opacidad, 0, 1, 0.05, pct)) + "</div>";
     }
     else if (c.tipo === "interes") {
       const p = piDe(c); c.pi = p;
@@ -4670,7 +4771,7 @@ void main(){
       h += '<div class="grupo"><b>Relleno</b>' + campo("Color", campoColor("relleno.color", c.relleno.color)) + campo("Opacidad", campoRango("relleno.opacidad", c.relleno.opacidad, 0, 1, 0.05, pct)) + "</div>";
       h += '<div class="grupo"><b>Trazo</b>' + campo("Color", campoColor("trazo.color", c.trazo.color)) + campo("Grosor", campoRango("trazo.grosor", c.trazo.grosor, 0, 12, 0.5, px)) + campo("Opacidad", campoRango("trazo.opacidad", c.trazo.opacidad, 0, 1, 0.05, pct)) + "</div>";
       h += '<div class="grupo">' + interruptor("Rollover", "rollover.activo", c.rollover.activo);
-      if (c.rollover.activo) h += campo("Relleno", campoColor("rollover.relleno.color", c.rollover.relleno.color)) + campo("Opacidad", campoRango("rollover.relleno.opacidad", c.rollover.relleno.opacidad, 0, 1, 0.05, pct)) + campo("Trazo", campoColor("rollover.trazo.color", c.rollover.trazo.color)) + campo("Grosor", campoRango("rollover.trazo.grosor", c.rollover.trazo.grosor, 0, 12, 0.5, px));
+      if (c.rollover.activo) h += interruptor("Invisible hasta pasar el mouse", "rollover.oculto", !!c.rollover.oculto) + (c.rollover.oculto ? '<p class="nota">En el tour no se ve ni el trazo ni el relleno. Al pasar el mouse (o tocarlo en el celular) se prende con estos colores.</p>' : "") + campo("Relleno", campoColor("rollover.relleno.color", c.rollover.relleno.color)) + campo("Opacidad", campoRango("rollover.relleno.opacidad", c.rollover.relleno.opacidad, 0, 1, 0.05, pct)) + campo("Trazo", campoColor("rollover.trazo.color", c.rollover.trazo.color)) + campo("Grosor", campoRango("rollover.trazo.grosor", c.rollover.trazo.grosor, 0, 12, 0.5, px));
       h += '<p class="nota">Arrastra el polígono para moverlo y los puntos para ajustarlo. Doble clic en un punto lo quita.</p></div>';
       h += '<div class="grupo"><b>¿Es un lote?</b><button class="mini" data-acc="a-lote">Convertir en lote</button><p class="nota">Le agrega número, manzana, medidas, estado y ficha.</p></div>';
     } else if (c.tipo === "texto") {
@@ -4705,7 +4806,17 @@ void main(){
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
     if (!c || !el.dataset.k) return;
     let v = el.dataset.v !== undefined ? el.dataset.v : el.type === "checkbox" ? el.checked : el.value;
-    if (el.type === "range" || el.dataset.k === "peso") v = +v;
+    if (el.type === "range" || el.dataset.k === "peso" || /pesoRotulo$/.test(el.dataset.k)) v = +v;
+    // Manzana: el cambio va a todos sus lotes y se guarda para los que se agreguen después
+    if (el.dataset.k.startsWith("_lotes.") && c.manzana) {
+      const ruta = el.dataset.k.slice(7);
+      c.manzana.estiloLotes = Object.assign({}, c.manzana.estiloLotes, { [ruta]: v });
+      lotesDeManzana(c).forEach((x) => { try { escribir(x, ruta, v); } catch (e) { return; } if (x.vinculo) propagar(x, motorEd.actual.id); });
+      const etqM = document.querySelector('[data-v-de="' + el.dataset.k + '"]');
+      if (etqM) etqM.textContent = (FMTS[el.dataset.k] || px)(v);
+      guardar(); motorEd.construir(); if (repintar) pintarProps();
+      return;
+    }
     if (el.dataset.k.startsWith("t3d.")) c.t3d = t3(c);
     escribir(c, el.dataset.k, v);
     // Varias seleccionadas: el mismo cambio en todas (menos lo que identifica a cada una)
@@ -4730,7 +4841,7 @@ void main(){
     if (el.dataset.k === "nombre") { pintarCapas(); return; }
     if (el.dataset.k === "pi.nombre" || el.dataset.k === "pi.dato") pintarCapas();
     if (c.lote) { motorEd.construir(); if (repintar) pintarProps(); return; }
-    if (c.tipo === "poligono" && el.dataset.k !== "rollover.activo") motorEd.estiloPoligono(c.id, c);
+    if (c.tipo === "poligono" && !/^rollover\.(activo|oculto)$/.test(el.dataset.k)) motorEd.estiloPoligono(c.id, c);
     else motorEd.construir();
     if (repintar) pintarProps();
   }
