@@ -637,6 +637,31 @@
   .hs.en3d .hs-boton { left: 0; top: 0; }
   .hs.en3d .hs-texto { left: 50%; top: calc(100% + 0.5em); }
   .cp.con-accion, .cp-pol.con-accion { cursor: pointer; }
+  /* Punto de interés: punto clavado en el lugar + línea guía con quiebre + dato grande y texto */
+  .cp-interes { width: 0; height: 0; overflow: visible; --pi-c: #FFFFFF; --pi-sombra: rgba(0, 0, 0, 0.55); }
+  .pi-svg { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+  .pi-linea { fill: none; stroke: var(--pi-c); stroke-linecap: round; stroke-linejoin: round; }
+  .pi-linea.sombra { stroke: var(--pi-sombra); }
+  .pi-punto { fill: var(--pi-c); }
+  .pi-aro { fill: none; stroke: var(--pi-c); }
+  .pi-dot { position: absolute; left: 0; top: 0; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; pointer-events: all; cursor: pointer; }
+  .editable .pi-dot { cursor: move; }
+  .pi-etq { position: absolute; display: flex; align-items: center; gap: 0.55em; color: var(--pi-c); white-space: nowrap; pointer-events: all; font-family: var(--mz-texto-ui); text-shadow: 0 1px 3px var(--pi-sombra), 0 0 10px var(--pi-sombra); }
+  .pi-etq.izq { flex-direction: row-reverse; text-align: right; }
+  .pi-etq.caja { padding: 0.5em 0.9em; border-radius: 10px; background: rgba(11, 11, 11, 0.72); text-shadow: none; backdrop-filter: blur(4px); }
+  .pi-etq.caja.clara { background: rgba(255, 255, 255, 0.9); }
+  .pi-dato { font-weight: 300; line-height: 0.9; letter-spacing: -0.02em; }
+  .pi-txt { display: grid; gap: 0.15em; line-height: 1.2; }
+  .pi-txt b { font-weight: 600; font-size: 1em; }
+  .pi-txt span { font-weight: 400; font-size: 0.82em; opacity: 0.85; }
+  .pi-latido { transform-box: fill-box; transform-origin: center; animation: pi-latido 2.2s ease-out infinite; }
+  @keyframes pi-latido { 0% { opacity: 0.8; transform: scale(1); } 100% { opacity: 0; transform: scale(2.6); } }
+  .pi-entra .pi-linea:not(.sombra), .pi-entra .pi-linea.sombra { stroke-dasharray: var(--pi-largo); stroke-dashoffset: var(--pi-largo); animation: pi-traza 0.9s cubic-bezier(.5, 0, .2, 1) forwards; }
+  .pi-entra .pi-etq { opacity: 0; animation: pi-aparece 0.4s ease 0.75s forwards; }
+  @keyframes pi-traza { to { stroke-dashoffset: 0; } }
+  @keyframes pi-aparece { to { opacity: 1; } }
+  .cp-interes.elegida .pi-dot { box-shadow: 0 0 0 2px var(--mz-lima); }
+  @media (prefers-reduced-motion: reduce) { .pi-latido { animation: none; } .pi-entra .pi-linea, .pi-entra .pi-etq { animation: none; stroke-dasharray: none; opacity: 1; } }
   .inerte .cp, .inerte .cp * { pointer-events: none !important; }
   .asas { pointer-events: none; }
   .mz-linea { fill: none; stroke: var(--mz-lima); stroke-width: 1.5; stroke-dasharray: 4 4; pointer-events: none; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)); }
@@ -1154,6 +1179,7 @@
             <button id="add-pol" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 7l9-3 7 8-5 8-10-3z"/></svg>Polígono</button>
             <button id="add-camino" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2.2 3"><path d="M4 19c4 0 3-6 8-7s4-6 8-7"/></svg>Ruta</button>
             <button id="add-txt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13"/></svg>Texto</button>
+            <button id="add-pi" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="18" r="2.2"/><path d="M6.6 16.4 12 8h9"/></svg>Punto de interés</button>
             <button id="add-hs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="8.5" stroke-opacity=".5"/></svg>Hotspot</button>
           </div>
         </header>
@@ -1613,6 +1639,32 @@
   const T3_DEF = { inclinar: 0, girar: 0, rotar: 0, ancho: 1, alto: 1 };
   const t3 = (c) => Object.assign({}, T3_DEF, c.t3d);
   const tamHs = (c) => c.tamano || 48;
+  // ---------- Punto de interés (gasolinera, escuela, súper…): punto + línea guía con quiebre + dato ----------
+  const PI_DEF = { dato: "800 m", nombre: "Gasolinera", detalle: "2 min en auto", color: "#FFFFFF", grosor: 1.5, linea: "continua", punto: "anillo", lado: "der", alto: 90, angulo: 45, horiz: 60, tam: 1, contraste: "sombra", animar: true, latido: true };
+  const piDe = (c) => Object.assign({}, PI_DEF, c.pi || {});
+  function construirInteres(el, c, editable) {
+    const p = piDe(c), der = p.lado !== "izq", a = (Math.max(5, Math.min(85, +p.angulo)) * Math.PI) / 180;
+    const alto = Math.max(10, +p.alto), dx = alto / Math.tan(a), hz = Math.max(0, +p.horiz), sg = der ? 1 : -1;
+    const x1 = sg * dx, y1 = -alto, x2 = x1 + sg * hz, largo = Math.hypot(dx, alto) + hz + 4, g = +p.grosor || 1.5, k = +p.tam || 1;
+    const dash = p.linea === "puntos" ? "0 " + g * 3 : p.linea === "guiones" ? g * 5 + " " + g * 3 : "";
+    const d = "M0,0L" + x1.toFixed(1) + "," + y1 + "L" + x2.toFixed(1) + "," + y1;
+    const sombra = p.contraste === "sombra" ? '<path class="pi-linea sombra" d="' + d + '" stroke-width="' + (g + 2.5) + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : "") + "/>" : "";
+    const pto = p.punto === "lleno" ? '<circle class="pi-punto" r="' + (3.5 + g) + '"/>' : p.punto === "doble" ? '<circle class="pi-aro" r="' + (6 + g) + '" stroke-width="' + g + '"/><circle class="pi-punto" r="' + (3 + g * 0.6) + '"/>' : '<circle class="pi-aro" r="' + (4 + g) + '" stroke-width="' + (g + 0.5) + '"/>';
+    const lat = p.latido ? '<circle class="pi-aro pi-latido" r="' + (5 + g) + '" stroke-width="' + g + '"/>' : "";
+    el.classList.add("cp-interes");
+    el.classList.toggle("pi-entra", !!p.animar && !editable);
+    el.style.setProperty("--pi-c", p.color);
+    el.style.setProperty("--pi-sombra", p.contraste === "sombra" ? "rgba(0,0,0,0.55)" : "transparent");
+    el.style.setProperty("--pi-largo", largo.toFixed(0));
+    el.innerHTML = '<svg class="pi-svg" width="1" height="1" aria-hidden="true">' + (p.contraste === "sombra" ? '<circle r="' + (6 + g) + '" fill="rgba(0,0,0,0.35)"/>' : "") +
+      sombra + '<path class="pi-linea" d="' + d + '" stroke-width="' + g + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : "") + "/>" + lat + pto + "</svg>" +
+      '<div class="pi-dot" aria-label="' + esc(p.nombre) + '"></div>' +
+      '<div class="pi-etq' + (der ? "" : " izq") + (p.contraste === "caja" || p.contraste === "caja-clara" ? " caja" : "") + (p.contraste === "caja-clara" ? " clara" : "") + '" style="font-size:' + (14 * k).toFixed(1) + "px;" +
+      (der ? "left:" + (x2 + 8).toFixed(1) + "px" : "right:" + (-x2 + 8).toFixed(1) + "px") + ";top:" + y1 + 'px;transform:translateY(-50%)">' +
+      (p.dato ? '<span class="pi-dato" style="font-size:' + (3.1 * k).toFixed(2) + 'em">' + esc(p.dato) + "</span>" : "") +
+      '<span class="pi-txt">' + (p.nombre ? "<b>" + esc(p.nombre) + "</b>" : "") + (p.detalle ? "<span>" + esc(p.detalle) + "</span>" : "") + "</span></div>";
+    if (p.contraste === "caja-clara") el.style.setProperty("--pi-c", p.color.toUpperCase() === "#FFFFFF" ? "#111111" : p.color);
+  }
   const accionDe = (c) => c.accion || (c.tipo === "hotspot" ? "panorama" : c.lote ? "ficha" : "ninguna");
   const ACCIONES = [["ninguna", "Nada"], ["panorama", "Ir a un panorama"], ["url", "Abrir enlace"], ["web", "Página en ventana"], ["imagen", "Imagen en ventana"], ["galeria", "Galería de fotos"], ["video", "Video en ventana"]];
   const ICO_ACCION = {
@@ -2383,6 +2435,11 @@
           }
           nodos.set(c.id, { el, c, svg, path, etq, planos, toque });
           if (!editable && accionDe(c) !== "ninguna") { path.classList.add("con-accion"); path.addEventListener("click", (ev) => { ev.stopPropagation(); ejecutar(c); }); }
+        } else if (c.tipo === "interes") {
+          construirInteres(el, c, editable);
+          el.querySelector(".pi-dot").addEventListener("pointerdown", (ev) => tomar(ev, c, "mover"));
+          el.querySelector(".pi-etq").addEventListener("pointerdown", (ev) => tomar(ev, c, "mover"));
+          nodos.set(c.id, { el, c });
         } else if (c.tipo === "texto") {
           const t = document.createElement("div");
           t.className = "cp-texto" + (c.fondo && c.fondo.activo ? " con-fondo" : "");
@@ -2420,6 +2477,7 @@
     function medir(n) {
       const c = n.c, k = es3d(c) ? K3 : 1;
       n.el.classList.toggle("en3d", es3d(c));
+      if (c.tipo === "interes") return;
       if (c.tipo === "texto") n.t.style.fontSize = c.tamano * k + "px";
       else { n.el.style.setProperty("--hs-tam", tamHs(c) * k + "px"); n.el.style.fontSize = 12 * k + "px"; }
     }
@@ -2694,7 +2752,7 @@
       }
       // Asas del texto u hotspot elegido: mover, rotar, escalar y estirar
       const ne = editable && motor.modo === "capas" && !motor.dibujo && motor.elegida && nodos.get(motor.elegida);
-      if (ne && ne.c.tipo !== "poligono" && ne.el.style.visibility !== "hidden" && !ne.el.hidden) {
+      if (ne && ne.c.tipo !== "poligono" && ne.c.tipo !== "interes" && ne.el.style.visibility !== "hidden" && !ne.el.hidden) {
         const q = esquinas(ne.el), C = q.centro;
         const g = document.createElementNS(SVGNS, "g");
         g.setAttribute("class", "asas");
@@ -4389,6 +4447,13 @@ void main(){
     const c = { id: nuevoId(), tipo: "texto", nombre: "Texto", visible: true, yaw: k.yaw, pitch: k.pitch, texto: "Nuevo texto", tamano: 18, peso: 600, color: BLANCO, fondo: { activo: false, color: NEGRO } };
     cs().push(c); motorEd.elegida = c.id; cambio();
   });
+  $("add-pi").addEventListener("click", () => {
+    if (motorEd.dibujo) terminarDibujo(false);
+    const k = centro();
+    const c = { id: nuevoId(), tipo: "interes", nombre: "Punto de interés", visible: true, en3d: false, yaw: k.yaw, pitch: k.pitch, pi: Object.assign({}, PI_DEF) };
+    cs().push(c); motorEd.elegida = c.id; cambio();
+    avisar("Arrástralo sobre el lugar (la gasolinera, la escuela…) y escribe sus datos a la derecha");
+  });
   $("add-hs").addEventListener("click", () => {
     if (motorEd.dibujo) terminarDibujo(false);
     const otra = est.escenas.find((e) => e.id !== motorEd.actual.id);
@@ -4401,6 +4466,7 @@ void main(){
     lote: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 7.5 12 4l8.5 3.5v9L12 20l-8.5-3.5z"/><path d="M12 4v16M3.5 7.5 12 11l8.5-3.5"/></svg>',
     poligono: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 7l9-3 7 8-5 8-10-3z"/></svg>',
     manzana: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6h18v12H3z"/><path d="M7.5 6v12M12 6v12M16.5 6v12" stroke-opacity=".6"/></svg>',
+    interes: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="18" r="2.2"/><path d="M6.6 16.4 12 8h9"/></svg>',
     camino: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2.2 3"><path d="M4 19c4 0 3-6 8-7s4-6 8-7"/></svg>',
     texto: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13"/></svg>',
     hotspot: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="8.5" stroke-opacity=".5"/></svg>',
@@ -4414,7 +4480,7 @@ void main(){
     if (!l.length) { ul.innerHTML = '<li class="vacio" role="presentation">Este panorama no tiene capas. Agrega un polígono, un texto o un hotspot.</li>'; return; }
     ul.innerHTML = l.slice().reverse().map((c) =>
       '<li role="option" draggable="true" data-id="' + c.id + '" aria-selected="' + (c.id === motorEd.elegida || (seleccion.size > 1 && seleccion.has(c.id))) + '"' + (c.visible ? "" : ' class="oculta"') + ">" +
-      (c.lote ? ICONOS.lote : c.manzana ? ICONOS.manzana : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.nombre)) + (c.vinculo ? ICO_VINC : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>").join("");
+      (c.lote ? ICONOS.lote : c.manzana ? ICONOS.manzana : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.tipo === "interes" ? (piDe(c).nombre || "Punto de interés") + (piDe(c).dato ? " · " + piDe(c).dato : "") : c.nombre)) + (c.vinculo ? ICO_VINC : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>").join("");
   }
   $("lista").addEventListener("click", (ev) => {
     const ojo = ev.target.closest("[data-ojo]");
@@ -4531,7 +4597,7 @@ void main(){
     const cont = $("props");
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
     if (!c) { $("props-titulo").textContent = "Propiedades"; cont.innerHTML = '<p class="vacio">Selecciona una capa en la lista o sobre la esfera para editarla.</p>'; return; }
-    $("props-titulo").textContent = c.lote ? nombreLote(c) : c.manzana ? "Manzana " + (c.manzana.mz || "") : c.camino ? "Ruta" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
+    $("props-titulo").textContent = c.lote ? nombreLote(c) : c.manzana ? "Manzana " + (c.manzana.mz || "") : c.camino ? "Ruta" : c.tipo === "interes" ? "Punto de interés" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
     const multi = seleccionadas().length > 1 ? seleccionadas() : null;
     if (multi) $("props-titulo").textContent = multi.length + (c.lote ? " lotes" : " capas") + " seleccionados";
     let h = (multi ? '<div class="sel-multi"><b>' + multi.length + ' seleccionados.</b> Lo que cambies aquí se aplica a todos' + (c.lote ? ": estado, precio, superficie y estilo (el número y la manzana no)." : ".") + ' <button class="mini" data-acc="sel-una">Solo este</button></div>' : "") +
@@ -4549,6 +4615,22 @@ void main(){
         '<p class="nota">Los lotes se reparten del mismo ancho en el suelo, no en la imagen. Arrastra las esquinas de la manzana para ajustarla: los ' + lotes.length + ' lotes la siguen. Doble clic en una esquina la quita.</p>' +
         '<p class="nota"><b>Ajuste fino:</b> los puntos verdes recorren cada división por el frente o el fondo. Los <b>+</b> agregan un nodo para doblar una división o la orilla; arrástralo. Doble clic en un nodo blanco lo quita.</p></div>';
       h += '<div class="grupo"><b>Estado</b><p class="nota">Toca cada lote en la esfera para cambiar su estado, precio y superficie.</p></div>';
+    }
+    else if (c.tipo === "interes") {
+      const p = piDe(c); c.pi = p;
+      const botones = (k, ops, cols) => '<div class="hs-estilos" style="grid-template-columns:repeat(' + (cols || ops.length) + ',1fr)">' + ops.map(([v, n]) => '<button class="hs-estilo" data-k="pi.' + k + '" data-v="' + v + '" aria-pressed="' + (String(p[k]) === v) + '">' + n + "</button>").join("") + "</div>";
+      h += '<div class="grupo"><b>Texto</b>' + campo("Dato grande", '<input type="text" data-k="pi.dato" value="' + esc(p.dato) + '" placeholder="800 m">') +
+        campo("Nombre", '<input type="text" data-k="pi.nombre" value="' + esc(p.nombre) + '" placeholder="Gasolinera">') +
+        campo("Detalle", '<input type="text" data-k="pi.detalle" value="' + esc(p.detalle) + '" placeholder="2 min en auto">') +
+        campo("Tamaño", campoRango("pi.tam", +p.tam, 0.6, 2.2, 0.05, veces)) + "</div>";
+      h += '<div class="grupo"><b>Línea guía</b>' + botones("lado", [["izq", "← Izquierda"], ["der", "Derecha →"]]) +
+        campo("Altura", campoRango("pi.alto", +p.alto, 20, 260, 1, px)) + campo("Inclinación", campoRango("pi.angulo", +p.angulo, 15, 85, 1, deg)) + campo("Tramo recto", campoRango("pi.horiz", +p.horiz, 0, 220, 1, px)) +
+        botones("linea", [["continua", "Continua"], ["guiones", "Guiones"], ["puntos", "Punteada"]]) +
+        campo("Grosor", campoRango("pi.grosor", +p.grosor, 0.5, 5, 0.25, px)) + campo("Color", campoColor("pi.color", p.color)) + "</div>";
+      h += '<div class="grupo"><b>Punto</b>' + botones("punto", [["anillo", "Anillo"], ["lleno", "Lleno"], ["doble", "Doble"]]) + interruptor("Latido", "pi.latido", !!p.latido) + "</div>";
+      h += '<div class="grupo"><b>Contraste</b>' + botones("contraste", [["sombra", "Sombra"], ["caja", "Caja oscura"], ["caja-clara", "Caja clara"], ["ninguno", "Sin fondo"]], 2) +
+        interruptor("Animación al aparecer (en el tour)", "pi.animar", !!p.animar) +
+        '<p class="nota">Arrastra el punto o la etiqueta para clavarlo sobre el lugar. La línea siempre se ve del mismo tamaño en pantalla.</p></div>';
     }
     else if (c.camino) {
       const k = c.camino;
@@ -4620,6 +4702,7 @@ void main(){
     if (c.vinculo) propagar(c, motorEd.actual.id);
     guardar();
     if (el.dataset.k === "nombre") { pintarCapas(); return; }
+    if (el.dataset.k === "pi.nombre" || el.dataset.k === "pi.dato") pintarCapas();
     if (c.lote) { motorEd.construir(); if (repintar) pintarProps(); return; }
     if (c.tipo === "poligono" && el.dataset.k !== "rollover.activo") motorEd.estiloPoligono(c.id, c);
     else motorEd.construir();
