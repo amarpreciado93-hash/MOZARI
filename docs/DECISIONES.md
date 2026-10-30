@@ -147,3 +147,4 @@
 | 2026-10-30 | Rótulos de lotes: siempre el nombre completo a escala del lote; ya no cambian a versiones cortas ("2 · 1", "2") ni crecen al alejarse |
 | 2026-10-30 | Lotes: plantilla de Excel (CSV con los lotes dibujados) e importar .xlsx/.xls/.csv por manzana y número (superficie, precio y estado; celdas vacías no borran). Publicar: revisión que avisa lotes sin precio (excepto vendidos) o sin m², sin bloquear |
 | 2026-10-30 | Varios lotes seleccionados: se cambia la manzana a todos (si salen de una manzana, se cambia la manzana completa) y «Numerar desde» les pone números seguidos en su orden |
+| 2026-10-30 | Lotes: moneda de los precios por tour (MXN por defecto; USD, COP, CLP, PEN, ARS, GTQ, CRC, DOP, BOB, UYU, EUR). Se ve como "$350,000 MXN" en la ficha, el masterplan y la tabla |

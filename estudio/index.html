@@ -647,6 +647,8 @@
   .pr-orden button:disabled { opacity: 0.25; cursor: default; }
   @media (max-width: 1100px) { .pr-lista li { grid-template-columns: 22px 60px minmax(0, 1fr) auto; } .pr-modos { grid-column: 2 / -1; } }
   .lotes-excel { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .lx-moneda { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--mz-tenue); margin-right: 6px; }
+  .lx-moneda select { width: auto; padding: 8px 10px; }
   .lotes-excel .nota { flex-basis: 100%; margin: 0; }
   .lotes-import { margin-bottom: 16px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 13px; display: grid; gap: 6px; }
   .lotes-import b { color: var(--mz-lima); }
@@ -1290,6 +1292,7 @@
         <h1>Lotes</h1>
         <p class="sub">Cambia aquí el estado de cada lote. Se actualiza en todas las esferas y en su ficha.</p>
         <div class="lotes-excel">
+          <label class="lx-moneda">Moneda de los precios <select class="entrada" id="lx-moneda"></select></label>
           <button class="btn-sec" id="lx-plantilla">Descargar plantilla de Excel</button>
           <label class="btn-sec">Importar de Excel<input type="file" id="lx-archivo" accept=".xlsx,.xls,.csv,.tsv,.txt" hidden></label>
           <span class="nota">Columnas: Manzana, Lote, Superficie (m²), Precio y Estado (opcional). Se llenan los lotes que ya dibujaste con ese número y manzana.</span>
@@ -1525,7 +1528,11 @@
   const fmtNum = (n) => n.toLocaleString("es-MX", { maximumFractionDigits: 2 });
   const fmtArea = (v) => { if (!String(v || "").trim()) return ""; const n = numES(v); return n === null ? String(v) : fmtNum(n) + " m²"; };
   const fmtLado = (v) => { if (!String(v || "").trim()) return ""; const n = numES(v); return n === null ? String(v) : fmtNum(n) + " m"; };
-  const fmtPrecio = (v) => { if (!String(v || "").trim()) return ""; const n = numES(String(v).replace(/^\$/, "")); return n === null ? String(v) : "$" + n.toLocaleString("es-MX", { maximumFractionDigits: 0 }); };
+  // Moneda de los precios de los lotes (la elige el dueño del tour según su país)
+  const MONEDAS = [["MXN", "México · MXN"], ["USD", "Dólar · USD"], ["COP", "Colombia · COP"], ["CLP", "Chile · CLP"], ["PEN", "Perú · PEN"], ["ARS", "Argentina · ARS"], ["GTQ", "Guatemala · GTQ"], ["CRC", "Costa Rica · CRC"], ["DOP", "Rep. Dominicana · DOP"], ["BOB", "Bolivia · BOB"], ["UYU", "Uruguay · UYU"], ["EUR", "Euro · EUR"]];
+  const monedaTour = () => { try { return (est && est.proyecto && est.proyecto.moneda) || "MXN"; } catch (e) { return "MXN"; } };
+  const SIMBOLO = { EUR: "€", PEN: "S/", GTQ: "Q", CRC: "₡", BOB: "Bs " };
+  const fmtPrecio = (v) => { if (!String(v || "").trim()) return ""; const n = numES(String(v).replace(/^[$€]|^S\/|^Q|^₡/, "")); if (n === null) return String(v); const m = monedaTour(); return (SIMBOLO[m] || "$") + n.toLocaleString("es-MX", { maximumFractionDigits: 0 }) + " " + m; };
   function nombreLote(c) {
     const l = loteDe(c);
     if (!l.numero && !l.manzana) return "Lote sin número";
@@ -4861,7 +4868,7 @@ void main(){
         : '<label>Lote<input type="text" data-k="lote.numero" value="' + val("numero") + '" placeholder="12"></label>') +
       '<label>Manzana<input type="text" data-k="lote.manzana" value="' + val("manzana") + '" placeholder="3"></label>' +
       '<label>Superficie (m²)<input type="text" inputmode="decimal" data-k="lote.area" value="' + val("area") + '" placeholder="1250"></label>' +
-      '<label>Precio<input type="text" inputmode="decimal" data-k="lote.precio" value="' + val("precio") + '" placeholder="$"></label></div></div>';
+      '<label>Precio (' + monedaTour() + ')<input type="text" inputmode="decimal" data-k="lote.precio" value="' + val("precio") + '" placeholder="$"></label></div></div>';
     h += '<div class="grupo"><b>Estado</b><div class="estados">' + estadosLote().map((e) =>
       '<button data-estado="' + e.id + '" aria-pressed="' + (estadoDe(c).id === e.id) + '" style="--c:' + e.color + '"><i></i>' + esc(e.nombre) + "</button>").join("") + "</div>" +
       '<p class="nota">Cambia en todas las esferas donde aparece este lote y en su ficha.</p>' +
@@ -5295,6 +5302,7 @@ void main(){
   }
   function pintarLotes() {
     const todos = lotesUnicos(), E = estadosLote();
+    $("lx-moneda").innerHTML = MONEDAS.map(([v, n]) => '<option value="' + v + '"' + (monedaTour() === v ? " selected" : "") + ">" + n + "</option>").join("");
     const cuenta = (id) => todos.filter((x) => estadoDe(x.c).id === id).length;
     $("lotes-resumen").innerHTML =
       '<button class="lr-chip" data-filtro="todos" aria-pressed="' + (filtroLotes === "todos") + '"><b>' + todos.length + "</b>Todos</button>" +
@@ -5302,7 +5310,7 @@ void main(){
       (todos.length ? '<span class="lr-vendido">' + Math.round((cuenta("vendido") / todos.length) * 100) + "% vendido</span>" : "");
     const filas = todos.filter((x) => filtroLotes === "todos" || estadoDe(x.c).id === filtroLotes);
     if (!todos.length) { $("lotes-tabla").innerHTML = '<p class="vacio">Aún no hay lotes. En Panoramas → Capas usa el botón <b>Lote</b> y dibuja el primero.</p>'; return; }
-    $("lotes-tabla").innerHTML = '<table class="lotes-tabla"><thead><tr><th>Manzana</th><th>Lote</th><th>Superficie (m²)</th><th>Precio</th><th>Estado</th><th>Aparece en</th></tr></thead><tbody>' +
+    $("lotes-tabla").innerHTML = '<table class="lotes-tabla"><thead><tr><th>Manzana</th><th>Lote</th><th>Superficie (m²)</th><th>Precio (' + monedaTour() + ')</th><th>Estado</th><th>Aparece en</th></tr></thead><tbody>' +
       filas.map((x) => {
         const l = loteDe(x.c), esferas = [...new Set(x.m.map((m) => m.id))];
         return '<tr data-k="' + esc(x.k) + '"><td>' + esc(l.manzana || "—") + "</td><td><b>" + esc(l.numero || "—") + "</b></td>" +
@@ -5339,6 +5347,7 @@ void main(){
   const sinPrefijo = (v, re) => String(v ?? "").trim().replace(re, "").trim().replace(/\.0+$/, "").toUpperCase();
   const llaveMz = (v) => sinPrefijo(v, /^(manzana|mz\.?)\s*/i), llaveLt = (v) => sinPrefijo(v, /^(lote|lt\.?|#)\s*/i);
   const limpiarNum = (v) => { const t = String(v ?? "").trim().replace(/\$|m2|m²|mxn|usd/gi, "").replace(/\s/g, ""); if (!t) return ""; const n = parseFloat(t.replace(/,/g, "")); return isFinite(n) ? String(Math.round(n * 100) / 100) : ""; };
+  $("lx-moneda").addEventListener("change", (ev) => { P().moneda = ev.target.value; guardar(); pintarLotes(); if (motorEd) motorEd.construir(); avisar("Precios en " + ev.target.value + ". Vuelve a Publicar para que se vea en el tour."); });
   $("lx-plantilla").addEventListener("click", () => {
     const filas = [["Manzana", "Lote", "Superficie m2", "Precio", "Estado"]].concat(lotesUnicos().map((x) => { const l = loteDe(x.c); return [l.manzana, l.numero, l.area, l.precio, estadoDe(x.c).nombre]; }));
     const csv = "\ufeff" + filas.map((f) => f.map((v) => { const t = String(v ?? ""); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }).join(",")).join("\r\n");
