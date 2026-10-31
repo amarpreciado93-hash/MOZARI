@@ -11,6 +11,7 @@
 //   PUT    /api/tours/:id/f/<ruta>        sube un archivo (piezas de esfera, imágenes, audio)
 //   DELETE /api/tours/:id/f/<prefijo>/    borra una carpeta (por ejemplo una esfera)
 //   POST   /api/tours/:id/publicar        congela el borrador como versión pública
+//   GET    /api/tours/:id/descargar       lo necesario para armar el .zip del tour publicado (otro hosting)
 //   GET    /api/uso           espacio que usan tus tours y tu plan
 //   GET    /api/admin/cuentas         (solo el dueño) todas las cuentas
 //   PUT    /api/admin/cuentas/:uid    (solo el dueño) cambia el plan de una cuenta  { plan }
@@ -299,6 +300,48 @@ async function api(request, env, partes, yo) {
       return json({ ok: true, borrados: n });
     }
     return error(405, "Método no permitido");
+  }
+
+  // Descargar el tour publicado para subirlo a otro hosting: la página, el proyecto y la lista de archivos.
+  // El estudio baja cada archivo y arma el .zip en la compu del usuario (el servidor no hace el trabajo pesado).
+  if (partes[3] === "descargar" && partes.length === 4 && m === "GET") {
+    const obj = await env.R2.get("publicado/" + id + "/proyecto.json");
+    if (plan.marca && !yo.admin) return json({ error: "Descargar tus tours es parte del plan Pro.", plan: "pro" }, 403);
+    if (!obj) return error(409, "Publica tu tour antes de descargarlo.");
+    const p = await obj.json(), pr = p.proyecto || {};
+    // Solo se descarga lo que la licencia cubre completo (sin marca de prueba)
+    if (pr.marcaMozari && !yo.admin) {
+      const lotes = usaLotificacion(p);
+      return json({ error: lotes ? "Para descargar un tour con lotes necesitas el plan Desarrollos." : "Para descargar tus tours necesitas el plan Pro.", plan: lotes ? "desarrollos" : "pro" }, 403);
+    }
+    const escenas = new Set((p.escenas || []).map((e) => e.id).filter((x) => /^[A-Za-z0-9_-]{1,80}$/.test(x)));
+    const archivos = [];
+    for (const pre of ["escenas/", "archivos/"]) {
+      let cursor;
+      do {
+        const l = await env.R2.list({ prefix: base + pre, cursor, limit: 1000 });
+        for (const o of l.objects) {
+          const ruta = o.key.slice(base.length);
+          if (pre === "escenas/" && !escenas.has(ruta.split("/")[1])) continue;
+          if (rutaValida(ruta)) archivos.push({ ruta, bytes: o.size });
+        }
+        cursor = l.truncated ? l.cursor : undefined;
+      } while (cursor);
+    }
+    const nombre = String(pr.nombre || "Recorrido virtual 360").slice(0, 90);
+    const desc = (typeof pr.descripcion === "string" && pr.descripcion.replace(/\s+/g, " ").trim().slice(0, 200)) || "Recorrido virtual 360";
+    const pon = (v) => ({ element: (el) => el.setAttribute("content", v) });
+    const quita = { element: (el) => el.remove() };
+    const pagina = await env.ASSETS.fetch(new Request(new URL("/", request.url)));
+    const html = await new HTMLRewriter()
+      .on("body", { element: (el) => { el.setAttribute("data-modo", "tour"); el.setAttribute("data-exportado", "1"); } })
+      .on("title", { element: (el) => el.setInnerContent(nombre) })
+      .on('meta[property="og:title"]', pon(nombre)).on('meta[property="og:site_name"]', pon(nombre))
+      .on('meta[property="og:description"]', pon(desc)).on('meta[name="description"]', pon(desc))
+      .on('meta[property^="og:image"]', quita).on('meta[name="twitter:image"]', quita).on('meta[property="og:url"]', quita)
+      .on('link[href^="/"]', { element: (el) => el.setAttribute("href", "https://mozari.app" + el.getAttribute("href")) })
+      .transform(pagina).text();
+    return json({ nombre, html, proyecto: p, archivos, bytes: archivos.reduce((s, a) => s + a.bytes, 0) });
   }
 
   if (partes[3] === "publicar" && partes.length === 4 && m === "POST") {
