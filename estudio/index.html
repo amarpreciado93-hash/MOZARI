@@ -606,6 +606,11 @@
   .estado-colores { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 11px; color: var(--mz-tenue); }
   .estado-colores label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
   .estado-colores input[type="color"] { width: 24px; height: 24px; border: 1px solid var(--mz-linea-neutra); border-radius: 50%; padding: 0; background: none; cursor: pointer; }
+  .cuentas-conteo { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 16px 2px; }
+  .cuentas-conteo span { padding: 8px 12px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 12px; color: var(--mz-tenue); }
+  .cuentas-conteo b { display: block; font-size: 20px; font-weight: 600; color: var(--mz-texto); }
+  .cuenta-n { color: var(--mz-tenue); font-variant-numeric: tabular-nums; }
+  .cuenta-alta { display: block; font-size: 11px; color: var(--mz-tenue); font-weight: 400; }
   .cuentas-total { margin: 4px 16px 10px; font-size: 13px; color: var(--mz-tenue); }
   .cuentas-total b { color: var(--mz-texto); }
   .pago-monto { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; cursor: help; }
@@ -2232,11 +2237,23 @@
     if (vistaDueno === "links") return pintarLinks();
     const r = await fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudieron leer las cuentas"); return; }
-    const { cuentas } = await r.json();
+    const { cuentas: todas } = await r.json();
+    // Número de usuario = orden en que se registraron (el primero es #1). Se muestran del más nuevo al más viejo.
+    const porAlta = todas.slice().sort((a, b) => String(a.creado || "").localeCompare(String(b.creado || "")));
+    porAlta.forEach((c, i) => (c.n = i + 1));
+    const cuentas = porAlta.slice().reverse();
+    const hoy = new Date().toDateString(), semana = new Date(Date.now() - 7 * 864e5).toISOString(); // "hoy" en la hora de tu compu
+    const usuarios = todas.filter((c) => !c.admin), cuantos = (f) => usuarios.filter(f).length;
+    const resumen = '<div class="cuentas-conteo"><span><b>' + usuarios.length + "</b> usuarios</span>" +
+      "<span><b>" + cuantos((c) => !!c.creado && new Date(c.creado).toDateString() === hoy) + "</b> nuevos hoy</span>" +
+      "<span><b>" + cuantos((c) => String(c.creado || "") >= semana) + "</b> esta semana</span>" +
+      "<span><b>" + cuantos((c) => (c.plan || "gratis") === "gratis") + "</b> Gratis</span>" +
+      "<span><b>" + cuantos((c) => c.plan === "pro") + "</b> Pro</span>" +
+      "<span><b>" + cuantos((c) => c.plan === "desarrollos") + "</b> Desarrollos</span></div>";
     let caja = $("cuentas");
     if (!caja) { caja = document.createElement("div"); caja.id = "cuentas"; caja.className = "cuentas"; $("mi-plan").after(caja); }
-    caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p>' + TABS_DUENO(0) + '<p class="cuentas-total">' + totalPagos(cuentas) + '</p><table class="lotes-tabla"><thead><tr><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Pagó</th><th>Última entrada</th><th></th></tr></thead><tbody>' + cuentas.map((c) =>
-      '<tr' + (c.pausada ? ' class="pausada"' : "") + "><td><b>" + esc(c.nombre || "") + "</b></td><td>" + esc(c.email) + "</td><td>" + (c.admin ? "Dueño" : '<select data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
+    caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p>' + TABS_DUENO(0) + resumen + '<p class="cuentas-total">' + totalPagos(cuentas) + '</p><table class="lotes-tabla"><thead><tr><th>#</th><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Pagó</th><th>Última entrada</th><th></th></tr></thead><tbody>' + cuentas.map((c) =>
+      '<tr' + (c.pausada ? ' class="pausada"' : "") + '><td class="cuenta-n">' + c.n + "</td><td><b>" + esc(c.nombre || "") + "</b>" + (c.creado ? '<small class="cuenta-alta">desde ' + new Date(c.creado).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) + "</small>" : "") + "</td><td>" + esc(c.email) + "</td><td>" + (c.admin ? "Dueño" : '<select data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
       "</td><td>" + (c.admin ? "" : pagoDe(c)) + "</td><td>" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td><td>" + (c.admin ? "" : '<button class="mini' + (c.pausada ? " primario" : "") + '" data-pausar="' + esc(c.uid) + '" data-v="' + (c.pausada ? "0" : "1") + '">' + (c.pausada ? "Reactivar" : "Pausar") + "</button>") + "</td></tr>").join("") + "</tbody></table>";
   }
   document.addEventListener("click", (ev) => { if (ev.target.id === "ver-cuentas") { const c = $("cuentas"); if (c && !c.hidden) { c.hidden = true; return; } if (c) c.hidden = false; pintarCuentas(); } });

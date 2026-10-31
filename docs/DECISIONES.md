@@ -155,3 +155,4 @@
 | 2026-10-30 | Transición en compu como Kuula/3DVista: avanza hacia el hotspot, espera máx. 0.45 s a que la siguiente esté en caché y las dos esferas se funden en vivo (WebGL, sin foto congelada) mientras la nueva se acerca; los hotspots nuevos aparecen suave. En celular se queda la transición anterior |
 | 2026-10-30 | Celular: los rótulos planchados vuelven, dibujados en SVG con una transformación plana ajustada al lote (sin capas 3D, casi sin memoria). Antes en celular salían de frente |
 | 2026-10-30 | Zoom en celular: el límite de acercamiento (1 pixel de foto por pixel real de pantalla) casi no dejaba hacer zoom en pantallas 3x; ahora se puede acercar ~2x más (mín. ~40° en celular), como Kuula/3DVista |
+| 2026-10-31 | Panel de dueño: conteo de usuarios (total, nuevos hoy, esta semana, por plan) y número de usuario según el orden de registro (#1 el primero), lista del más nuevo al más viejo con fecha de alta |
