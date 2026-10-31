@@ -651,6 +651,63 @@
   .ficha-datos dt { color: #A8A8A8; }
   .ficha-datos dd { margin: 0; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
   .ficha-datos:empty { display: none; }
+  .ficha-editor { margin: 0 0 18px; padding: 16px 18px; border-radius: 14px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); }
+  .fe-cab { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .fe-cab h2 { margin: 0 0 4px; font-size: 17px; }
+  .fe-cab .nota { margin: 0; }
+  .fe-activa { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+  .fe-cuerpo { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(300px, 470px); gap: 20px; align-items: start; }
+  .fe-controles { display: grid; gap: 14px; }
+  .fe-grupo { display: grid; gap: 8px; font-size: 13px; }
+  .fe-grupo > b { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mz-tenue); }
+  .fe-campo { display: grid; gap: 5px; font-size: 12px; color: var(--mz-tenue); }
+  .fe-campo textarea { resize: vertical; font: inherit; }
+  .fe-colores, .fe-sis { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+  .fe-color, .fe-si { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+  .fe-color input { width: 32px; height: 26px; padding: 0; border: 0; background: none; }
+  .fe-subir { justify-self: start; }
+  .fe-vista { display: grid; gap: 10px; position: sticky; top: 10px; }
+  .fe-lienzo { display: grid; justify-items: center; padding: 16px; border-radius: 12px; background: #2a2a2a; }
+  .fe-lienzo .pop-caja.ficha-d { max-height: none; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+  @media (max-width: 900px) { .fe-cuerpo { grid-template-columns: 1fr; } .fe-vista { position: static; } }
+  .pop-caja.ficha-d { width: min(460px, 100%); max-height: min(92vh, 900px); overflow-y: auto; display: block; padding: 0; gap: 0; background: var(--fd-fondo); color: var(--fd-texto); font-family: var(--fd-fuente, inherit), Poppins, system-ui, sans-serif; border-radius: 14px; position: relative; }
+  .ficha-d .pop-x { position: absolute; top: 10px; right: 10px; z-index: 2; background: color-mix(in srgb, var(--fd-fondo) 80%, transparent); color: var(--fd-texto); }
+  .ficha-d h3, .ficha-d h4, .ficha-d p { margin: 0; }
+  .ficha-d .fd-cab { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 18px; padding: 26px 26px 20px; border-bottom: 1px solid color-mix(in srgb, var(--fd-texto) 25%, transparent); }
+  .ficha-d .fd-marca { display: grid; place-items: center; min-height: 60px; }
+  .ficha-d .fd-logo { max-width: 100%; max-height: 84px; object-fit: contain; }
+  .ficha-d .fd-nombre { font-size: 18px; font-weight: 600; letter-spacing: 0.06em; text-align: center; text-transform: uppercase; }
+  .ficha-d .fd-sep { width: 1px; align-self: stretch; background: color-mix(in srgb, var(--fd-texto) 55%, transparent); }
+  .ficha-d .fd-titulo { font-size: 34px; font-weight: 500; color: var(--fd-acento); line-height: 1.05; text-align: center; }
+  .ficha-d .fd-centro-caja { padding: 14px 26px 16px; border-bottom: 1px solid color-mix(in srgb, var(--fd-texto) 25%, transparent); background: color-mix(in srgb, var(--fd-texto) 4%, var(--fd-fondo)); }
+  .ficha-d .fd-estado { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .ficha-d .fd-estado i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+  .ficha-d .fd-plano { display: block; width: 100%; height: auto; margin: 4px 0; }
+  .ficha-d .fd-plano polygon { fill: color-mix(in srgb, var(--fd-acento) 14%, #fff); stroke: var(--fd-texto); stroke-width: 2.5; stroke-linejoin: round; }
+  .ficha-d .fd-medida { font-size: 12px; fill: var(--fd-texto); text-anchor: middle; dominant-baseline: middle; }
+  .ficha-d .fd-centro { font-size: 15px; fill: var(--fd-texto); text-anchor: middle; dominant-baseline: middle; font-weight: 600; paint-order: stroke; stroke: color-mix(in srgb, var(--fd-acento) 14%, #fff); stroke-width: 4px; stroke-linejoin: round; }
+  .ficha-d .fd-centro.chico { font-size: 12px; font-weight: 400; }
+  .ficha-d .fd-datos { display: flex; justify-content: space-between; gap: 12px; font-size: 18px; }
+  .ficha-d .fd-precio { display: grid; justify-items: center; gap: 2px; padding: 18px 26px 6px; }
+  .ficha-d .fd-precio small { font-size: 17px; }
+  .ficha-d .fd-precio b { font-size: 30px; font-weight: 800; padding: 2px 12px; background: color-mix(in srgb, var(--fd-acento) 14%, transparent); }
+  .ficha-d .fd-textos { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 16px 26px 22px; font-size: 12.5px; line-height: 1.45; }
+  .ficha-d .fd-textos > div + div { border-left: 1px solid color-mix(in srgb, var(--fd-texto) 35%, transparent); padding-left: 18px; }
+  .ficha-d .fd-textos h4 { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fd-acento); margin-bottom: 8px; font-weight: 600; }
+  .ficha-d .fd-textos p + p { margin-top: 8px; }
+  .ficha-d .fd-ubic { display: block; width: 100%; height: auto; margin-bottom: 6px; }
+  .ficha-d .fd-ubic polygon { fill: color-mix(in srgb, var(--fd-texto) 6%, transparent); stroke: color-mix(in srgb, var(--fd-texto) 45%, transparent); stroke-width: 1; }
+  .ficha-d .fd-ubic polygon.este { fill: var(--fd-acento); stroke: var(--fd-acento); }
+  .ficha-d .fd-cta { display: block; margin: 4px 26px 24px; text-align: center; text-decoration: none; font-weight: 600; font-size: 14px; padding: 12px 16px; border-radius: 999px; background: var(--fd-acento); color: var(--fd-sobre); }
+  .ficha-d.fd-banda { padding-bottom: 6px; }
+  .ficha-d .fd-banda { display: inline-block; margin: 34px 0 6px; padding: 14px 40px 14px 26px; border-radius: 0 40px 40px 0; background: var(--fd-acento); color: var(--fd-sobre); font-size: 26px; font-weight: 700; }
+  .ficha-d.fd-banda .fd-plano { padding: 0 26px; box-sizing: border-box; }
+  .ficha-d.fd-banda .fd-titulo { color: var(--fd-texto); font-weight: 800; font-size: 32px; margin: 4px 0 6px; }
+  .ficha-d.fd-banda .fd-estado { display: flex; justify-content: center; margin-bottom: 14px; }
+  .ficha-d .fd-fila { display: grid; padding: 6px 26px; background: var(--fd-acento); color: var(--fd-sobre); font-weight: 700; font-size: 18px; }
+  .ficha-d .fd-fila.dos, .ficha-d .fd-valor.dos { grid-template-columns: 1fr 1fr; }
+  .ficha-d .fd-valor { display: grid; padding: 10px 26px 16px; font-size: 22px; }
+  .ficha-d .fd-pie { display: grid; place-items: center; padding: 10px 26px 24px; }
   .ficha-cta { display: block; margin-top: 16px; text-align: center; text-decoration: none; font-weight: 600; font-size: 14px; padding: 12px 16px; border-radius: 999px; }
   .pr-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .pr-lista li { display: grid; grid-template-columns: 22px 72px minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 8px 10px; border-radius: 12px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); }
@@ -1344,6 +1401,7 @@
           <label>Abreviatura<input class="entrada" id="lt-corto" maxlength="4" placeholder="M"></label>
           <span class="nota" id="lt-ejemplo"></span>
         </div>
+        <div class="ficha-editor" id="ficha-editor" hidden></div>
         <div class="lotes-import" id="lx-resultado" hidden></div>
         <div class="lotes-resumen" id="lotes-resumen"></div>
         <div class="lotes-tabla-wrap" id="lotes-tabla"></div>
@@ -4879,8 +4937,9 @@ void main(){
     const sinPuntas = (k) => camino(k).slice(1, -1);
     const formas = [], inicio = +m.inicio || 1;
     for (let k = 0; k < n; k++) {
-      if (!doble) { formas.push({ puntos: tramo(fr, tf[k], tf[k + 1]).concat(sinPuntas(k + 1), tramo(fo, tb[k], tb[k + 1]).reverse(), sinPuntas(k).reverse()), numero: inicio + k }); continue; }
-      formas.push({ puntos: tramo(fr, tf[k], tf[k + 1]).concat(mitadFrente(k + 1), mitadFrente(k).reverse()), numero: inicio + k });
+      const nf = tramo(fr, tf[k], tf[k + 1]).length; // cuántos puntos del lote dan a la calle (para dibujar su ficha con el frente abajo)
+      if (!doble) { formas.push({ puntos: tramo(fr, tf[k], tf[k + 1]).concat(sinPuntas(k + 1), tramo(fo, tb[k], tb[k + 1]).reverse(), sinPuntas(k).reverse()), numero: inicio + k, nf }); continue; }
+      formas.push({ puntos: tramo(fr, tf[k], tf[k + 1]).concat(mitadFrente(k + 1), mitadFrente(k).reverse()), numero: inicio + k, nf });
     }
     // Fila de atrás desfasada (Laboratorio): sus propios lotes, que no coinciden con los del frente
     const nB = Math.max(1, Math.min(60, +m.nB || n)), sB = Math.max(-0.45, Math.min(0.45, +m.desfase || 0));
@@ -4891,9 +4950,9 @@ void main(){
       u.push(1);
       for (let j = nB - 1; j > 0; j--) u[j] = Math.min(u[j], u[j + 1] - 0.01);
       geo.atras = u.slice(1, -1).map((t) => [enCadena(mid, t), enCadena(fo, t)]);
-      for (let j = nB - 1; j >= 0; j--) formas.push({ puntos: tramo(fo, u[j], u[j + 1]).concat(tramo(mid, u[j], u[j + 1]).reverse()), numero: inicio + n + (nB - 1 - j) });
+      for (let j = nB - 1; j >= 0; j--) formas.push({ puntos: tramo(fo, u[j], u[j + 1]).concat(tramo(mid, u[j], u[j + 1]).reverse()), numero: inicio + n + (nB - 1 - j), nf: tramo(fo, u[j], u[j + 1]).length });
     } else if (doble) for (let k = n - 1; k >= 0; k--) // la fila del fondo sigue la numeración de regreso (en U); su frente es la calle de atrás
-      formas.push({ puntos: tramo(fo, tb[k], tb[k + 1]).reverse().concat(mitadFondo(k).reverse(), mitadFondo(k + 1)), numero: inicio + 2 * n - 1 - k });
+      formas.push({ puntos: tramo(fo, tb[k], tb[k + 1]).reverse().concat(mitadFondo(k).reverse(), mitadFondo(k + 1)), numero: inicio + 2 * n - 1 - k, nf: tramo(fo, tb[k], tb[k + 1]).length });
     for (let k = 0; k < formas.length; k++) {
       const puntos = formas[k].puntos.map(red);
       let x = viejos[k];
@@ -4907,7 +4966,7 @@ void main(){
         l.splice(iz + 1, 0, x); viejos.push(x);
       }
       if (x.puntos.length !== puntos.length) x.lote.lados = [];
-      x.puntos = puntos; x.iManzana = k;
+      x.puntos = puntos; x.iManzana = k; x.frenteN = formas[k].nf || 0;
       x.lote.manzana = m.mz; x.lote.numero = String(formas[k].numero); x.lote.frente = 0;
       x.lote.lados = puntos.map((_, i) => (x.lote.lados || [])[i] || "");
     }
@@ -5659,6 +5718,69 @@ void main(){
       return orden(ma) - orden(mb) || ma.localeCompare(mb) || orden(a.c.lote.numero) - orden(b.c.lote.numero);
     });
   }
+  // Creador de fichas (Laboratorio): controles a la izquierda y la ficha en vivo a la derecha
+  let fichaMuestra = null;
+  function pintarFichaEditor() {
+    const caja = $("ficha-editor");
+    if (!enLab("fichas")) { caja.hidden = true; return; }
+    caja.hidden = false;
+    const f = fichaConf(), todos = lotesUnicos(), sk = est.skin || {};
+    if (!fichaMuestra || !todos.some((x) => x.k === fichaMuestra)) fichaMuestra = todos[0] ? todos[0].k : null;
+    const x = todos.find((y) => y.k === fichaMuestra), c = x ? x.m[0].c : null;
+    if (f.fuente) cargarFuente(f.fuente);
+    const si = (k, n) => '<label class="fe-si"><input type="checkbox" data-fe="' + k + '"' + (f[k] ? " checked" : "") + "> " + n + "</label>";
+    const color = (k, n) => '<label class="fe-color"><input type="color" data-fe="' + k + '" value="' + esc(f[k]) + '"> ' + n + "</label>";
+    const logoSkin = sk.logo && sk.logo.tipo === "propio" && sk.logo.img;
+    caja.innerHTML = '<div class="fe-cab"><div><h2>Ficha de los lotes ' + CHIP_LAB + '</h2><p class="nota">Lo que ve tu cliente al tocar un lote, con la marca del desarrollo.</p></div>' +
+      '<label class="fe-activa"><input type="checkbox" data-fe="activa"' + (f.activa ? " checked" : "") + "> Usar esta ficha en el tour</label></div>" +
+      '<div class="fe-cuerpo"><div class="fe-controles">' +
+      '<div class="fe-grupo"><b>Diseño</b><div class="estados">' + FICHA_PLANTILLAS.map(([v, n]) => '<button data-fe-plantilla="' + v + '" aria-pressed="' + (f.plantilla === v) + '">' + n + "</button>").join("") + "</div></div>" +
+      '<div class="fe-grupo"><b>Marca</b><div class="estados">' + [["skin", "Logo del Skin"], ["propio", "Otro logo"], ["texto", "Solo nombre"]].map(([v, n]) => '<button data-fe-logo="' + v + '" aria-pressed="' + (f.logo === v) + '">' + n + "</button>").join("") + "</div>" +
+        (f.logo === "skin" && !logoSkin ? '<span class="nota">Tu Skin no tiene logo propio; súbelo en Skin o elige «Otro logo».</span>' : "") +
+        (f.logo === "propio" ? '<label class="btn-sec fe-subir">' + (f.logoImg ? "Cambiar logo" : "Subir logo (PNG o SVG)") + '<input type="file" id="fe-logo" accept="image/png,image/svg+xml,image/jpeg,image/webp" hidden></label>' : "") +
+        '<label class="fe-campo">Nombre del desarrollo<input class="entrada" data-fe="titulo" maxlength="60" value="' + esc(f.titulo) + '" placeholder="' + esc(P().nombre || "") + '"></label></div>' +
+      '<div class="fe-grupo"><b>Colores y letra</b><div class="fe-colores">' + color("fondo", "Fondo") + color("texto", "Texto") + color("acento", "Acento") + "</div>" +
+        '<label class="fe-campo">Tipografía<select class="entrada" data-fe="fuente">' + FUENTES_LOTE.map(([v, n]) => '<option value="' + esc(v) + '"' + (f.fuente === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select></label></div>" +
+      '<div class="fe-grupo"><b>Qué muestra</b><div class="fe-sis">' + si("plano", "Plano del lote") + si("medidas", "Medidas por lado") + si("superficie", "Superficie") + si("precio", "Precio") + (f.plantilla === "ubicacion" ? si("ubicacion", "Ubicación en el desarrollo") : "") + si("boton", "Botón de contacto") + "</div></div>" +
+      '<div class="fe-grupo"><b>Textos</b><label class="fe-campo">Título 1 (opcional)<input class="entrada" data-fe="tituloA" maxlength="40" value="' + esc(f.tituloA) + '" placeholder="Potencial del terreno"></label>' +
+        '<label class="fe-campo">Texto 1 (un párrafo por renglón)<textarea class="entrada" rows="3" data-fe="textoA" maxlength="600">' + esc(f.textoA) + "</textarea></label>" +
+        '<label class="fe-campo">Título 2 (opcional)<input class="entrada" data-fe="tituloB" maxlength="40" value="' + esc(f.tituloB) + '" placeholder="' + (f.plantilla === "ubicacion" ? "Ubicación" : "") + '"></label>' +
+        '<label class="fe-campo">Texto 2<textarea class="entrada" rows="3" data-fe="textoB" maxlength="600">' + esc(f.textoB) + "</textarea></label></div>" +
+      '</div><div class="fe-vista">' +
+      (todos.length ? '<label class="fe-campo">Ver con<select class="entrada" id="fe-muestra">' + todos.map((y) => '<option value="' + esc(y.k) + '"' + (y.k === fichaMuestra ? " selected" : "") + ">" + esc(nombreLote(y.m[0].c)) + "</option>").join("") + "</select></label>" : "") +
+      '<div class="fe-lienzo" id="fe-lienzo">' + (c ? fichaDisenada(c, f) : '<p class="nota">Dibuja un lote para ver su ficha aquí.</p>') + "</div></div></div>";
+  }
+  const setFicha = (k, v) => { P().ficha = Object.assign(fichaConf(), { [k]: v }); guardar(); };
+  const repintarFicha = () => { const f = fichaConf(), x = lotesUnicos().find((y) => y.k === fichaMuestra), l = $("fe-lienzo"); if (l && x) l.innerHTML = fichaDisenada(x.m[0].c, f); };
+  $("ficha-editor").addEventListener("click", (ev) => {
+    const pl = ev.target.closest("[data-fe-plantilla]"); if (pl) { setFicha("plantilla", pl.dataset.fePlantilla); pintarFichaEditor(); return; }
+    const lg = ev.target.closest("[data-fe-logo]"); if (lg) { setFicha("logo", lg.dataset.feLogo); pintarFichaEditor(); return; }
+    if (ev.target.closest(".fe-lienzo a, .fe-lienzo .pop-x")) ev.preventDefault();
+  });
+  $("ficha-editor").addEventListener("input", (ev) => {
+    const k = ev.target.dataset && ev.target.dataset.fe; if (!k || ev.target.type === "checkbox" || ev.target.tagName === "SELECT") return;
+    setFicha(k, ev.target.value); repintarFicha();
+  });
+  $("ficha-editor").addEventListener("change", async (ev) => {
+    if (ev.target.id === "fe-muestra") { fichaMuestra = ev.target.value; repintarFicha(); return; }
+    if (ev.target.id === "fe-logo") {
+      const file = ev.target.files && ev.target.files[0]; if (!file) return;
+      const img = new Image();
+      img.onload = async () => {
+        const s = Math.min(1, 600 / Math.max(img.naturalWidth || 600, 1)), cv = document.createElement("canvas");
+        cv.width = Math.round((img.naturalWidth || 600) * s); cv.height = Math.round((img.naturalHeight || 200) * s);
+        cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(img.src);
+        try { setFicha("logoImg", await medio(cv, "image/png", undefined, "logo-ficha")); } catch (err) { avisar(err.message); return; }
+        pintarFichaEditor(); avisar("Logo de la ficha listo");
+      };
+      img.onerror = () => avisar("No se pudo leer ese archivo");
+      img.src = URL.createObjectURL(file);
+      return;
+    }
+    const k = ev.target.dataset && ev.target.dataset.fe; if (!k) return;
+    if (ev.target.type === "checkbox") { setFicha(k, ev.target.checked); if (k === "activa") avisar(ev.target.checked ? "Tus clientes verán esta ficha al tocar un lote" : "Se usa la ficha sencilla de siempre"); pintarFichaEditor(); return; }
+    if (ev.target.tagName === "SELECT") { setFicha(k, ev.target.value); pintarFichaEditor(); }
+  });
   function pintarLotes() {
     const todos = lotesUnicos(), E = estadosLote();
     const T = terminos();
@@ -5667,6 +5789,7 @@ void main(){
     if (document.activeElement !== $("lt-mz")) $("lt-mz").value = T.manzana;
     if (document.activeElement !== $("lt-corto")) $("lt-corto").value = T.corto;
     $("lt-ejemplo").innerHTML = "Así se ve: <b>" + esc(T.lote + " 12 · " + mzCorta("3")) + "</b>";
+    pintarFichaEditor();
     $("lx-moneda").innerHTML = MONEDAS.map(([v, n]) => '<option value="' + v + '"' + (monedaTour() === v ? " selected" : "") + ">" + n + "</option>").join("");
     const cuenta = (id) => todos.filter((x) => estadoDe(x.c).id === id).length;
     $("lotes-resumen").innerHTML =
@@ -6277,8 +6400,85 @@ void main(){
     }
     return null;
   }
+  // =================== FICHA DISEÑADA (Laboratorio) ===================
+  // Una ficha con la marca del cliente: su logo, colores y tipografía, el dibujo del lote con sus medidas,
+  // superficie, manzana, precio, textos y (en un diseño) la ubicación del lote en el desarrollo.
+  const FICHA_DEF = { activa: false, plantilla: "clasica", logo: "skin", logoImg: "", titulo: "", fondo: "#ECEAE6", texto: "#2B2B2B", acento: "#8A5A3C", fuente: "",
+    plano: true, medidas: true, superficie: true, precio: true, ubicacion: true, boton: true, textoA: "", textoB: "", tituloA: "", tituloB: "" };
+  const FICHA_PLANTILLAS = [["clasica", "Clásica"], ["ubicacion", "Con ubicación"], ["banda", "Banda de color"]];
+  const fichaConf = () => Object.assign({}, FICHA_DEF, P().ficha);
+  // El lote visto desde arriba, con su frente abajo, sus medidas por lado y su superficie al centro
+  function dibujoLote(c, f, ancho, alto) {
+    const l = loteDe(c), Q = c.puntos.map(([y, p]) => aPlano(y, p));
+    if (Q.length < 3 || Q.some((q) => !q)) return "";
+    let S = Q.map(([x, y]) => [x, -y]);
+    // El frente: en lotes de manzana, sus primeros puntos (la calle, aunque sea curva); en los dibujados a mano, el lado marcado como frente
+    const n = S.length, fi = c.frenteN >= 2 ? 0 : Math.min(+l.frente || 0, n - 1), A = S[fi], B = c.frenteN >= 2 ? S[Math.min(c.frenteN, n) - 1] : S[(fi + 1) % n];
+    const ang = Math.atan2(B[1] - A[1], B[0] - A[0]), co = Math.cos(-ang), si = Math.sin(-ang);
+    S = S.map(([x, y]) => [x * co - y * si, x * si + y * co]);
+    const cy = S.reduce((t, q) => t + q[1], 0) / n;
+    if (cy > S[fi][1]) S = S.map(([x, y]) => [-x, -y]); // el frente queda abajo
+    const xs = S.map((q) => q[0]), ys = S.map((q) => q[1]), m = 46;
+    const w = Math.max(...xs) - Math.min(...xs) || 1, h = Math.max(...ys) - Math.min(...ys) || 1, k = Math.min((ancho - 2 * m) / w, (alto - 2 * m) / h);
+    const ox = (ancho - w * k) / 2 - Math.min(...xs) * k, oy = (alto - h * k) / 2 - Math.min(...ys) * k;
+    const P2 = S.map(([x, y]) => [x * k + ox, y * k + oy]), cx = P2.reduce((t, q) => t + q[0], 0) / n, cyy = P2.reduce((t, q) => t + q[1], 0) / n;
+    const lados = (l.lados || []).map(fmtLado);
+    let t = '<svg class="fd-plano" viewBox="0 0 ' + ancho + " " + alto + '" role="img" aria-label="Plano del lote"><polygon points="' + P2.map((q) => q[0].toFixed(1) + "," + q[1].toFixed(1)).join(" ") + '"/>';
+    if (f.medidas) P2.forEach((a, i) => {
+      const v = lados[i]; if (!v) return;
+      const b = P2[(i + 1) % n], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+      let an = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI; if (an > 90) an -= 180; if (an < -90) an += 180;
+      const dx = mx - cx, dy = my - cyy, d = Math.hypot(dx, dy) || 1;
+      t += '<text class="fd-medida" x="' + (mx + dx / d * 14).toFixed(1) + '" y="' + (my + dy / d * 14).toFixed(1) + '" transform="rotate(' + an.toFixed(1) + " " + (mx + dx / d * 14).toFixed(1) + " " + (my + dy / d * 14).toFixed(1) + ')">' + esc(v) + "</text>";
+    });
+    t += '<text class="fd-centro" x="' + cx.toFixed(1) + '" y="' + (cyy - 4).toFixed(1) + '">' + esc(terminos().lote.charAt(0).toUpperCase() + "-") + esc(l.numero || "") + "</text>";
+    if (fmtArea(l.area)) t += '<text class="fd-centro chico" x="' + cx.toFixed(1) + '" y="' + (cyy + 14).toFixed(1) + '">' + esc(fmtArea(l.area)) + "</text>";
+    return t + "</svg>";
+  }
+  // El desarrollo visto desde arriba con este lote resaltado (los lotes de la misma esfera)
+  function ubicacionLote(c, ancho, alto) {
+    const id = Object.keys(est.capas).find((k) => (est.capas[k] || []).includes(c)); if (!id) return "";
+    const lotes = (est.capas[id] || []).filter((x) => x.lote && x.tipo === "poligono").map((x) => ({ x, Q: x.puntos.map(([y, p]) => aPlano(y, p)) })).filter((o) => o.Q.every(Boolean));
+    if (lotes.length < 2) return "";
+    const todos = lotes.flatMap((o) => o.Q), xs = todos.map((q) => q[0]), ys = todos.map((q) => -q[1]), m = 8;
+    const w = Math.max(...xs) - Math.min(...xs) || 1, h = Math.max(...ys) - Math.min(...ys) || 1, k = Math.min((ancho - 2 * m) / w, (alto - 2 * m) / h);
+    const ox = (ancho - w * k) / 2 - Math.min(...xs) * k, oy = (alto - h * k) / 2 - Math.min(...ys) * k;
+    return '<svg class="fd-ubic" viewBox="0 0 ' + ancho + " " + alto + '" role="img" aria-label="Ubicación del lote">' + lotes.map((o) => '<polygon class="' + (o.x === c ? "este" : "") + '" points="' + o.Q.map(([x, y]) => (x * k + ox).toFixed(1) + "," + (-y * k + oy).toFixed(1)).join(" ") + '"/>').join("") + "</svg>";
+  }
+  function fichaDisenada(c, f) {
+    const l = loteDe(c), e = estadoDe(c), T = terminos(), sk = est.skin || {};
+    const num = String(l.numero || "—").padStart(String(l.numero || "").length === 1 ? 2 : 0, "0");
+    const logoSrc = f.logo === "propio" ? f.logoImg : f.logo === "skin" && sk.logo && sk.logo.tipo === "propio" ? sk.logo.img : "";
+    const titulo = f.titulo || P().nombre || "";
+    const marca = logoSrc ? '<img class="fd-logo" src="' + esc(urlArchivo(logoSrc)) + '" alt="' + esc(titulo) + '">' : '<b class="fd-nombre">' + esc(titulo) + "</b>";
+    const precio = e.id === "vendido" ? "" : fmtPrecio(l.precio);
+    const parrafos = (txt) => esc(txt).split(/\n+/).filter((x) => x.trim()).map((x) => "<p>" + x + "</p>").join("");
+    const cta = sk.cta || {}, enlace = urlSegura(cta.enlace);
+    const boton = f.boton && cta.mostrar !== false && enlace && e.id !== "vendido" ? '<a class="fd-cta" href="' + esc(enlace) + '" target="_blank" rel="noopener">' + esc(cta.texto || "Me interesa") + "</a>" : "";
+    const estado = '<span class="fd-estado" style="--c:' + e.color + '"><i></i>' + esc(e.nombre) + "</span>";
+    const plano = f.plano ? dibujoLote(c, f, 420, 300) : "";
+    const textos = (f.textoA || f.textoB) ? '<div class="fd-textos">' + (f.textoA ? "<div>" + (f.tituloA ? "<h4>" + esc(f.tituloA) + "</h4>" : "") + parrafos(f.textoA) + "</div>" : "") + (f.textoB ? "<div>" + (f.tituloB ? "<h4>" + esc(f.tituloB) + "</h4>" : "") + parrafos(f.textoB) + "</div>" : "") + "</div>" : "";
+    let cuerpo;
+    if (f.plantilla === "banda") {
+      cuerpo = '<div class="fd-banda">' + esc(titulo) + "</div>" + plano + '<h3 class="fd-titulo">' + esc(T.lote) + " #" + esc(l.numero || "—") + "</h3>" + estado +
+        (f.superficie && fmtArea(l.area) ? '<div class="fd-fila"><span>Superficie</span></div><div class="fd-valor">' + esc(fmtArea(l.area)) + "</div>" : "") +
+        '<div class="fd-fila dos"><span>' + (precio && f.precio ? "Precio" : "") + "</span><span>" + esc(T.manzana) + "</span></div>" +
+        '<div class="fd-valor dos"><span>' + (f.precio ? esc(precio) : "") + "</span><span>" + esc(l.manzana || "—") + "</span></div>" + textos + boton +
+        (logoSrc ? '<div class="fd-pie">' + marca + "</div>" : "");
+    } else {
+      const ubic = f.plantilla === "ubicacion" && f.ubicacion ? ubicacionLote(c, 260, 170) : "";
+      cuerpo = '<div class="fd-cab"><div class="fd-marca">' + marca + '</div><i class="fd-sep"></i><h3 class="fd-titulo">' + esc(T.lote) + " " + esc(num) + "</h3></div>" +
+        '<div class="fd-centro-caja">' + estado + plano +
+        '<div class="fd-datos"><span>' + (f.superficie && fmtArea(l.area) ? "Área: " + esc(fmtArea(l.area)) : "") + "</span><span>" + (l.manzana ? esc(T.manzana) + " " + esc(String(l.manzana).padStart(2, "0")) : "") + "</span></div></div>" +
+        (f.precio && precio ? '<div class="fd-precio"><small>Precio:</small><b>' + esc(precio) + "</b></div>" : "") +
+        (f.plantilla === "ubicacion" ? '<div class="fd-textos">' + (f.textoA ? "<div>" + (f.tituloA ? "<h4>" + esc(f.tituloA) + "</h4>" : "") + parrafos(f.textoA) + "</div>" : "<div></div>") + (ubic || f.textoB ? "<div>" + "<h4>" + esc(f.tituloB || "Ubicación") + "</h4>" + ubic + parrafos(f.textoB) + "</div>" : "") + "</div>" : textos) + boton;
+    }
+    return '<div class="pop-caja ficha-d fd-' + f.plantilla + '" role="dialog" aria-label="' + esc(nombreLote(c)) + '" style="--fd-fondo:' + f.fondo + ";--fd-texto:" + f.texto + ";--fd-acento:" + f.acento + ";--fd-sobre:" + textoSobre(f.acento) + (f.fuente ? ";--fd-fuente:'" + f.fuente + "'" : "") + '"><button class="pop-x" aria-label="Cerrar">×</button>' + cuerpo + "</div>";
+  }
   // Ficha del lote en el tour: estado, superficie, medidas, precio y botón de contacto
   function fichaLote(c) {
+    const fd = fichaConf();
+    if (fd.activa) { cargarFuente(fd.fuente); return fichaDisenada(c, fd); }
     const l = loteDe(c), e = estadoDe(c), lados = (l.lados || []).map(fmtLado);
     const fila = (k, v) => (v ? '<div><dt>' + k + "</dt><dd>" + esc(v) + "</dd></div>" : "");
     const otros = lados.filter((v, i) => v && i !== +l.frente);

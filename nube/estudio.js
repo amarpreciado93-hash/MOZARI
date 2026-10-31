@@ -138,6 +138,7 @@ async function crearReporte(request, env, yo, plan) {
 // El estudio solo muestra la herramienta si la cuenta la tiene en su lista "lab".
 export const LABORATORIO = {
   "manzana-curvas": { nombre: "Calle curva", texto: "Manijas en cada punto de la orilla de una manzana (como la pluma de Illustrator) para calles en curva u ola." },
+  "fichas": { nombre: "Creador de fichas", texto: "En Lotes: diseña la ficha que ve tu cliente al tocar un lote, con el logo, colores y tipografía del desarrollo, el plano del lote y su ubicación." },
   "manzana-desfase": { nombre: "Doble manzana desfasada", texto: "En una manzana doble, la fila de atrás puede tener otro número de lotes y recorrerse para no coincidir con la del frente." },
 };
 const MODOS_LAB = ["yo", "probadores", "todos"];
