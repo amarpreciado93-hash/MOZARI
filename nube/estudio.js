@@ -137,7 +137,8 @@ async function crearReporte(request, env, yo, plan) {
 // Laboratorio: funciones nuevas que primero prueba el dueño (y quien él elija) antes de darlas a todos.
 // El estudio solo muestra la herramienta si la cuenta la tiene en su lista "lab".
 export const LABORATORIO = {
-  "manzana-isla": { nombre: "Manzana en isla", texto: "Manzanas redondas u orgánicas: dibujas el contorno y los lotes se cortan hacia el centro." },
+  "manzana-curvas": { nombre: "Calle curva", texto: "Manijas en cada punto de la orilla de una manzana (como la pluma de Illustrator) para calles en curva u ola." },
+  "manzana-desfase": { nombre: "Doble manzana desfasada", texto: "En una manzana doble, la fila de atrás puede tener otro número de lotes y recorrerse para no coincidir con la del frente." },
 };
 const MODOS_LAB = ["yo", "probadores", "todos"];
 async function leerLab(env) {
