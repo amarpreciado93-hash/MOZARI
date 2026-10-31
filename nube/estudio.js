@@ -15,6 +15,8 @@
 //   GET    /api/uso           espacio que usan tus tours y tu plan
 //   GET    /api/admin/cuentas         (solo el dueño) todas las cuentas
 //   PUT    /api/admin/cuentas/:uid    (solo el dueño) cambia el plan de una cuenta  { plan }
+//   GET    /api/admin/laboratorio     (solo el dueño) funciones en prueba y para quién están
+//   PUT    /api/admin/laboratorio/:clave   { modo: yo|probadores|todos, probadores: [correos] }
 //   GET    /t/:id/<ruta>      archivos de tu tour (el estudio los usa para mostrar las esferas)
 //
 // Cada tour pertenece a una cuenta: cuentas/<uid>/tours/<id>. Nadie puede leer, cambiar ni borrar
@@ -132,8 +134,45 @@ async function crearReporte(request, env, yo, plan) {
   return json({ ok: true, id }, 201);
 }
 
+// Laboratorio: funciones nuevas que primero prueba el dueño (y quien él elija) antes de darlas a todos.
+// El estudio solo muestra la herramienta si la cuenta la tiene en su lista "lab".
+export const LABORATORIO = {
+  "manzana-isla": { nombre: "Manzana en isla", texto: "Manzanas redondas u orgánicas: dibujas el contorno y los lotes se cortan hacia el centro." },
+};
+const MODOS_LAB = ["yo", "probadores", "todos"];
+async function leerLab(env) {
+  const o = await env.R2.get("config/laboratorio.json");
+  const c = o ? await o.json().catch(() => ({})) : {};
+  return Object.fromEntries(Object.keys(LABORATORIO).map((k) => {
+    const f = (c && c[k]) || {};
+    return [k, { modo: MODOS_LAB.includes(f.modo) ? f.modo : "yo", probadores: Array.isArray(f.probadores) ? f.probadores : [] }];
+  }));
+}
+async function labDe(env, yo) {
+  const cfg = await leerLab(env), correo = String(yo.email || "").toLowerCase();
+  return Object.keys(cfg).filter((k) => yo.admin || cfg[k].modo === "todos" || (cfg[k].modo === "probadores" && cfg[k].probadores.includes(correo)));
+}
+
 async function admin(request, env, partes) {
   const m = request.method;
+  if (partes[2] === "laboratorio") {
+    if (partes.length === 3 && m === "GET") {
+      const cfg = await leerLab(env);
+      return json({ funciones: Object.entries(LABORATORIO).map(([clave, f]) => Object.assign({ clave }, f, cfg[clave])) });
+    }
+    if (partes.length === 4 && m === "PUT" && LABORATORIO[partes[3]]) {
+      const cuerpo = await request.json().catch(() => ({}));
+      const o = await env.R2.get("config/laboratorio.json");
+      const c = (o ? await o.json().catch(() => ({})) : {}) || {};
+      const antes = c[partes[3]] || {};
+      c[partes[3]] = {
+        modo: MODOS_LAB.includes(cuerpo.modo) ? cuerpo.modo : antes.modo || "yo",
+        probadores: Array.isArray(cuerpo.probadores) ? [...new Set(cuerpo.probadores.map((x) => String(x).trim().toLowerCase()).filter((x) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x)))].slice(0, 200) : antes.probadores || [],
+      };
+      await env.R2.put("config/laboratorio.json", JSON.stringify(c), { httpMetadata: { contentType: "application/json" } });
+      return json({ ok: true, funcion: c[partes[3]] });
+    }
+  }
   if (partes[2] === "reportes") {
     if (partes.length === 3 && m === "GET") {
       const out = []; let cur;
@@ -240,7 +279,7 @@ async function admin(request, env, partes) {
 
 async function api(request, env, partes, yo) {
   const m = request.method, uid = yo.uid, plan = planDe(yo);
-  if (partes[1] === "yo" && m === "GET") return json({ email: yo.email, nombre: yo.nombre, foto: yo.foto, admin: !!yo.admin, plan });
+  if (partes[1] === "yo" && m === "GET") return json({ email: yo.email, nombre: yo.nombre, foto: yo.foto, admin: !!yo.admin, plan, lab: await labDe(env, yo) });
   if (partes[1] === "pagos") return apiPagos(request, env, partes, yo);
   if (partes[1] === "reportes" && partes.length === 2 && m === "POST") return crearReporte(request, env, yo, plan);
   if (partes[1] === "admin") return yo.admin ? admin(request, env, partes) : error(403, "Solo el dueño de Mozari");

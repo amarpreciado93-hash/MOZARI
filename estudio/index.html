@@ -683,6 +683,14 @@
   .pub-revision ul { margin: 0; padding-left: 18px; color: var(--mz-tenue); }
   .pub-revision.ok { border-color: var(--mz-linea-neutra); background: transparent; }
   .pub-revision.ok b { color: var(--mz-lima); }
+  .chip-lab { display: inline-block; vertical-align: middle; margin-left: 4px; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--mz-lima); color: var(--mz-lima); font-size: 9px; font-weight: 700; letter-spacing: .12em; line-height: 1.5; }
+  .lab-intro { margin: 10px 16px 14px; }
+  .lab-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 16px; margin: 0 16px 10px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 13px; }
+  .lab-fila > div:first-child { flex: 1 1 280px; display: grid; gap: 4px; }
+  .lab-fila span:not(.chip-lab) { color: var(--mz-tenue); }
+  .lab-probadores { flex-basis: 100%; display: grid; gap: 6px; color: var(--mz-tenue); }
+  .lab-probadores textarea { width: 100%; box-sizing: border-box; background: var(--mz-fondo); color: var(--mz-texto); border: 1px solid var(--mz-linea-neutra); border-radius: 8px; padding: 8px; font: inherit; resize: vertical; }
+  .lab-probadores button { justify-self: start; }
   .pub-hosting { text-align: left; max-width: 560px; margin: 18px auto 0; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
   .pub-hosting > div { flex: 1 1 260px; display: grid; gap: 4px; }
   .pub-hosting span { color: var(--mz-tenue); }
@@ -1489,6 +1497,10 @@
     rango.addEventListener("input", () => { const t = rango.value / 100; aplicarTema(t); try { localStorage.setItem("mozari-tema", String(t)); } catch (e) { /* sin almacenamiento */ } });
     rango.addEventListener("click", (ev) => ev.stopPropagation());
   }
+  // Laboratorio: herramientas nuevas que solo ve quien las tiene activas (el dueño siempre; luego probadores o todos)
+  const LAB = new Set(MODO === "nube" && Array.isArray(NUBE.lab) ? NUBE.lab : []);
+  const enLab = (clave) => LAB.has(clave);
+  const CHIP_LAB = '<span class="chip-lab">LAB</span>';
   const TOUR = MODO === "nube" ? (location.hash.match(/t=([a-z0-9-]+)/) || [])[1] || null : null;
   // Plan de la cuenta (el servidor es quien pone los límites; aquí solo se avisa a tiempo)
   const PLAN = MODO === "nube" && NUBE.plan ? NUBE.plan : null;
@@ -2245,7 +2257,7 @@
   }
   // Panel del dueño: todas las cuentas y su plan (para dar acceso a tus alumnos)
   let vistaDueno = "cuentas";
-  const TABS_DUENO = (n) => '<div class="rep-tabs"><button class="mini' + (vistaDueno === "cuentas" ? " primario" : "") + '" data-dueno="cuentas">Cuentas</button><button class="mini' + (vistaDueno === "links" ? " primario" : "") + '" data-dueno="links">Links de regalo y descuento</button><button class="mini' + (vistaDueno === "reportes" ? " primario" : "") + '" data-dueno="reportes">Reportes' + (n ? " (" + n + " nuevos)" : "") + "</button></div>";
+  const TABS_DUENO = (n) => '<div class="rep-tabs"><button class="mini' + (vistaDueno === "cuentas" ? " primario" : "") + '" data-dueno="cuentas">Cuentas</button><button class="mini' + (vistaDueno === "links" ? " primario" : "") + '" data-dueno="links">Links de regalo y descuento</button><button class="mini' + (vistaDueno === "reportes" ? " primario" : "") + '" data-dueno="reportes">Reportes' + (n ? " (" + n + " nuevos)" : "") + '</button><button class="mini' + (vistaDueno === "laboratorio" ? " primario" : "") + '" data-dueno="laboratorio">Laboratorio</button></div>';
   // Links de un solo uso: cada alumno recibe el suyo (licencia de regalo o descuento)
   const TIPOS_LINK = { "pro-100": ["Pro de regalo", 100, ["pro"]], "des-100": ["Desarrollos de regalo", 100, ["desarrollos"]], "des-50": ["Desarrollos con 50% de descuento", 50, ["desarrollos"]], "todo-30": ["30% en Pro y Desarrollos", 30, ["pro", "desarrollos"]] };
   const linkDe = (codigo) => location.origin + "/entrar?cupon=" + codigo;
@@ -2296,6 +2308,29 @@
       avisar(r && r.ok ? (ac.dataset.v === "1" ? "Link activado" : "Link desactivado") : "No se pudo cambiar"); pintarLinks();
     }
   });
+  // Laboratorio: cada función nueva nace "Solo yo"; cuando convence, se da a probadores o a todos
+  const MODOS_LAB = [["yo", "Solo yo"], ["probadores", "Probadores"], ["todos", "Todos"]];
+  async function pintarLaboratorio() {
+    const r = await fetch("api/admin/laboratorio", { cache: "no-store" }).catch(() => null);
+    if (!r || !r.ok) { avisar("No se pudo leer el Laboratorio"); return; }
+    const { funciones } = await r.json();
+    $("cuentas").innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) +
+      '<p class="nota lab-intro">Herramientas nuevas en prueba. Tú siempre las ves (con la etiqueta ' + CHIP_LAB + '). Cuando una te convenza, dásela a tus probadores o a todos. Ojo: lo que publiques con ellas sí lo ven tus clientes en el tour.</p>' +
+      funciones.map((f) => '<div class="lab-fila" data-lab="' + esc(f.clave) + '"><div><b>' + esc(f.nombre) + " " + CHIP_LAB + "</b><span>" + esc(f.texto) + "</span></div>" +
+        '<div class="estados">' + MODOS_LAB.map(([v, n]) => '<button data-lab-modo="' + v + '" aria-pressed="' + (f.modo === v) + '">' + n + "</button>").join("") + "</div>" +
+        (f.modo === "probadores" ? '<label class="lab-probadores">Correos de tus probadores (uno por renglón o separados por coma)<textarea rows="3" data-lab-correos placeholder="marco@ejemplo.com">' + esc(f.probadores.join("\n")) + '</textarea><button class="mini primario" data-lab-guardar>Guardar probadores</button></label>' : "") + "</div>").join("");
+  }
+  document.addEventListener("click", async (ev) => {
+    const fila = ev.target.closest("[data-lab]"); if (!fila) return;
+    const modo = ev.target.closest("[data-lab-modo]"), guardar = ev.target.closest("[data-lab-guardar]");
+    if (!modo && !guardar) return;
+    const cuerpo = modo ? { modo: modo.dataset.labModo } : { probadores: fila.querySelector("[data-lab-correos]").value.split(/[\s,;]+/).filter(Boolean) };
+    const r = await fetch("api/admin/laboratorio/" + fila.dataset.lab, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(cuerpo) }).catch(() => null);
+    if (!r || !r.ok) { avisar("No se pudo guardar"); return; }
+    const d = await r.json();
+    avisar(guardar ? d.funcion.probadores.length + " probadores guardados" : d.funcion.modo === "todos" ? "Activada para toda la comunidad" : d.funcion.modo === "probadores" ? "Solo tú y tus probadores la ven" : "Solo tú la ves");
+    pintarLaboratorio();
+  });
   async function pintarReportes() {
     const r = await fetch("api/admin/reportes", { cache: "no-store" }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudieron leer los reportes"); return; }
@@ -2312,7 +2347,7 @@
   }
   document.addEventListener("click", (ev) => {
     const t = ev.target.closest("[data-dueno]"); if (!t) return;
-    vistaDueno = t.dataset.dueno; vistaDueno === "reportes" ? pintarReportes() : vistaDueno === "links" ? pintarLinks() : pintarCuentas();
+    vistaDueno = t.dataset.dueno; pintarCuentas();
   });
   document.addEventListener("change", async (ev) => {
     const id = ev.target.dataset && ev.target.dataset.rep; if (!id) return;
@@ -2338,6 +2373,7 @@
   async function pintarCuentas() {
     if (vistaDueno === "reportes") return pintarReportes();
     if (vistaDueno === "links") return pintarLinks();
+    if (vistaDueno === "laboratorio") return pintarLaboratorio();
     const r = await fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudieron leer las cuentas"); return; }
     const { cuentas: todas } = await r.json();
