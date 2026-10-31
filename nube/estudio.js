@@ -16,6 +16,8 @@
 //   GET    /api/admin/cuentas         (solo el dueño) todas las cuentas
 //   PUT    /api/admin/cuentas/:uid    (solo el dueño) cambia el plan de una cuenta  { plan }
 //   GET    /api/admin/laboratorio     (solo el dueño) funciones en prueba y para quién están
+//   GET    /api/novedades             anuncios para esta cuenta (y si ya los vio) · POST /api/novedades/:id/vista
+//   GET|POST /api/admin/novedades     (solo el dueño) crear y editar anuncios · PUT /:id · PUT /:id/media
 //   PUT    /api/admin/laboratorio/:clave   { modo: yo|probadores|todos, probadores: [correos] }
 //   GET    /t/:id/<ruta>      archivos de tu tour (el estudio los usa para mostrar las esferas)
 //
@@ -155,8 +157,77 @@ async function labDe(env, yo) {
   return Object.keys(cfg).filter((k) => yo.admin || cfg[k].modo === "todos" || (cfg[k].modo === "probadores" && cfg[k].probadores.includes(correo)));
 }
 
+// Novedades: anuncios de herramientas nuevas que cada cuenta ve UNA vez (se anota en su perfil, no en el navegador)
+//   novedades/<id>.json  { id, titulo, texto, media, mediaTipo, boton, destino, publico, activa, creada, publicada, vistas }
+//   novedades/<id>.media el video o la imagen del anuncio
+const MAX_MEDIA_NOV = 25 * 1024 * 1024;
+const PUBLICOS_NOV = ["todos", "pagados", "gratis"];
+async function listaNovedades(env) {
+  const l = await env.R2.list({ prefix: "novedades/", limit: 1000 });
+  const ns = await Promise.all(l.objects.filter((o) => o.key.endsWith(".json")).map(async (o) => (await env.R2.get(o.key)).json().catch(() => null)));
+  return ns.filter(Boolean).sort((a, b) => String(b.publicada || b.creada).localeCompare(String(a.publicada || a.creada)));
+}
+const paraQuien = (n, plan) => n.publico === "pagados" ? plan.id !== "gratis" : n.publico === "gratis" ? plan.id === "gratis" : true;
+async function apiNovedades(request, env, partes, yo, plan) {
+  const m = request.method, id = partes[2];
+  if (partes.length === 2 && m === "GET") {
+    const vistas = new Set(yo.novedadesVistas || []);
+    const ns = (await listaNovedades(env)).filter((n) => n.activa && n.publicada && paraQuien(n, plan)).slice(0, 10)
+      .map((n) => ({ id: n.id, titulo: n.titulo, texto: n.texto, media: n.media ? "api/novedades/" + n.id + "/media" : "", mediaTipo: n.mediaTipo || "", boton: n.boton, destino: n.destino, publicada: n.publicada, vista: vistas.has(n.id) }));
+    return json({ novedades: ns });
+  }
+  if (!/^[a-z0-9]{6,20}$/.test(id || "")) return error(400, "Novedad inválida");
+  if (partes[3] === "media" && m === "GET") return servirR2(env, request, "novedades/" + id + ".media", "private, max-age=3600");
+  if (partes[3] === "vista" && m === "POST") {
+    const clave = "cuentas/" + yo.uid + "/perfil.json", o = await env.R2.get(clave); if (!o) return error(404, "Sin cuenta");
+    const p = await o.json(); p.novedadesVistas = [...new Set([id].concat(p.novedadesVistas || []))].slice(0, 100);
+    await env.R2.put(clave, JSON.stringify(p), { httpMetadata: { contentType: "application/json" } });
+    const no = await env.R2.get("novedades/" + id + ".json");
+    if (no) { const n = await no.json(); n.vistas = (+n.vistas || 0) + 1; await env.R2.put("novedades/" + id + ".json", JSON.stringify(n), { httpMetadata: { contentType: "application/json" } }); }
+    return json({ ok: true });
+  }
+  return error(404, "Ruta desconocida");
+}
+
 async function admin(request, env, partes) {
   const m = request.method;
+  if (partes[2] === "novedades") {
+    if (partes.length === 3 && m === "GET") return json({ novedades: await listaNovedades(env) });
+    if (partes.length === 3 && m === "POST") {
+      const id = Date.now().toString(36) + crypto.getRandomValues(new Uint32Array(1))[0].toString(36).slice(0, 4);
+      const n = { id, titulo: "Novedad", texto: "", media: false, mediaTipo: "", boton: "Probar ahora", destino: "", publico: "todos", activa: false, creada: new Date().toISOString(), publicada: "", vistas: 0 };
+      await env.R2.put("novedades/" + id + ".json", JSON.stringify(n), { httpMetadata: { contentType: "application/json" } });
+      return json({ novedad: n }, 201);
+    }
+    const id = partes[3];
+    if (!/^[a-z0-9]{6,20}$/.test(id || "")) return error(400, "Novedad inválida");
+    const clave = "novedades/" + id + ".json", o = await env.R2.get(clave);
+    if (!o) return error(404, "No existe");
+    const n = await o.json();
+    if (partes.length === 4 && m === "PUT") {
+      const c = await request.json().catch(() => ({}));
+      if (typeof c.titulo === "string") n.titulo = c.titulo.slice(0, 90);
+      if (typeof c.texto === "string") n.texto = c.texto.slice(0, 700);
+      if (typeof c.boton === "string") n.boton = c.boton.slice(0, 30);
+      if (typeof c.destino === "string") n.destino = c.destino.slice(0, 200);
+      if (PUBLICOS_NOV.includes(c.publico)) n.publico = c.publico;
+      if (typeof c.activa === "boolean") { n.activa = c.activa; if (c.activa && !n.publicada) n.publicada = new Date().toISOString(); }
+      await env.R2.put(clave, JSON.stringify(n), { httpMetadata: { contentType: "application/json" } });
+      return json({ novedad: n });
+    }
+    if (partes.length === 4 && m === "DELETE") { await env.R2.delete([clave, "novedades/" + id + ".media"]); return json({ ok: true }); }
+    if (partes[4] === "media" && m === "PUT") {
+      const tipo = (request.headers.get("content-type") || "").split(";")[0], largo = +request.headers.get("content-length") || 0;
+      if (!/^(image\/(png|jpeg|gif|webp)|video\/mp4)$/.test(tipo)) return error(415, "Usa un video MP4 o una imagen (GIF, PNG, JPG o WebP)");
+      if (!largo || largo > MAX_MEDIA_NOV) return error(413, "El archivo pesa más de 25 MB");
+      await env.R2.put("novedades/" + id + ".media", request.body, { httpMetadata: { contentType: tipo } });
+      n.media = true; n.mediaTipo = tipo.startsWith("video") ? "video" : "imagen";
+      await env.R2.put(clave, JSON.stringify(n), { httpMetadata: { contentType: "application/json" } });
+      return json({ novedad: n });
+    }
+    if (partes[4] === "media" && m === "GET") return servirR2(env, request, "novedades/" + id + ".media", "private, max-age=60");
+    return error(405, "Método no permitido");
+  }
   if (partes[2] === "laboratorio") {
     if (partes.length === 3 && m === "GET") {
       const cfg = await leerLab(env);
@@ -285,6 +356,7 @@ async function api(request, env, partes, yo) {
   if (partes[1] === "pagos") return apiPagos(request, env, partes, yo);
   if (partes[1] === "reportes" && partes.length === 2 && m === "POST") return crearReporte(request, env, yo, plan);
   if (partes[1] === "admin") return yo.admin ? admin(request, env, partes) : error(403, "Solo el dueño de Mozari");
+  if (partes[1] === "novedades") return apiNovedades(request, env, partes, yo, plan);
 
   if (partes[1] === "uso" && m === "GET") return json(Object.assign({ plan }, await usoDe(env, uid, true)));
 

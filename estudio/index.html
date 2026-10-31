@@ -87,6 +87,46 @@
   .mi-plan a, .mi-plan button { text-decoration: none; }
   .dlg-pago { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0; border: 1px solid var(--mz-linea-neutra); border-radius: 18px; background: var(--mz-fondo); color: var(--mz-texto); font-family: var(--mz-texto-ui); }
   .dlg-pago::backdrop { background: rgba(0, 0, 0, 0.6); }
+  /* Novedades: el anuncio de una herramienta nueva (se ve una vez por cuenta) */
+  /* Estilo "liquid glass": vidrio esmerilado que deja ver el estudio detrás, con brillo en las orillas */
+  .dlg-nov { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0; overflow: auto; color: #fff; border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.22); background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0.09)), rgba(14, 15, 13, 0.32);
+    -webkit-backdrop-filter: blur(34px) saturate(190%); backdrop-filter: blur(34px) saturate(190%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(255, 255, 255, 0.08), inset 0 0 40px rgba(255, 255, 255, 0.04), 0 30px 80px rgba(0, 0, 0, 0.45); }
+  .dlg-nov::backdrop { background: radial-gradient(120% 90% at 50% 40%, rgba(213, 255, 64, 0.08), rgba(0, 0, 0, 0.42)); }
+  .dlg-nov[open] { animation: nov-entra 0.5s cubic-bezier(.2, .9, .25, 1.15) both; }
+  @keyframes nov-entra { from { opacity: 0; transform: translateY(14px) scale(0.96); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+  .nov-cuerpo { position: relative; padding: 24px; display: grid; gap: 16px; }
+  .nov-cuerpo::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 120px; border-radius: 30px 30px 0 0; pointer-events: none; background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent); }
+  .nov-etiq { justify-self: start; font: 700 10px var(--mz-texto-ui); letter-spacing: 0.18em; color: #D5FF40; background: rgba(213, 255, 64, 0.12); border: 1px solid rgba(213, 255, 64, 0.45); border-radius: 999px; padding: 5px 11px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+  .nov-cuerpo h2 { margin: 0; font-size: 24px; line-height: 1.2; font-weight: 700; color: #fff; text-shadow: 0 1px 12px rgba(0, 0, 0, 0.25); }
+  .nov-media { width: 100%; max-height: 52vh; object-fit: cover; border-radius: 20px; background: rgba(0, 0, 0, 0.35); display: block; border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35); }
+  .nov-cuerpo ul { margin: 0; padding-left: 18px; display: grid; gap: 7px; color: rgba(255, 255, 255, 0.82); font-size: 14px; line-height: 1.45; }
+  .nov-cuerpo li::marker { color: #D5FF40; }
+  .nov-acc { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+  .nov-acc button { border-radius: 999px; padding: 11px 20px; font: 600 14px var(--mz-texto-ui); cursor: pointer; transition: transform 0.15s, background 0.2s; }
+  .nov-acc button:active { transform: scale(0.97); }
+  .nov-acc .btn-sec { color: #fff; background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.28); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .nov-acc .btn-sec:hover { background: rgba(255, 255, 255, 0.2); }
+  .nov-acc .btn-prim { color: #0B0B0B; background: linear-gradient(180deg, #E4FF7A, #D5FF40); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 8px 24px rgba(213, 255, 64, 0.25); }
+  .nov-mas { border-top: 1px solid rgba(255, 255, 255, 0.14); padding-top: 12px; display: grid; gap: 4px; font-size: 13px; }
+  .nov-mas button { all: unset; cursor: pointer; color: rgba(255, 255, 255, 0.65); display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; }
+  .nov-mas button:hover { color: #fff; }
+  .nov-btn { position: relative; display: inline-grid; place-items: center; width: 26px; height: 26px; margin-left: 4px; padding: 0; border: 1px solid var(--mz-linea-neutra); border-radius: 50%; background: none; color: var(--mz-texto); cursor: pointer; }
+  .nov-btn svg { width: 15px; height: 15px; }
+  .nov-btn.punto::after { content: ""; position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; border-radius: 50%; background: #FF2D55; box-shadow: 0 0 0 2px var(--mz-negro); }
+  @media (max-width: 960px) { .nov-ir { display: none; } }
+  .nov-admin { padding: 0 16px 16px; display: grid; gap: 12px; }
+  .nov-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 13px; }
+  .nov-fila > div { flex: 1 1 260px; display: grid; gap: 3px; }
+  .nov-fila small { color: var(--mz-tenue); }
+  .nov-estado { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mz-tenue); }
+  .nov-estado.si { color: var(--mz-lima); }
+  .nov-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); }
+  .nov-form label { display: grid; gap: 5px; font-size: 12px; color: var(--mz-tenue); }
+  .nov-form .ancho { grid-column: 1 / -1; }
+  .nov-form textarea { resize: vertical; font: inherit; }
+  .nov-form .nov-prev { max-width: 260px; max-height: 150px; border-radius: 10px; }
   .dlg-pago .dp-cuerpo { padding: 22px; display: grid; gap: 16px; }
   .dlg-pago h2 { margin: 0; font-size: 20px; font-weight: 600; }
   .dlg-pago p { margin: 0; color: var(--mz-tenue); font-size: 13px; line-height: 1.5; }
@@ -1155,6 +1195,7 @@
 </style>
 </head>
 <body>
+<dialog class="dlg-nov" id="dlg-nov" aria-labelledby="nov-titulo"></dialog>
 <dialog class="dlg-pago" id="dlg-pago" aria-labelledby="dp-titulo"><div class="dp-cuerpo" id="dp-cuerpo"></div></dialog>
 
 <!-- ======================= ARRANQUE ======================= -->
@@ -1166,7 +1207,7 @@
 <!-- ======================= ESTUDIO ======================= -->
 <div class="app" id="app">
   <header class="barra">
-    <div class="marca-app"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg><b>MOZARI</b><button class="beta" data-reportar title="Mozari está en beta: mejora cada semana. Si algo falla, repórtalo aquí.">BETA</button></div>
+    <div class="marca-app"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg><b>MOZARI</b><button class="beta" data-reportar title="Mozari está en beta: mejora cada semana. Si algo falla, repórtalo aquí.">BETA</button><button class="nov-btn" id="nov-btn" hidden title="Novedades de Mozari" aria-label="Novedades de Mozari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></button></div>
     <nav class="nav" id="nav" aria-label="Ventanas"></nav>
     <div class="barra-der">
       <span class="estado"><i></i><span id="b-estado">Guardado</span></span>
@@ -2358,7 +2399,7 @@
   }
   // Panel del dueño: todas las cuentas y su plan (para dar acceso a tus alumnos)
   let vistaDueno = "cuentas";
-  const TABS_DUENO = (n) => '<div class="rep-tabs"><button class="mini' + (vistaDueno === "cuentas" ? " primario" : "") + '" data-dueno="cuentas">Cuentas</button><button class="mini' + (vistaDueno === "links" ? " primario" : "") + '" data-dueno="links">Links de regalo y descuento</button><button class="mini' + (vistaDueno === "reportes" ? " primario" : "") + '" data-dueno="reportes">Reportes' + (n ? " (" + n + " nuevos)" : "") + '</button><button class="mini' + (vistaDueno === "laboratorio" ? " primario" : "") + '" data-dueno="laboratorio">Laboratorio</button></div>';
+  const TABS_DUENO = (n) => '<div class="rep-tabs"><button class="mini' + (vistaDueno === "cuentas" ? " primario" : "") + '" data-dueno="cuentas">Cuentas</button><button class="mini' + (vistaDueno === "links" ? " primario" : "") + '" data-dueno="links">Links de regalo y descuento</button><button class="mini' + (vistaDueno === "reportes" ? " primario" : "") + '" data-dueno="reportes">Reportes' + (n ? " (" + n + " nuevos)" : "") + '</button><button class="mini' + (vistaDueno === "laboratorio" ? " primario" : "") + '" data-dueno="laboratorio">Laboratorio</button><button class="mini' + (vistaDueno === "novedades" ? " primario" : "") + '" data-dueno="novedades">Novedades</button></div>';
   // Links de un solo uso: cada alumno recibe el suyo (licencia de regalo o descuento)
   const TIPOS_LINK = { "pro-100": ["Pro de regalo", 100, ["pro"]], "des-100": ["Desarrollos de regalo", 100, ["desarrollos"]], "des-50": ["Desarrollos con 50% de descuento", 50, ["desarrollos"]], "todo-30": ["30% en Pro y Desarrollos", 30, ["pro", "desarrollos"]] };
   const linkDe = (codigo) => location.origin + "/entrar?cupon=" + codigo;
@@ -2419,11 +2460,17 @@
       '<p class="nota lab-intro">Herramientas nuevas en prueba. Tú siempre las ves (con la etiqueta ' + CHIP_LAB + '). Cuando una te convenza, dásela a tus probadores o a todos. Ojo: lo que publiques con ellas sí lo ven tus clientes en el tour.</p>' +
       funciones.map((f) => '<div class="lab-fila" data-lab="' + esc(f.clave) + '"><div><b>' + esc(f.nombre) + " " + CHIP_LAB + "</b><span>" + esc(f.texto) + "</span></div>" +
         '<div class="estados">' + MODOS_LAB.map(([v, n]) => '<button data-lab-modo="' + v + '" aria-pressed="' + (f.modo === v) + '">' + n + "</button>").join("") + "</div>" +
+        (f.modo === "todos" ? '<button class="mini primario" data-lab-anunciar>Anunciarla a todos</button>' : "") +
         (f.modo === "probadores" ? '<label class="lab-probadores">Correos de tus probadores (uno por renglón o separados por coma)<textarea rows="3" data-lab-correos placeholder="marco@ejemplo.com">' + esc(f.probadores.join("\n")) + '</textarea><button class="mini primario" data-lab-guardar>Guardar probadores</button></label>' : "") + "</div>").join("");
   }
   document.addEventListener("click", async (ev) => {
     const fila = ev.target.closest("[data-lab]"); if (!fila) return;
     const modo = ev.target.closest("[data-lab-modo]"), guardar = ev.target.closest("[data-lab-guardar]");
+    if (ev.target.closest("[data-lab-anunciar]")) { // la novedad sale medio escrita con el nombre y la descripción de la función
+      const nombre = fila.querySelector("b").firstChild.textContent.trim(), texto = fila.querySelector("span:not(.chip-lab)").textContent.trim();
+      await crearNovedad({ titulo: nombre, texto, destino: LAB_DESTINO[fila.dataset.lab] || "" });
+      return;
+    }
     if (!modo && !guardar) return;
     const cuerpo = modo ? { modo: modo.dataset.labModo } : { probadores: fila.querySelector("[data-lab-correos]").value.split(/[\s,;]+/).filter(Boolean) };
     const r = await fetch("api/admin/laboratorio/" + fila.dataset.lab, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(cuerpo) }).catch(() => null);
@@ -2431,6 +2478,148 @@
     const d = await r.json();
     avisar(guardar ? d.funcion.probadores.length + " probadores guardados" : d.funcion.modo === "todos" ? "Activada para toda la comunidad" : d.funcion.modo === "probadores" ? "Solo tú y tus probadores la ven" : "Solo tú la ves");
     pintarLaboratorio();
+  });
+  // =================== NOVEDADES ===================
+  // Cada anuncio se ve una vez por cuenta (se anota en el servidor). El botón ✦ junto a BETA los vuelve a abrir.
+  const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Lotes"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Skin"], ["publicar/web", "Publicar"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"]];
+  const LAB_DESTINO = { "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes" };
+  let novedades = [], novActual = null;
+  const fechaCorta = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
+  function htmlNovedad(n, media) {
+    const puntos = String(n.texto || "").split(/\n+/).map((x) => x.replace(/^[-•·*]\s*/, "").trim()).filter(Boolean);
+    const m = media ? (n.mediaTipo === "video" ? '<video class="nov-media" src="' + esc(media) + '" autoplay muted loop playsinline></video>' : '<img class="nov-media" src="' + esc(media) + '" alt="">') : "";
+    const otras = novedades.filter((x) => x.id !== n.id).slice(0, 4);
+    return '<div class="nov-cuerpo"><span class="nov-etiq">NUEVO EN MOZARI</span><h2 id="nov-titulo">' + esc(n.titulo) + "</h2>" + m +
+      (puntos.length ? "<ul>" + puntos.map((x) => "<li>" + esc(x) + "</li>").join("") + "</ul>" : "") +
+      '<div class="nov-acc"><button class="btn-sec" data-nov-cerrar>' + (n.destino ? "Después" : "Cerrar") + "</button>" +
+      (n.destino ? '<button class="btn-prim nov-ir" data-nov-ir="' + esc(n.destino) + '">' + esc(n.boton || "Probar ahora") + "</button>" : "") + "</div>" +
+      (otras.length && !n.previa ? '<div class="nov-mas"><b>Más novedades</b>' + otras.map((x) => '<button data-nov-ver="' + x.id + '"><span>' + esc(x.titulo) + "</span><small>" + fechaCorta(x.publicada) + "</small></button>").join("") + "</div>" : "") + "</div>";
+  }
+  function abrirNovedad(n, media) {
+    novActual = n;
+    $("dlg-nov").innerHTML = htmlNovedad(n, media === undefined ? n.media : media);
+    if (!$("dlg-nov").open) $("dlg-nov").showModal();
+    if (!n.previa && !n.vista) { n.vista = true; fetch("api/novedades/" + n.id + "/vista", { method: "POST" }).catch(() => {}); }
+    if (!n.previa) { try { localStorage.setItem("mozari-nov", (novedades[0] || n).id); } catch (e) { /* sin almacenamiento */ } pintarBotonNov(); }
+  }
+  function pintarBotonNov() {
+    const b = $("nov-btn"); if (!b) return;
+    b.hidden = !novedades.length;
+    let ultima = ""; try { ultima = localStorage.getItem("mozari-nov") || ""; } catch (e) { /* sin almacenamiento */ }
+    const n = novedades[0], reciente = n && Date.now() - new Date(n.publicada).getTime() < 14 * 864e5;
+    b.classList.toggle("punto", !!(n && reciente && ultima !== n.id));
+  }
+  if (MODO === "nube") {
+    fetch("api/novedades", { cache: "no-store" }).then((r) => (r.ok ? r.json() : { novedades: [] })).then((d) => {
+      novedades = d.novedades || []; pintarBotonNov();
+      const n = novedades.find((x) => !x.vista);
+      if (n) setTimeout(() => { if (!document.querySelector("dialog[open]")) abrirNovedad(n); }, 1200);
+    }).catch(() => {});
+    $("nov-btn").addEventListener("click", () => novedades[0] && abrirNovedad(novedades[0]));
+  }
+  $("dlg-nov").addEventListener("click", (ev) => {
+    if (ev.target === $("dlg-nov") || ev.target.closest("[data-nov-cerrar]")) { $("dlg-nov").close(); return; }
+    const v = ev.target.closest("[data-nov-ver]"); if (v) { const n = novedades.find((x) => x.id === v.dataset.novVer); if (n) abrirNovedad(n); return; }
+    const d = ev.target.closest("[data-nov-ir]"); if (!d) return;
+    $("dlg-nov").close();
+    if (novActual && novActual.previa) { avisar("Vista previa: así llevaría al usuario a " + ((DESTINOS_NOV.find(([v]) => v === d.dataset.novIr) || [])[1] || d.dataset.novIr)); return; }
+    if (/^https?:\/\//.test(d.dataset.novIr)) { window.open(d.dataset.novIr, "_blank", "noopener"); return; }
+    const [sec, sub] = d.dataset.novIr.split("/");
+    if (SECCIONES.some((x) => x.id === sec)) ir(sec, sub);
+  });
+  // Panel de dueño → Novedades: escribir, subir el video o GIF, ver como usuario y publicar
+  let novEdit = null;
+  async function crearNovedad(datos) {
+    const r = await fetch("api/admin/novedades", { method: "POST" }).catch(() => null);
+    if (!r || !r.ok) { avisar("No se pudo crear la novedad"); return; }
+    const { novedad } = await r.json();
+    if (datos) await fetch("api/admin/novedades/" + novedad.id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(datos) }).catch(() => null);
+    novEdit = novedad.id; vistaDueno = "novedades"; pintarCuentas();
+    avisar(datos ? "Novedad lista para revisar. Agrégale un video o GIF y publícala." : "Novedad nueva");
+  }
+  async function pintarNovedadesAdmin() {
+    const r = await fetch("api/admin/novedades", { cache: "no-store" }).catch(() => null);
+    if (!r || !r.ok) { avisar("No se pudieron leer las novedades"); return; }
+    const { novedades: lista } = await r.json(), caja = $("cuentas"), n = novEdit && lista.find((x) => x.id === novEdit);
+    const PUB = { todos: "Todos", pagados: "Solo Pro y Desarrollos", gratis: "Solo Gratis" };
+    let h = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) + '<div class="nov-admin">';
+    if (n) {
+      const otro = n.destino && !DESTINOS_NOV.some(([v]) => v === n.destino);
+      h += '<div class="nov-form" data-nov-id="' + n.id + '">' +
+        '<label class="ancho">Título<input class="entrada" data-nf="titulo" maxlength="90" value="' + esc(n.titulo) + '"></label>' +
+        '<label class="ancho">Qué hace (un punto por renglón; 2 o 3 renglones cortos)<textarea class="entrada" rows="4" data-nf="texto" maxlength="700">' + esc(n.texto) + "</textarea></label>" +
+        '<label class="ancho">Video o GIF de la herramienta (MP4, GIF, PNG o JPG · hasta 25 MB)' +
+          (n.media ? (n.mediaTipo === "video" ? '<video class="nov-prev" src="api/admin/novedades/' + n.id + '/media?v=' + Date.now() + '" muted autoplay loop playsinline></video>' : '<img class="nov-prev" src="api/admin/novedades/' + n.id + '/media?v=' + Date.now() + '" alt="">') : "") +
+          '<input type="file" id="nf-media" accept="video/mp4,image/gif,image/png,image/jpeg,image/webp"></label>' +
+        '<label>Texto del botón<input class="entrada" data-nf="boton" maxlength="30" value="' + esc(n.boton || "Probar ahora") + '"></label>' +
+        '<label>El botón lleva a<select class="entrada" data-nf="destino">' + DESTINOS_NOV.concat([["otro", "Otro link…"]]).map(([v, t]) => '<option value="' + v + '"' + ((otro ? "otro" : n.destino || "") === v ? " selected" : "") + ">" + t + "</option>").join("") + "</select></label>" +
+        (otro ? '<label class="ancho">Link<input class="entrada" data-nf="link" value="' + esc(n.destino) + '" placeholder="https://…"></label>' : "") +
+        '<label>¿Quién la ve?<select class="entrada" data-nf="publico">' + Object.entries(PUB).map(([v, t]) => '<option value="' + v + '"' + (n.publico === v ? " selected" : "") + ">" + t + "</option>").join("") + "</select></label>" +
+        '<div class="ancho orden"><button class="btn-sec" data-nf-volver>← Todas</button><button class="btn-sec" data-nf-previa>Ver como usuario</button>' +
+          (n.activa ? '<button class="btn-sec" data-nf-activa="0">Despublicar</button>' : '<button class="btn-prim" data-nf-activa="1">Publicar</button>') +
+          '<button class="mini peligro-lleno" data-nf-borrar>Borrar</button></div>' +
+        '<p class="nota ancho">' + (n.activa ? "Publicada el " + fechaCorta(n.publicada) + " · la han visto " + (+n.vistas || 0) + " cuentas. Cada quien la ve una sola vez." : "Borrador: nadie la ve hasta que la publiques. Los cambios se guardan solos.") + "</p></div>";
+    } else {
+      h += '<div class="orden"><button class="btn-prim" data-nf-nueva>Nueva novedad</button></div>' +
+        (lista.length ? lista.map((x) => '<div class="nov-fila"><div><b>' + esc(x.titulo) + '</b><small>' + (x.activa ? "Publicada el " + fechaCorta(x.publicada) + " · vista por " + (+x.vistas || 0) + " · " + PUB[x.publico] : "Borrador") + "</small></div>" +
+          '<span class="nov-estado' + (x.activa ? " si" : "") + '">' + (x.activa ? "Publicada" : "Borrador") + '</span><button class="mini" data-nf-editar="' + x.id + '">Editar</button></div>').join("") :
+          '<p class="nota">Aún no hay novedades. Cuando lances una herramienta, anúnciala aquí: cada usuario la verá una vez al entrar.</p>');
+    }
+    caja.innerHTML = h + "</div>";
+  }
+  const guardarNov = async (id, datos) => {
+    const r = await fetch("api/admin/novedades/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(datos) }).catch(() => null);
+    if (!r || !r.ok) { avisar("No se pudo guardar"); return null; }
+    return (await r.json()).novedad;
+  };
+  let tNov = null, novPend = {}, novPendId = null;
+  const guardarPend = async () => { clearTimeout(tNov); if (!novPendId || !Object.keys(novPend).length) return; const d = novPend; novPend = {}; await guardarNov(novPendId, d); };
+  document.addEventListener("input", (ev) => {
+    const k = ev.target.dataset && ev.target.dataset.nf, f = ev.target.closest && ev.target.closest("[data-nov-id]"); if (!k || !f || ev.target.tagName === "SELECT") return;
+    // Los cambios de varios campos se juntan y se guardan juntos (si no, el último borraría al anterior)
+    novPend[k === "link" ? "destino" : k] = ev.target.value; novPendId = f.dataset.novId;
+    clearTimeout(tNov); tNov = setTimeout(guardarPend, 500);
+  });
+  document.addEventListener("change", async (ev) => {
+    const f = ev.target.closest && ev.target.closest("[data-nov-id]"); if (!f) return;
+    if (ev.target.id === "nf-media") {
+      const file = ev.target.files && ev.target.files[0]; if (!file) return;
+      if (file.size > 25 * 1024 * 1024) { avisar("El archivo pesa más de 25 MB. Compáctalo o recórtalo."); return; }
+      avisar("Subiendo…");
+      const r = await fetch("api/admin/novedades/" + f.dataset.novId + "/media", { method: "PUT", headers: { "content-type": file.type }, body: file }).catch(() => null);
+      if (!r || !r.ok) { const e = r ? await r.json().catch(() => ({})) : {}; avisar(e.error || "No se pudo subir"); return; }
+      avisar("Listo"); pintarNovedadesAdmin(); return;
+    }
+    const k = ev.target.dataset && ev.target.dataset.nf; if (!k || ev.target.tagName !== "SELECT") return;
+    if (k === "destino" && ev.target.value === "otro") { await guardarNov(f.dataset.novId, { destino: "https://" }); pintarNovedadesAdmin(); return; }
+    await guardarNov(f.dataset.novId, { [k]: ev.target.value }); if (k === "destino") pintarNovedadesAdmin();
+  });
+  document.addEventListener("click", async (ev) => {
+    if (ev.target.closest("[data-nf-nueva]")) { crearNovedad(); return; }
+    const ed = ev.target.closest("[data-nf-editar]"); if (ed) { novEdit = ed.dataset.nfEditar; pintarNovedadesAdmin(); return; }
+    const f = ev.target.closest("[data-nov-id]"); if (!f) return;
+    const id = f.dataset.novId;
+    if (ev.target.closest("[data-nf-volver]")) { await guardarPend(); novEdit = null; pintarNovedadesAdmin(); return; }
+    if (ev.target.closest("[data-nf-previa]")) {
+      await guardarPend();
+      const r = await fetch("api/admin/novedades", { cache: "no-store" }).catch(() => null); if (!r || !r.ok) return;
+      const n = (await r.json()).novedades.find((x) => x.id === id); if (!n) return;
+      abrirNovedad(Object.assign({}, n, { previa: true }), n.media ? "api/admin/novedades/" + id + "/media?v=" + Date.now() : "");
+      return;
+    }
+    const ac = ev.target.closest("[data-nf-activa]");
+    if (ac) {
+      await guardarPend();
+      const si = ac.dataset.nfActiva === "1";
+      if (si && !confirm("¿Publicarla? Le aparecerá una vez a cada usuario la próxima vez que entre a Mozari.")) return;
+      if (await guardarNov(id, { activa: si })) { avisar(si ? "Publicada: cada usuario la verá una vez al entrar" : "Despublicada"); pintarNovedadesAdmin(); }
+      return;
+    }
+    if (ev.target.closest("[data-nf-borrar]")) {
+      if (!confirm("¿Borrar esta novedad? No se puede deshacer.")) return;
+      await fetch("api/admin/novedades/" + id, { method: "DELETE" }).catch(() => null);
+      novEdit = null; pintarNovedadesAdmin(); avisar("Novedad borrada");
+    }
   });
   async function pintarReportes() {
     const r = await fetch("api/admin/reportes", { cache: "no-store" }).catch(() => null);
@@ -2475,6 +2664,7 @@
     if (vistaDueno === "reportes") return pintarReportes();
     if (vistaDueno === "links") return pintarLinks();
     if (vistaDueno === "laboratorio") return pintarLaboratorio();
+    if (vistaDueno === "novedades") return pintarNovedadesAdmin();
     const r = await fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudieron leer las cuentas"); return; }
     const { cuentas: todas } = await r.json();
