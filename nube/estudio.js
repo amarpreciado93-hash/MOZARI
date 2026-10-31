@@ -173,7 +173,7 @@ async function apiNovedades(request, env, partes, yo, plan) {
   if (partes.length === 2 && m === "GET") {
     const vistas = new Set(yo.novedadesVistas || []);
     const ns = (await listaNovedades(env)).filter((n) => n.activa && n.publicada && paraQuien(n, plan)).slice(0, 10)
-      .map((n) => ({ id: n.id, titulo: n.titulo, texto: n.texto, media: n.media ? "api/novedades/" + n.id + "/media" : "", mediaTipo: n.mediaTipo || "", boton: n.boton, destino: n.destino, publicada: n.publicada, vista: vistas.has(n.id) }));
+      .map((n) => ({ id: n.id, etiqueta: n.etiqueta || "", titulo: n.titulo, texto: n.texto, media: n.media ? "api/novedades/" + n.id + "/media" : "", mediaTipo: n.mediaTipo || "", boton: n.boton, destino: n.destino, publicada: n.publicada, vista: vistas.has(n.id) }));
     return json({ novedades: ns });
   }
   if (!/^[a-z0-9]{6,20}$/.test(id || "")) return error(400, "Novedad inválida");
@@ -209,6 +209,7 @@ async function admin(request, env, partes) {
       if (typeof c.titulo === "string") n.titulo = c.titulo.slice(0, 90);
       if (typeof c.texto === "string") n.texto = c.texto.slice(0, 700);
       if (typeof c.boton === "string") n.boton = c.boton.slice(0, 30);
+      if (typeof c.etiqueta === "string") n.etiqueta = c.etiqueta.slice(0, 30);
       if (typeof c.destino === "string") n.destino = c.destino.slice(0, 200);
       if (PUBLICOS_NOV.includes(c.publico)) n.publico = c.publico;
       if (typeof c.activa === "boolean") { n.activa = c.activa; if (c.activa && !n.publicada) n.publicada = new Date().toISOString(); }

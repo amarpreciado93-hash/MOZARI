@@ -1207,7 +1207,7 @@
 <!-- ======================= ESTUDIO ======================= -->
 <div class="app" id="app">
   <header class="barra">
-    <div class="marca-app"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg><b>MOZARI</b><button class="beta" data-reportar title="Mozari está en beta: mejora cada semana. Si algo falla, repórtalo aquí.">BETA</button><button class="nov-btn" id="nov-btn" hidden title="Novedades de Mozari" aria-label="Novedades de Mozari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></button></div>
+    <div class="marca-app"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg><b>MOZARI</b><button class="beta" data-reportar title="Mozari está en beta: mejora cada semana. Si algo falla, repórtalo aquí.">BETA</button><button class="nov-btn" id="nov-btn" hidden title="Actualizaciones de Mozari" aria-label="Actualizaciones de Mozari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></button></div>
     <nav class="nav" id="nav" aria-label="Ventanas"></nav>
     <div class="barra-der">
       <span class="estado"><i></i><span id="b-estado">Guardado</span></span>
@@ -2399,7 +2399,7 @@
   }
   // Panel del dueño: todas las cuentas y su plan (para dar acceso a tus alumnos)
   let vistaDueno = "cuentas";
-  const TABS_DUENO = (n) => '<div class="rep-tabs"><button class="mini' + (vistaDueno === "cuentas" ? " primario" : "") + '" data-dueno="cuentas">Cuentas</button><button class="mini' + (vistaDueno === "links" ? " primario" : "") + '" data-dueno="links">Links de regalo y descuento</button><button class="mini' + (vistaDueno === "reportes" ? " primario" : "") + '" data-dueno="reportes">Reportes' + (n ? " (" + n + " nuevos)" : "") + '</button><button class="mini' + (vistaDueno === "laboratorio" ? " primario" : "") + '" data-dueno="laboratorio">Laboratorio</button><button class="mini' + (vistaDueno === "novedades" ? " primario" : "") + '" data-dueno="novedades">Novedades</button></div>';
+  const TABS_DUENO = (n) => '<div class="rep-tabs"><button class="mini' + (vistaDueno === "cuentas" ? " primario" : "") + '" data-dueno="cuentas">Cuentas</button><button class="mini' + (vistaDueno === "links" ? " primario" : "") + '" data-dueno="links">Links de regalo y descuento</button><button class="mini' + (vistaDueno === "reportes" ? " primario" : "") + '" data-dueno="reportes">Reportes' + (n ? " (" + n + " nuevos)" : "") + '</button><button class="mini' + (vistaDueno === "laboratorio" ? " primario" : "") + '" data-dueno="laboratorio">Laboratorio</button><button class="mini' + (vistaDueno === "novedades" ? " primario" : "") + '" data-dueno="novedades">Actualizaciones</button></div>';
   // Links de un solo uso: cada alumno recibe el suyo (licencia de regalo o descuento)
   const TIPOS_LINK = { "pro-100": ["Pro de regalo", 100, ["pro"]], "des-100": ["Desarrollos de regalo", 100, ["desarrollos"]], "des-50": ["Desarrollos con 50% de descuento", 50, ["desarrollos"]], "todo-30": ["30% en Pro y Desarrollos", 30, ["pro", "desarrollos"]] };
   const linkDe = (codigo) => location.origin + "/entrar?cupon=" + codigo;
@@ -2489,11 +2489,11 @@
     const puntos = String(n.texto || "").split(/\n+/).map((x) => x.replace(/^[-•·*]\s*/, "").trim()).filter(Boolean);
     const m = media ? (n.mediaTipo === "video" ? '<video class="nov-media" src="' + esc(media) + '" autoplay muted loop playsinline></video>' : '<img class="nov-media" src="' + esc(media) + '" alt="">') : "";
     const otras = novedades.filter((x) => x.id !== n.id).slice(0, 4);
-    return '<div class="nov-cuerpo"><span class="nov-etiq">NUEVO EN MOZARI</span><h2 id="nov-titulo">' + esc(n.titulo) + "</h2>" + m +
+    return '<div class="nov-cuerpo"><span class="nov-etiq">' + esc((n.etiqueta || "Actualización").toUpperCase()) + '</span><h2 id="nov-titulo">' + esc(n.titulo) + "</h2>" + m +
       (puntos.length ? "<ul>" + puntos.map((x) => "<li>" + esc(x) + "</li>").join("") + "</ul>" : "") +
       '<div class="nov-acc"><button class="btn-sec" data-nov-cerrar>' + (n.destino ? "Después" : "Cerrar") + "</button>" +
       (n.destino ? '<button class="btn-prim nov-ir" data-nov-ir="' + esc(n.destino) + '">' + esc(n.boton || "Probar ahora") + "</button>" : "") + "</div>" +
-      (otras.length && !n.previa ? '<div class="nov-mas"><b>Más novedades</b>' + otras.map((x) => '<button data-nov-ver="' + x.id + '"><span>' + esc(x.titulo) + "</span><small>" + fechaCorta(x.publicada) + "</small></button>").join("") + "</div>" : "") + "</div>";
+      (otras.length && !n.previa ? '<div class="nov-mas"><b>Actualizaciones anteriores</b>' + otras.map((x) => '<button data-nov-ver="' + x.id + '"><span>' + esc(x.titulo) + "</span><small>" + fechaCorta(x.publicada) + "</small></button>").join("") + "</div>" : "") + "</div>";
   }
   function abrirNovedad(n, media) {
     novActual = n;
@@ -2535,7 +2535,7 @@
     const { novedad } = await r.json();
     if (datos) await fetch("api/admin/novedades/" + novedad.id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(datos) }).catch(() => null);
     novEdit = novedad.id; vistaDueno = "novedades"; pintarCuentas();
-    avisar(datos ? "Novedad lista para revisar. Agrégale un video o GIF y publícala." : "Novedad nueva");
+    avisar(datos ? "Actualización lista para revisar. Agrégale un video o GIF y publícala." : "Actualización nueva");
   }
   async function pintarNovedadesAdmin() {
     const r = await fetch("api/admin/novedades", { cache: "no-store" }).catch(() => null);
@@ -2546,6 +2546,7 @@
     if (n) {
       const otro = n.destino && !DESTINOS_NOV.some(([v]) => v === n.destino);
       h += '<div class="nov-form" data-nov-id="' + n.id + '">' +
+        '<label>Etiqueta de arriba<input class="entrada" data-nf="etiqueta" maxlength="30" value="' + esc(n.etiqueta || "") + '" placeholder="Actualización"></label><span></span>' +
         '<label class="ancho">Título<input class="entrada" data-nf="titulo" maxlength="90" value="' + esc(n.titulo) + '"></label>' +
         '<label class="ancho">Qué hace (un punto por renglón; 2 o 3 renglones cortos)<textarea class="entrada" rows="4" data-nf="texto" maxlength="700">' + esc(n.texto) + "</textarea></label>" +
         '<label class="ancho">Video o GIF de la herramienta (MP4, GIF, PNG o JPG · hasta 25 MB)' +
@@ -2560,10 +2561,10 @@
           '<button class="mini peligro-lleno" data-nf-borrar>Borrar</button></div>' +
         '<p class="nota ancho">' + (n.activa ? "Publicada el " + fechaCorta(n.publicada) + " · la han visto " + (+n.vistas || 0) + " cuentas. Cada quien la ve una sola vez." : "Borrador: nadie la ve hasta que la publiques. Los cambios se guardan solos.") + "</p></div>";
     } else {
-      h += '<div class="orden"><button class="btn-prim" data-nf-nueva>Nueva novedad</button></div>' +
+      h += '<div class="orden"><button class="btn-prim" data-nf-nueva>Nueva actualización</button></div>' +
         (lista.length ? lista.map((x) => '<div class="nov-fila"><div><b>' + esc(x.titulo) + '</b><small>' + (x.activa ? "Publicada el " + fechaCorta(x.publicada) + " · vista por " + (+x.vistas || 0) + " · " + PUB[x.publico] : "Borrador") + "</small></div>" +
           '<span class="nov-estado' + (x.activa ? " si" : "") + '">' + (x.activa ? "Publicada" : "Borrador") + '</span><button class="mini" data-nf-editar="' + x.id + '">Editar</button></div>').join("") :
-          '<p class="nota">Aún no hay novedades. Cuando lances una herramienta, anúnciala aquí: cada usuario la verá una vez al entrar.</p>');
+          '<p class="nota">Aún no hay actualizaciones. Cuando lances una herramienta, anúnciala aquí: cada usuario la verá una vez al entrar.</p>');
     }
     caja.innerHTML = h + "</div>";
   }
@@ -2616,9 +2617,9 @@
       return;
     }
     if (ev.target.closest("[data-nf-borrar]")) {
-      if (!confirm("¿Borrar esta novedad? No se puede deshacer.")) return;
+      if (!confirm("¿Borrar esta actualización? No se puede deshacer.")) return;
       await fetch("api/admin/novedades/" + id, { method: "DELETE" }).catch(() => null);
-      novEdit = null; pintarNovedadesAdmin(); avisar("Novedad borrada");
+      novEdit = null; pintarNovedadesAdmin(); avisar("Actualización borrada");
     }
   });
   async function pintarReportes() {
