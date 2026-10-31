@@ -4965,8 +4965,12 @@ void main(){
       for (let j = 1; j < nB; j++) u.push(Math.min(1, Math.max(u[j - 1] + 0.01, (j + sB) / nB)));
       u.push(1);
       for (let j = nB - 1; j > 0; j--) u[j] = Math.min(u[j], u[j + 1] - 0.01);
-      geo.atras = u.slice(1, -1).map((t) => [enCadena(mid, t), enCadena(fo, t)]);
-      for (let j = nB - 1; j >= 0; j--) formas.push({ puntos: tramo(fo, u[j], u[j + 1]).concat(tramo(mid, u[j], u[j + 1]).reverse()), numero: inicio + n + (nB - 1 - j), nf: tramo(fo, u[j], u[j + 1]).length });
+      // Cada corte de atrás se puede acomodar a mano: su punta en la línea del centro (m) y en el fondo (b)
+      if (parejo || !Array.isArray(m.cortesAtras) || m.cortesAtras.length !== nB - 1) m.cortesAtras = u.slice(1, -1).map((t) => ({ m: +t.toFixed(4), b: +t.toFixed(4) }));
+      const um = [0].concat(m.cortesAtras.map((x) => x.m), [1]), ub = [0].concat(m.cortesAtras.map((x) => x.b), [1]);
+      geo.mid = mid;
+      geo.atras = m.cortesAtras.map((x) => [enCadena(mid, x.m), enCadena(fo, x.b)]);
+      for (let j = nB - 1; j >= 0; j--) formas.push({ puntos: tramo(fo, ub[j], ub[j + 1]).concat(tramo(mid, um[j], um[j + 1]).reverse()), numero: inicio + n + (nB - 1 - j), nf: tramo(fo, ub[j], ub[j + 1]).length });
     } else if (doble) for (let k = n - 1; k >= 0; k--) // la fila del fondo sigue la numeración de regreso (en U); su frente es la calle de atrás
       formas.push({ puntos: tramo(fo, tb[k], tb[k + 1]).reverse().concat(mitadFondo(k).reverse(), mitadFondo(k + 1)), numero: inicio + 2 * n - 1 - k, nf: tramo(fo, tb[k], tb[k + 1]).length });
     for (let k = 0; k < formas.length; k++) {
@@ -5007,7 +5011,7 @@ void main(){
       P.slice(1, -1).forEach((pt, j) => asas.push({ tipo: "nodo", k, j, pt }));
       for (let j = 0; j < P.length - 1; j++) asas.push({ tipo: "mas", que: "corte", k, j, pt: mitad(P[j], P[j + 1]) });
     }
-    if (g.atras) g.atras.forEach((ln) => lineas.push(ln));
+    if (g.atras) g.atras.forEach((ln, j) => { lineas.push(ln); asas.push({ tipo: "atras", lado: "m", j, pt: ln[0] }, { tipo: "atras", lado: "b", j, pt: ln[1] }); });
     for (let i = 0; i < c.puntos.length - 1; i++) { if (i === F - 1) continue; asas.push({ tipo: "mas", que: "borde", i, pt: mitad(c.puntos[i], c.puntos[i + 1]) }); }
     // Laboratorio · curvas: cada punto de la orilla tiene dos manijas (la pluma); arrastrar una dobla la orilla
     if (enLab("manzana-curvas")) for (let i = 0; i < c.puntos.length; i++) {
@@ -5066,6 +5070,11 @@ void main(){
     else if (h.tipo === "curva") {
       const p = c.puntos[h.i], q = aPlano(p[0], p[1]), r = aPlano(k.yaw, k.pitch); if (!q || !r) return;
       c.puntos[h.i] = [p[0], p[1], +((r[0] - q[0]) * h.lado).toFixed(5), +((r[1] - q[1]) * h.lado).toFixed(5)].concat(p.slice(4));
+    }
+    else if (h.tipo === "atras" && g && g.mid) { // corte de la fila de atrás: su punta corre por la línea del centro o por el fondo
+      const t = paramCadena(h.lado === "m" ? g.mid : g.fo, k); if (t === null) return;
+      const A = m.cortesAtras, ant = h.j > 0 ? A[h.j - 1][h.lado] : 0, sig = h.j < A.length - 1 ? A[h.j + 1][h.lado] : 1;
+      A[h.j][h.lado] = +Math.max(ant + 0.005, Math.min(sig - 0.005, t)).toFixed(4);
     }
     else if (h.tipo === "radio") { // la manija vive a 1/4 del arco sobre la bisectriz: de ahí sale el radio
       const L = c.puntos.length, p = c.puntos[h.i], q = aPlano(p[0], p[1]), a = aPlano(c.puntos[(h.i - 1 + L) % L][0], c.puntos[(h.i - 1 + L) % L][1]), b = aPlano(c.puntos[(h.i + 1) % L][0], c.puntos[(h.i + 1) % L][1]), m = aPlano(k.yaw, k.pitch);
@@ -5134,7 +5143,7 @@ void main(){
     if (ev.target.dataset && ev.target.dataset.k === "_mzDesfase") {
       const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.manzana) return;
       ev.stopImmediatePropagation();
-      c.manzana.desfase = +ev.target.value; repartirManzana(c); motorEd.render();
+      c.manzana.desfase = +ev.target.value; c.manzana.cortesAtras = null; repartirManzana(c); motorEd.render();
       const etq = document.querySelector('[data-v-de="_mzDesfase"]'); if (etq) etq.textContent = Math.round(c.manzana.desfase * 100) + "%";
       return;
     }
