@@ -2618,7 +2618,10 @@
       const niveles = MOVIL ? d.niveles.filter((l, i) => i === 0 || l.size <= 2048) : d.niveles;
       const geometry = new Marzipano.CubeGeometry(niveles.length > 1 ? niveles : d.niveles.slice(0, 2));
       const cara = Math.min(d.cara, niveles[niveles.length - 1].size);
-      const limiter = Marzipano.RectilinearView.limit.traditional(cara, (110 * Math.PI) / 180, (150 * Math.PI) / 180);
+      // Zoom: Marzipano limita el acercamiento a 1 pixel de la foto por pixel real de pantalla. En celulares
+      // (pantallas de 3x) eso casi no dejaba hacer zoom. Se permite acercar hasta ~2x más (como Kuula/3DVista).
+      const resMax = Math.max(cara * 2, MOVIL ? 6144 : 4096);
+      const limiter = Marzipano.RectilinearView.limit.traditional(resMax, (110 * Math.PI) / 180, (150 * Math.PI) / 180);
       const view = new Marzipano.RectilinearView(vistaDe(id), limiter);
       const scene = viewer.createScene({ source, geometry, view, pinFirstLevel: true, textureStoreOpts: { previouslyVisibleCacheSize: MOVIL ? 8 : 40 } });
       view.addEventListener("change", () => { if (actual && actual.view === view) { programar(); if (opciones.alMoverVista) opciones.alMoverVista(); } });
