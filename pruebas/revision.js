@@ -26,7 +26,7 @@ const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 // ---------- servidores locales (estudio y tours) ----------
 const procesos = [];
 function arrancar(carpeta, args) {
-  const p = spawn("npx", ["wrangler", "dev", ...args, "--var", "DEV:1", "--persist-to", DATOS], { cwd: path.join(RAIZ, "nube", carpeta), detached: true, stdio: "ignore" });
+  const p = spawn("npx", ["wrangler", "dev", ...args, "--var", "DEV:1", "--persist-to", DATOS], { cwd: path.join(RAIZ, "nube", carpeta), detached: true, stdio: "ignore", env: Object.assign({}, process.env, { WRANGLER_SEND_METRICS: "false" }) });
   procesos.push(p);
 }
 async function listo(url) { for (let i = 0; i < 90; i++) { try { const r = await fetch(url); if (r.status < 500) return; } catch (e) { /* aún no */ } await espera(1000); } throw new Error("No arrancó " + url); }
@@ -83,13 +83,16 @@ async function nuevoTour(p, nombre) {
 const capas = async (p) => (await p.$$eval("#lista li", (l) => l.map((x) => x.innerText.trim().split("\n")[0]))).reverse();
 const lotes = async (p) => (await capas(p)).filter((t) => /^Lote/.test(t));
 async function irCapas(p) { await p.click('#nav button:has-text("Panoramas")'); await p.waitForTimeout(300); await p.click('#subtabs button:has-text("Capas")'); await p.waitForTimeout(1500); }
+async function cerrarGuia(p) { if (await p.isVisible(".guia-tarjeta").catch(() => false)) { await p.keyboard.press("Escape"); await p.waitForTimeout(300); } }
 async function dibujarManzana(p, frente, fondo) {
   await p.keyboard.press("Escape"); await p.waitForTimeout(200);
-  await p.click("#add-manzana"); await p.waitForTimeout(400);
+  await p.click("#add-manzana"); await p.waitForTimeout(500);
+  if (await p.isVisible(".guia-tarjeta")) { await p.click('.guia-tarjeta [data-guia="seguir"]'); await p.waitForTimeout(400); } // primera vez: el tutorial
   for (const [x, y] of frente) { await p.mouse.click(x, y); await p.waitForTimeout(120); }
   await p.keyboard.press("Enter"); await p.waitForTimeout(400);
   for (const [x, y] of fondo) { await p.mouse.click(x, y); await p.waitForTimeout(120); }
-  await p.keyboard.press("Enter"); await p.waitForTimeout(1200);
+  await p.keyboard.press("Enter"); await p.waitForTimeout(1400);
+  await cerrarGuia(p);
 }
 const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) || [])[1]);
 
@@ -240,6 +243,27 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       const st = await g.evaluate(() => fetch("api/admin/cuentas").then((r) => r.status));
       exige(st === 403, "un usuario normal entró a la API del dueño (" + st + ")");
     }, g);
+
+    await paso("Tutorial de manzana: sale la primera vez y luego ya no", async () => {
+      const t = await pagina("tutorial-" + Date.now() + "@prueba.mx");
+      await nuevoTour(t, "Tutorial"); await irCapas(t);
+      await t.click("#add-manzana"); await t.waitForTimeout(600);
+      exige(await t.isVisible(".guia-tarjeta .guia-anim"), "no salió el tutorial con su animación");
+      await t.click('.guia-tarjeta [data-guia="seguir"]'); await t.waitForTimeout(400);
+      exige(await t.evaluate(() => document.body.classList.contains("dibujando")), "después del tutorial no empezó a dibujar");
+      for (const [x, y] of [[500, 640], [980, 640]]) { await t.mouse.click(x, y); await t.waitForTimeout(120); }
+      await t.keyboard.press("Enter"); await t.waitForTimeout(400);
+      for (const [x, y] of [[480, 800], [1000, 800]]) { await t.mouse.click(x, y); await t.waitForTimeout(120); }
+      await t.keyboard.press("Enter"); await t.waitForTimeout(1600);
+      exige(await t.isVisible(".guia-tarjeta"), "no salió el tutorial de cómo editar la manzana");
+      await t.click('.guia-tarjeta [data-guia="seguir"]'); await t.waitForTimeout(300); await t.click('.guia-tarjeta [data-guia="seguir"]'); await t.waitForTimeout(300);
+      await t.reload(); await t.waitForTimeout(3500); await irCapas(t);
+      await t.click("#add-manzana"); await t.waitForTimeout(600);
+      exige(!(await t.isVisible(".guia-tarjeta")), "el tutorial salió otra vez");
+      await t.keyboard.press("Escape");
+      exige(!t.errs.length, "errores: " + t.errs.join(" | ").slice(0, 160));
+      await t.context().close();
+    });
 
     // 4. Actualizaciones: se ven una sola vez
     await paso("Una actualización publicada se ve una sola vez por cuenta", async () => {

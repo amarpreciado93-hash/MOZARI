@@ -353,7 +353,14 @@ async function admin(request, env, partes) {
 
 async function api(request, env, partes, yo) {
   const m = request.method, uid = yo.uid, plan = planDe(yo);
-  if (partes[1] === "yo" && m === "GET") return json({ email: yo.email, nombre: yo.nombre, foto: yo.foto, admin: !!yo.admin, plan, lab: await labDe(env, yo) });
+  if (partes[1] === "yo" && m === "GET") return json({ email: yo.email, nombre: yo.nombre, foto: yo.foto, admin: !!yo.admin, plan, lab: await labDe(env, yo), guias: yo.guiasVistas || [] });
+  // Tutoriales guiados: cada cuenta ve el de cada herramienta una sola vez (se anota en su perfil)
+  if (partes[1] === "guias" && partes.length === 3 && m === "POST" && /^[a-z0-9-]{2,40}$/.test(partes[2])) {
+    const clave = "cuentas/" + yo.uid + "/perfil.json", o = await env.R2.get(clave); if (!o) return error(404, "Sin cuenta");
+    const p = await o.json(); p.guiasVistas = [...new Set((p.guiasVistas || []).concat([partes[2]]))].slice(0, 100);
+    await env.R2.put(clave, JSON.stringify(p), { httpMetadata: { contentType: "application/json" } });
+    return json({ ok: true });
+  }
   if (partes[1] === "pagos") return apiPagos(request, env, partes, yo);
   if (partes[1] === "reportes" && partes.length === 2 && m === "POST") return crearReporte(request, env, yo, plan);
   if (partes[1] === "admin") return yo.admin ? admin(request, env, partes) : error(403, "Solo el dueño de Mozari");

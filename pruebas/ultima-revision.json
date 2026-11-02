@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-02T06:42:40.031Z",
- "bien": 20,
- "total": 20,
+ "fecha": "2026-11-02T19:02:36.486Z",
+ "bien": 21,
+ "total": 21,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -73,6 +73,10 @@
   },
   {
    "nombre": "Plan Gratis no ve herramientas del Laboratorio ni el panel de dueño",
+   "ok": true
+  },
+  {
+   "nombre": "Tutorial de manzana: sale la primera vez y luego ya no",
    "ok": true
   },
   {

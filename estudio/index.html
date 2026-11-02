@@ -119,6 +119,24 @@
   html[data-claro="1"] .nov-mas { border-top-color: rgba(21, 23, 15, 0.12); }
   html[data-claro="1"] .nov-mas button { color: rgba(21, 23, 15, 0.6); }
   html[data-claro="1"] .nov-mas button:hover { color: #15170F; }
+  /* Tutoriales guiados: foco sobre lo que hay que picar y una tarjeta de vidrio que explica */
+  .guia-foco { position: fixed; z-index: 9998; border-radius: 14px; pointer-events: none; box-shadow: 0 0 0 3px #D5FF40, 0 0 0 9999px rgba(0, 0, 0, 0.55); transition: all 0.35s cubic-bezier(.2, .8, .2, 1); }
+  .guia-foco.sin { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55); width: 0 !important; height: 0 !important; }
+  .guia-tarjeta { position: fixed; z-index: 9999; width: min(380px, calc(100vw - 32px)); padding: 18px; border-radius: 22px; color: #fff; display: grid; gap: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.22); background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0.09)), rgba(14, 15, 13, 0.55);
+    -webkit-backdrop-filter: blur(30px) saturate(190%); backdrop-filter: blur(30px) saturate(190%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 24px 60px rgba(0, 0, 0, 0.45); animation: nov-entra 0.4s cubic-bezier(.2, .9, .25, 1.15) both; }
+  .guia-tarjeta h3 { margin: 0; font-size: 17px; font-weight: 700; }
+  .guia-tarjeta p { margin: 0; font-size: 13.5px; line-height: 1.5; color: rgba(255, 255, 255, 0.85); }
+  .guia-tarjeta b { color: #D5FF40; font-weight: 600; }
+  .guia-anim { width: 100%; height: auto; display: block; border-radius: 14px; background: #10130e; border: 1px solid rgba(255, 255, 255, 0.12); }
+  .guia-pie { display: flex; align-items: center; gap: 8px; }
+  .guia-pie .puntos { display: flex; gap: 5px; margin-right: auto; }
+  .guia-pie .puntos i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.3); }
+  .guia-pie .puntos i.si { background: #D5FF40; }
+  .guia-pie button { border-radius: 999px; padding: 8px 16px; font: 600 13px var(--mz-texto-ui); cursor: pointer; }
+  .guia-pie .saltar { background: none; border: 0; color: rgba(255, 255, 255, 0.65); padding-inline: 8px; }
+  .guia-pie .seguir { color: #0B0B0B; background: linear-gradient(180deg, #E4FF7A, #D5FF40); border: 1px solid rgba(255, 255, 255, 0.5); }
+  .guia-ayuda { all: unset; cursor: pointer; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-left: 6px; border-radius: 50%; border: 1px solid var(--mz-linea); color: var(--mz-lima); font: 700 11px var(--mz-texto-ui); vertical-align: middle; }
   .nov-acc .btn-prim { color: #0B0B0B; background: linear-gradient(180deg, #E4FF7A, #D5FF40); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 8px 24px rgba(213, 255, 64, 0.25); }
   .nov-mas { border-top: 1px solid rgba(255, 255, 255, 0.14); padding-top: 12px; display: grid; gap: 4px; font-size: 13px; }
   .nov-mas button { all: unset; cursor: pointer; color: rgba(255, 255, 255, 0.65); display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; }
@@ -2231,6 +2249,106 @@
       avisar("¡Publicado! Tu cliente ya ve esta versión.");
     }
   });
+
+  // =================== TUTORIALES GUIADOS ===================
+  // La primera vez que alguien usa una herramienta, una tarjeta le señala dónde picar (una sola vez por cuenta).
+  // Cada paso: { el: selector o función que da el elemento, titulo, texto, anim }
+  const guiasVistas = new Set(MODO === "nube" && Array.isArray(NUBE.guias) ? NUBE.guias : []);
+  let guiaActual = null;
+  function cerrarGuia() {
+    if (!guiaActual) return;
+    guiaActual.foco.remove(); guiaActual.tarjeta.remove(); cancelAnimationFrame(guiaActual.raf);
+    window.removeEventListener("resize", guiaActual.colocar);
+    const fin = guiaActual.alTerminar; guiaActual = null; if (fin) fin();
+  }
+  function mostrarGuia(clave, pasos, opciones = {}) {
+    if (guiaActual) cerrarGuia();
+    if (!opciones.repetir) {
+      if (guiasVistas.has(clave)) { if (opciones.alTerminar) opciones.alTerminar(); return false; }
+      guiasVistas.add(clave);
+      if (MODO === "nube") fetch("api/guias/" + clave, { method: "POST" }).catch(() => {});
+    }
+    const foco = document.createElement("div"), tarjeta = document.createElement("div");
+    foco.className = "guia-foco"; tarjeta.className = "guia-tarjeta"; tarjeta.setAttribute("role", "dialog");
+    document.body.append(foco, tarjeta);
+    guiaActual = { foco, tarjeta, i: 0, raf: 0, alTerminar: opciones.alTerminar };
+    const elDe = (p) => (typeof p.el === "function" ? p.el() : p.el ? document.querySelector(p.el) : null);
+    const colocar = () => {
+      if (!guiaActual) return;
+      const p = pasos[guiaActual.i], el = elDe(p), W = innerWidth, H = innerHeight, tw = tarjeta.offsetWidth, th = tarjeta.offsetHeight;
+      if (!el || !el.getClientRects().length) { foco.classList.add("sin"); foco.style.left = W / 2 + "px"; foco.style.top = H / 2 + "px"; tarjeta.style.left = (W - tw) / 2 + "px"; tarjeta.style.top = Math.max(16, (H - th) / 2) + "px"; return; }
+      foco.classList.remove("sin");
+      const r = el.getBoundingClientRect(), m = 6;
+      Object.assign(foco.style, { left: r.left - m + "px", top: r.top - m + "px", width: r.width + 2 * m + "px", height: r.height + 2 * m + "px" });
+      let x = r.right + 18, y = r.top;
+      if (x + tw > W - 16) { x = r.left - tw - 18; }
+      if (x < 16) { x = Math.min(Math.max(16, r.left), W - tw - 16); y = r.bottom + 16; if (y + th > H - 16) y = r.top - th - 16; }
+      tarjeta.style.left = x + "px"; tarjeta.style.top = Math.max(16, Math.min(y, H - th - 16)) + "px";
+    };
+    guiaActual.colocar = colocar;
+    const pintar = () => {
+      const p = pasos[guiaActual.i], ultimo = guiaActual.i === pasos.length - 1;
+      cancelAnimationFrame(guiaActual.raf);
+      tarjeta.innerHTML = "<h3>" + p.titulo + "</h3>" + (p.anim ? '<svg class="guia-anim" viewBox="0 0 360 200"></svg>' : "") + "<p>" + p.texto + "</p>" +
+        '<div class="guia-pie"><span class="puntos">' + (pasos.length > 1 ? pasos.map((_, k) => '<i class="' + (k === guiaActual.i ? "si" : "") + '"></i>').join("") : "") + "</span>" +
+        (ultimo ? "" : '<button class="saltar" data-guia="saltar">Saltar</button>') + '<button class="seguir" data-guia="seguir">' + (p.boton || (ultimo ? "Entendido" : "Siguiente")) + "</button></div>";
+      if (p.anim) { const svg = tarjeta.querySelector(".guia-anim"), t0 = performance.now(); const loop = (ahora) => { p.anim(svg, ((ahora - t0) / 1000) % (p.dur || 7)); guiaActual.raf = requestAnimationFrame(loop); }; guiaActual.raf = requestAnimationFrame(loop); }
+      requestAnimationFrame(colocar);
+    };
+    tarjeta.addEventListener("click", (ev) => {
+      const b = ev.target.closest("[data-guia]"); if (!b) return;
+      if (b.dataset.guia === "saltar" || guiaActual.i === pasos.length - 1) { cerrarGuia(); return; }
+      guiaActual.i++; pintar();
+    });
+    window.addEventListener("resize", colocar);
+    pintar();
+    return true;
+  }
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && guiaActual) cerrarGuia(); });
+  // Mini animación de la manzana: el cursor pica el frente, Enter, pica el fondo, Enter y salen los lotes
+  function animManzana(svg, t) {
+    const F = [[40, 62], [180, 50], [320, 62]], B = [[40, 165], [320, 165]];
+    const pt = [[0.4, F[0]], [1.0, F[1]], [1.6, F[2]], [2.6, B[0]], [3.2, B[1]]];
+    const ease = (u) => (u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2);
+    let cx = 340, cy = 190;
+    for (let k = 0; k < pt.length; k++) { const [tk, p] = pt[k], prev = k ? pt[k - 1] : [0, [340, 190]], ini = k === 3 ? 2.2 : prev[0]; if (t >= ini && t < tk) { const u = ease((t - ini) / (tk - ini)); cx = prev[1][0] + (p[0] - prev[1][0]) * u; cy = prev[1][1] + (p[1] - prev[1][1]) * u; } if (t >= tk) { cx = p[0]; cy = p[1]; } }
+    if (t > 3.4) { cx = 300; cy = 190; }
+    const vis = (tk) => t >= tk;
+    let h = '<rect width="360" height="200" fill="#1a2014"/><path d="M0 40 Q180 22 360 40 L360 30 Q180 12 0 30Z" fill="#2c2f2a"/><rect x="0" y="172" width="360" height="16" fill="#2c2f2a"/>';
+    const lotes = t > 3.8;
+    if (lotes) {
+      const n = 6, a = Math.min(1, (t - 3.8) / 0.6);
+      for (let k = 0; k < n; k++) {
+        const u0 = k / n, u1 = (k + 1) / n, q = (u) => { const x = 40 + 280 * u, y = u < 0.5 ? 62 - 24 * u : 50 + 24 * (u - 0.5); return [x, y]; };
+        const ap = Math.max(0, Math.min(1, (t - 3.8 - k * 0.12) / 0.3));
+        h += '<path d="M' + q(u0).join(" ") + "L" + q(u1).join(" ") + "L" + (40 + 280 * u1) + " 165L" + (40 + 280 * u0) + ' 165Z" fill="#D5FF40" fill-opacity="' + (0.3 * ap).toFixed(2) + '" stroke="#fff" stroke-opacity="' + ap.toFixed(2) + '" stroke-width="1.5"/>';
+        if (ap > 0.5) h += '<text x="' + (40 + 280 * (u0 + u1) / 2) + '" y="118" fill="#fff" font-size="10" font-weight="700" text-anchor="middle" opacity="' + ap.toFixed(2) + '">' + (k + 1) + "</text>";
+      }
+      h += '<text x="180" y="196" fill="#D5FF40" font-size="11" font-weight="600" text-anchor="middle" opacity="' + a.toFixed(2) + '">Listo: los lotes se reparten solos</text>';
+    }
+    const linea = (pts) => '<path d="M' + pts.map((p) => p.join(" ")).join("L") + '" fill="none" stroke="#D5FF40" stroke-width="2.5" stroke-dasharray="5 4"/>';
+    if (!lotes) {
+      const fv = F.filter((_, k) => vis(pt[k][0])); if (fv.length > 1) h += linea(fv);
+      const bv = B.filter((_, k) => vis(pt[3 + k][0])); if (bv.length > 1) h += linea(bv);
+    }
+    pt.forEach(([tk, p]) => { if (vis(tk)) h += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="5" fill="#D5FF40" stroke="#0b0b0b" stroke-width="1.5"/>'; });
+    const tecla = (t > 1.75 && t < 2.2) || (t > 3.35 && t < 3.8);
+    if (tecla) h += '<g transform="translate(150 84)"><rect width="60" height="26" rx="7" fill="rgba(255,255,255,.14)" stroke="rgba(255,255,255,.5)"/><text x="30" y="17" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">Enter ↵</text></g>';
+    if (!lotes) h += '<text x="180" y="196" fill="#fff" font-size="11" text-anchor="middle">' + (t < 1.9 ? "1 · Clic en las esquinas de la calle de enfrente" : "2 · Enter, y clic en las de la calle de atrás") + "</text>";
+    h += '<path transform="translate(' + cx.toFixed(1) + " " + cy.toFixed(1) + ')" d="M0 0 L0 15 L4 11.5 L7 18 L10 16.5 L7 10.5 L12.5 10.5 Z" fill="#fff" stroke="#111" stroke-width="1.2"/>';
+    svg.innerHTML = h;
+  }
+  const MZ = () => terminos().manzana.toLowerCase();
+  const guiaManzanaInicio = (repetir, alTerminar) => mostrarGuia("manzana", [
+    { el: "#add-manzana", titulo: "Así se dibuja una " + MZ(), anim: animManzana, dur: 7,
+      texto: "Pica las esquinas de la <b>calle de enfrente</b> y presiona <b>Enter</b>. Luego las de la <b>calle de atrás</b> y <b>Enter</b>. Mozari reparte los lotes solo; después cambias cuántos son.", boton: "A dibujar" },
+  ], { repetir, alTerminar });
+  const guiaManzanaEditar = (c, repetir) => mostrarGuia("manzana-editar", [
+    { el: () => [...document.querySelectorAll("#lista li")].find((li) => li.dataset.id === c.id || li.innerText.trim().split("\n")[0] === c.nombre), titulo: "Para editar la " + MZ() + " completa",
+      texto: "Pícale a la capa <b>" + esc(c.nombre) + "</b> aquí en la lista, no a un lote. Si tienes un lote elegido, usa <b>Editar la " + MZ() + " completa</b>." },
+    { el: "#props", titulo: "Aquí la ajustas",
+      texto: "Cuántos lotes lleva, si es <b>doble</b>, el <b>primer número</b> y repartir parejo. En la esfera, los <b>puntos verdes</b> mueven cada división." },
+  ], { repetir });
 
   // =================== DESCARGAR PARA OTRO HOSTING ===================
   // El servidor da la página y la lista de archivos; aquí se baja cada uno y se arma el .zip
@@ -5330,6 +5448,7 @@ void main(){
     est.ultimoLote = { manzana: mz, numero: String(c.manzana.n) };
     motorEd.elegida = c.id;
     avisar(terminos().manzana + " " + mz + " con 10 " + plural(terminos().lote).toLowerCase() + ". Cambia la cantidad a la derecha.");
+    if (MODO === "nube" && !guiasVistas.has("manzana-editar")) setTimeout(() => guiaManzanaEditar(c), 900);
   }
   $("props").addEventListener("click", (ev) => {
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
@@ -5453,7 +5572,13 @@ void main(){
   $("add-lote").addEventListener("click", () => { if (sinLotif() && !avisoLotes) { avisoLotes = true; avisar("Prueba la lotificación libremente. Al publicar, un tour con lotes sale con marca de agua hasta que tengas Desarrollos."); } }, true);
   $("add-lote").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "lote") empezarDibujo("lote"); });
   $("add-manzana").addEventListener("click", () => { if (sinLotif() && !avisoLotes) { avisoLotes = true; avisar("Prueba la lotificación libremente. Al publicar, un tour con lotes sale con marca de agua hasta que tengas Desarrollos."); } }, true);
-  $("add-manzana").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "manzana") empezarDibujo("manzana"); });
+  $("add-manzana").addEventListener("click", () => {
+    const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false);
+    if (era === "manzana") return;
+    // La primera vez: el mini tutorial y luego a dibujar
+    if (!guiasVistas.has("manzana") && MODO === "nube") { guiaManzanaInicio(false, () => empezarDibujo("manzana")); return; }
+    empezarDibujo("manzana");
+  });
   $("add-camino").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "camino") empezarDibujo("camino"); });
   $("add-txt").addEventListener("click", () => {
     if (motorEd.dibujo) terminarDibujo(false);
@@ -5633,7 +5758,7 @@ void main(){
     else if (c.manzana) {
       const m = c.manzana, lotes = lotesDeManzana(c);
       const gemela = cs().some((x) => x !== c && x.manzana && String(x.manzana.mz).trim().toLowerCase() === String(m.mz).trim().toLowerCase());
-      h += '<div class="grupo"><b>Lotes de la manzana</b>' +
+      h += '<div class="grupo"><b>Lotes de la manzana <button class="guia-ayuda" data-guia-ayuda="manzana" title="Ver cómo se usa">?</button></b>' +
         (gemela ? '<p class="nota" style="color:#F2A900">Hay otra ' + esc(terminos().manzana.toLowerCase()) + ' ' + esc(m.mz) + ' en esta esfera. Ponle otro número para que sus lotes no se confundan.</p>' : "") +
         campo("Manzana", '<input type="text" data-mz="mz" value="' + esc(m.mz) + '" placeholder="3">') +
         interruptor("Doble: lotes por los dos lados", "_mzDoble", !!m.doble) +
@@ -5880,6 +6005,8 @@ void main(){
     const es = ev.target.closest("[data-estado]");
     if (es) { const c = buscar(motorEd.elegida); cambiarEstado(c, es.dataset.estado); return; }
     if (a && a.dataset.acc === "a-lote") { const c = buscar(motorEd.elegida); const sig = siguienteLote(); c.lote = Object.assign({}, LOTE_DEF, sig, { lados: c.puntos.map(() => "") }); delete c.sinLote; if (!c.accion || c.accion === "ninguna") delete c.accion; est.ultimoLote = sig; cambio(); avisar(nombreLote(c) + ". Escribe sus datos."); return; }
+    const ay = ev.target.closest("[data-guia-ayuda]");
+    if (ay && ay.dataset.guiaAyuda === "manzana") { const c = buscar(motorEd.elegida); guiaManzanaInicio(true, () => { if (c && c.manzana) guiaManzanaEditar(c, true); }); return; }
     if (a && a.dataset.acc === "ir-manzana") { const c = buscar(motorEd.elegida); if (c && c.deManzana) seleccionar(c.deManzana); return; }
     if (a && a.dataset.acc === "quitar-lote") { const c = buscar(motorEd.elegida); delete c.lote; c.sinLote = true; if (c.accion === "ficha") delete c.accion; cambio(); avisar("Ahora es un polígono normal"); return; }
     if (a && a.dataset.acc === "t3d-reset") { const c = buscar(motorEd.elegida); if (c) { c.t3d = Object.assign({}, T3_DEF); cambio(); } return; }
