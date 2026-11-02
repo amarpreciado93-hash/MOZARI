@@ -845,6 +845,42 @@
   .pub-hosting > div { flex: 1 1 260px; display: grid; gap: 4px; }
   .pub-hosting span { color: var(--mz-tenue); }
   .pub-hosting-aviso { flex-basis: 100%; margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: #F2A900; }
+  .comp { text-align: left; display: grid; gap: 18px; }
+  .comp-cab h1 { margin: 4px 0 6px; }
+  .comp-cab p { max-width: 640px; }
+  .comp-aviso { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: 12px; border: 1px solid color-mix(in srgb, #F2A900 45%, transparent); background: color-mix(in srgb, #F2A900 10%, transparent); font-size: 13px; }
+  .comp-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+  .comp-col { display: grid; gap: 14px; min-width: 0; }
+  .comp-tarjeta { padding: 18px; border-radius: 16px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); display: grid; gap: 12px; min-width: 0; }
+  .comp-tarjeta h3 { margin: 0; font-size: 16px; }
+  .comp-tarjeta > p:not(.nota) { font-size: 13px; margin-top: -6px; }
+  .comp-tarjeta .pub-caja { margin: 0; max-width: none; }
+  .comp-acc { display: flex; flex-wrap: wrap; gap: 8px; }
+  .comp-acc a { text-decoration: none; }
+  .comp-tarjeta input[type="text"] { width: 100%; box-sizing: border-box; font: 500 13px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 10px; padding: 9px 12px; }
+  .comp-tarjeta input[type="text"]:focus { outline: none; border-color: var(--mz-lima); }
+  .comp-alto { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mz-tenue); }
+  .comp-alto input { width: 84px; font: inherit; color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 8px; padding: 6px 8px; }
+  .comp-emb { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; }
+  .comp-emb textarea { font: 11.5px/1.55 ui-monospace, Menlo, Consolas, monospace; color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea); border-radius: 10px; padding: 10px 12px; resize: none; word-break: break-all; }
+  .comp-mock { border-radius: 10px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-negro); padding: 10px 9px; display: flex; flex-direction: column; gap: 5px; overflow: hidden; }
+  .comp-mock i { height: 4px; flex: none; border-radius: 2px; background: var(--mz-linea-neutra); }
+  .comp-mock i.c { width: 62%; }
+  .comp-mock b { flex: none; display: grid; place-items: center; border-radius: 5px; border: 1px solid var(--mz-lima); background: color-mix(in srgb, var(--mz-lima) 22%, transparent); color: var(--mz-lima); font-size: 10px; font-weight: 700; margin: 3px 0; aspect-ratio: 16 / 9; }
+  .comp-mock[data-m="alto"] b { aspect-ratio: auto; height: 58px; }
+  .comp-mock[data-m="pantalla"] { padding: 4px; } .comp-mock[data-m="pantalla"] i { display: none; } .comp-mock[data-m="pantalla"] b { flex: 1; aspect-ratio: auto; margin: 0; }
+  .comp-qr-vista { background: #fff; border-radius: 14px; padding: 14px; display: grid; place-items: center; min-height: 200px; }
+  .comp-qr-vista svg { width: 100%; max-width: 260px; height: auto; display: block; }
+  .comp-qr-vista .nota { color: #777; }
+  .comp-colores { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .comp-colores button, .comp-otro { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--mz-linea-neutra); background: transparent; color: var(--mz-tenue); border-radius: var(--mz-pastilla); padding: 5px 11px 5px 6px; font: 500 12px var(--mz-texto-ui); cursor: pointer; }
+  .comp-colores button i { width: 16px; height: 16px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.25); }
+  .comp-colores button[aria-pressed="true"] { color: var(--mz-texto); border-color: var(--mz-lima); }
+  .comp-otro { position: relative; }
+  .comp-otro input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .comp-otro i { width: 16px; height: 16px; border-radius: 50%; background: conic-gradient(#e53, #fc3, #3c6, #39f, #93f, #e53); }
+  .comp-claro { margin: 0; font-size: 12px; color: #F2A900; }
+  @media (max-width: 860px) { .comp-grid { grid-template-columns: 1fr; } .comp-emb { grid-template-columns: 1fr; } .comp-mock { display: none; } }
   .lotes-resumen { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 18px; }
   .lr-chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); color: var(--mz-tenue); border-radius: var(--mz-pastilla); padding: 7px 14px; font: 500 12px var(--mz-texto-ui); cursor: pointer; }
   .lr-chip b { color: var(--mz-texto); font-size: 15px; font-weight: 600; }
@@ -2221,6 +2257,7 @@
     $("proximo").classList.remove("ancho");
     if (clave === "publicar/web" && MODO === "nube") { pintarPublicar(); }
     else if (clave === "publicar/estadisticas" && MODO === "nube") { pintarEstadisticas(); }
+    else if (clave === "publicar/compartir" && MODO === "nube") { pintarCompartir(); }
 
     else if (PROXIMO[clave]) {
       const [ico, t, d] = PROXIMO[clave];
@@ -2279,6 +2316,116 @@
       toursNube = null; await cargarToursNube(); pintarPublicar();
       avisar("¡Publicado! Tu cliente ya ve esta versión.");
     }
+  });
+
+  // =================== COMPARTIR (nube) ===================
+  // El link, el código para insertar el tour en cualquier sitio web y un QR listo para imprimir.
+  const COMP = { modo: "resp", alto: 600, color: "#111111", texto: "Escanea y recorre el tour 360°", logo: true };
+  let libQr = null;
+  const cargarQr = () => libQr || (libQr = new Promise((ok, mal) => { const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"; sc.onload = () => ok(window.qrcode); sc.onerror = () => { libQr = null; mal(new Error("qr")); }; document.head.appendChild(sc); }));
+  const linkCon = (origen) => linkTour() + "?utm_source=" + origen;
+  const logoMarca = () => { const sk = est.skin || {}, f = P().ficha || {}; return sk.logo && sk.logo.tipo === "propio" && sk.logo.img ? sk.logo.img : f.logo === "propio" && f.logoImg ? f.logoImg : ""; };
+  // Contraste contra blanco: abajo de 4.5 el QR puede no leerse impreso
+  const contrasteBlanco = (h) => { const L = hexRgb(h).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 1.05 / (0.2126 * L[0] + 0.7152 * L[1] + 0.0722 * L[2] + 0.05); };
+  function codigoInsertar() {
+    const L = esc(linkTour()), T = esc(P().nombre || "Tour 360"), allow = ' allow="fullscreen; gyroscope; accelerometer; xr-spatial-tracking" allowfullscreen';
+    if (COMP.modo === "alto") return '<iframe src="' + L + '" title="' + T + '" width="100%" height="' + COMP.alto + '" style="border:0;border-radius:12px"' + allow + ' loading="lazy"></iframe>';
+    if (COMP.modo === "pantalla") return '<iframe src="' + L + '" title="' + T + '" style="display:block;width:100%;height:100vh;border:0"' + allow + "></iframe>";
+    return '<div style="position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden"><iframe src="' + L + '" title="' + T + '" style="position:absolute;inset:0;width:100%;height:100%;border:0"' + allow + ' loading="lazy"></iframe></div>';
+  }
+  // El QR como SVG: módulos cuadrados (lo que mejor leen los celulares), margen de 4 y el logo al centro sobre blanco
+  async function qrDatos() {
+    const qrcode = await cargarQr(), conLogo = COMP.logo && !!logoMarca();
+    const q = qrcode(0, conLogo ? "H" : "M"); q.addData(linkCon("qr")); q.make();
+    const n = q.getModuleCount(), k = conLogo ? Math.round(n * 0.24) | 1 : 0, c0 = (n - k) / 2;
+    const hueco = (r, c) => conLogo && r >= c0 - 1 && r < c0 + k + 1 && c >= c0 - 1 && c < c0 + k + 1;
+    const oscuros = []; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c) && !hueco(r, c)) oscuros.push([r, c]);
+    const W = n + 8, txt = COMP.texto.trim(), th = txt ? Math.round(W * 0.16) : 0;
+    const fs = txt ? Math.min(th * 0.5, (W - 6) / (txt.length * 0.56)) : 0;
+    return { n, k, c0, oscuros, W, H: W + th, txt, th, fs, logo: conLogo ? logoMarca() : "" };
+  }
+  function qrSvg(d, logoHref) {
+    let s = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + d.W + " " + d.H + '" shape-rendering="crispEdges"><rect width="' + d.W + '" height="' + d.H + '" fill="#fff"/>' +
+      '<path fill="' + COMP.color + '" d="' + d.oscuros.map(([r, c]) => "M" + (c + 4) + " " + (r + 4) + "h1v1h-1z").join("") + '"/>';
+    if (d.logo) s += '<image href="' + esc(logoHref) + '" x="' + (d.c0 + 4.3) + '" y="' + (d.c0 + 4.3) + '" width="' + (d.k - 0.6) + '" height="' + (d.k - 0.6) + '" preserveAspectRatio="xMidYMid meet"/>';
+    if (d.txt) s += '<text x="' + d.W / 2 + '" y="' + (d.W + d.th * 0.38).toFixed(2) + '" font-family="Poppins, Arial, sans-serif" font-weight="600" font-size="' + d.fs.toFixed(2) + '" fill="' + COMP.color + '" text-anchor="middle">' + esc(d.txt) + "</text>";
+    return s + "</svg>";
+  }
+  async function pintarQr() {
+    const caja = $("comp-qr"); if (!caja) return;
+    try { const d = await qrDatos(); if ($("comp-qr")) $("comp-qr").innerHTML = qrSvg(d, d.logo ? urlArchivo(d.logo) : ""); }
+    catch (e) { caja.innerHTML = '<p class="nota">No se pudo crear el QR. Revisa tu internet.</p>'; }
+  }
+  const nombreArchivo = (ext) => "qr-" + ((P().nombre || "tour").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "tour") + "." + ext;
+  const bajar = (blob, nombre) => { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
+  const aDataUrl = async (url) => { const b = await (await fetch(url)).blob(); return await new Promise((ok) => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(b); }); };
+  async function descargarQr(formato) {
+    const d = await qrDatos();
+    if (formato === "svg") { const href = d.logo ? await aDataUrl(urlArchivo(d.logo)).catch(() => "") : ""; bajar(new Blob([qrSvg(d, href)], { type: "image/svg+xml" }), nombreArchivo("svg")); return; }
+    // PNG grande para imprenta (~2400 px de ancho), dibujado directo en canvas para que la letra salga con Poppins
+    const m = Math.max(8, Math.floor(2400 / d.W)), cv = document.createElement("canvas"); cv.width = d.W * m; cv.height = Math.round(d.H * m);
+    const x = cv.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, cv.width, cv.height); x.fillStyle = COMP.color;
+    d.oscuros.forEach(([r, c]) => x.fillRect((c + 4) * m, (r + 4) * m, m, m));
+    if (d.logo) {
+      const img = await new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = urlArchivo(d.logo); });
+      if (img) { const lado = (d.k - 0.6) * m, e = Math.min(lado / img.width, lado / img.height), w = img.width * e, h = img.height * e, o = (d.c0 + 4.3) * m; x.drawImage(img, o + (lado - w) / 2, o + (lado - h) / 2, w, h); }
+    }
+    if (d.txt) { await document.fonts.ready; x.font = "600 " + d.fs * m + "px Poppins, Arial, sans-serif"; x.textAlign = "center"; x.textBaseline = "alphabetic"; x.fillText(d.txt, (d.W / 2) * m, (d.W + d.th * 0.38) * m); }
+    cv.toBlob((b) => bajar(b, nombreArchivo("png")), "image/png");
+  }
+  function pintarCompartir() {
+    const t = (toursNube || []).find((x) => x.id === TOUR) || {}, nombre = P().nombre || "Tour 360";
+    const caja = $("proximo"); caja.classList.add("ancho"); $("v-proximo").hidden = false;
+    const chip = (v, n, actual, dato) => '<button ' + dato + '="' + v + '" aria-pressed="' + (actual === v) + '" style="--c:var(--mz-lima)">' + n + "</button>";
+    const marca = (est.skin || {}).acento, marcaOk = marca && /^#[0-9a-f]{6}$/i.test(marca) && contrasteBlanco(marca) >= 4.5;
+    const colores = [["#111111", "Negro"], ["#14213D", "Azul marino"]].concat(marcaOk && !["#111111", "#14213D"].includes(marca.toUpperCase()) ? [[marca, "Color de tu Skin"]] : []);
+    const claro = contrasteBlanco(COMP.color) < 4.5;
+    caja.innerHTML = '<div class="comp"><div class="comp-cab"><span class="etiq">Compartir</span><h1>Comparte tu tour</h1><p>Mándalo por link, ponlo dentro de tu sitio web o imprímelo como QR en lonas, flyers y tarjetas.</p></div>' +
+      (t.publicado ? "" : '<div class="comp-aviso"><span><b>Aún no publicas este tour.</b> Puedes preparar todo; el link, el código y el QR funcionan en cuanto lo publiques.</span><button class="btn-prim" data-comp="ir-publicar">Ir a Publicar</button></div>') +
+      '<div class="comp-grid"><div class="comp-col">' +
+      '<section class="comp-tarjeta"><h3>Link</h3><p>Para WhatsApp, correo y redes sociales.</p>' +
+      '<div class="pub-caja"><code>' + esc(linkTour()) + '</code><button class="btn-sec" data-comp="copiar">Copiar link</button></div>' +
+      '<div class="comp-acc"><a class="btn-sec" href="https://wa.me/?text=' + encodeURIComponent(nombre + "\n" + linkCon("whatsapp")) + '" target="_blank" rel="noopener">WhatsApp</a>' +
+      '<a class="btn-sec" href="mailto:?subject=' + encodeURIComponent(nombre) + "&body=" + encodeURIComponent("Recorre el tour 360°:\n" + linkCon("correo")) + '">Correo</a>' +
+      '<a class="btn-sec" href="' + esc(linkTour()) + '" target="_blank" rel="noopener">Abrir ↗</a></div></section>' +
+      '<section class="comp-tarjeta"><h3>Insertar en tu sitio web</h3><p>Copia el código y pégalo en tu página. El tour se ve dentro de tu sitio, con pantalla completa y giroscopio en celular.</p>' +
+      '<div class="estados">' + chip("resp", "Proporción 16:9", COMP.modo, "data-comp-modo") + chip("alto", "Alto fijo", COMP.modo, "data-comp-modo") + chip("pantalla", "Pantalla completa", COMP.modo, "data-comp-modo") + "</div>" +
+      (COMP.modo === "alto" ? '<label class="comp-alto">Alto <input type="number" id="comp-alto" min="300" max="1400" step="10" value="' + COMP.alto + '"> px</label>' : "") +
+      '<div class="comp-emb"><div class="comp-mock" data-m="' + COMP.modo + '" aria-hidden="true"><i></i><i class="c"></i><b>360°</b><i></i><i class="c"></i></div><textarea id="comp-codigo" readonly rows="5">' + esc(codigoInsertar()) + "</textarea></div>" +
+      '<div class="comp-acc"><button class="btn-prim" data-comp="copiar-codigo">Copiar código</button></div>' +
+      '<p class="nota">WordPress: bloque «HTML personalizado» · Wix: «Insertar código» · Shopify y Squarespace: bloque de código.</p></section></div>' +
+      '<section class="comp-tarjeta comp-qr"><h3>QR para impresos</h3><p>Al escanearlo abre el tour en el celular.</p>' +
+      '<div class="comp-qr-vista" id="comp-qr"><p class="nota">Creando QR…</p></div>' +
+      '<div class="fe-grupo"><b>Color</b><div class="comp-colores">' + colores.map(([v, n]) => '<button data-comp-color="' + v + '" aria-pressed="' + (COMP.color.toUpperCase() === v.toUpperCase()) + '"><i style="background:' + v + '"></i>' + n + "</button>").join("") +
+      '<label class="comp-otro" title="Otro color"><i></i>Otro<input type="color" id="comp-color" value="' + COMP.color + '"></label></div>' +
+      (claro ? '<p class="comp-claro">Ese color es muy claro: impreso podría no leerse. Usa uno más oscuro.</p>' : "") + "</div>" +
+      '<label class="fe-campo">Texto debajo (opcional)<input type="text" id="comp-texto" maxlength="40" value="' + esc(COMP.texto) + '"></label>' +
+      (logoMarca() ? '<label class="fe-si"><input type="checkbox" id="comp-logo"' + (COMP.logo ? " checked" : "") + "> Mi logo al centro</label>" : "") +
+      '<div class="comp-acc"><button class="btn-prim" data-comp="png">Descargar PNG</button><button class="btn-sec" data-comp="svg">SVG para imprenta</button></div>' +
+      '<p class="nota">Escanéalo con tu celular antes de mandarlo a imprimir.' + (enLab("estadisticas") ? " Las visitas por QR salen aparte en Estadísticas." : "") + "</p></section></div></div>";
+    pintarQr();
+    if (!toursNube) cargarToursNube().then(() => nav.sec + "/" + nav.sub === "publicar/compartir" && pintarCompartir());
+  }
+  $("proximo").addEventListener("click", async (ev) => {
+    const modo = ev.target.closest("[data-comp-modo]"); if (modo) { COMP.modo = modo.dataset.compModo; pintarCompartir(); return; }
+    const col = ev.target.closest("[data-comp-color]"); if (col) { COMP.color = col.dataset.compColor; pintarCompartir(); return; }
+    const b = ev.target.closest("[data-comp]"); if (!b) return;
+    const a = b.dataset.comp;
+    if (a === "ir-publicar") ir("publicar", "web");
+    else if (a === "copiar" || a === "copiar-codigo") {
+      try { await navigator.clipboard.writeText(a === "copiar" ? linkTour() : codigoInsertar()); avisar(a === "copiar" ? "Link copiado" : "Código copiado"); }
+      catch (e) { if (a === "copiar-codigo") $("comp-codigo").select(); avisar("Cópialo manualmente"); }
+    } else if (a === "png" || a === "svg") {
+      b.disabled = true; try { await descargarQr(a); } catch (e) { avisar("No se pudo crear el QR"); } b.disabled = false;
+    }
+  });
+  $("proximo").addEventListener("input", (ev) => {
+    if (ev.target.id === "comp-texto") { COMP.texto = ev.target.value; pintarQr(); }
+    if (ev.target.id === "comp-alto") { COMP.alto = Math.max(300, Math.min(1400, +ev.target.value || 600)); $("comp-codigo").value = codigoInsertar(); }
+  });
+  $("proximo").addEventListener("change", (ev) => {
+    if (ev.target.id === "comp-logo") { COMP.logo = ev.target.checked; pintarQr(); }
+    if (ev.target.id === "comp-color") { COMP.color = ev.target.value; pintarCompartir(); }
   });
 
   // =================== TUTORIALES GUIADOS ===================
@@ -2558,7 +2705,7 @@
   }
 
   // =================== ESTADÍSTICAS (estudio, Laboratorio) ===================
-  const ORIGEN_TXT = { directo: "Directo o WhatsApp", whatsapp: "WhatsApp", facebook: "Facebook", instagram: "Instagram", google: "Google", mozari: "Mozari" };
+  const ORIGEN_TXT = { qr: "Código QR", correo: "Correo", directo: "Directo o WhatsApp", whatsapp: "WhatsApp", facebook: "Facebook", instagram: "Instagram", google: "Google", mozari: "Mozari" };
   async function pintarEstadisticas(dias) {
     dias = dias || 30;
     const caja = $("proximo"); $("v-proximo").hidden = false; caja.classList.add("ancho");

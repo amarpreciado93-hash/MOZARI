@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-02T23:33:53.689Z",
- "bien": 23,
- "total": 23,
+ "fecha": "2026-11-02T23:41:55.725Z",
+ "bien": 24,
+ "total": 24,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -69,6 +69,10 @@
   },
   {
    "nombre": "Descargar el tour (.zip) para otro hosting",
+   "ok": true
+  },
+  {
+   "nombre": "Compartir: link, código para insertar y QR que se lee",
    "ok": true
   },
   {

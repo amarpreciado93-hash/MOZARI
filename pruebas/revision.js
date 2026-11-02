@@ -19,6 +19,9 @@ const LIB = {
   d3: busca(path.join(__dirname, "node_modules/d3/dist/d3.min.js"), "/tmp/mz/package/dist/d3.min.js"),
   fflate: busca(path.join(__dirname, "node_modules/fflate/umd/index.js"), "/tmp/ff/package/umd/index.js"),
   xlsx: busca(path.join(__dirname, "node_modules/xlsx/dist/xlsx.full.min.js"), "/tmp/xl/package/dist/xlsx.full.min.js"),
+  qr: busca(path.join(__dirname, "node_modules/qrcode-generator/qrcode.js"), "/tmp/qr/package/qrcode.js"),
+  jsqr: busca(path.join(__dirname, "node_modules/jsqr"), "/tmp/qr/node_modules/jsqr"),
+  pngjs: busca(path.join(__dirname, "node_modules/pngjs"), "/tmp/qr/node_modules/pngjs"),
 };
 const DUENO = "amarpreciado93@gmail.com";
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
@@ -60,6 +63,7 @@ async function pagina(correo, opciones = {}) {
   await p.route("**/d3.min.js", (r) => r.fulfill({ path: LIB.d3, contentType: "application/javascript" }));
   await p.route("**/fflate@*/umd/index.js", (r) => r.fulfill({ path: LIB.fflate, contentType: "application/javascript" }));
   await p.route("**/xlsx.full.min.js", (r) => r.fulfill({ path: LIB.xlsx, contentType: "application/javascript" }));
+  await p.route("**/qrcode-generator@*/qrcode.js", (r) => r.fulfill({ path: LIB.qr, contentType: "application/javascript" }));
   await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
   if (correo) { await p.goto(ESTUDIO + "/entrar?dev=" + encodeURIComponent(correo)); await p.waitForTimeout(2500); await cerrarAnuncio(p); }
   return p;
@@ -248,6 +252,22 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       const zip = require(LIB.fflate).unzipSync(new Uint8Array(fs.readFileSync(destino)));
       const nombres = Object.keys(zip);
       exige(nombres.some((n) => n.endsWith("/index.html")) && nombres.some((n) => n.endsWith("/proyecto.json")) && nombres.some((n) => n.includes("/escenas/")), "el zip está incompleto");
+    }, a);
+    await paso("Compartir: link, código para insertar y QR que se lee", async () => {
+      await a.click('#subtabs button:has-text("Compartir")'); await a.waitForTimeout(1500);
+      const url = (await a.textContent(".comp .pub-caja code")).trim();
+      exige(url.endsWith("/" + tour + "/"), "el link de Compartir no es el del tour (" + url + ")");
+      exige(!(await a.$(".comp-aviso")), "dice que no está publicado y sí lo está");
+      exige((await a.inputValue("#comp-codigo")).includes('src="' + url + '"'), "el código para insertar no trae el link del tour");
+      await a.click('[data-comp-modo="alto"]'); await a.waitForTimeout(300); await a.fill("#comp-alto", "700"); await a.waitForTimeout(200);
+      exige((await a.inputValue("#comp-codigo")).includes('height="700"'), "el alto fijo no cambió el código");
+      await a.waitForSelector("#comp-qr svg", { timeout: 15000 });
+      const [dl] = await Promise.all([a.waitForEvent("download", { timeout: 30000 }), a.click('[data-comp="png"]')]);
+      const destino = path.join(DATOS, "qr.png"); await dl.saveAs(destino);
+      const img = require(LIB.pngjs).PNG.sync.read(fs.readFileSync(destino)), leido = require(LIB.jsqr)(new Uint8ClampedArray(img.data), img.width, img.height);
+      exige(leido && leido.data === url + "?utm_source=qr", "el QR descargado no se lee o no lleva al tour (" + (leido && leido.data) + ")");
+      const [dl2] = await Promise.all([a.waitForEvent("download", { timeout: 30000 }), a.click('[data-comp="svg"]')]);
+      exige((await dl2.suggestedFilename()).endsWith(".svg"), "no bajó el SVG");
     }, a);
     await paso("Panel de dueño: cuentas, links, reportes, laboratorio y actualizaciones", async () => {
       await a.click('#nav button:has-text("Mis Tours")'); await a.waitForTimeout(800);

@@ -2,6 +2,17 @@
   "name": "mozari-pruebas",
   "private": true,
   "description": "Revisión completa de Mozari: lo que haría un usuario, de punta a punta, antes de cada actualización",
-  "scripts": { "revision": "node revision.js" },
-  "devDependencies": { "playwright": "1.63.0", "marzipano": "0.10.2", "d3": "7.9.0", "fflate": "0.8.2", "xlsx": "0.18.5" }
+  "scripts": {
+    "revision": "node revision.js"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "marzipano": "0.10.2",
+    "d3": "7.9.0",
+    "fflate": "0.8.2",
+    "xlsx": "0.18.5",
+    "qrcode-generator": "1.4.4",
+    "jsqr": "1.4.0",
+    "pngjs": "7.0.0"
+  }
 }
