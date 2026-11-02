@@ -1717,8 +1717,9 @@
   // El mismo lote en varias esferas: por número y manzana (o por su vínculo de terreno)
   const claveLote = (c) => { const l = loteDe(c); return l.numero ? "mz:" + String(l.manzana).trim().toLowerCase() + "|" + String(l.numero).trim().toLowerCase() : "v:" + (c.vinculo || c.id); };
   function copiasLote(c) {
-    const k = claveLote(c), r = [];
-    Object.keys(est.capas).forEach((id) => (est.capas[id] || []).forEach((x) => { if (x.lote && (claveLote(x) === k || (c.vinculo && x.vinculo === c.vinculo))) r.push({ id, c: x }); }));
+    const k = claveLote(c), r = [], suya = Object.keys(est.capas).find((id) => (est.capas[id] || []).includes(c));
+    // Mismo número y manzana en OTRA esfera = el mismo lote visto desde otro lado. En la misma esfera es otro lote.
+    Object.keys(est.capas).forEach((id) => (est.capas[id] || []).forEach((x) => { if (x.lote && (x === c || (c.vinculo && x.vinculo === c.vinculo) || (claveLote(x) === k && id !== suya))) r.push({ id, c: x }); }));
     return r;
   }
   // Estado, área y precio son del lote, no de la esfera: se copian a todas sus apariciones
@@ -3064,6 +3065,16 @@
     extra.setAttribute("class", "cp-svg");
     extra.style.zIndex = 3;
     stage.appendChild(extra);
+    // La rueda del mouse acerca y aleja aunque el cursor esté sobre un lote o un polígono (si no, solo los botones + y −)
+    const ruedaZoom = (ev) => {
+      if (!actual || ev.ctrlKey) return;
+      ev.preventDefault();
+      const v = actual.view, d = Math.max(-120, Math.min(120, ev.deltaMode === 1 ? ev.deltaY * 40 : ev.deltaY));
+      v.setFov(v.fov() * Math.pow(1.0018, d));
+      if (opciones.alInteractuar) opciones.alInteractuar();
+    };
+    capasEl.addEventListener("wheel", ruedaZoom, { passive: false });
+    extra.addEventListener("wheel", ruedaZoom, { passive: false });
     const escenasM = {};
     let actual = null;
 
@@ -5303,7 +5314,10 @@ void main(){
     const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
     if (d(frente[0], fondo[fondo.length - 1]) < d(frente[0], fondo[0])) fondo = fondo.slice().reverse(); // mismo sentido que el frente
     const sig = siguienteLote();
-    const mz = String(sig.manzana || "1");
+    // Cada manzana nueva lleva su propio número: si el último ya lo usa otra manzana, toma el siguiente libre
+    const usadas = Object.values(est.capas).flat().filter((x) => x && x.manzana).map((x) => String(x.manzana.mz).trim().toLowerCase());
+    let mz = String(sig.manzana || "1");
+    if (usadas.includes(mz.toLowerCase())) { const nums = usadas.map((v) => parseInt(v, 10)).filter((v) => isFinite(v)); mz = String((nums.length ? Math.max(...nums) : 0) + 1); }
     const c = {
       id: nuevoId(), tipo: "poligono", nombre: terminos().manzana + " " + mz, visible: true,
       puntos: frente.concat(fondo.slice().reverse()).map((p) => [+p[0].toFixed(5), +p[1].toFixed(5)]),
@@ -5531,7 +5545,8 @@ void main(){
     l.lados = c.puntos.map((_, i) => (l.lados || [])[i] || "");
     const val = (k) => esc(l[k] === undefined ? "" : l[k]);
     const varios = seleccionadas().filter((x) => x.lote).length > 1;
-    let h = '<div class="grupo"><b>Datos del lote</b><div class="lote-datos">' +
+    let h = (c.deManzana && !varios ? '<div class="orden" style="margin-bottom:10px"><button class="mini" data-acc="ir-manzana">Editar la ' + esc(terminos().manzana.toLowerCase()) + " completa</button></div>" : "") +
+      '<div class="grupo"><b>Datos del lote</b><div class="lote-datos">' +
       (varios ? '<label>Numerar desde<input type="text" inputmode="numeric" data-numerar placeholder="1" title="Les pone números seguidos en su orden actual"></label>'
         : '<label>' + esc(terminos().lote) + '<input type="text" data-k="lote.numero" value="' + val("numero") + '" placeholder="12"></label>') +
       '<label>' + esc(terminos().manzana) + '<input type="text" data-k="lote.manzana" value="' + val("manzana") + '" placeholder="3"></label>' +
@@ -5617,7 +5632,9 @@ void main(){
     if (c.lote) h += propsLote(c);
     else if (c.manzana) {
       const m = c.manzana, lotes = lotesDeManzana(c);
+      const gemela = cs().some((x) => x !== c && x.manzana && String(x.manzana.mz).trim().toLowerCase() === String(m.mz).trim().toLowerCase());
       h += '<div class="grupo"><b>Lotes de la manzana</b>' +
+        (gemela ? '<p class="nota" style="color:#F2A900">Hay otra ' + esc(terminos().manzana.toLowerCase()) + ' ' + esc(m.mz) + ' en esta esfera. Ponle otro número para que sus lotes no se confundan.</p>' : "") +
         campo("Manzana", '<input type="text" data-mz="mz" value="' + esc(m.mz) + '" placeholder="3">') +
         interruptor("Doble: lotes por los dos lados", "_mzDoble", !!m.doble) +
         (m.doble ? campo("Línea del centro", campoRango("_mzMedio", +m.medio || 0.5, 0.15, 0.85, 0.01, pct)) : "") +
@@ -5863,6 +5880,7 @@ void main(){
     const es = ev.target.closest("[data-estado]");
     if (es) { const c = buscar(motorEd.elegida); cambiarEstado(c, es.dataset.estado); return; }
     if (a && a.dataset.acc === "a-lote") { const c = buscar(motorEd.elegida); const sig = siguienteLote(); c.lote = Object.assign({}, LOTE_DEF, sig, { lados: c.puntos.map(() => "") }); delete c.sinLote; if (!c.accion || c.accion === "ninguna") delete c.accion; est.ultimoLote = sig; cambio(); avisar(nombreLote(c) + ". Escribe sus datos."); return; }
+    if (a && a.dataset.acc === "ir-manzana") { const c = buscar(motorEd.elegida); if (c && c.deManzana) seleccionar(c.deManzana); return; }
     if (a && a.dataset.acc === "quitar-lote") { const c = buscar(motorEd.elegida); delete c.lote; c.sinLote = true; if (c.accion === "ficha") delete c.accion; cambio(); avisar("Ahora es un polígono normal"); return; }
     if (a && a.dataset.acc === "t3d-reset") { const c = buscar(motorEd.elegida); if (c) { c.t3d = Object.assign({}, T3_DEF); cambio(); } return; }
     if (a && a.dataset.acc === "sel-una") { seleccionar(motorEd.elegida); return; }
@@ -5973,8 +5991,8 @@ void main(){
     Object.keys(est.capas).forEach((id) => (est.capas[id] || []).forEach((c) => {
       if (!c.lote) return;
       const k = claveLote(c);
-      let gr = g.find((x) => x.claves.has(k) || (c.vinculo && x.vinc.has(c.vinculo)));
-      if (!gr) { gr = { k, m: [], claves: new Set(), vinc: new Set() }; g.push(gr); }
+      let gr = g.find((x) => (c.vinculo && x.vinc.has(c.vinculo)) || (x.claves.has(k) && !x.m.some((y) => y.id === id)));
+      if (!gr) { gr = { k: g.some((x) => x.k === k) ? k + "#" + c.id : k, m: [], claves: new Set(), vinc: new Set() }; g.push(gr); }
       gr.m.push({ id, c }); gr.claves.add(k); if (c.vinculo) gr.vinc.add(c.vinculo);
     }));
     const orden = (v) => { const n = parseFloat(v); return isFinite(n) ? n : Infinity; };
@@ -7323,6 +7341,7 @@ void main(){
   })();
   if (MODO === "nube") {
     $("restablecer").hidden = true;
+    if (!NUBE.admin) $("copiar").hidden = true; // herramienta interna: los usuarios no la necesitan
     if (!TOUR) { $("b-proj").textContent = "Elige un tour"; ir("tours", "todos"); return; }
     pintarResumen();
     if (/nuevo/.test(location.hash)) { history.replaceState(null, "", "#t=" + TOUR); ir("panoramas", "lista"); avisar("Tour creado. Sube tus esferas."); }
