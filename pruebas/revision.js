@@ -101,10 +101,10 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
 // ---------- la revisión ----------
 (async () => {
   console.log("\nMozari · revisión completa\n");
-  arrancar("worker-estudio", ["--port", "8787", "--local-upstream", "localhost:8787"]);
-  arrancar("worker-tours", ["--port", "8788", "--inspector-port", "9330"]);
   try {
-    await listo(ESTUDIO + "/"); await listo(TOURS + "/");
+    // Uno y luego el otro: comparten la misma copia de los datos y si arrancan juntos se estorban
+    arrancar("worker-estudio", ["--port", "8787", "--local-upstream", "localhost:8787"]); await listo(ESTUDIO + "/");
+    arrancar("worker-tours", ["--port", "8788", "--inspector-port", "9330"]); await listo(TOURS + "/");
     navegador = await chromium.launch();
 
     // 1. Escaparate
@@ -216,6 +216,21 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
       await t.context().close();
     }, a);
+    await paso("Laboratorio · estadísticas: una visita al tour se cuenta (con el lote que abrió)", async () => {
+      const t = await pagina(null); await t.goto(link); await t.waitForTimeout(4500);
+      const centro = await t.$$eval("path.cp-pol.con-accion", (l) => l.map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2, r.width * r.height]; }).filter((x) => x[2] > 400).sort((a, b) => b[2] - a[2])[0]);
+      exige(centro, "no hay lotes que tocar en el tour");
+      await t.mouse.click(centro[0], centro[1]); await t.waitForTimeout(800);
+      await t.evaluate(() => window.dispatchEvent(new Event("pagehide"))); await t.waitForTimeout(1500);
+      await t.context().close();
+      const d = await a.evaluate((id) => fetch("api/tours/" + id + "/estadisticas?dias=7").then((r) => r.json()), tour);
+      exige(d.total >= 1, "no se contó la visita");
+      exige(Object.keys(d.lotes || {}).length >= 1, "no se contó el lote que se abrió");
+      await a.click('#nav button:has-text("Publicar")'); await a.waitForTimeout(500);
+      await a.click('#subtabs button:has-text("Estadísticas")'); await a.waitForTimeout(1500);
+      exige(await a.isVisible(".est-kpis"), "no se ve la pestaña de Estadísticas");
+      await a.click('#subtabs button:has-text("Web")'); await a.waitForTimeout(800);
+    }, a);
     await paso("El tour público abre en celular", async () => {
       const m = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
       await m.goto(link); await m.waitForTimeout(5000);
@@ -246,6 +261,8 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(!(await g.$("#pub-descargar")), "el plan Gratis ve el botón de descargar");
       await g.click("#pub-publicar"); await g.waitForTimeout(3500);
       const st = await g.evaluate((t) => fetch("api/tours/" + t + "/descargar").then((r) => r.status), id);
+      const est = await g.evaluate((t) => fetch("api/tours/" + t + "/estadisticas").then((r) => r.status), id);
+      exige(est === 403, "un usuario normal puede ver estadísticas del Laboratorio (" + est + ")");
       exige(st === 403, "el servidor dejó descargar al plan Gratis (" + st + ")");
       const t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(4000);
       exige(await t.$(".agua-mozari"), "el tour Gratis salió sin marca de agua");

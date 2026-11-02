@@ -384,6 +384,7 @@
   .hueco svg { width: 26px; height: 26px; color: var(--mz-lima); }
   .hueco b { color: var(--mz-texto); font-weight: 500; }
   .proximo { max-width: 560px; margin: 8vh auto 0; text-align: center; display: grid; gap: 12px; justify-items: center; }
+  .proximo.ancho { max-width: 1040px; margin-top: 3vh; justify-items: stretch; }
   .proximo .icono { width: 64px; height: 64px; border-radius: 18px; background: var(--mz-lima-suave); border: 1px solid var(--mz-linea); display: grid; place-items: center; }
   .proximo .icono svg { width: 28px; height: 28px; color: var(--mz-lima); }
   .proximo h1 { margin: 6px 0 0; }
@@ -817,6 +818,24 @@
   .lab-probadores { flex-basis: 100%; display: grid; gap: 6px; color: var(--mz-tenue); }
   .lab-probadores textarea { width: 100%; box-sizing: border-box; background: var(--mz-fondo); color: var(--mz-texto); border: 1px solid var(--mz-linea-neutra); border-radius: 8px; padding: 8px; font: inherit; resize: vertical; }
   .lab-probadores button { justify-self: start; }
+  /* Estadísticas del tour */
+  .est { text-align: left; max-width: 1000px; margin: 0 auto; display: grid; gap: 18px; }
+  .est-cab { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px; }
+  .est-cab h1 { margin: 4px 0; }
+  .est-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .est-kpis div { padding: 14px 16px; border-radius: 14px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); display: grid; gap: 2px; }
+  .est-kpis b { font-size: 26px; font-weight: 700; color: var(--mz-lima); white-space: nowrap; }
+  .est-kpis span { font-size: 12px; color: var(--mz-tenue); }
+  .est-dias { display: flex; align-items: flex-end; gap: 3px; height: 110px; padding: 12px; border-radius: 14px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); }
+  .est-dias i { flex: 1; height: max(2px, var(--h)); border-radius: 3px 3px 0 0; background: var(--mz-lima); opacity: 0.85; }
+  .est-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .est-grid section { padding: 14px 16px; border-radius: 14px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); display: grid; gap: 8px; align-content: start; }
+  .est-grid h3 { margin: 0 0 4px; font-size: 13px; font-weight: 600; } .est-grid h3 small { color: var(--mz-tenue); font-weight: 400; }
+  .est-fila { display: grid; grid-template-columns: minmax(90px, 38%) 1fr auto; align-items: center; gap: 10px; font-size: 13px; }
+  .est-fila span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .est-fila i { height: 8px; width: var(--w); border-radius: 4px; background: var(--mz-lima); opacity: 0.8; }
+  .est-fila b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  @media (max-width: 760px) { .est-kpis, .est-grid { grid-template-columns: 1fr 1fr; } .est-grid { grid-template-columns: 1fr; } }
   .pub-hosting { text-align: left; max-width: 560px; margin: 18px auto 0; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
   .pub-hosting > div { flex: 1 1 260px; display: grid; gap: 4px; }
   .pub-hosting span { color: var(--mz-tenue); }
@@ -2176,6 +2195,7 @@
   $("subtabs").addEventListener("click", (ev) => { const b = ev.target.closest("[data-sub]"); if (b) ir(nav.sec, b.dataset.sub); });
 
   const SIN_ESFERAS = ["panoramas/mapa", "panoramas/capas", "panoramas/piloto", "panoramas/terreno", "skin/h", "skin/v"];
+  if (enLab("estadisticas")) SECCIONES.find((x) => x.id === "publicar").subs.push(["estadisticas", "Estadísticas"]);
   function ir(sec, sub) {
     // En la nube, sin tour abierto solo existe Mis Tours
     if (MODO === "nube" && !TOUR && sec !== "tours") { avisar("Abre o crea un tour primero"); sec = "tours"; sub = "todos"; }
@@ -2193,7 +2213,9 @@
     if (antes === "panoramas/terreno" && clave !== antes) cerrarTerreno();
     document.querySelectorAll("#contenedor > section").forEach((s) => (s.hidden = !s.dataset.vista.split(" ").includes(clave)));
     $("sel-pano-wrap").hidden = !enEditor;
+    $("proximo").classList.remove("ancho");
     if (clave === "publicar/web" && MODO === "nube") { pintarPublicar(); }
+    else if (clave === "publicar/estadisticas" && MODO === "nube") { pintarEstadisticas(); }
 
     else if (PROXIMO[clave]) {
       const [ico, t, d] = PROXIMO[clave];
@@ -2529,6 +2551,37 @@
       fin("Se cortó la descarga. Intenta de nuevo.");
     }
   }
+
+  // =================== ESTADÍSTICAS (estudio, Laboratorio) ===================
+  const ORIGEN_TXT = { directo: "Directo o WhatsApp", whatsapp: "WhatsApp", facebook: "Facebook", instagram: "Instagram", google: "Google", mozari: "Mozari" };
+  async function pintarEstadisticas(dias) {
+    dias = dias || 30;
+    const caja = $("proximo"); $("v-proximo").hidden = false; caja.classList.add("ancho");
+    caja.innerHTML = '<div class="est"><p class="nota">Cargando…</p></div>';
+    const r = await fetch("api/tours/" + TOUR + "/estadisticas?dias=" + dias, { cache: "no-store" }).catch(() => null);
+    if (!r || !r.ok) { caja.innerHTML = '<div class="est"><p class="nota">No se pudieron leer las estadísticas.</p></div>'; return; }
+    const d = await r.json(), t = (toursNube || []).find((x) => x.id === TOUR) || {};
+    const top = (o, n) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n || 8);
+    const barras = (lista, fmt) => lista.length ? lista.map(([k, v]) => { const max = lista[0][1] || 1; return '<div class="est-fila"><span>' + esc(k) + '</span><i style="--w:' + Math.max(3, (v / max) * 100).toFixed(1) + '%"></i><b>' + (fmt ? fmt(v) : v) + "</b></div>"; }).join("") : '<p class="nota">Aún sin datos.</p>';
+    const minSeg = (s) => (s >= 60 ? Math.floor(s / 60) + " min " : "") + Math.round(s % 60) + " s";
+    const dd = [], hoy = new Date();
+    for (let i = dias - 1; i >= 0; i--) { const f = new Date(hoy.getTime() - i * 864e5).toISOString().slice(0, 10); dd.push([f, d.porDia[f] || 0]); }
+    const maxDia = Math.max(1, ...dd.map((x) => x[1]));
+    const nombreEsf = (id) => (escena(id) ? escena(id).nombre : id);
+    const esferas = top(d.esferas, 8).map(([k, s]) => [nombreEsf(k), s / Math.max(1, d.esferasVisitas[k] || 1)]);
+    const pctCel = d.total ? Math.round((((d.disp.celular || 0) + (d.disp.tablet || 0)) / d.total) * 100) : 0;
+    caja.innerHTML = '<div class="est"><div class="est-cab"><div><span class="etiq">Estadísticas ' + CHIP_LAB + '</span><h1>' + esc(P().nombre || "Tu tour") + "</h1>" +
+      '<p class="nota">' + (t.publicado ? "Cuenta las visitas al link público desde que lo publicaste con esta función. Sin cookies ni datos personales." : "Publica el tour para empezar a contar visitas.") + "</p></div>" +
+      '<div class="estados">' + [7, 30, 90].map((n) => '<button data-est-dias="' + n + '" aria-pressed="' + (n === dias) + '">' + n + " días</button>").join("") + "</div></div>" +
+      '<div class="est-kpis"><div><b>' + d.total + "</b><span>visitas</span></div><div><b>" + (d.total ? minSeg(d.durTotal / d.total) : "—") + "</b><span>tiempo promedio</span></div>" +
+      "<div><b>" + pctCel + "%</b><span>desde celular</span></div><div><b>" + d.conContacto + "</b><span>pidieron contacto</span></div></div>" +
+      '<div class="est-dias" title="Visitas por día">' + dd.map(([f, n]) => '<i style="--h:' + ((n / maxDia) * 100).toFixed(1) + '%" title="' + f + ": " + n + '"></i>').join("") + "</div>" +
+      '<div class="est-grid"><section><h3>De dónde llegan</h3>' + barras(top(d.origen).map(([k, v]) => [ORIGEN_TXT[k] || k, v])) + "</section>" +
+      "<section><h3>Ciudades</h3>" + barras(top(d.ciudades)) + "</section>" +
+      "<section><h3>Esferas más vistas <small>tiempo promedio</small></h3>" + barras(esferas, minSeg) + "</section>" +
+      "<section><h3>" + esc(plural(terminos().lote)) + " más vistos <small>veces que abrieron su ficha</small></h3>" + barras(top(d.lotes, 10)) + "</section></div></div>";
+  }
+  $("proximo").addEventListener("click", (ev) => { const b = ev.target.closest("[data-est-dias]"); if (b) pintarEstadisticas(+b.dataset.estDias); });
 
   // =================== MIS TOURS ===================
   let toursNube = null, borrandoTour = null;
@@ -6999,6 +7052,41 @@ void main(){
       (cta.mostrar && enlace && e.id !== "vendido" ? '<a class="ficha-cta" href="' + esc(enlace) + '" target="_blank" rel="noopener" style="background:' + est.skin.acento + ";color:" + textoSobre(est.skin.acento) + '">' + esc(cta.texto || "Me interesa") + "</a>" : "") +
       "</div>";
   }
+  // =================== ESTADÍSTICAS (lado del tour publicado) ===================
+  // Un resumen anónimo por visita, mandado al salir: sin cookies ni datos personales.
+  const STATS = MODO === "tour" && P().estadisticas && !document.body.dataset.exportado ? {
+    v: Math.random().toString(36).slice(2, 12) + Date.now().toString(36), inicio: Date.now(), esferas: {}, lotes: {}, contacto: 0, esfera: null, desde: 0,
+  } : null;
+  function statsEsfera(id) {
+    if (!STATS) return;
+    const ahora = Date.now();
+    if (STATS.esfera) STATS.esferas[STATS.esfera] = (STATS.esferas[STATS.esfera] || 0) + (ahora - STATS.desde) / 1000;
+    STATS.esfera = id; STATS.desde = ahora;
+  }
+  const statsLote = (c) => { if (STATS) { const k = nombreLote(c); STATS.lotes[k] = (STATS.lotes[k] || 0) + 1; } };
+  function origenVisita() {
+    const u = new URLSearchParams(location.search).get("utm_source"); if (u) return u.toLowerCase().slice(0, 30);
+    const ua = navigator.userAgent;
+    if (/Instagram/i.test(ua)) return "instagram"; if (/FBAN|FBAV|FB_IAB/i.test(ua)) return "facebook"; if (/WhatsApp/i.test(ua)) return "whatsapp";
+    let r = ""; try { r = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, "") : ""; } catch (e) { r = ""; }
+    if (!r || r === location.hostname) return "directo";
+    if (/facebook|fb\.com/.test(r)) return "facebook"; if (/instagram/.test(r)) return "instagram"; if (/whatsapp|wa\.me/.test(r)) return "whatsapp";
+    if (/(^|\.)google\./.test(r)) return "google"; if (/mozari\.app$/.test(r)) return "mozari";
+    return r.slice(0, 40);
+  }
+  if (STATS) {
+    const ref = origenVisita(), disp = /iPad|Tablet/i.test(navigator.userAgent) || (matchMedia("(pointer: coarse)").matches && Math.min(screen.width, screen.height) >= 700) ? "tablet" : MOVIL ? "celular" : "compu";
+    const host = location.host.replace(/^tours\./, "").replace(/^mozari-tours\./, "mozari-estudio.").replace(/^(localhost|127\.0\.0\.1):8788$/, "$1:8787");
+    const destino = location.protocol + "//" + host + "/v/" + location.pathname.split("/").filter(Boolean)[0];
+    const enviar = () => {
+      statsEsfera(STATS.esfera);
+      const d = { v: STATS.v, dur: (Date.now() - STATS.inicio) / 1000, disp, ref, esferas: STATS.esferas, lotes: STATS.lotes, contacto: STATS.contacto };
+      try { navigator.sendBeacon(destino, new Blob([JSON.stringify(d)], { type: "text/plain" })); } catch (e) { /* sin red */ }
+    };
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") enviar(); });
+    window.addEventListener("pagehide", enviar);
+    document.addEventListener("click", (ev) => { if (ev.target.closest(".sk-cta, .ficha-cta, .fd-cta")) STATS.contacto++; }, true);
+  }
   function crearTour(stage, ui, o) {
     let motor = null, piloto = null, api = null, actualId = null;
     // Modo presentación: si nadie toca el tour, pasa solo a la siguiente esfera
@@ -7027,7 +7115,7 @@ void main(){
     function accion(c) {
       const a = accionDe(c), url = urlSegura(c.url);
       if (piloto) piloto.interrumpir(true);
-      if (a === "ficha" && c.lote) { pop.innerHTML = fichaLote(c); pop.hidden = false; return; }
+      if (a === "ficha" && c.lote) { statsLote(c); pop.innerHTML = fichaLote(c); pop.hidden = false; return; }
       if (a === "url") { if (url) window.open(url, "_blank", "noopener"); return; }
       if (a === "web" && url) pop.innerHTML = '<div class="pop-caja web" role="dialog" aria-label="Página"><div class="pop-cab"><a href="' + esc(url) + '" target="_blank" rel="noopener">Abrir en otra pestaña ↗</a><button class="pop-x" aria-label="Cerrar">×</button></div><iframe src="' + esc(url) + '" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe></div>';
       else if (a === "video") {
@@ -7073,7 +7161,7 @@ void main(){
     pintar(o.orientacion);
     motor = crearMotor(stage, {
       editable: false,
-      alMostrar: (id) => { actualId = id; tQuieto = Date.now(); api.escena(id); api.vista(motor.view()); arrancarPiloto(id); if (!o.sinPrecarga) precarga.alrededor(id); },
+      alMostrar: (id) => { actualId = id; statsEsfera(id); tQuieto = Date.now(); api.escena(id); api.vista(motor.view()); arrancarPiloto(id); if (!o.sinPrecarga) precarga.alrededor(id); },
       alPreparar: (id) => (o.sinPrecarga ? Promise.resolve() : precarga.ya(id)),
       alInteractuar: () => { if (piloto) piloto.interrumpir(true); },
       alMoverVista: () => api && motor && api.vista(motor.view()),

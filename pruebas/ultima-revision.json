@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-02T22:33:01.714Z",
- "bien": 22,
- "total": 22,
+ "fecha": "2026-11-02T23:09:38.720Z",
+ "bien": 23,
+ "total": 23,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -57,6 +57,10 @@
   },
   {
    "nombre": "Publicar y abrir el tour público en computadora",
+   "ok": true
+  },
+  {
+   "nombre": "Laboratorio · estadísticas: una visita al tour se cuenta (con el lote que abrió)",
    "ok": true
   },
   {

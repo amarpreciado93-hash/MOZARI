@@ -140,6 +140,7 @@ async function crearReporte(request, env, yo, plan) {
 // El estudio solo muestra la herramienta si la cuenta la tiene en su lista "lab".
 export const LABORATORIO = {
   "manzana-curvas": { nombre: "Calle curva", texto: "Manijas en cada punto de la orilla de una manzana (como la pluma de Illustrator) para calles en curva u ola." },
+  "estadisticas": { nombre: "Estadísticas de los tours", texto: "Publicar → Estadísticas: visitas, celular o compu, ciudades, de dónde llegan, tiempo, esferas y lotes más vistos y clics a contacto. Cuenta los tours publicados con esta función activa." },
   "fichas": { nombre: "Creador de fichas", texto: "En Lotes: diseña la ficha que ve tu cliente al tocar un lote, con el logo, colores y tipografía del desarrollo, el plano del lote y su ubicación." },
   "manzana-desfase": { nombre: "Doble manzana desfasada", texto: "En una manzana doble, la fila de atrás puede tener otro número de lotes y recorrerse para no coincidir con la del frente." },
 };
@@ -187,6 +188,58 @@ async function apiNovedades(request, env, partes, yo, plan) {
     return json({ ok: true });
   }
   return error(404, "Ruta desconocida");
+}
+
+// ---------- Estadísticas de los tours (Laboratorio) ----------
+// Cada visita manda UN resumen al salir (sin cookies ni datos personales): cuánto duró, celular o compu, de dónde
+// llegó, qué esferas y lotes vio y si le dio a contacto. País y ciudad los pone Cloudflare. Se guarda una pieza por
+// visita en stats/<tour>/<día>/<visita>.json: si la misma visita vuelve a mandar (sale y regresa), se reemplaza.
+const num = (v, max) => Math.max(0, Math.min(max, Math.round(+v || 0)));
+function mapa(o, maxK, maxV) {
+  const r = {};
+  if (o && typeof o === "object") Object.entries(o).slice(0, maxK).forEach(([k, v]) => { const kk = String(k).slice(0, 60); if (kk) r[kk] = num(v, maxV); });
+  return r;
+}
+async function registrarVisita(request, env, id) {
+  const ok = new Response(null, { status: 204, headers: { "access-control-allow-origin": "*" } });
+  if (!ID_TOUR.test(id || "")) return ok;
+  const txt = await request.text().catch(() => "");
+  if (!txt || txt.length > 16000) return ok;
+  let d; try { d = JSON.parse(txt); } catch (e) { return ok; }
+  if (!/^[a-z0-9]{8,40}$/.test(d.v || "")) return ok;
+  const pub = await env.R2.get("publicado/" + id + "/proyecto.json");
+  if (!pub) return ok;
+  const p = await pub.json().catch(() => null);
+  if (!p || !p.proyecto || !p.proyecto.estadisticas) return ok;
+  const cf = request.cf || {}, ahora = new Date();
+  const reg = {
+    v: d.v, t: ahora.toISOString(), dur: num(d.dur, 4 * 3600), disp: ["celular", "tablet", "compu"].includes(d.disp) ? d.disp : "compu",
+    ref: String(d.ref || "directo").slice(0, 40), pais: String(cf.country || "").slice(0, 2), ciudad: String(cf.city || "").slice(0, 60),
+    esferas: mapa(d.esferas, 60, 4 * 3600), lotes: mapa(d.lotes, 150, 100), contacto: num(d.contacto, 50),
+  };
+  await env.R2.put("stats/" + id + "/" + ahora.toISOString().slice(0, 10) + "/" + d.v + ".json", JSON.stringify(reg), { httpMetadata: { contentType: "application/json" } });
+  return ok;
+}
+async function resumenVisitas(env, id, dias) {
+  const desde = new Date(Date.now() - (dias - 1) * 864e5).toISOString().slice(0, 10), claves = [];
+  let cursor;
+  do {
+    const l = await env.R2.list({ prefix: "stats/" + id + "/", cursor, limit: 1000 });
+    l.objects.forEach((o) => { if (o.key.split("/")[2] >= desde) claves.push(o.key); });
+    cursor = l.truncated ? l.cursor : undefined;
+  } while (cursor && claves.length < 5000);
+  const regs = [];
+  for (let i = 0; i < claves.length; i += 50) regs.push(...(await Promise.all(claves.slice(i, i + 50).map(async (k) => (await env.R2.get(k))?.json().catch(() => null)))).filter(Boolean));
+  const suma = (o, k, n = 1) => { o[k] = (o[k] || 0) + n; };
+  const r = { dias, total: regs.length, porDia: {}, disp: {}, origen: {}, ciudades: {}, esferas: {}, esferasVisitas: {}, lotes: {}, contacto: 0, conContacto: 0, durTotal: 0 };
+  regs.forEach((x) => {
+    suma(r.porDia, x.t.slice(0, 10)); suma(r.disp, x.disp); suma(r.origen, x.ref);
+    suma(r.ciudades, (x.ciudad ? x.ciudad + ", " : "") + (x.pais || "—"));
+    Object.entries(x.esferas || {}).forEach(([k, s]) => { suma(r.esferas, k, s); suma(r.esferasVisitas, k); });
+    Object.entries(x.lotes || {}).forEach(([k, n]) => suma(r.lotes, k, n));
+    r.contacto += x.contacto || 0; if (x.contacto) r.conContacto++; r.durTotal += x.dur || 0;
+  });
+  return r;
 }
 
 async function admin(request, env, partes) {
@@ -465,6 +518,11 @@ async function api(request, env, partes, yo) {
     return json({ nombre, html, proyecto: p, archivos, bytes: archivos.reduce((s, a) => s + a.bytes, 0) });
   }
 
+  if (partes[3] === "estadisticas" && partes.length === 4 && m === "GET") {
+    if (!(await labDe(env, yo)).includes("estadisticas")) return error(403, "Función del Laboratorio");
+    return json(await resumenVisitas(env, id, Math.max(1, Math.min(90, +new URL(request.url).searchParams.get("dias") || 30))));
+  }
+
   if (partes[3] === "publicar" && partes.length === 4 && m === "POST") {
     const obj = await env.R2.get(base + "proyecto.json");
     if (!obj) return error(404, "No existe ese tour");
@@ -472,6 +530,8 @@ async function api(request, env, partes, yo) {
     // Versión de prueba: todo se puede usar y publicar, pero lo que el plan no cubre sale con marca de agua
     // (Gratis siempre; un tour con lotes sin el plan Desarrollos). Lo decide el servidor, no la página.
     p.proyecto.marcaMozari = !!plan.marca || (!plan.lotificacion && usaLotificacion(p));
+    // Estadísticas (Laboratorio): el tour publicado solo cuenta visitas si su dueño tiene la función activa
+    p.proyecto.estadisticas = (await labDe(env, yo)).includes("estadisticas");
     await env.R2.put("publicado/" + id + "/proyecto.json", JSON.stringify(p), { httpMetadata: { contentType: tipoDe("x.json"), cacheControl: "no-cache" } });
     await guardarIndice(env, uid, id, { publicado: new Date().toISOString() });
     return json({ ok: true });
@@ -514,6 +574,9 @@ export default {
     if (env.DOMINIO && url.hostname !== env.DOMINIO && url.hostname !== "localhost" && request.method === "GET" && !["api", "t", "webhooks", "auth"].includes(segs[0])) {
       return Response.redirect("https://" + env.DOMINIO + url.pathname + url.search, 302);
     }
+
+    // Visitas de los tours publicados (público, sin sesión): solo guarda un resumen anónimo
+    if (segs[0] === "v" && segs.length === 2 && request.method === "POST") return registrarVisita(request, env, segs[1]);
 
     const s = await rutasSesion(request, env, (p) => adoptarTours(env, p));
     if (s) return s;
