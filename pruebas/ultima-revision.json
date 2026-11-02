@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-02T19:57:54.565Z",
- "bien": 21,
- "total": 21,
+ "fecha": "2026-11-02T20:39:49.902Z",
+ "bien": 22,
+ "total": 22,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -37,6 +37,10 @@
   },
   {
    "nombre": "La rueda del mouse acerca la vista aunque el cursor esté sobre un lote",
+   "ok": true
+  },
+  {
+   "nombre": "Punto de interés: sigue a la cámara o fijo en el entorno 3D",
    "ok": true
   },
   {

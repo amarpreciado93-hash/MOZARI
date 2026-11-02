@@ -26,7 +26,7 @@ const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 // ---------- servidores locales (estudio y tours) ----------
 const procesos = [];
 function arrancar(carpeta, args) {
-  const p = spawn("npx", ["wrangler", "dev", ...args, "--var", "DEV:1", "--persist-to", DATOS], { cwd: path.join(RAIZ, "nube", carpeta), detached: true, stdio: "ignore", env: Object.assign({}, process.env, { WRANGLER_SEND_METRICS: "false" }) });
+  const p = spawn("npx", ["wrangler", "dev", ...args, "--var", "DEV:1", "--persist-to", DATOS], { cwd: path.join(RAIZ, "nube", carpeta), detached: true, stdio: ["ignore", fs.openSync(path.join(DATOS, carpeta + ".log"), "a"), fs.openSync(path.join(DATOS, carpeta + ".log"), "a")], env: Object.assign({}, process.env, { WRANGLER_SEND_METRICS: "false" }) });
   procesos.push(p);
 }
 async function listo(url) { for (let i = 0; i < 90; i++) { try { const r = await fetch(url); if (r.status < 500) return; } catch (e) { /* aún no */ } await espera(1000); } throw new Error("No arrancó " + url); }
@@ -168,6 +168,15 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await a.mouse.move(740, 700); await a.mouse.wheel(0, -400); await a.waitForTimeout(600);
       exige(!antes.equals(await a.screenshot({ clip: zona })), "la vista no cambió");
       await a.mouse.wheel(0, 400); await a.waitForTimeout(400);
+    }, a);
+    await paso("Punto de interés: sigue a la cámara o fijo en el entorno 3D", async () => {
+      await a.keyboard.press("Escape"); await a.click("#add-pi"); await a.waitForTimeout(600); await pasarGuias(a);
+      exige(await a.$(".cp-interes"), "no apareció el punto de interés");
+      exige(!(await a.$eval(".cp-interes", (e) => e.classList.contains("en3d"))), "debería empezar siguiendo a la cámara");
+      await a.click('[data-k="en3d"][data-v="true"]'); await a.waitForTimeout(600);
+      exige(await a.$eval(".cp-interes", (e) => e.classList.contains("en3d") && /perspective/.test(e.style.transform)), "no quedó fijo en 3D");
+      await a.click('[data-k="en3d"][data-v="false"]'); await a.waitForTimeout(600);
+      exige(await a.$eval(".cp-interes", (e) => !e.classList.contains("en3d") && /translate\(/.test(e.style.transform)), "no regresó a seguir la cámara");
     }, a);
     await paso("Laboratorio · calle curva y esquinas redondeadas", async () => {
       await a.click('#lista li:has-text("Manzana 1")'); await a.waitForTimeout(500);

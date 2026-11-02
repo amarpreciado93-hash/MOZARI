@@ -866,6 +866,10 @@
   /* Punto de interés: punto clavado en el lugar + línea guía con quiebre + dato grande y texto */
   .cp-interes { width: 0; height: 0; overflow: visible; --pi-c: #FFFFFF; --pi-sombra: rgba(0, 0, 0, 0.55); }
   .pi-svg { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+  .pi-cont { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+  /* Fijo en la esfera (3D): se dibuja 2.5 veces más grande y más lejos, con la perspectiva real (crece al acercarse) */
+  .cp-interes.en3d { width: 0; height: 0; transform-origin: 0 0; }
+  .cp-interes.en3d .pi-cont { transform: scale(2.5); transform-origin: 0 0; }
   .pi-linea { fill: none; stroke: var(--pi-c); stroke-linecap: round; stroke-linejoin: round; }
   .pi-linea.sombra { stroke: var(--pi-sombra); }
   .pi-punto { fill: var(--pi-c); }
@@ -1998,13 +2002,13 @@
     el.style.setProperty("--pi-c", p.color);
     el.style.setProperty("--pi-sombra", p.contraste === "sombra" ? "rgba(0,0,0,0.55)" : "transparent");
     el.style.setProperty("--pi-largo", largo.toFixed(0));
-    el.innerHTML = '<svg class="pi-svg" width="1" height="1" aria-hidden="true">' + (p.contraste === "sombra" ? '<circle r="' + (6 + g) + '" fill="rgba(0,0,0,0.35)"/>' : "") +
+    el.innerHTML = '<div class="pi-cont"><svg class="pi-svg" width="1" height="1" aria-hidden="true">' + (p.contraste === "sombra" ? '<circle r="' + (6 + g) + '" fill="rgba(0,0,0,0.35)"/>' : "") +
       sombra + '<path class="pi-linea" d="' + d + '" stroke-width="' + g + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : "") + "/>" + lat + pto + "</svg>" +
       '<div class="pi-dot" aria-label="' + esc(p.nombre) + '"></div>' +
       '<div class="pi-etq' + (der ? "" : " izq") + (p.contraste === "caja" || p.contraste === "caja-clara" ? " caja" : "") + (p.contraste === "caja-clara" ? " clara" : "") + '" style="font-size:' + (14 * k).toFixed(1) + "px;" +
       (der ? "left:" + (x2 + 8).toFixed(1) + "px" : "right:" + (-x2 + 8).toFixed(1) + "px") + ";top:" + y1 + 'px;transform:translateY(-50%)">' +
       (p.dato ? '<span class="pi-dato" style="font-size:' + (3.1 * k).toFixed(2) + 'em">' + esc(p.dato) + "</span>" : "") +
-      '<span class="pi-txt">' + (p.nombre ? "<b>" + esc(p.nombre) + "</b>" : "") + (p.detalle ? "<span>" + esc(p.detalle) + "</span>" : "") + "</span></div>";
+      '<span class="pi-txt">' + (p.nombre ? "<b>" + esc(p.nombre) + "</b>" : "") + (p.detalle ? "<span>" + esc(p.detalle) + "</span>" : "") + "</span></div></div>";
     if (p.contraste === "caja-clara") el.style.setProperty("--pi-c", p.color.toUpperCase() === "#FFFFFF" ? "#111111" : p.color);
   }
   const accionDe = (c) => c.accion || (c.tipo === "hotspot" ? "panorama" : c.lote ? "ficha" : "ninguna");
@@ -5871,6 +5875,9 @@ void main(){
     else if (c.tipo === "interes") {
       const p = piDe(c); c.pi = p;
       const botones = (k, ops, cols) => '<div class="hs-estilos" style="grid-template-columns:repeat(' + (cols || ops.length) + ',1fr)">' + ops.map(([v, n]) => '<button class="hs-estilo" data-k="pi.' + k + '" data-v="' + v + '" aria-pressed="' + (String(p[k]) === v) + '">' + n + "</button>").join("") + "</div>";
+      h += '<div class="grupo"><b>Cómo se ve</b><div class="hs-estilos" style="grid-template-columns:repeat(2,1fr)">' +
+        '<button class="hs-estilo" data-k="en3d" data-v="false" aria-pressed="' + !es3d(c) + '">Sigue a la cámara</button><button class="hs-estilo" data-k="en3d" data-v="true" aria-pressed="' + es3d(c) + '">Fijo en el entorno 3D</button></div>' +
+        '<p class="nota">' + (es3d(c) ? "Se queda clavado en el paisaje con su perspectiva: crece al acercarte y se mueve con la esfera." : "Siempre de frente y del mismo tamaño en pantalla, se vea desde donde se vea.") + "</p></div>";
       h += '<div class="grupo"><b>Texto</b>' + campo("Dato grande", '<input type="text" data-k="pi.dato" value="' + esc(p.dato) + '" placeholder="800 m">') +
         campo("Nombre", '<input type="text" data-k="pi.nombre" value="' + esc(p.nombre) + '" placeholder="Gasolinera">') +
         campo("Detalle", '<input type="text" data-k="pi.detalle" value="' + esc(p.detalle) + '" placeholder="2 min en auto">') +
@@ -5882,7 +5889,7 @@ void main(){
       h += '<div class="grupo"><b>Punto</b>' + botones("punto", [["anillo", "Anillo"], ["lleno", "Lleno"], ["doble", "Doble"]]) + interruptor("Latido", "pi.latido", !!p.latido) + "</div>";
       h += '<div class="grupo"><b>Contraste</b>' + botones("contraste", [["sombra", "Sombra"], ["caja", "Caja oscura"], ["caja-clara", "Caja clara"], ["ninguno", "Sin fondo"]], 2) +
         interruptor("Animación al aparecer (en el tour)", "pi.animar", !!p.animar) +
-        '<p class="nota">Arrastra el punto o la etiqueta para clavarlo sobre el lugar. La línea siempre se ve del mismo tamaño en pantalla.</p></div>';
+        '<p class="nota">Arrastra el punto o la etiqueta para clavarlo sobre el lugar.</p></div>';
     }
     else if (c.camino) {
       const k = c.camino;
@@ -5932,6 +5939,7 @@ void main(){
     if (!c || !el.dataset.k) return;
     let v = el.dataset.v !== undefined ? el.dataset.v : el.type === "checkbox" ? el.checked : el.value;
     if (el.type === "range" || el.dataset.k === "peso" || /pesoRotulo$/.test(el.dataset.k)) v = +v;
+    if (v === "true" || v === "false") v = v === "true"; // botones de sí/no (por ejemplo: fijo en 3D)
     // Manzana: el cambio va a todos sus lotes y se guarda para los que se agreguen después
     if (el.dataset.k.startsWith("_lotes.") && c.manzana) {
       const ruta = el.dataset.k.slice(7);
