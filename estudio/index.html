@@ -736,6 +736,9 @@
   .fe-color, .fe-si { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
   .fe-color input { width: 32px; height: 26px; padding: 0; border: 0; background: none; }
   .fe-subir { justify-self: start; }
+  .fe-sub { font-size: 12px; color: var(--mz-tenue); margin-top: 4px; }
+  .fe-logo2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .fe-logo2 img { max-height: 38px; max-width: 140px; object-fit: contain; padding: 6px 10px; border-radius: 8px; background: #fff; }
   .fe-vista { display: grid; gap: 10px; position: sticky; top: 10px; }
   .fe-lienzo { display: grid; justify-items: center; padding: 16px; border-radius: 12px; background: #2a2a2a; }
   .fe-lienzo .pop-caja.ficha-d { max-height: none; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
@@ -777,7 +780,9 @@
   .ficha-d .fd-fila { display: grid; padding: 6px 26px; background: var(--fd-acento); color: var(--fd-sobre); font-weight: 700; font-size: 18px; }
   .ficha-d .fd-fila.dos, .ficha-d .fd-valor.dos { grid-template-columns: 1fr 1fr; }
   .ficha-d .fd-valor { display: grid; padding: 10px 26px 16px; font-size: 22px; }
-  .ficha-d .fd-pie { display: grid; place-items: center; padding: 10px 26px 24px; }
+  .ficha-d .fd-pie { display: flex; justify-content: center; align-items: center; gap: 28px; padding: 12px 26px 24px; border-top: 1px solid color-mix(in srgb, var(--fd-texto) 15%, transparent); }
+  .ficha-d .fd-logo2 { max-height: 64px; max-width: 220px; object-fit: contain; }
+  .ficha-d.fd-banda .fd-pie { border-top: 0; }
   .ficha-cta { display: block; margin-top: 16px; text-align: center; text-decoration: none; font-weight: 600; font-size: 14px; padding: 12px 16px; border-radius: 999px; }
   .pr-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .pr-lista li { display: grid; grid-template-columns: 22px 72px minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 8px 10px; border-radius: 12px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); }
@@ -3810,7 +3815,7 @@
             // Pegado a la esfera: perspectiva real, crece al acercarse y se puede inclinar
             const t = t3(c);
             n.el.style.transform = actual.view.coordinatesToPerspectiveTransform({ yaw: c.yaw, pitch: c.pitch }, R3,
-              "rotateX(" + t.inclinar + "deg) rotateY(" + t.girar + "deg) rotateZ(" + t.rotar + "deg) scale(" + t.ancho + "," + t.alto + ")");
+              "rotateX(" + t.inclinar + "deg) rotateY(" + t.girar + "deg) rotateZ(" + t.rotar + "deg)" + (c.tipo === "interes" ? "" : " scale(" + t.ancho + "," + t.alto + ")"));
           } else {
             const s = aPantalla(cam, pc);
             n.el.style.transform = "translate(" + s.x.toFixed(1) + "px," + s.y.toFixed(1) + "px)";
@@ -5933,7 +5938,7 @@ void main(){
         '<p class="nota">' + (es3d(c) ? "Se queda clavado en el paisaje con su perspectiva: crece al acercarte y se mueve con la esfera." : "Siempre de frente y del mismo tamaño en pantalla, se vea desde donde se vea.") + "</p>" +
         // En 3D se acomoda como un texto: inclinar (acostarlo sobre el suelo), girar, rotar y estirar
         (es3d(c) ? (() => { const t = t3(c); return campo("Inclinar", campoRango("t3d.inclinar", t.inclinar, -85, 85, 1, deg)) + campo("Girar", campoRango("t3d.girar", t.girar, -85, 85, 1, deg)) +
-          campo("Rotar", campoRango("t3d.rotar", t.rotar, -180, 180, 1, deg)) + campo("Ancho", campoRango("t3d.ancho", t.ancho, 0.2, 6, 0.05, veces)) + campo("Alto", campoRango("t3d.alto", t.alto, 0.2, 6, 0.05, veces)) +
+          campo("Rotar", campoRango("t3d.rotar", t.rotar, -180, 180, 1, deg)) +
           '<div class="orden"><button class="mini" data-acc="t3d-reset">Enderezar</button></div>'; })() : "") + "</div>";
       h += '<div class="grupo"><b>Texto</b>' + campo("Dato grande", '<input type="text" data-k="pi.dato" value="' + esc(p.dato) + '" placeholder="800 m">') +
         campo("Nombre", '<input type="text" data-k="pi.nombre" value="' + esc(p.nombre) + '" placeholder="Gasolinera">') +
@@ -6296,8 +6301,11 @@ void main(){
       '<div class="fe-cuerpo"><div class="fe-controles">' +
       '<div class="fe-grupo"><b>Diseño</b><div class="estados">' + FICHA_PLANTILLAS.map(([v, n]) => '<button data-fe-plantilla="' + v + '" aria-pressed="' + (f.plantilla === v) + '">' + n + "</button>").join("") + "</div></div>" +
       '<div class="fe-grupo"><b>Marca</b><div class="estados">' + [["skin", "Logo del Skin"], ["propio", "Otro logo"], ["texto", "Solo nombre"]].map(([v, n]) => '<button data-fe-logo="' + v + '" aria-pressed="' + (f.logo === v) + '">' + n + "</button>").join("") + "</div>" +
-        (f.logo === "skin" && !logoSkin ? '<span class="nota">Tu Skin no tiene logo propio; súbelo en Skin o elige «Otro logo».</span>' : "") +
-        (f.logo === "propio" ? '<label class="btn-sec fe-subir">' + (f.logoImg ? "Cambiar logo" : "Subir logo (PNG o SVG)") + '<input type="file" id="fe-logo" accept="image/png,image/svg+xml,image/jpeg,image/webp" hidden></label>' : "") +
+        (f.logo === "skin" && !logoSkin ? '<span class="nota">Tu Skin todavía no tiene logo. Súbelo aquí:</span>' : "") +
+        (f.logo === "propio" || (f.logo === "skin" && !logoSkin) ? '<label class="btn-sec fe-subir">' + (f.logo === "propio" && f.logoImg ? "Cambiar logo" : "Subir logo del desarrollo (PNG o SVG)") + '<input type="file" id="fe-logo" accept="image/png,image/svg+xml,image/jpeg,image/webp" hidden></label>' : "") +
+        '<span class="fe-sub">Segundo logo al pie (opcional): la inmobiliaria, la constructora…</span>' +
+        '<div class="fe-logo2">' + (f.logo2 ? '<img src="' + esc(urlArchivo(f.logo2)) + '" alt="Segundo logo"><button class="mini" data-fe-quitar2>Quitar</button>' : "") +
+        '<label class="btn-sec fe-subir">' + (f.logo2 ? "Cambiar" : "Subir segundo logo") + '<input type="file" id="fe-logo2" accept="image/png,image/svg+xml,image/jpeg,image/webp" hidden></label></div>' +
         '<label class="fe-campo">Nombre del desarrollo<input class="entrada" data-fe="titulo" maxlength="60" value="' + esc(f.titulo) + '" placeholder="' + esc(P().nombre || "") + '"></label></div>' +
       '<div class="fe-grupo"><b>Colores y letra</b><div class="fe-colores">' + color("fondo", "Fondo") + color("texto", "Texto") + color("acento", "Acento") + "</div>" +
         '<label class="fe-campo">Tipografía<select class="entrada" data-fe="fuente">' + FUENTES_LOTE.map(([v, n]) => '<option value="' + esc(v) + '"' + (f.fuente === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select></label></div>" +
@@ -6315,6 +6323,7 @@ void main(){
   $("ficha-editor").addEventListener("click", (ev) => {
     const pl = ev.target.closest("[data-fe-plantilla]"); if (pl) { setFicha("plantilla", pl.dataset.fePlantilla); pintarFichaEditor(); return; }
     const lg = ev.target.closest("[data-fe-logo]"); if (lg) { setFicha("logo", lg.dataset.feLogo); pintarFichaEditor(); return; }
+    if (ev.target.closest("[data-fe-quitar2]")) { setFicha("logo2", ""); pintarFichaEditor(); return; }
     if (ev.target.closest(".fe-lienzo a, .fe-lienzo .pop-x")) ev.preventDefault();
   });
   $("ficha-editor").addEventListener("input", (ev) => {
@@ -6323,15 +6332,19 @@ void main(){
   });
   $("ficha-editor").addEventListener("change", async (ev) => {
     if (ev.target.id === "fe-muestra") { fichaMuestra = ev.target.value; repintarFicha(); return; }
-    if (ev.target.id === "fe-logo") {
+    if (ev.target.id === "fe-logo" || ev.target.id === "fe-logo2") {
+      const segundo = ev.target.id === "fe-logo2";
       const file = ev.target.files && ev.target.files[0]; if (!file) return;
       const img = new Image();
       img.onload = async () => {
         const s = Math.min(1, 600 / Math.max(img.naturalWidth || 600, 1)), cv = document.createElement("canvas");
         cv.width = Math.round((img.naturalWidth || 600) * s); cv.height = Math.round((img.naturalHeight || 200) * s);
         cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(img.src);
-        try { setFicha("logoImg", await medio(cv, "image/png", undefined, "logo-ficha")); } catch (err) { avisar(err.message); return; }
-        pintarFichaEditor(); avisar("Logo de la ficha listo");
+        try {
+          const ruta = await medio(cv, "image/png", undefined, segundo ? "logo2-ficha" : "logo-ficha");
+          if (segundo) setFicha("logo2", ruta); else { setFicha("logoImg", ruta); setFicha("logo", "propio"); }
+        } catch (err) { avisar(err.message); return; }
+        pintarFichaEditor(); avisar(segundo ? "Segundo logo listo" : "Logo de la ficha listo");
       };
       img.onerror = () => avisar("No se pudo leer ese archivo");
       img.src = URL.createObjectURL(file);
@@ -6965,7 +6978,7 @@ void main(){
   // =================== FICHA DISEÑADA (Laboratorio) ===================
   // Una ficha con la marca del cliente: su logo, colores y tipografía, el dibujo del lote con sus medidas,
   // superficie, manzana, precio, textos y (en un diseño) la ubicación del lote en el desarrollo.
-  const FICHA_DEF = { activa: false, plantilla: "clasica", logo: "skin", logoImg: "", titulo: "", fondo: "#ECEAE6", texto: "#2B2B2B", acento: "#8A5A3C", fuente: "",
+  const FICHA_DEF = { activa: false, plantilla: "clasica", logo: "skin", logoImg: "", logo2: "", titulo: "", fondo: "#ECEAE6", texto: "#2B2B2B", acento: "#8A5A3C", fuente: "",
     plano: true, medidas: true, superficie: true, precio: true, ubicacion: true, boton: true, textoA: "", textoB: "", tituloA: "", tituloB: "" };
   const FICHA_PLANTILLAS = [["clasica", "Clásica"], ["ubicacion", "Con ubicación"], ["banda", "Banda de color"]];
   const fichaConf = () => Object.assign({}, FICHA_DEF, P().ficha);
@@ -7014,6 +7027,7 @@ void main(){
     const titulo = f.titulo || P().nombre || "";
     const marca = logoSrc ? '<img class="fd-logo" src="' + esc(urlArchivo(logoSrc)) + '" alt="' + esc(titulo) + '">' : '<b class="fd-nombre">' + esc(titulo) + "</b>";
     const precio = e.id === "vendido" ? "" : fmtPrecio(l.precio);
+    const pie2 = f.logo2 ? '<div class="fd-pie"><img class="fd-logo2" src="' + esc(urlArchivo(f.logo2)) + '" alt=""></div>' : "";
     const parrafos = (txt) => esc(txt).split(/\n+/).filter((x) => x.trim()).map((x) => "<p>" + x + "</p>").join("");
     const cta = sk.cta || {}, enlace = urlSegura(cta.enlace);
     const boton = f.boton && cta.mostrar !== false && enlace && e.id !== "vendido" ? '<a class="fd-cta" href="' + esc(enlace) + '" target="_blank" rel="noopener">' + esc(cta.texto || "Me interesa") + "</a>" : "";
@@ -7026,14 +7040,14 @@ void main(){
         (f.superficie && fmtArea(l.area) ? '<div class="fd-fila"><span>Superficie</span></div><div class="fd-valor">' + esc(fmtArea(l.area)) + "</div>" : "") +
         '<div class="fd-fila dos"><span>' + (precio && f.precio ? "Precio" : "") + "</span><span>" + esc(T.manzana) + "</span></div>" +
         '<div class="fd-valor dos"><span>' + (f.precio ? esc(precio) : "") + "</span><span>" + esc(l.manzana || "—") + "</span></div>" + textos + boton +
-        (logoSrc ? '<div class="fd-pie">' + marca + "</div>" : "");
+        (logoSrc || f.logo2 ? '<div class="fd-pie">' + (logoSrc ? marca : "") + (f.logo2 ? '<img class="fd-logo2" src="' + esc(urlArchivo(f.logo2)) + '" alt="">' : "") + "</div>" : "");
     } else {
       const ubic = f.plantilla === "ubicacion" && f.ubicacion ? ubicacionLote(c, 260, 170) : "";
       cuerpo = '<div class="fd-cab"><div class="fd-marca">' + marca + '</div><i class="fd-sep"></i><h3 class="fd-titulo">' + esc(T.lote) + " " + esc(num) + "</h3></div>" +
         '<div class="fd-centro-caja">' + estado + plano +
         '<div class="fd-datos"><span>' + (f.superficie && fmtArea(l.area) ? "Área: " + esc(fmtArea(l.area)) : "") + "</span><span>" + (l.manzana ? esc(T.manzana) + " " + esc(String(l.manzana).padStart(2, "0")) : "") + "</span></div></div>" +
         (f.precio && precio ? '<div class="fd-precio"><small>Precio:</small><b>' + esc(precio) + "</b></div>" : "") +
-        (f.plantilla === "ubicacion" ? '<div class="fd-textos">' + (f.textoA ? "<div>" + (f.tituloA ? "<h4>" + esc(f.tituloA) + "</h4>" : "") + parrafos(f.textoA) + "</div>" : "<div></div>") + (ubic || f.textoB ? "<div>" + "<h4>" + esc(f.tituloB || "Ubicación") + "</h4>" + ubic + parrafos(f.textoB) + "</div>" : "") + "</div>" : textos) + boton;
+        (f.plantilla === "ubicacion" ? '<div class="fd-textos">' + (f.textoA ? "<div>" + (f.tituloA ? "<h4>" + esc(f.tituloA) + "</h4>" : "") + parrafos(f.textoA) + "</div>" : "<div></div>") + (ubic || f.textoB ? "<div>" + "<h4>" + esc(f.tituloB || "Ubicación") + "</h4>" + ubic + parrafos(f.textoB) + "</div>" : "") + "</div>" : textos) + boton + pie2;
     }
     return '<div class="pop-caja ficha-d fd-' + f.plantilla + '" role="dialog" aria-label="' + esc(nombreLote(c)) + '" style="--fd-fondo:' + f.fondo + ";--fd-texto:" + f.texto + ";--fd-acento:" + f.acento + ";--fd-sobre:" + textoSobre(f.acento) + (f.fuente ? ";--fd-fuente:'" + f.fuente + "'" : "") + '"><button class="pop-x" aria-label="Cerrar">×</button>' + cuerpo + "</div>";
   }
