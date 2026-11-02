@@ -1,0 +1,87 @@
+{
+ "fecha": "2026-11-02T06:42:40.031Z",
+ "bien": 20,
+ "total": 20,
+ "resultados": [
+  {
+   "nombre": "El escaparate abre con planes y precios",
+   "ok": true
+  },
+  {
+   "nombre": "Crear un tour y subir una esfera",
+   "ok": true
+  },
+  {
+   "nombre": "Vista previa del tour",
+   "ok": true
+  },
+  {
+   "nombre": "Dibujar un lote a mano y marcarlo vendido",
+   "ok": true
+  },
+  {
+   "nombre": "Manzana con 10 lotes",
+   "ok": true
+  },
+  {
+   "nombre": "Un número de lote escrito a mano se respeta al ajustar la manzana",
+   "ok": true
+  },
+  {
+   "nombre": "Dos manzanas: cada una con su número y sus lotes no se mezclan",
+   "ok": true
+  },
+  {
+   "nombre": "Desde un lote se puede editar la manzana completa",
+   "ok": true
+  },
+  {
+   "nombre": "La rueda del mouse acerca la vista aunque el cursor esté sobre un lote",
+   "ok": true
+  },
+  {
+   "nombre": "Laboratorio · calle curva y esquinas redondeadas",
+   "ok": true
+  },
+  {
+   "nombre": "Manzana doble y fila de atrás desfasada",
+   "ok": true
+  },
+  {
+   "nombre": "Laboratorio · ficha diseñada del lote",
+   "ok": true
+  },
+  {
+   "nombre": "Publicar y abrir el tour público en computadora",
+   "ok": true
+  },
+  {
+   "nombre": "El tour público abre en celular",
+   "ok": true
+  },
+  {
+   "nombre": "Descargar el tour (.zip) para otro hosting",
+   "ok": true
+  },
+  {
+   "nombre": "Panel de dueño: cuentas, links, reportes, laboratorio y actualizaciones",
+   "ok": true
+  },
+  {
+   "nombre": "Plan Gratis: crear, publicar con marca «Creado por Mozari» y sin descarga",
+   "ok": true
+  },
+  {
+   "nombre": "Plan Gratis no ve herramientas del Laboratorio ni el panel de dueño",
+   "ok": true
+  },
+  {
+   "nombre": "Una actualización publicada se ve una sola vez por cuenta",
+   "ok": true
+  },
+  {
+   "nombre": "Sin errores de JavaScript en el estudio",
+   "ok": true
+  }
+ ]
+}
