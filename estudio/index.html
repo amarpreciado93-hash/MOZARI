@@ -5877,7 +5877,11 @@ void main(){
       const botones = (k, ops, cols) => '<div class="hs-estilos" style="grid-template-columns:repeat(' + (cols || ops.length) + ',1fr)">' + ops.map(([v, n]) => '<button class="hs-estilo" data-k="pi.' + k + '" data-v="' + v + '" aria-pressed="' + (String(p[k]) === v) + '">' + n + "</button>").join("") + "</div>";
       h += '<div class="grupo"><b>Cómo se ve</b><div class="hs-estilos" style="grid-template-columns:repeat(2,1fr)">' +
         '<button class="hs-estilo" data-k="en3d" data-v="false" aria-pressed="' + !es3d(c) + '">Sigue a la cámara</button><button class="hs-estilo" data-k="en3d" data-v="true" aria-pressed="' + es3d(c) + '">Fijo en el entorno 3D</button></div>' +
-        '<p class="nota">' + (es3d(c) ? "Se queda clavado en el paisaje con su perspectiva: crece al acercarte y se mueve con la esfera." : "Siempre de frente y del mismo tamaño en pantalla, se vea desde donde se vea.") + "</p></div>";
+        '<p class="nota">' + (es3d(c) ? "Se queda clavado en el paisaje con su perspectiva: crece al acercarte y se mueve con la esfera." : "Siempre de frente y del mismo tamaño en pantalla, se vea desde donde se vea.") + "</p>" +
+        // En 3D se acomoda como un texto: inclinar (acostarlo sobre el suelo), girar, rotar y estirar
+        (es3d(c) ? (() => { const t = t3(c); return campo("Inclinar", campoRango("t3d.inclinar", t.inclinar, -85, 85, 1, deg)) + campo("Girar", campoRango("t3d.girar", t.girar, -85, 85, 1, deg)) +
+          campo("Rotar", campoRango("t3d.rotar", t.rotar, -180, 180, 1, deg)) + campo("Ancho", campoRango("t3d.ancho", t.ancho, 0.2, 6, 0.05, veces)) + campo("Alto", campoRango("t3d.alto", t.alto, 0.2, 6, 0.05, veces)) +
+          '<div class="orden"><button class="mini" data-acc="t3d-reset">Enderezar</button></div>'; })() : "") + "</div>";
       h += '<div class="grupo"><b>Texto</b>' + campo("Dato grande", '<input type="text" data-k="pi.dato" value="' + esc(p.dato) + '" placeholder="800 m">') +
         campo("Nombre", '<input type="text" data-k="pi.nombre" value="' + esc(p.nombre) + '" placeholder="Gasolinera">') +
         campo("Detalle", '<input type="text" data-k="pi.detalle" value="' + esc(p.detalle) + '" placeholder="2 min en auto">') +
