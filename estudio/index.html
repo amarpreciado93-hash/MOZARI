@@ -1458,7 +1458,7 @@
     <!-- Panoramas / Lotes: todos los lotes del tour y su estado -->
     <section data-vista="panoramas/lotes" hidden>
       <div class="contenido" style="max-width:1100px">
-        <h1>Lotes</h1>
+        <h1>Lotes <button class="guia-ayuda" id="lotes-ayuda" title="Ver cómo se usa">?</button></h1>
         <p class="sub">Cambia aquí el estado de cada lote. Se actualiza en todas las esferas y en su ficha.</p>
         <div class="lotes-excel">
           <label class="lx-moneda">Moneda de los precios <select class="entrada" id="lx-moneda"></select></label>
@@ -2338,6 +2338,88 @@
     h += '<path transform="translate(' + cx.toFixed(1) + " " + cy.toFixed(1) + ')" d="M0 0 L0 15 L4 11.5 L7 18 L10 16.5 L7 10.5 L12.5 10.5 Z" fill="#fff" stroke="#111" stroke-width="1.2"/>';
     svg.innerHTML = h;
   }
+  // Dibujar con clics: el cursor pica cada punto; cerrado = clic en el primero (polígono/lote), abierto = Enter (ruta)
+  const animDibujo = (o) => (svg, t) => {
+    const P = o.puntos, n = P.length, paso = 0.55, fin = 0.5 + paso * (n + (o.cerrado ? 1 : 0)), listo = t > fin + 0.3;
+    const ease = (u) => (u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2);
+    const metas = P.concat(o.cerrado ? [P[0]] : []);
+    let cx = 330, cy = 185;
+    metas.forEach((p, k) => { const t1 = 0.5 + paso * (k + 1), t0 = t1 - paso, a = k ? metas[k - 1] : [330, 185]; if (t >= t0 && t < t1) { const u = ease((t - t0) / paso); cx = a[0] + (p[0] - a[0]) * u; cy = a[1] + (p[1] - a[1]) * u; } else if (t >= t1) { cx = p[0]; cy = p[1]; } });
+    if (listo) { cx = 330; cy = 185; }
+    const vistos = P.filter((_, k) => t >= 0.5 + paso * (k + 1));
+    let h = '<rect width="360" height="200" fill="#1a2014"/><path d="M0 120 Q180 100 360 125 L360 140 Q180 116 0 136Z" fill="#2c2f2a"/>' + (o.fondo || "");
+    if (listo && o.cerrado) h += '<path d="M' + P.map((p) => p.join(" ")).join("L") + 'Z" fill="' + (o.color || "#D5FF40") + '" fill-opacity=".35" stroke="#fff" stroke-width="2"/>' + (o.rotulo ? '<text x="' + (P.reduce((s2, p) => s2 + p[0], 0) / n) + '" y="' + (P.reduce((s2, p) => s2 + p[1], 0) / n + 4) + '" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">' + o.rotulo + "</text>" : "");
+    else if (listo) h += '<path d="M' + P.map((p) => p.join(" ")).join("L") + '" fill="none" stroke="#D5FF40" stroke-width="3" stroke-dasharray="2 6" stroke-linecap="round"/>';
+    else if (vistos.length > 1) h += '<path d="M' + vistos.map((p) => p.join(" ")).join("L") + (t >= fin && o.cerrado ? "Z" : "") + '" fill="none" stroke="#D5FF40" stroke-width="2" stroke-dasharray="5 4"/>';
+    if (!listo) vistos.forEach((p, k) => (h += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (k === 0 && o.cerrado ? 6.5 : 5) + '" fill="#D5FF40" stroke="#0b0b0b" stroke-width="1.5"/>'));
+    if (!o.cerrado && t > fin - 0.1 && t < fin + 0.4) h += '<g transform="translate(150 20)"><rect width="60" height="26" rx="7" fill="rgba(255,255,255,.14)" stroke="rgba(255,255,255,.5)"/><text x="30" y="17" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">Enter ↵</text></g>';
+    h += '<text x="180" y="194" fill="' + (listo ? "#D5FF40" : "#fff") + '" font-size="11" font-weight="600" text-anchor="middle">' + (listo ? o.final : o.pasos) + "</text>";
+    h += '<path transform="translate(' + cx.toFixed(1) + " " + cy.toFixed(1) + ')" d="M0 0 L0 15 L4 11.5 L7 18 L10 16.5 L7 10.5 L12.5 10.5 Z" fill="#fff" stroke="#111" stroke-width="1.2"/>';
+    svg.innerHTML = h;
+  };
+  // Colocar: aparece al centro y el cursor lo arrastra a su lugar
+  const animColocar = (o) => (svg, t) => {
+    const ease = (u) => (u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2), A = [180, 92], B = o.destino || [262, 110];
+    const u = ease(Math.max(0, Math.min(1, (t - 1.2) / 1.4))), x = A[0] + (B[0] - A[0]) * u, y = A[1] + (B[1] - A[1]) * u;
+    let h = '<rect width="360" height="200" fill="#1a2014"/><path d="M0 120 Q180 100 360 125 L360 140 Q180 116 0 136Z" fill="#2c2f2a"/>' + (o.fondo || "");
+    h += '<g transform="translate(' + x.toFixed(1) + " " + y.toFixed(1) + ')" opacity="' + Math.min(1, t / 0.5).toFixed(2) + '">' + o.figura + "</g>";
+    const cx = t < 1.0 ? 320 - 140 * ease(t / 1.0) : x + 6, cy = t < 1.0 ? 180 - 82 * ease(t / 1.0) : y + 4;
+    if (t > 1.1 && t < 2.7) h += '<circle cx="' + (x + 6) + '" cy="' + (y + 4) + '" r="12" fill="rgba(255,255,255,.18)"/>';
+    h += '<text x="180" y="194" fill="' + (t > 2.8 ? "#D5FF40" : "#fff") + '" font-size="11" font-weight="600" text-anchor="middle">' + (t > 2.8 ? o.final : o.pasos) + "</text>";
+    h += '<path transform="translate(' + cx.toFixed(1) + " " + cy.toFixed(1) + ')" d="M0 0 L0 15 L4 11.5 L7 18 L10 16.5 L7 10.5 L12.5 10.5 Z" fill="#fff" stroke="#111" stroke-width="1.2"/>';
+    svg.innerHTML = h;
+  };
+  const LT = () => terminos().lote.toLowerCase();
+  // La primera vez que se usa cada herramienta de Capas. dibuja = el tutorial va ANTES de dibujar; si no, DESPUÉS de crear (señala el panel).
+  const GUIAS_CAPAS = {
+    lote: () => ({ dibuja: true, pasos: [{ el: "#add-lote", titulo: "Así se dibuja un " + LT(), dur: 5.5, boton: "A dibujar",
+      anim: animDibujo({ cerrado: true, puntos: [[110, 60], [250, 52], [262, 160], [98, 168]], rotulo: terminos().lote + " 1", pasos: "Clic en cada esquina del " + LT(), final: "Clic en el primer punto y queda cerrado" }),
+      texto: "Pica cada <b>esquina</b> del " + LT() + " sobre la esfera y cierra con un clic en el <b>primer punto</b> (o Enter). A la derecha le pones número, precio, superficie y estado. Si son muchos seguidos, usa <b>Manzana</b>." }] }),
+    poligono: () => ({ dibuja: true, pasos: [{ el: "#add-pol", titulo: "Así se dibuja un polígono", dur: 5.5, boton: "A dibujar",
+      anim: animDibujo({ cerrado: true, color: "#4FC3F7", puntos: [[90, 70], [200, 48], [280, 90], [230, 165], [110, 150]], pasos: "Clic en cada punto de la orilla", final: "Clic en el primero: queda la zona marcada" }),
+      texto: "Sirve para marcar <b>zonas</b>: un área verde, una alberca, un terreno completo. Pica cada punto de la orilla y cierra en el <b>primero</b>. A la derecha cambias color, borde y qué pasa al hacerle clic." }] }),
+    camino: () => ({ dibuja: true, pasos: [{ el: "#add-camino", titulo: "Así se dibuja una ruta", dur: 5.5, boton: "A dibujar",
+      anim: animDibujo({ cerrado: false, puntos: [[50, 170], [120, 120], [200, 132], [300, 60]], pasos: "Clic en cada punto del camino", final: "Enter: queda la ruta punteada" }),
+      texto: "Para enseñar <b>cómo se llega</b>: de la entrada al lote, al club house… Pica cada punto del camino y presiona <b>Enter</b> para terminar." }] }),
+    hotspot: () => ({ pasos: [{ el: () => document.querySelector(".cp-hs.elegida, .hs.elegida") || document.querySelector("#props"), titulo: "Tu hotspot ya está en la esfera", dur: 4.5,
+      anim: animColocar({ figura: '<circle r="13" fill="none" stroke="#fff" stroke-width="2.5"/><circle r="5" fill="#fff"/>', destino: [270, 112], pasos: "Arrástralo a la puerta o al camino", final: "Al tocarlo, el cliente pasa a la otra esfera" }),
+      texto: "<b>Arrástralo</b> sobre la esfera hasta donde está la otra toma (una puerta, el camino). A la derecha eliges <b>a qué esfera lleva</b>. Tip: también puedes arrastrar una esfera de la lista izquierda a la esfera." }] }),
+    texto: () => ({ pasos: [{ el: "#props", titulo: "Tu texto ya está en la esfera", dur: 4.5,
+      anim: animColocar({ figura: '<rect x="-46" y="-13" width="92" height="26" rx="6" fill="rgba(0,0,0,.45)"/><text y="5" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Club house</text>', destino: [250, 70], pasos: "Arrástralo a su lugar", final: "Escribe el texto y su estilo a la derecha" }),
+      texto: "<b>Arrástralo</b> en la esfera a su lugar y aquí a la derecha escribe el <b>texto</b>, su tamaño, color y fondo." }] }),
+    interes: () => ({ pasos: [{ el: "#props", titulo: "Tu punto de interés ya está en la esfera", dur: 4.5,
+      anim: animColocar({ figura: '<circle cx="-30" cy="22" r="5" fill="#D5FF40"/><path d="M-26 18 L-6 -6 L40 -6" fill="none" stroke="#D5FF40" stroke-width="2"/><text x="-2" y="-12" fill="#fff" font-size="11" font-weight="700">Escuela · 5 min</text>', destino: [230, 80], pasos: "Arrástralo sobre el lugar", final: "Escribe su nombre y distancia a la derecha" }),
+      texto: "<b>Arrástralo</b> sobre el lugar real (la escuela, la gasolinera…) y escribe aquí su <b>nombre</b> y el dato (tiempo o distancia)." }] }),
+  };
+  // Muestra el tutorial de una herramienta si nunca lo ha visto; alTerminar continúa con la acción
+  function guiaCapa(tipo, alTerminar) {
+    const g = GUIAS_CAPAS[tipo] && GUIAS_CAPAS[tipo]();
+    if (!g || MODO !== "nube" || guiasVistas.has("capa-" + tipo)) { if (alTerminar) alTerminar(); return; }
+    mostrarGuia("capa-" + tipo, g.pasos, { alTerminar });
+  }
+  // Lotes: una hoja de Excel cuyas filas caen en los lotes y los llenan
+  function animExcel(svg, t) {
+    const filas = [["3", "1", "300", "$345,000"], ["3", "2", "312", "$355,000"], ["3", "3", "320", "$360,000"]];
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="14" y="26" width="150" height="112" rx="8" fill="#fff"/><rect x="14" y="26" width="150" height="20" rx="8" fill="#1D6F42"/><text x="89" y="40" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">lotes.xlsx</text>';
+    ["Mz", "Lote", "m²", "Precio"].forEach((c, k) => (h += '<text x="' + [24, 48, 76, 104][k] + '" y="60" fill="#555" font-size="8.5" font-weight="700">' + c + "</text>"));
+    filas.forEach((f, r) => f.forEach((c, k) => (h += '<text x="' + [24, 48, 76, 104][k] + '" y="' + (78 + r * 20) + '" fill="#222" font-size="8.5">' + c + "</text>")));
+    for (let k = 0; k < 3; k++) {
+      const x = 196 + k * 52, lleno = t > 2.2 + k * 0.5;
+      h += '<path d="M' + x + " 56h48v80h-48z" + '" fill="#D5FF40" fill-opacity="' + (lleno ? 0.35 : 0.12) + '" stroke="#fff" stroke-width="1.5"/><text x="' + (x + 24) + '" y="80" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">L' + (k + 1) + "</text>";
+      if (lleno) h += '<text x="' + (x + 24) + '" y="100" fill="#D5FF40" font-size="8.5" text-anchor="middle">' + filas[k][2] + ' m²</text><text x="' + (x + 24) + '" y="116" fill="#fff" font-size="8" text-anchor="middle">' + filas[k][3] + "</text>";
+      const v = Math.max(0, Math.min(1, (t - 1.2 - k * 0.5) / 1.0));
+      if (v > 0 && v < 1) { const sx = 90, sy = 74 + k * 20, ex = x + 24, ey = 100; h += '<rect x="' + (sx + (ex - sx) * v - 22).toFixed(1) + '" y="' + (sy + (ey - sy) * v - 7).toFixed(1) + '" width="44" height="14" rx="4" fill="#D5FF40" opacity=".9"/>'; }
+    }
+    h += '<text x="180" y="176" fill="' + (t > 3.6 ? "#D5FF40" : "#fff") + '" font-size="11" font-weight="600" text-anchor="middle">' + (t > 3.6 ? "Cada lote toma su superficie y su precio" : "Sube tu hoja y se llenan los lotes") + "</text>";
+    svg.innerHTML = h;
+  }
+  const guiaLotes = (repetir) => mostrarGuia("lotes-vista", [
+    { el: "#lx-plantilla", titulo: "Llena tus " + plural(terminos().lote).toLowerCase() + " desde Excel", texto: "Descarga la <b>plantilla</b>: tiene las columnas " + esc(terminos().manzana) + ", " + esc(terminos().lote) + ", superficie, precio y estado. Llénala con tu lista de precios." },
+    { el: () => document.getElementById("lx-archivo") && document.getElementById("lx-archivo").closest("label"), titulo: "Súbela y se llenan solos", anim: animExcel, dur: 5,
+      texto: "Pica <b>Importar de Excel</b>. Cada fila cae en el " + LT() + " que ya dibujaste con ese número y " + esc(terminos().manzana.toLowerCase()) + ". Te avisa si alguna fila no encontró su " + LT() + "." },
+    { el: "#lotes-tabla", titulo: "O cámbialos aquí uno por uno", texto: "Escribe la <b>superficie</b> y el <b>precio</b>, y cambia el <b>estado</b> (disponible, apartado, vendido). Se actualiza en todas las esferas y en la ficha." },
+    { el: "#lotes-resumen", titulo: "Tu inventario de un vistazo", texto: "Cuántos hay por estado y el % vendido. Toca un estado para ver solo esos, y su cuadrito de color para cambiar el color en el tour." },
+  ], { repetir });
   const MZ = () => terminos().manzana.toLowerCase();
   const guiaManzanaInicio = (repetir, alTerminar) => mostrarGuia("manzana", [
     { el: "#add-manzana", titulo: "Así se dibuja una " + MZ(), anim: animManzana, dur: 7,
@@ -5568,9 +5650,9 @@ void main(){
     if (a.dataset.a === "cerrar") terminarDibujo(true);
   });
   const centro = () => { const v = motorEd.view(); return { yaw: v.yaw(), pitch: v.pitch() }; };
-  $("add-pol").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "poligono") empezarDibujo("poligono"); });
+  $("add-pol").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "poligono") guiaCapa("poligono", () => empezarDibujo("poligono")); });
   $("add-lote").addEventListener("click", () => { if (sinLotif() && !avisoLotes) { avisoLotes = true; avisar("Prueba la lotificación libremente. Al publicar, un tour con lotes sale con marca de agua hasta que tengas Desarrollos."); } }, true);
-  $("add-lote").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "lote") empezarDibujo("lote"); });
+  $("add-lote").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "lote") guiaCapa("lote", () => empezarDibujo("lote")); });
   $("add-manzana").addEventListener("click", () => { if (sinLotif() && !avisoLotes) { avisoLotes = true; avisar("Prueba la lotificación libremente. Al publicar, un tour con lotes sale con marca de agua hasta que tengas Desarrollos."); } }, true);
   $("add-manzana").addEventListener("click", () => {
     const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false);
@@ -5579,12 +5661,13 @@ void main(){
     if (!guiasVistas.has("manzana") && MODO === "nube") { guiaManzanaInicio(false, () => empezarDibujo("manzana")); return; }
     empezarDibujo("manzana");
   });
-  $("add-camino").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "camino") empezarDibujo("camino"); });
+  $("add-camino").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "camino") guiaCapa("camino", () => empezarDibujo("camino")); });
   $("add-txt").addEventListener("click", () => {
     if (motorEd.dibujo) terminarDibujo(false);
     const k = centro();
     const c = { id: nuevoId(), tipo: "texto", nombre: "Texto", visible: true, yaw: k.yaw, pitch: k.pitch, texto: "Nuevo texto", tamano: 18, peso: 600, color: BLANCO, fondo: { activo: false, color: NEGRO } };
     cs().push(c); motorEd.elegida = c.id; cambio();
+    setTimeout(() => guiaCapa("texto"), 400);
   });
   $("add-pi").addEventListener("click", () => {
     if (motorEd.dibujo) terminarDibujo(false);
@@ -5592,6 +5675,7 @@ void main(){
     const c = { id: nuevoId(), tipo: "interes", nombre: "Punto de interés", visible: true, en3d: false, yaw: k.yaw, pitch: k.pitch, pi: Object.assign({}, PI_DEF) };
     cs().push(c); motorEd.elegida = c.id; cambio();
     avisar("Arrástralo sobre el lugar (la gasolinera, la escuela…) y escribe sus datos a la derecha");
+    setTimeout(() => guiaCapa("interes"), 400);
   });
   $("add-hs").addEventListener("click", () => {
     if (motorEd.dibujo) terminarDibujo(false);
@@ -5599,6 +5683,7 @@ void main(){
     const k = centro();
     const c = { id: nuevoId(), tipo: "hotspot", nombre: "Hotspot → " + (otra ? otra.nombre : ""), visible: true, yaw: k.yaw, pitch: k.pitch, destino: otra ? otra.id : "" };
     cs().push(c); motorEd.elegida = c.id; cambio();
+    setTimeout(() => guiaCapa("hotspot"), 400);
   });
 
   const ICONOS = {
@@ -6191,6 +6276,7 @@ void main(){
     if (ev.target.type === "checkbox") { setFicha(k, ev.target.checked); if (k === "activa") avisar(ev.target.checked ? "Tus clientes verán esta ficha al tocar un lote" : "Se usa la ficha sencilla de siempre"); pintarFichaEditor(); return; }
     if (ev.target.tagName === "SELECT") { setFicha(k, ev.target.value); pintarFichaEditor(); }
   });
+  $("lotes-ayuda").addEventListener("click", () => guiaLotes(true));
   function pintarLotes() {
     const todos = lotesUnicos(), E = estadosLote();
     const T = terminos();
@@ -6207,6 +6293,7 @@ void main(){
       E.map((e) => '<span class="lr-chip estado" aria-pressed="' + (filtroLotes === e.id) + '" style="--c:' + e.color + '"><button data-filtro="' + e.id + '"><i></i><b>' + cuenta(e.id) + "</b>" + esc(e.nombre) + '</button><input type="color" value="' + e.color + '" data-color-estado="' + e.id + '" aria-label="Color de ' + esc(e.nombre) + '"></span>').join("") +
       (todos.length ? '<span class="lr-vendido">' + Math.round((cuenta("vendido") / todos.length) * 100) + "% vendido</span>" : "");
     const filas = todos.filter((x) => filtroLotes === "todos" || estadoDe(x.c).id === filtroLotes);
+    if (todos.length && MODO === "nube" && !guiasVistas.has("lotes-vista") && nav.sec + "/" + nav.sub === "panoramas/lotes") setTimeout(() => guiaLotes(false), 700);
     if (!todos.length) { $("lotes-tabla").innerHTML = '<p class="vacio">Aún no hay lotes. En Panoramas → Capas usa el botón <b>Lote</b> y dibuja el primero.</p>'; return; }
     $("lotes-tabla").innerHTML = '<table class="lotes-tabla"><thead><tr><th>' + esc(terminos().manzana) + "</th><th>" + esc(terminos().lote) + '</th><th>Superficie (m²)</th><th>Precio (' + monedaTour() + ')</th><th>Estado</th><th>Aparece en</th></tr></thead><tbody>' +
       filas.map((x) => {

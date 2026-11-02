@@ -83,6 +83,8 @@ async function nuevoTour(p, nombre) {
 const capas = async (p) => (await p.$$eval("#lista li", (l) => l.map((x) => x.innerText.trim().split("\n")[0]))).reverse();
 const lotes = async (p) => (await capas(p)).filter((t) => /^Lote/.test(t));
 async function irCapas(p) { await p.click('#nav button:has-text("Panoramas")'); await p.waitForTimeout(300); await p.click('#subtabs button:has-text("Capas")'); await p.waitForTimeout(1500); }
+// Los tutoriales de primera vez: se avanzan con «Siguiente» hasta que se cierran
+async function pasarGuias(p) { for (let i = 0; i < 6; i++) { await p.waitForTimeout(250); if (!(await p.isVisible(".guia-tarjeta").catch(() => false))) return; await p.click('.guia-tarjeta [data-guia="seguir"]'); await p.waitForTimeout(350); } }
 async function cerrarGuia(p) { if (await p.isVisible(".guia-tarjeta").catch(() => false)) { await p.keyboard.press("Escape"); await p.waitForTimeout(300); } }
 async function dibujarManzana(p, frente, fondo) {
   await p.keyboard.press("Escape"); await p.waitForTimeout(200);
@@ -124,7 +126,7 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
     }, a);
     await paso("Dibujar un lote a mano y marcarlo vendido", async () => {
       await irCapas(a);
-      await a.click("#add-lote"); await a.waitForTimeout(300);
+      await a.click("#add-lote"); await a.waitForTimeout(300); await pasarGuias(a);
       for (const [x, y] of [[460, 700], [560, 700], [560, 780], [460, 780]]) { await a.mouse.click(x, y); await a.waitForTimeout(120); }
       await a.keyboard.press("Enter"); await a.waitForTimeout(800);
       exige((await lotes(a)).length === 1, "no apareció el lote");
@@ -184,7 +186,7 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige((await lotes(a)).length === antes + 7, "la fila de atrás no tomó 7 lotes (" + (await lotes(a)).length + ")");
     }, a);
     await paso("Laboratorio · ficha diseñada del lote", async () => {
-      await a.click('#subtabs button:has-text("Lotes")'); await a.waitForTimeout(1200);
+      await a.click('#subtabs button:has-text("Lotes")'); await a.waitForTimeout(1200); await pasarGuias(a);
       exige(await a.isVisible("#ficha-editor"), "no aparece el creador de fichas");
       await a.check('[data-fe="activa"]'); await a.waitForTimeout(500);
       exige(await a.$("#fe-lienzo .ficha-d"), "no se dibuja la ficha");
@@ -244,7 +246,7 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(st === 403, "un usuario normal entró a la API del dueño (" + st + ")");
     }, g);
 
-    await paso("Tutorial de manzana: sale la primera vez y luego ya no", async () => {
+    await paso("Tutoriales (manzana, lote, Lotes/Excel): salen la primera vez y luego ya no", async () => {
       const t = await pagina("tutorial-" + Date.now() + "@prueba.mx");
       await nuevoTour(t, "Tutorial"); await irCapas(t);
       await t.click("#add-manzana"); await t.waitForTimeout(600);
@@ -257,10 +259,20 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await t.keyboard.press("Enter"); await t.waitForTimeout(1600);
       exige(await t.isVisible(".guia-tarjeta"), "no salió el tutorial de cómo editar la manzana");
       await t.click('.guia-tarjeta [data-guia="seguir"]'); await t.waitForTimeout(300); await t.click('.guia-tarjeta [data-guia="seguir"]'); await t.waitForTimeout(300);
+      await t.click('#subtabs button:has-text("Lotes")'); await t.waitForTimeout(1500);
+      exige(await t.isVisible(".guia-tarjeta"), "no salió el tutorial de la vista Lotes (Excel)");
+      await pasarGuias(t);
+      await irCapas(t); await t.click("#add-lote"); await t.waitForTimeout(500);
+      exige(await t.isVisible(".guia-tarjeta .guia-anim"), "no salió el tutorial de Lote");
+      await pasarGuias(t); await t.keyboard.press("Escape");
       await t.reload(); await t.waitForTimeout(3500); await irCapas(t);
       await t.click("#add-manzana"); await t.waitForTimeout(600);
-      exige(!(await t.isVisible(".guia-tarjeta")), "el tutorial salió otra vez");
+      exige(!(await t.isVisible(".guia-tarjeta")), "el tutorial de manzana salió otra vez");
+      await t.keyboard.press("Escape"); await t.click("#add-lote"); await t.waitForTimeout(600);
+      exige(!(await t.isVisible(".guia-tarjeta")), "el tutorial de lote salió otra vez");
       await t.keyboard.press("Escape");
+      await t.click('#subtabs button:has-text("Lotes")'); await t.waitForTimeout(1500);
+      exige(!(await t.isVisible(".guia-tarjeta")), "el tutorial de Lotes salió otra vez");
       exige(!t.errs.length, "errores: " + t.errs.join(" | ").slice(0, 160));
       await t.context().close();
     });
