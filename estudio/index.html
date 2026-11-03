@@ -621,7 +621,13 @@
   @keyframes camino-anda { to { stroke-dashoffset: var(--paso, -20); } }
   .cp-camino-toque { fill: none; stroke: transparent; stroke-width: 18; pointer-events: visibleStroke; cursor: pointer; }
   .editable .cp-camino-toque { cursor: move; }
-  .cp-pol:hover { fill: var(--hf); fill-opacity: var(--hfo); stroke: var(--hs); stroke-opacity: var(--hso); stroke-width: var(--hsw); }
+  .cp-pol:hover, .cp-pol.hov { fill: var(--hf); fill-opacity: var(--hfo); stroke: var(--hs); stroke-opacity: var(--hso); stroke-width: var(--hsw); }
+  .cp-pol.cp-camino.hov, .cp-pol.cp-manzana.hov { fill: none; }
+  /* En el tour los polígonos dejan pasar el arrastre a la esfera; el toque se resuelve al soltar */
+  .capas:not(.editable) .cp-pol, .capas:not(.editable) .cp-camino-toque { pointer-events: none; }
+  .capas.tocable .cp-pol.con-accion { pointer-events: all; }
+  .capas.tocable .cp-pol.con-accion.cp-camino, .capas.tocable .cp-pol.con-accion.cp-manzana, .capas.tocable .cp-camino-toque { pointer-events: visibleStroke; }
+  .sobre-lote, .sobre-lote * { cursor: pointer !important; }
   .editable .cp-pol, .editable .cp-texto, .editable .hs-boton { cursor: move; }
   .solo-ver .cp, .solo-ver .cp * { pointer-events: none !important; }
   .solo-ver .cp { opacity: 0.55; }
@@ -3484,6 +3490,33 @@
     };
     capasEl.addEventListener("wheel", ruedaZoom, { passive: false });
     extra.addEventListener("wheel", ruedaZoom, { passive: false });
+    // En el tour los lotes no frenan el giro: arrastrar encima de ellos mueve la esfera y solo un toque
+    // (sin arrastrar) abre el lote. Los polígonos no reciben el dedo; al soltar se busca cuál quedó debajo.
+    if (!editable) {
+      const golpe = (x, y) => {
+        capasEl.classList.add("tocable"); const el = document.elementFromPoint(x, y); capasEl.classList.remove("tocable");
+        if (!el || !capasEl.contains(el)) return null;
+        const p = el.classList.contains("cp-camino-toque") ? el.parentNode.querySelector(".cp-pol") : el;
+        return p && p.classList.contains("cp-pol") && p.classList.contains("con-accion") ? p : null;
+      };
+      const propio = (t) => capasEl.contains(t) || extra.contains(t) || !stage.contains(t); // botones, textos y puntos siguen con su propio clic
+      let ini = null, hov = null, rafH = 0;
+      const marcar = (p) => { if (p === hov) return; if (hov) hov.classList.remove("hov"); hov = p; if (p) p.classList.add("hov"); stage.classList.toggle("sobre-lote", !!p); };
+      stage.addEventListener("pointerdown", (ev) => { ini = ev.isPrimary && !propio(ev.target) ? { x: ev.clientX, y: ev.clientY, id: ev.pointerId } : null; }, true);
+      stage.addEventListener("pointerup", (ev) => {
+        const s = ini; ini = null;
+        if (!s || ev.pointerId !== s.id || Math.hypot(ev.clientX - s.x, ev.clientY - s.y) > 10) return;
+        const p = golpe(ev.clientX, ev.clientY); if (p) p.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      }, true);
+      stage.addEventListener("pointercancel", () => { ini = null; }, true);
+      // Con mouse: el lote se ilumina y la mano aparece al pasar encima, como antes
+      stage.addEventListener("pointermove", (ev) => {
+        if (ev.pointerType !== "mouse" || rafH) return;
+        const x = ev.clientX, y = ev.clientY, quieto = !ev.buttons && !propio(ev.target);
+        rafH = requestAnimationFrame(() => { rafH = 0; marcar(quieto ? golpe(x, y) : null); });
+      });
+      stage.addEventListener("pointerleave", () => marcar(null));
+    }
     const escenasM = {};
     let actual = null;
 

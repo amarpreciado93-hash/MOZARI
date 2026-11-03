@@ -239,6 +239,20 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(await a.isVisible(".est-kpis"), "no se ve la pestaña de Estadísticas");
       await a.click('#subtabs button:has-text("Web")'); await a.waitForTimeout(800);
     }, a);
+    await paso("Arrastrar encima de un lote gira la esfera; solo un toque abre su ficha", async () => {
+      const t = await pagina(null); await t.goto(link); await t.waitForTimeout(4500);
+      const mayor = () => t.$$eval("path.cp-pol.con-accion", (l) => l.map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2, r.width * r.height]; }).filter((x) => x[2] > 400).sort((a, b) => b[2] - a[2])[0]);
+      const antes = await mayor(); exige(antes, "no hay lotes en el tour");
+      await t.mouse.move(antes[0], antes[1]); await t.mouse.down();
+      for (let i = 1; i <= 12; i++) { await t.mouse.move(antes[0] - i * 18, antes[1]); await t.waitForTimeout(16); }
+      await t.mouse.up(); await t.waitForTimeout(900);
+      const despues = await mayor();
+      exige(despues && Math.abs(despues[0] - antes[0]) > 60, "arrastrar sobre el lote no giró la esfera");
+      exige(!(await t.isVisible(".pop .pop-caja")), "al arrastrar se abrió la ficha del lote");
+      await t.mouse.click(despues[0], despues[1]); await t.waitForTimeout(700);
+      exige(await t.isVisible(".pop .pop-caja"), "un toque en el lote ya no abre su ficha");
+      await t.context().close();
+    }, a);
     await paso("El tour público abre en celular", async () => {
       const m = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
       await m.goto(link); await m.waitForTimeout(5000);

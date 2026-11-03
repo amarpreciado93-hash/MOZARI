@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-02T23:41:55.725Z",
- "bien": 24,
- "total": 24,
+ "fecha": "2026-11-03T00:28:28.113Z",
+ "bien": 25,
+ "total": 25,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -61,6 +61,10 @@
   },
   {
    "nombre": "Laboratorio · estadísticas: una visita al tour se cuenta (con el lote que abrió)",
+   "ok": true
+  },
+  {
+   "nombre": "Arrastrar encima de un lote gira la esfera; solo un toque abre su ficha",
    "ok": true
   },
   {
