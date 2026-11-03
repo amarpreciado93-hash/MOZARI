@@ -16,6 +16,7 @@
 //   GET    /api/admin/cuentas         (solo el dueño) todas las cuentas
 //   PUT    /api/admin/cuentas/:uid    (solo el dueño) cambia el plan de una cuenta  { plan }
 //   GET    /api/admin/laboratorio     (solo el dueño) funciones en prueba y para quién están
+//   GET    /api/admin/tours/:id       (solo el dueño) lee el proyecto de cualquier tour, para revisar reportes
 //   GET    /api/novedades             anuncios para esta cuenta (y si ya los vio) · POST /api/novedades/:id/vista
 //   GET|POST /api/admin/novedades     (solo el dueño) crear y editar anuncios · PUT /:id · PUT /:id/media
 //   PUT    /api/admin/laboratorio/:clave   { modo: yo|probadores|todos, probadores: [correos] }
@@ -284,6 +285,11 @@ async function admin(request, env, partes) {
     return error(405, "Método no permitido");
   }
   if (partes[2] === "respaldos") return apiRespaldos(request, env, partes);
+  // Soporte: el dueño puede leer (solo leer) el proyecto de cualquier tour para revisar un reporte
+  if (partes[2] === "tours" && partes.length === 4 && request.method === "GET") {
+    if (!ID_TOUR.test(partes[3])) return error(400, "Tour inválido");
+    return servirR2(env, request, "tours/" + partes[3] + "/proyecto.json", "no-store");
+  }
   if (partes[2] === "laboratorio") {
     if (partes.length === 3 && m === "GET") {
       const cfg = await leerLab(env);

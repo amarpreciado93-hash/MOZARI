@@ -313,6 +313,7 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige((await api("api/admin/respaldos/" + sello + "/restaurar", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tour }) })).s === 200, "no se pudo restaurar");
       exige((await api("api/tours/" + tour)).d.proyecto.nombre === antes.proyecto.nombre, "el tour no regresó a como estaba");
       exige(((await api("api/admin/respaldos")).d.lista || []).length >= 1, "el panel no lista los respaldos");
+      exige((await api("api/admin/tours/" + tour)).d.proyecto.nombre === antes.proyecto.nombre, "el dueño no puede leer un tour para soporte");
     }, a);
     await paso("Plan Gratis: crear, publicar con marca «Creado por Mozari» y sin descarga", async () => {
       await nuevoTour(g, "Gratis");
@@ -334,6 +335,8 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(!(await g.$("#ver-cuentas")), "un usuario normal ve el Panel de dueño");
       const st = await g.evaluate(() => fetch("api/admin/cuentas").then((r) => r.status));
       exige(st === 403, "un usuario normal entró a la API del dueño (" + st + ")");
+      const st2 = await g.evaluate((t) => fetch("api/admin/tours/" + t).then((r) => r.status), tour);
+      exige(st2 === 403, "un usuario normal pudo leer el tour de otra cuenta (" + st2 + ")");
     }, g);
 
     await paso("Una cuenta se usa en 2 dispositivos; en el 3.º elige cuál cerrar", async () => {
