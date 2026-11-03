@@ -253,6 +253,16 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(await t.isVisible(".pop .pop-caja"), "un toque en el lote ya no abre su ficha");
       await t.context().close();
     }, a);
+    await paso("Botón de escena limpia: esconde puntos y lotes y los regresa", async () => {
+      const t = await pagina(null); await t.goto(link); await t.waitForTimeout(4500);
+      const vis = () => t.$eval(".capas", (e) => getComputedStyle(e).visibility);
+      exige(await t.$('[data-sk="limpiar"]'), "el tour no trae el botón de escena limpia");
+      await t.click('[data-sk="limpiar"]'); await t.waitForTimeout(500);
+      exige((await vis()) === "hidden", "el botón no escondió los lotes");
+      await t.click('[data-sk="limpiar"]'); await t.waitForTimeout(500);
+      exige((await vis()) === "visible", "el botón no regresó los lotes");
+      await t.context().close();
+    }, a);
     await paso("El tour público abre en celular", async () => {
       const m = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
       await m.goto(link); await m.waitForTimeout(5000);

@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-03T00:28:28.113Z",
- "bien": 25,
- "total": 25,
+ "fecha": "2026-11-03T02:09:46.149Z",
+ "bien": 26,
+ "total": 26,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -65,6 +65,10 @@
   },
   {
    "nombre": "Arrastrar encima de un lote gira la esfera; solo un toque abre su ficha",
+   "ok": true
+  },
+  {
+   "nombre": "Botón de escena limpia: esconde puntos y lotes y los regresa",
    "ok": true
   },
   {

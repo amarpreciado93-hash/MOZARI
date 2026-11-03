@@ -1078,6 +1078,9 @@
   .sk-btn.sk-panel { border: 1px solid rgba(255, 255, 255, 0.09); background: var(--sk-panel); }
   .sk-btn:hover { background: var(--sk-acento); color: var(--sk-sobre); }
   .sk-btn svg { width: 17px; height: 17px; }
+  .capas, .capa-etq { transition: opacity 0.3s, visibility 0.3s; }
+  .escena-limpia .capas, .escena-limpia .capa-etq { opacity: 0; visibility: hidden; pointer-events: none; }
+  .sk-btn[aria-pressed="true"] { background: var(--sk-acento); color: var(--sk-sobre); }
   .sk-cta { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--sk-acento); color: var(--sk-sobre); text-decoration: none; font-weight: 600; font-size: 13px; padding: 11px 18px; border-radius: var(--sk-radio-btn); white-space: nowrap; border: 0; cursor: pointer; }
   .sk-cta svg { width: 16px; height: 16px; }
   .sk-cta:hover { filter: brightness(1.08); }
@@ -1825,7 +1828,7 @@
     logo: { tipo: "ninguno", img: "" }, nombre: true,
     cta: { mostrar: true, texto: "Agendar visita", enlace: "" },
     extra: { numero: true, brujula: true, ruta: true },
-    botones: { pantalla: true, musica: true, zoom: false, piloto: true },
+    botones: { pantalla: true, musica: true, zoom: false, piloto: true, limpiar: true },
   };
   function mezclar(def, val) {
     if (typeof def !== "object" || def === null) return val === undefined ? def : val;
@@ -7029,6 +7032,8 @@ void main(){
     rejilla: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>',
     abajo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>',
     chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.6-5.2A8.4 8.4 0 1 1 21 11.5z"/></svg>',
+    limpiar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    mostrar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.6A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a16 16 0 0 1-2.6 3.4M6.6 6.6C3.9 8.3 2.5 12 2.5 12s3.5 6.5 9.5 6.5c1.8 0 3.3-.5 4.6-1.2"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18"/></svg>',
   };
   const BRUJULA = '<svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="37" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1"/>' +
     [0, 45, 90, 135, 180, 225, 270, 315].map((a) => '<line x1="40" y1="5" x2="40" y2="' + (a % 90 ? 9 : 12) + '" stroke="rgba(255,255,255,.5)" stroke-width="1.5" transform="rotate(' + a + ' 40 40)"/>').join("") +
@@ -7094,7 +7099,7 @@ void main(){
     const c = {
       sk, vertical, escenas: est.escenas,
       logo: sk.logo.tipo === "propio" && sk.logo.img ? '<span class="sk-logo"><img src="' + esc(urlArchivo(sk.logo.img)) + '" alt=""></span>' : sk.logo.tipo === "mozari" ? '<span class="sk-logo"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg></span>' : "",
-      botones: (cls) => (sk.botones.musica && o.hayMusica ? btn("musica", "Silenciar música", cls) : "") + (sk.botones.zoom ? btn("menos", "Alejar", cls) + btn("mas", "Acercar", cls) : "") + (sk.botones.pantalla ? btn("pantalla", "Pantalla completa", cls) : ""),
+      botones: (cls) => (sk.botones.musica && o.hayMusica ? btn("musica", "Silenciar música", cls) : "") + (sk.botones.zoom ? btn("menos", "Alejar", cls) + btn("mas", "Acercar", cls) : "") + (sk.botones.limpiar ? btn("limpiar", "Ocultar puntos y lotes", cls) : "") + (sk.botones.pantalla ? btn("pantalla", "Pantalla completa", cls) : ""),
       cerrar: (cls) => (o.cerrable ? btn("cerrar", "Cerrar vista previa", cls) : ""),
       cta: (cls) => {
         if (!sk.cta.mostrar) return "";
@@ -7122,6 +7127,8 @@ void main(){
       if (k === "cta") avisar("Agrega el enlace de contacto en Skin → Contacto");
       if (k === "cerrar" && o.alCerrar) o.alCerrar();
       if (k === "pantalla" && o.alPantalla) o.alPantalla();
+      // Escena limpia: esconde puntos, lotes y textos para ver solo el 360; otro clic los regresa
+      if (k === "limpiar") { const on = ui.parentNode.classList.toggle("escena-limpia"); ui.querySelectorAll('[data-sk="limpiar"]').forEach((b) => { b.innerHTML = on ? ICO_SK.mostrar : ICO_SK.limpiar; b.setAttribute("aria-label", on ? "Mostrar puntos y lotes" : "Ocultar puntos y lotes"); b.setAttribute("aria-pressed", on); }); }
       if (k === "musica" && o.alMusica) { const s = o.alMusica(); bt.innerHTML = s ? ICO_SK.musica : ICO_SK.mudo; bt.setAttribute("aria-label", s ? "Silenciar música" : "Reproducir música"); }
     };
     return {
@@ -7447,7 +7454,7 @@ void main(){
       (T === "cine" || T === "dock" ? tgl("extra.numero", sk.extra.numero, "Número de panorama (01 / 03)") : "") +
       (T === "brujula" ? tgl("extra.brujula", sk.extra.brujula, "Brújula de orientación") + tgl("extra.ruta", sk.extra.ruta, "Ruta paso a paso") : "") +
       tgl("botones.pantalla", sk.botones.pantalla, "Pantalla completa") + tgl("botones.musica", sk.botones.musica, "Música (si el tour tiene)") +
-      tgl("botones.zoom", sk.botones.zoom, "Zoom + / −") + tgl("botones.piloto", sk.botones.piloto, "Aviso de piloto automático") + "</div>";
+      tgl("botones.zoom", sk.botones.zoom, "Zoom + / −") + tgl("botones.limpiar", sk.botones.limpiar, "Limpiar escena (ocultar puntos y lotes)") + tgl("botones.piloto", sk.botones.piloto, "Aviso de piloto automático") + "</div>";
   }
   function setSk(k, v) {
     const ks = k.split("."), u = ks.pop();
