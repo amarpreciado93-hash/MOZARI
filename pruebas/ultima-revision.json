@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-03T02:09:46.149Z",
- "bien": 26,
- "total": 26,
+ "fecha": "2026-11-03T02:17:05.071Z",
+ "bien": 27,
+ "total": 27,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -93,6 +93,10 @@
   },
   {
    "nombre": "Plan Gratis no ve herramientas del Laboratorio ni el panel de dueño",
+   "ok": true
+  },
+  {
+   "nombre": "Una cuenta se usa en 2 dispositivos; en el 3.º elige cuál cerrar",
    "ok": true
   },
   {

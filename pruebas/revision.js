@@ -324,6 +324,24 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(st === 403, "un usuario normal entró a la API del dueño (" + st + ")");
     }, g);
 
+    await paso("Una cuenta se usa en 2 dispositivos; en el 3.º elige cuál cerrar", async () => {
+      const correo = "dispositivos-" + Date.now() + "@prueba.mx", UA = ["Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36",
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"];
+      const ps = [];
+      for (const ua of UA) { const p = await pagina(null, { userAgent: ua }); await p.goto(ESTUDIO + "/entrar?dev=" + correo); await p.waitForTimeout(1500); ps.push(p); }
+      const yo = (p) => p.evaluate(() => fetch("/api/yo").then((r) => r.status));
+      exige((await yo(ps[0])) === 200 && (await yo(ps[1])) === 200, "los 2 primeros dispositivos no entraron");
+      exige(ps[2].url().endsWith("/dispositivos"), "el 3.er dispositivo entró sin elegir cuál cerrar");
+      exige((await ps[2].$$(".disp")).length === 2, "no muestra los 2 dispositivos activos");
+      exige((await yo(ps[2])) === 401, "el 3.er dispositivo tiene sesión sin haber cerrado otro");
+      await ps[2].click(".disp >> nth=0 >> button"); await ps[2].waitForTimeout(1500);
+      exige((await yo(ps[2])) === 200, "al cerrar uno, el 3.º no pudo entrar");
+      exige((await yo(ps[0])) === 401, "el dispositivo cerrado sigue con sesión");
+      await ps[1].goto(ESTUDIO + "/salir"); await ps[1].waitForTimeout(800);
+      await ps[0].goto(ESTUDIO + "/entrar?dev=" + correo); await ps[0].waitForTimeout(1500);
+      exige((await yo(ps[0])) === 200, "salir no liberó el lugar del dispositivo");
+      for (const p of ps) await p.context().close();
+    }, a);
     await paso("Tutoriales (manzana, lote, Lotes/Excel): salen la primera vez y luego ya no", async () => {
       const t = await pagina("tutorial-" + Date.now() + "@prueba.mx");
       await nuevoTour(t, "Tutorial"); await irCapas(t);
