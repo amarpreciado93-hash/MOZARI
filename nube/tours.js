@@ -25,6 +25,8 @@ export default {
 
     // Íconos de la pestaña (los mismos de Mozari)
     if (segs.length === 1 && /^(favicon\.(ico|svg)|apple-touch-icon\.png|icon-(192|512)\.png|og\.jpg)$/.test(id)) return env.ASSETS.fetch(request);
+    // Librerías del visor (la esfera 360, etc.): se sirven desde Mozari mismo, sin depender de otro servidor
+    if (id === "lib" && segs.length === 2 && /^[a-z0-9.-]+\.js$/.test(segs[1])) return env.ASSETS.fetch(request);
     if (!id || !ID_TOUR.test(id)) return new Response(INICIO, { status: id ? 404 : 200, headers: { "content-type": "text/html; charset=utf-8" } });
     if (segs.length === 1) return Response.redirect(url.origin + "/" + id + "/" + url.search, 301);
 

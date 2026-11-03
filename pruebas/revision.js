@@ -59,12 +59,9 @@ async function pagina(correo, opciones = {}) {
   p.errs = [];
   p.on("pageerror", (e) => p.errs.push(e.message));
   p.on("dialog", (d) => d.accept());
-  await p.route("**/marzipano.js", (r) => r.fulfill({ path: LIB.marzipano, contentType: "application/javascript" }));
-  await p.route("**/d3.min.js", (r) => r.fulfill({ path: LIB.d3, contentType: "application/javascript" }));
-  await p.route("**/fflate@*/umd/index.js", (r) => r.fulfill({ path: LIB.fflate, contentType: "application/javascript" }));
-  await p.route("**/xlsx.full.min.js", (r) => r.fulfill({ path: LIB.xlsx, contentType: "application/javascript" }));
-  await p.route("**/qrcode-generator@*/qrcode.js", (r) => r.fulfill({ path: LIB.qr, contentType: "application/javascript" }));
+  // Las librerías (esfera 360, etc.) las sirve Mozari mismo desde /lib: aquí no se interceptan
   await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  await p.route(/cdn\.jsdelivr\.net|unpkg\.com|cdnjs\.cloudflare\.com/, (r) => r.abort()); // si algo aún los pidiera, la prueba falla
   if (correo) { await p.goto(ESTUDIO + "/entrar?dev=" + encodeURIComponent(correo)); await p.waitForTimeout(2500); await cerrarAnuncio(p); }
   return p;
 }
@@ -276,6 +273,10 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       const zip = require(LIB.fflate).unzipSync(new Uint8Array(fs.readFileSync(destino)));
       const nombres = Object.keys(zip);
       exige(nombres.some((n) => n.endsWith("/index.html")) && nombres.some((n) => n.endsWith("/proyecto.json")) && nombres.some((n) => n.includes("/escenas/")), "el zip está incompleto");
+      // El tour descargado lleva sus librerías: no depende de jsDelivr ni de ningún otro servidor
+      exige(nombres.some((n) => n.endsWith("/lib/marzipano.js")) && nombres.some((n) => n.endsWith("/lib/d3.min.js")), "el zip no trae las librerías del visor");
+      const ix = new TextDecoder().decode(zip[nombres.find((n) => n.endsWith("/index.html"))]);
+      exige(ix.includes('src="lib/marzipano.js"') && !/cdn\.jsdelivr|unpkg\.com|cdnjs/.test(ix), "el index.html del zip todavía pide librerías a otro servidor");
     }, a);
     await paso("Compartir: link, código para insertar y QR que se lee", async () => {
       await a.click('#subtabs button:has-text("Compartir")'); await a.waitForTimeout(1500);

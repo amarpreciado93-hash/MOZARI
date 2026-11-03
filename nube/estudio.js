@@ -526,8 +526,10 @@ async function api(request, env, partes, yo) {
       .on('meta[property="og:description"]', pon(desc)).on('meta[name="description"]', pon(desc))
       .on('meta[property^="og:image"]', quita).on('meta[name="twitter:image"]', quita).on('meta[property="og:url"]', quita)
       .on('link[href^="/"]', { element: (el) => el.setAttribute("href", "https://mozari.app" + el.getAttribute("href")) })
+      // Las librerías viajan dentro del .zip, junto al index.html
+      .on('script[src^="/lib/"]', { element: (el) => el.setAttribute("src", el.getAttribute("src").slice(1)) })
       .transform(pagina).text();
-    return json({ nombre, html, proyecto: p, archivos, bytes: archivos.reduce((s, a) => s + a.bytes, 0) });
+    return json({ nombre, html, proyecto: p, archivos, librerias: ["lib/marzipano.js", "lib/d3.min.js"], bytes: archivos.reduce((s, a) => s + a.bytes, 0) });
   }
 
   if (partes[3] === "estadisticas" && partes.length === 4 && m === "GET") {

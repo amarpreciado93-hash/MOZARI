@@ -1639,8 +1639,8 @@
   <path id="iso" fill="currentColor" d="M89.0 540.5C52.3 536.4 19.8 511.8 6.5 478.0C3.5 470.4 0.1 453.0 0.0 445.0C-0.0 433.4 3.9 416.1 9.1 404.8C16.2 389.1 28.5 373.6 41.3 363.9C49.0 358.1 67.1 349.3 76.9 346.6C119.8 334.8 165.9 351.4 189.1 387.0C200.5 404.5 204.4 418.2 204.4 440.5C204.4 452.5 204.0 456.5 202.1 463.5C199.5 473.0 191.9 489.9 186.9 497.2C178.2 509.8 162.1 523.5 147.1 531.0C131.2 538.9 108.4 542.7 89.0 540.5ZM454.4 538.9C437.0 536.0 419.2 528.3 404.2 517.3C386.4 504.2 371.5 484.7 362.5 462.7C358.1 451.9 356.9 448.0 348.4 417.0C337.4 377.0 323.2 351.4 299.2 328.4C276.3 306.3 245.6 291.3 206.0 282.5C174.5 275.6 166.3 273.2 154.5 267.3C131.4 255.6 114.6 239.4 104.4 218.9C97.5 204.9 94.9 194.6 94.3 178.5C93.8 166.5 94.1 163.7 96.3 153.7C100.7 134.5 107.8 121.3 121.4 106.9C150.6 75.9 196.1 65.4 237.3 80.1C261.2 88.7 282.6 105.7 297.4 128.1C305.7 140.4 309.9 149.9 318.5 175.8C334.3 223.5 346.9 246.4 369.5 269.0C382.6 282.1 394.0 290.6 411.2 300.2C428.3 309.8 441.1 314.7 484.5 328.5C525.8 341.6 551.4 361.5 566.2 392.0C585.4 431.8 577.9 477.9 547.1 508.6C522.5 533.0 487.6 544.5 454.4 538.9ZM515.3 243.4C499.8 241.6 481.7 233.4 469.2 222.6C455.3 210.5 445.5 194.6 440.9 176.5C438.6 167.5 439.1 145.7 441.8 136.2C450.7 104.9 473.3 82.7 504.8 74.3C515.7 71.5 536.3 71.5 547.2 74.3C579.3 82.9 603.7 108.1 610.6 139.7C612.6 148.7 612.8 167.1 611.1 174.5C608.4 186.2 602.7 199.3 596.7 208.0C592.8 213.6 581.5 224.7 575.6 228.7C558.7 240.3 535.7 245.9 515.3 243.4Z"/>
 </defs></svg>
 
-<script src="https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="/lib/marzipano.js"></script>
+<script src="/lib/d3.min.js"></script>
 <script>
 (async function () {
   "use strict";
@@ -2338,7 +2338,7 @@
   // El link, el código para insertar el tour en cualquier sitio web y un QR listo para imprimir.
   const COMP = { modo: "resp", alto: 600, color: "#111111", texto: "Escanea y recorre el tour 360°", logo: true };
   let libQr = null;
-  const cargarQr = () => libQr || (libQr = new Promise((ok, mal) => { const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"; sc.onload = () => ok(window.qrcode); sc.onerror = () => { libQr = null; mal(new Error("qr")); }; document.head.appendChild(sc); }));
+  const cargarQr = () => libQr || (libQr = new Promise((ok, mal) => { const sc = document.createElement("script"); sc.src = "/lib/qrcode.js"; sc.onload = () => ok(window.qrcode); sc.onerror = () => { libQr = null; mal(new Error("qr")); }; document.head.appendChild(sc); }));
   const linkCon = (origen) => linkTour() + "?utm_source=" + origen;
   const logoMarca = () => { const sk = est.skin || {}, f = P().ficha || {}; return sk.logo && sk.logo.tipo === "propio" && sk.logo.img ? sk.logo.img : f.logo === "propio" && f.logoImg ? f.logoImg : ""; };
   // Contraste contra blanco: abajo de 4.5 el QR puede no leerse impreso
@@ -2630,7 +2630,7 @@
   // El servidor da la página y la lista de archivos; aquí se baja cada uno y se arma el .zip
   // (sin comprimir: las fotos ya vienen comprimidas). En Chrome y Edge se escribe directo al disco.
   let libZip = null;
-  const cargarZip = () => libZip || (libZip = new Promise((ok, mal) => { const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"; sc.onload = () => ok(window.fflate); sc.onerror = () => { libZip = null; mal(new Error("zip")); }; document.head.appendChild(sc); }));
+  const cargarZip = () => libZip || (libZip = new Promise((ok, mal) => { const sc = document.createElement("script"); sc.src = "/lib/fflate.js"; sc.onload = () => ok(window.fflate); sc.onerror = () => { libZip = null; mal(new Error("zip")); }; document.head.appendChild(sc); }));
   const LEEME_ZIP = (nombre, carpeta) => [
     nombre, "Recorrido virtual 360 hecho con Mozari (mozari.app)", "",
     "CÓMO SUBIRLO A TU HOSTING", "",
@@ -2679,6 +2679,8 @@
     const meter = (ruta, datos) => { const f = new fflate.ZipPassThrough(carpeta + "/" + ruta); zip.add(f); f.push(datos, true); };
     const bytes = (t) => new TextEncoder().encode(t);
     meter("index.html", bytes(d.html));
+    // Las librerías del visor van dentro de la carpeta: el tour no depende de ningún otro servidor
+    for (const l of d.librerias || []) { const r = await fetch("/" + l).catch(() => null); if (!r || !r.ok) { fin("No se pudo preparar la descarga. Revisa tu internet."); return; } meter(l, new Uint8Array(await r.arrayBuffer())); }
     meter("proyecto.json", bytes(JSON.stringify(d.proyecto)));
     meter("LEEME.txt", bytes(LEEME_ZIP(d.nombre, carpeta)));
     // Se bajan varios a la vez, pero entran al .zip en orden
@@ -6650,7 +6652,7 @@ void main(){
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   });
   let libXlsx = null;
-  const cargarXlsx = () => libXlsx || (libXlsx = new Promise((ok, mal) => { const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"; sc.onload = () => ok(window.XLSX); sc.onerror = () => { libXlsx = null; mal(new Error("No se pudo cargar el lector de Excel")); }; document.head.appendChild(sc); }));
+  const cargarXlsx = () => libXlsx || (libXlsx = new Promise((ok, mal) => { const sc = document.createElement("script"); sc.src = "/lib/xlsx.full.min.js"; sc.onload = () => ok(window.XLSX); sc.onerror = () => { libXlsx = null; mal(new Error("No se pudo cargar el lector de Excel")); }; document.head.appendChild(sc); }));
   function filasCSV(txt) {
     const sep = (txt.split("\n")[0].match(/\t/g) || []).length ? "\t" : (txt.split("\n")[0].match(/;/g) || []).length > (txt.split("\n")[0].match(/,/g) || []).length ? ";" : ",";
     const out = []; let fila = [], campo = "", comillas = false;
