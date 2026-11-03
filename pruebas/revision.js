@@ -443,6 +443,26 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await n.context().close();
     }, a);
 
+    // Pedido de Amar (nov 2026): los lados de la manzana (de la calle de enfrente a la de atrás) aceptan puntos, para terrenos con relieve
+    await paso("Los lados de la manzana aceptan puntos en medio y los lotes los siguen", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Lados con relieve");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800);
+      await dibujarManzana(n, [[500, 640], [740, 625], [980, 640]], [[480, 820], [1000, 820]]);
+      await n.click('#lista li:has-text("Manzana 1")'); await n.waitForTimeout(800);
+      const o = await n.evaluate(() => { const e = [...document.querySelectorAll(".capas")].find((x) => x.getClientRects().length && x.getBoundingClientRect().width > 300); const b = e.getBoundingClientRect(); return [b.x, b.y]; });
+      const mas = (await n.$$eval("circle.mz-mas", (l) => l.map((e) => [+e.getAttribute("cx"), +e.getAttribute("cy")]))).map(([x, y]) => [x + o[0], y + o[1]]);
+      const izq = mas.sort((a, b) => Math.hypot(a[0] - 490, a[1] - 730) - Math.hypot(b[0] - 490, b[1] - 730))[0];
+      exige(izq && Math.hypot(izq[0] - 490, izq[1] - 730) < 60, "no hay «+» en el lado de la manzana");
+      await n.mouse.move(izq[0], izq[1]); await n.mouse.down(); for (let k = 1; k <= 8; k++) await n.mouse.move(izq[0] - k * 8, izq[1]); await n.mouse.up();
+      await n.waitForTimeout(3000);
+      const id = await idTour(n), d = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      const todo = Object.values(d.capas).flat(), m = todo.find((c) => c.manzana), l1 = todo.find((c) => c.deManzana === m.id && c.iManzana === 0);
+      exige(m.manzana.lados && (m.manzana.lados.a || []).length === 1, "el punto del lado no se guardó");
+      exige(l1 && l1.puntos.some((p) => Math.abs(p[0] - m.manzana.lados.a[0][0]) < 1e-4 && Math.abs(p[1] - m.manzana.lados.a[0][1]) < 1e-4), "el lote de la orilla no sigue el punto del lado");
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await n.context().close();
+    }, a);
+
     // 5. Los errores de JavaScript de todas las páginas
     await paso("Sin errores de JavaScript en el estudio", async () => { exige(!a.errs.length && !g.errs.length, (a.errs.concat(g.errs)).join(" | ").slice(0, 200)); });
     await navegador.close();

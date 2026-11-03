@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-03T18:32:48.162Z",
- "bien": 29,
- "total": 29,
+ "fecha": "2026-11-03T20:26:19.927Z",
+ "bien": 30,
+ "total": 30,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -113,6 +113,10 @@
   },
   {
    "nombre": "Manzana dibujada bajo el dron (mirando hacia abajo): lotes derechos, sin cruzarse",
+   "ok": true
+  },
+  {
+   "nombre": "Los lados de la manzana aceptan puntos en medio y los lotes los siguen",
    "ok": true
   },
   {

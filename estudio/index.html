@@ -1887,6 +1887,21 @@
     }
     return { pts: out, F: nF };
   }
+  // Contorno completo de una manzana: frente, lado derecho (con sus puntos), fondo y lado izquierdo.
+  // Los lados pueden doblarse con puntos en medio (terrenos con relieve): manzana.lados = { a: [...], b: [...] }
+  function contornoManzana(c) {
+    const D = contornoCurvo(c.puntos, c.manzana.nFrente), L = c.manzana.lados || {};
+    const a = Array.isArray(L.a) ? L.a : [], b = Array.isArray(L.b) ? L.b : [];
+    if (!a.length && !b.length) return D.pts;
+    return D.pts.slice(0, D.F).concat(b, D.pts.slice(D.F), a.slice().reverse());
+  }
+  // Los nodos de una línea de la manzana: k = 0 es el lado izquierdo, k = n el derecho, en medio los cortes
+  function mediosDe(m, k, crear) {
+    if (k === 0 || k === m.n) { const lado = k === 0 ? "a" : "b"; if (crear) { m.lados = m.lados || {}; m.lados[lado] = m.lados[lado] || []; } return m.lados && m.lados[lado]; }
+    const x = m.cortes && m.cortes[k - 1]; if (!x) return null;
+    if (crear) x.medios = x.medios || [];
+    return x.medios;
+  }
   function mulM(A, B) { const C = []; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) C[i * 3 + j] = A[i * 3] * B[j] + A[i * 3 + 1] * B[3 + j] + A[i * 3 + 2] * B[6 + j]; return C; }
   function invM(m) {
     const [a, b, c, d, e, f, g, h, i] = m, A = e * i - f * h, B = -(d * i - f * g), C = d * h - e * g, det = a * A + b * B + c * C;
@@ -3991,7 +4006,7 @@
         if (c.tipo === "poligono") {
           const enCam = c.puntos.map(([y, p]) => aCamara(cam, y, p));
           const cerrado = !c.camino;
-          const curva = c.manzana ? contornoCurvo(c.puntos, c.manzana.nFrente).pts : c.puntos;
+          const curva = c.manzana ? contornoManzana(c) : c.puntos;
           const rec = recortar(curva === c.puntos ? enCam : curva.map(([y, p]) => aCamara(cam, y, p)), cerrado);
           const d = rec.length < (cerrado ? 3 : 2) ? "" : trazo(cam, rec, cerrado);
           n.path.setAttribute("d", d);
@@ -5618,7 +5633,7 @@ void main(){
     const tf = [0].concat(m.cortes.map((x) => x.f), [1]), tb = [0].concat(m.cortes.map((x) => x.b), [1]);
     // Cada corte es una línea del frente al fondo; puede tener nodos en medio (terrenos chuecos)
     const md0 = Math.max(0.15, Math.min(0.85, +m.medio || 0.5));
-    const camino = (k) => [enCadena(fr, tf[k])].concat(k > 0 && k < n ? (m.cortes[k - 1].medios || []).map((p) => p.slice()) : [], [enCadena(fo, tb[k])]);
+    const camino = (k) => [enCadena(fr, tf[k])].concat((mediosDe(m, k) || []).map((p) => p.slice()), [enCadena(fo, tb[k])]);
     const corteEn = (k, frac) => { // punto a una fracción del largo del corte (en el suelo) y en qué tramo cae
       const P = camino(k), G = P.map(([y, p]) => aPlano(y, p));
       if (G.some((g) => !g)) { const a = P[0], b = P[P.length - 1]; let dy = b[0] - a[0]; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI; return { pt: [a[0] + dy * frac, a[1] + (b[1] - a[1]) * frac], i: 1, P }; }
@@ -5699,6 +5714,12 @@ void main(){
       for (let j = 0; j < P.length - 1; j++) asas.push({ tipo: "mas", que: "corte", k, j, pt: mitad(P[j], P[j + 1]) });
     }
     if (g.atras) g.atras.forEach((ln, j) => { lineas.push(ln); asas.push({ tipo: "atras", lado: "m", j, pt: ln[0] }, { tipo: "atras", lado: "b", j, pt: ln[1] }); });
+    // Los dos lados de la manzana (de la calle de enfrente a la de atrás) también aceptan puntos en medio: terrenos con relieve
+    for (const k of [0, n]) {
+      const P = g.camino(k);
+      P.slice(1, -1).forEach((pt, j) => asas.push({ tipo: "nodo", k, j, pt }));
+      for (let j = 0; j < P.length - 1; j++) asas.push({ tipo: "mas", que: "corte", k, j, pt: mitad(P[j], P[j + 1]) });
+    }
     for (let i = 0; i < c.puntos.length - 1; i++) { if (i === F - 1) continue; asas.push({ tipo: "mas", que: "borde", i, pt: mitad(c.puntos[i], c.puntos[i + 1]) }); }
     // Laboratorio · curvas: cada punto de la orilla tiene dos manijas (la pluma); arrastrar una dobla la orilla
     if (enLab("manzana-curvas")) for (let i = 0; i < c.puntos.length; i++) {
@@ -5744,7 +5765,7 @@ void main(){
   function tomarAsaManzana(c, h) {
     const m = c.manzana;
     if (h.tipo !== "mas") return h;
-    if (h.que === "corte") { const x = m.cortes[h.k - 1]; x.medios = x.medios || []; x.medios.splice(h.j, 0, h.pt.slice()); repartirManzana(c); return { tipo: "nodo", k: h.k, j: h.j }; }
+    if (h.que === "corte") { const md = mediosDe(m, h.k, true); if (!md) return h; md.splice(h.j, 0, h.pt.map((v) => +v.toFixed(5))); repartirManzana(c); return { tipo: "nodo", k: h.k, j: h.j }; }
     c.puntos.splice(h.i + 1, 0, h.pt.map((v) => +v.toFixed(5)));
     if (h.i < m.nFrente - 1) m.nFrente++;
     repartirManzana(c);
@@ -5752,7 +5773,7 @@ void main(){
   }
   function moverAsaManzana(c, h, k) {
     const m = c.manzana, g = geoManzana.get(c);
-    if (h.tipo === "nodo") { const x = m.cortes[h.k - 1]; if (x && x.medios && x.medios[h.j]) x.medios[h.j] = [+k.yaw.toFixed(5), +k.pitch.toFixed(5)]; }
+    if (h.tipo === "nodo") { const md = mediosDe(m, h.k); if (md && md[h.j]) md[h.j] = [+k.yaw.toFixed(5), +k.pitch.toFixed(5)]; }
     else if (h.tipo === "borde") c.puntos[h.i] = [+k.yaw.toFixed(5), +k.pitch.toFixed(5)].concat(c.puntos[h.i].slice(2));
     else if (h.tipo === "curva") {
       const p = c.puntos[h.i], q = aPlano(p[0], p[1]), r = aPlano(k.yaw, k.pitch); if (!q || !r) return;
@@ -5778,7 +5799,7 @@ void main(){
     repartirManzana(c);
   }
   function quitarAsaManzana(c, h) {
-    if (h.tipo === "nodo") { const x = c.manzana.cortes[h.k - 1]; if (x && x.medios) x.medios.splice(h.j, 1); repartirManzana(c); }
+    if (h.tipo === "nodo") { const md = mediosDe(c.manzana, h.k); if (md) md.splice(h.j, 1); repartirManzana(c); }
     if (h.tipo === "curva") { const p = c.puntos[h.i]; c.puntos[h.i] = (p[4] ? [p[0], p[1], 0, 0, p[4]] : p.slice(0, 2)); repartirManzana(c); } // doble clic en una manija: ese punto vuelve a ser esquina
     if (h.tipo === "radio") { const p = c.puntos[h.i]; c.puntos[h.i] = (p[2] || p[3] ? p.slice(0, 4) : p.slice(0, 2)); repartirManzana(c); } // doble clic: esquina recta otra vez
   }
@@ -5820,7 +5841,8 @@ void main(){
     if (ev.target.closest("[data-mz-parejo]")) {
       // Manzanas que se crearon con el fondo volteado (lotes cruzados): se enderezan, si su fondo no tiene curvas
       const F = c.manzana.nFrente, fr = c.puntos.slice(0, F), atras = c.puntos.slice(F);
-      if (!mismoSentido(fr, atras.slice().reverse()) && !atras.some((p) => p[2] || p[3])) c.puntos = fr.concat(atras.reverse());
+      const conLados = c.manzana.lados && ((c.manzana.lados.a || []).length || (c.manzana.lados.b || []).length);
+      if (!mismoSentido(fr, atras.slice().reverse()) && !atras.some((p) => p[2] || p[3]) && !conLados) c.puntos = fr.concat(atras.reverse());
       repartirManzana(c, true); cambio(); avisar("Lotes repartidos parejo");
     }
     const nb = ev.target.closest("[data-mz-nb]");
@@ -6139,7 +6161,7 @@ void main(){
           campo("Desfase de atrás " + CHIP_LAB, campoRango("_mzDesfase", +m.desfase || 0, -0.45, 0.45, 0.01, (v) => Math.round(v * 100) + "%")) : "") +
         '<div class="orden"><button class="mini" data-mz-parejo>Repartir parejo</button></div>' +
         '<p class="nota">Los lotes se reparten del mismo ancho en el suelo, no en la imagen. Arrastra las esquinas de la manzana para ajustarla: los ' + lotes.length + ' lotes la siguen. Doble clic en una esquina la quita.</p>' +
-        '<p class="nota"><b>Ajuste fino:</b> los puntos verdes recorren cada división por el frente o el fondo. Los <b>+</b> agregan un nodo para doblar una división o la orilla; arrástralo. Doble clic en un nodo blanco lo quita.</p></div>' +
+        '<p class="nota"><b>Ajuste fino:</b> los puntos verdes recorren cada división por el frente o el fondo. Los <b>+</b> agregan un nodo para doblar una división, la orilla o los lados (terrenos con relieve); arrástralo. Doble clic en un nodo blanco lo quita.</p></div>' +
         (enLab("manzana-curvas") ? '<div class="grupo"><b>Curvas y esquinas ' + CHIP_LAB + '</b><p class="nota"><b style="color:#FF2D55">● Rojas:</b> manijas de curva, como la pluma de Illustrator. Arrástralas para curvar la calle; los lotes la siguen.</p>' +
           '<p class="nota"><b style="color:#FF2D55">○ Aros rojos:</b> en cada esquina. Jálalo hacia adentro para redondear la esquina, como la banqueta en una bocacalle.</p><p class="nota">Doble clic en una manija o un aro lo quita. Para una curva más fina, agrega puntos con los <b>+</b>.</p>' +
           '<div class="orden"><button class="mini" data-mz-suave>Suavizar toda la orilla</button><button class="mini" data-mz-esquinas>Redondear las 4 esquinas</button><button class="mini" data-mz-recto>Quitar curvas</button></div></div>' : "");
