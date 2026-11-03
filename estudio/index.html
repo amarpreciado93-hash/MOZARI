@@ -970,6 +970,7 @@
   .mz-asa { pointer-events: all; cursor: grab; stroke: var(--mz-negro); stroke-width: 1.5; filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6)); }
   .mz-asa.corte { fill: var(--mz-lima); }
   .mz-asa.nodo { fill: #fff; }
+  .mz-asa.centro { fill: #fff; stroke: var(--mz-lima); stroke-width: 3; }
   /* Herramientas de curva (Laboratorio): en rojo para no confundirlas con los puntos del polígono */
   .mz-asa.curva { fill: #FF2D55; stroke: #fff; stroke-width: 2; }
   .mz-asa.radio { fill: #fff; stroke: #FF2D55; stroke-width: 3; }
@@ -4078,7 +4079,7 @@
               extra.appendChild(g); return;
             }
             const e = document.createElementNS(SVGNS, "circle");
-            e.setAttribute("class", "mz-asa " + (h.tipo === "nodo" ? "nodo" : h.tipo === "curva" || h.tipo === "radio" ? h.tipo + (h.nueva ? " nueva" : "") : "corte")); e.setAttribute("data-x", i);
+            e.setAttribute("class", "mz-asa " + (h.tipo === "nodo" ? "nodo" : h.tipo === "centro" ? "centro" : h.tipo === "curva" || h.tipo === "radio" ? h.tipo + (h.nueva ? " nueva" : "") : "corte")); e.setAttribute("data-x", i);
             e.setAttribute("cx", p.x.toFixed(1)); e.setAttribute("cy", p.y.toFixed(1)); e.setAttribute("r", h.tipo === "nodo" ? 5 : h.tipo === "curva" ? 5 : h.tipo === "radio" ? 5.5 : 6.5);
             extra.appendChild(e);
           });
@@ -5645,6 +5646,8 @@ void main(){
     const tf = [0].concat(m.cortes.map((x) => x.f), [1]), tb = [0].concat(m.cortes.map((x) => x.b), [1]);
     // Cada corte es una línea del frente al fondo; puede tener nodos en medio (terrenos chuecos)
     const md0 = Math.max(0.15, Math.min(0.85, +m.medio || 0.5));
+    // Línea del centro (manzana doble): la barra la mueve completa; cada punto se puede mover aparte (manzana.centro[k])
+    const mdK = (k) => { const v = Array.isArray(m.centro) && m.centro.length === n + 1 ? +m.centro[k] : NaN; return isFinite(v) && v > 0 ? Math.max(0.08, Math.min(0.92, v)) : md0; };
     const camino = (k) => [enCadena(fr, tf[k])].concat((mediosDe(m, k) || []).map((p) => p.slice()), [enCadena(fo, tb[k])]);
     const corteEn = (k, frac) => { // punto a una fracción del largo del corte (en el suelo) y en qué tramo cae
       const P = camino(k), G = P.map(([y, p]) => aPlano(y, p));
@@ -5654,14 +5657,14 @@ void main(){
       const u = (meta - L[i - 1]) / ((L[i] - L[i - 1]) || 1);
       return { pt: dePlano([G[i - 1][0] + (G[i][0] - G[i - 1][0]) * u, G[i - 1][1] + (G[i][1] - G[i - 1][1]) * u]), i, P };
     };
-    const geo = { fr, fo, tf, tb, camino, corteEn, md0 };
+    const geo = { fr, fo, tf, tb, camino, corteEn, md0, mdK };
     geoManzana.set(c, geo);
     const l = cs(), viejos = lotesDeManzana(c), red = (p) => [+p[0].toFixed(5), +p[1].toFixed(5)];
     // Doble: una línea al centro (a lo largo) parte cada corte; una fila da al frente y la otra al fondo
     const doble = !!m.doble;
     // Mitad de frente (hasta la línea del centro) y mitad de fondo de cada corte
-    const mitadFrente = (k) => { const r = corteEn(k, md0); return r.P.slice(1, r.i).concat([r.pt]); }; // sin el punto del frente
-    const mitadFondo = (k) => { const r = corteEn(k, md0); return [r.pt].concat(r.P.slice(r.i, r.P.length - 1)); }; // sin el del fondo
+    const mitadFrente = (k) => { const r = corteEn(k, mdK(k)); return r.P.slice(1, r.i).concat([r.pt]); }; // sin el punto del frente
+    const mitadFondo = (k) => { const r = corteEn(k, mdK(k)); return [r.pt].concat(r.P.slice(r.i, r.P.length - 1)); }; // sin el del fondo
     const sinPuntas = (k) => camino(k).slice(1, -1);
     const formas = [], inicio = +m.inicio || 1;
     for (let k = 0; k < n; k++) {
@@ -5672,7 +5675,7 @@ void main(){
     // Fila de atrás desfasada (Laboratorio): sus propios lotes, que no coinciden con los del frente
     const nB = Math.max(1, Math.min(60, +m.nB || n)), sB = Math.max(-0.45, Math.min(0.45, +m.desfase || 0));
     if (doble && (nB !== n || sB)) {
-      const mid = cadenaSuelo(Array.from({ length: n + 1 }, (_, k) => corteEn(k, md0).pt));
+      const mid = cadenaSuelo(Array.from({ length: n + 1 }, (_, k) => corteEn(k, mdK(k)).pt));
       const u = [0];
       for (let j = 1; j < nB; j++) u.push(Math.min(1, Math.max(u[j - 1] + 0.01, (j + sB) / nB)));
       u.push(1);
@@ -5716,7 +5719,7 @@ void main(){
     for (let k = 1; k < n; k++) {
       const P = g.camino(k);
       if (g.atras) { // fila de atrás propia: cada corte del frente llega solo a la línea del centro
-        const r = g.corteEn(k, g.md0); lineas.push(r.P.slice(0, r.i).concat([r.pt]));
+        const r = g.corteEn(k, g.mdK(k)); lineas.push(r.P.slice(0, r.i).concat([r.pt]));
         asas.push({ tipo: "corte", lado: "f", k, pt: P[0] });
         continue;
       }
@@ -5726,11 +5729,17 @@ void main(){
       for (let j = 0; j < P.length - 1; j++) asas.push({ tipo: "mas", que: "corte", k, j, pt: mitad(P[j], P[j + 1]) });
     }
     if (g.atras) g.atras.forEach((ln, j) => { lineas.push(ln); asas.push({ tipo: "atras", lado: "m", j, pt: ln[0] }, { tipo: "atras", lado: "b", j, pt: ln[1] }); });
+    // Manzana doble: un punto en cada cruce de la línea del centro; se arrastra para acercarla al frente o al fondo
+    if (m.doble) for (let k = 0; k <= n; k++) asas.push({ tipo: "centro", k, pt: g.corteEn(k, g.mdK(k)).pt });
     // Los dos lados de la manzana (de la calle de enfrente a la de atrás) también aceptan puntos en medio: terrenos con relieve
     for (const k of [0, n]) {
       const P = g.camino(k);
       P.slice(1, -1).forEach((pt, j) => asas.push({ tipo: "nodo", k, j, pt }));
-      for (let j = 0; j < P.length - 1; j++) asas.push({ tipo: "mas", que: "corte", k, j, pt: mitad(P[j], P[j + 1]) });
+      for (let j = 0; j < P.length - 1; j++) {
+        // En la manzana doble el centro del lado ya tiene su punto de la línea del centro: el "+" va a un cuarto y a tres cuartos
+        if (m.doble && P.length === 2) { const c0 = mitad(P[0], P[1]); asas.push({ tipo: "mas", que: "corte", k, j, pt: mitad(P[0], c0) }, { tipo: "mas", que: "corte", k, j, pt: mitad(c0, P[1]) }); }
+        else asas.push({ tipo: "mas", que: "corte", k, j, pt: mitad(P[j], P[j + 1]) });
+      }
     }
     for (let i = 0; i < c.puntos.length - 1; i++) { if (i === F - 1) continue; asas.push({ tipo: "mas", que: "borde", i, pt: mitad(c.puntos[i], c.puntos[i + 1]) }); }
     // Laboratorio · curvas: cada punto de la orilla tiene dos manijas (la pluma); arrastrar una dobla la orilla
@@ -5786,6 +5795,11 @@ void main(){
   function moverAsaManzana(c, h, k) {
     const m = c.manzana, g = geoManzana.get(c);
     if (h.tipo === "nodo") { const md = mediosDe(m, h.k); if (md && md[h.j]) md[h.j] = [+k.yaw.toFixed(5), +k.pitch.toFixed(5)]; }
+    else if (h.tipo === "centro" && g) { // el punto corre a lo largo de su corte, del frente al fondo
+      const t = paramCadena(cadenaSuelo(g.camino(h.k)), k); if (t === null) return;
+      if (!Array.isArray(m.centro) || m.centro.length !== m.n + 1) m.centro = Array.from({ length: m.n + 1 }, (_, i) => +g.mdK(i).toFixed(4));
+      m.centro[h.k] = +Math.max(0.08, Math.min(0.92, t)).toFixed(4);
+    }
     else if (h.tipo === "borde") c.puntos[h.i] = [+k.yaw.toFixed(5), +k.pitch.toFixed(5)].concat(c.puntos[h.i].slice(2));
     else if (h.tipo === "curva") {
       const p = c.puntos[h.i], q = aPlano(p[0], p[1]), r = aPlano(k.yaw, k.pitch); if (!q || !r) return;
@@ -5812,6 +5826,7 @@ void main(){
   }
   function quitarAsaManzana(c, h) {
     if (h.tipo === "nodo") { const md = mediosDe(c.manzana, h.k); if (md) md.splice(h.j, 1); repartirManzana(c); }
+    if (h.tipo === "centro" && Array.isArray(c.manzana.centro)) { c.manzana.centro[h.k] = 0; repartirManzana(c); } // doble clic: ese punto vuelve a la barra
     if (h.tipo === "curva") { const p = c.puntos[h.i]; c.puntos[h.i] = (p[4] ? [p[0], p[1], 0, 0, p[4]] : p.slice(0, 2)); repartirManzana(c); } // doble clic en una manija: ese punto vuelve a ser esquina
     if (h.tipo === "radio") { const p = c.puntos[h.i]; c.puntos[h.i] = (p[2] || p[3] ? p.slice(0, 4) : p.slice(0, 2)); repartirManzana(c); } // doble clic: esquina recta otra vez
   }
@@ -5888,7 +5903,7 @@ void main(){
     if (!ev.target.dataset || ev.target.dataset.k !== "_mzMedio") return;
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.manzana) return;
     ev.stopImmediatePropagation();
-    c.manzana.medio = +ev.target.value; repartirManzana(c); motorEd.render();
+    c.manzana.medio = +ev.target.value; c.manzana.centro = null; repartirManzana(c); motorEd.render();
     const etq = document.querySelector('[data-v-de="_mzMedio"]'); if (etq) etq.textContent = Math.round(c.manzana.medio * 100) + "%";
   }, true);
   $("props").addEventListener("change", (ev) => {
@@ -6166,7 +6181,7 @@ void main(){
         (gemela ? '<p class="nota" style="color:#F2A900">Hay otra ' + esc(terminos().manzana.toLowerCase()) + ' ' + esc(m.mz) + ' en esta esfera. Ponle otro número para que sus lotes no se confundan.</p>' : "") +
         campo("Manzana", '<input type="text" data-mz="mz" value="' + esc(m.mz) + '" placeholder="3">') +
         interruptor("Doble: lotes por los dos lados", "_mzDoble", !!m.doble) +
-        (m.doble ? campo("Línea del centro", campoRango("_mzMedio", +m.medio || 0.5, 0.15, 0.85, 0.01, pct)) : "") +
+        (m.doble ? campo("Línea del centro", campoRango("_mzMedio", +m.medio || 0.5, 0.15, 0.85, 0.01, pct)) + '<p class="nota">La barra mueve toda la línea del centro. Para moverla por partes, arrastra sus puntos blancos con borde verde sobre la esfera; doble clic regresa ese punto a la barra.</p>' : "") +
         campo(m.doble ? "Lotes por fila" : "Lotes", '<div class="mz-n"><button data-mz-n="-1" aria-label="Un lote menos">−</button><input type="text" inputmode="numeric" data-mz="n" value="' + m.n + '"><button data-mz-n="1" aria-label="Un lote más">+</button></div>') +
         campo("Primer número", '<input type="text" inputmode="numeric" data-mz="inicio" value="' + m.inicio + '">') +
         (m.doble && enLab("manzana-desfase") ? campo("Lotes de atrás " + CHIP_LAB, '<div class="mz-n"><button data-mz-nb="-1" aria-label="Un lote menos atrás">−</button><input type="text" inputmode="numeric" data-mz="nB" value="' + (+m.nB || m.n) + '"><button data-mz-nb="1" aria-label="Un lote más atrás">+</button></div>') +

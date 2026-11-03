@@ -463,6 +463,14 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       const todo = Object.values(d.capas).flat(), m = todo.find((c) => c.manzana), l1 = todo.find((c) => c.deManzana === m.id && c.iManzana === 0);
       exige(m.manzana.lados && (m.manzana.lados.a || []).length === 1, "el punto del lado no se guardó");
       exige(l1 && l1.puntos.some((p) => Math.abs(p[0] - m.manzana.lados.a[0][0]) < 1e-4 && Math.abs(p[1] - m.manzana.lados.a[0][1]) < 1e-4), "el lote de la orilla no sigue el punto del lado");
+      // Manzana doble: la línea del centro se mueve punto por punto
+      await n.check('[data-k="_mzDoble"]').catch(async () => { await n.click("text=Doble: lotes por los dos lados"); }); await n.waitForTimeout(1200);
+      const cen = (await n.$$eval("circle.mz-asa.centro", (l) => l.map((e) => [+e.getAttribute("cx"), +e.getAttribute("cy")]))).map(([x, y]) => [x + o[0], y + o[1]]).sort((p, q) => q[0] - p[0]);
+      exige(cen.length >= 3, "la manzana doble no muestra los puntos de la línea del centro");
+      await n.mouse.move(cen[1][0], cen[1][1]); await n.mouse.down(); for (let k = 1; k <= 8; k++) await n.mouse.move(cen[1][0], cen[1][1] - k * 3); await n.mouse.up();
+      await n.waitForTimeout(3000);
+      const d2 = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id), m2 = Object.values(d2.capas).flat().find((c) => c.manzana);
+      exige(Array.isArray(m2.manzana.centro) && m2.manzana.centro.some((v) => v && Math.abs(v - 0.5) > 0.05), "el punto de la línea del centro no se movió");
       exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
       await n.context().close();
     }, a);
