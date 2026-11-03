@@ -413,6 +413,35 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await a.evaluate((x) => fetch("api/admin/novedades/" + x, { method: "DELETE" }), id);
     });
 
+    // Reporte de un usuario (nov 2026): con el dron mirando hacia abajo, una manzana que empieza casi debajo
+    // de él salía con el fondo volteado (lotes cruzados en X, los cortes de atrás amontonados en una punta).
+    await paso("Manzana dibujada bajo el dron (mirando hacia abajo): lotes derechos, sin cruzarse", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Bajo el dron");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800);
+      const r = await n.evaluate(() => { const e = [...document.querySelectorAll(".capas")].find((x) => x.getClientRects().length && x.getBoundingClientRect().width > 300); const b = e.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
+      const [cx, cy] = r;
+      for (let i = 0; i < 4; i++) { await n.mouse.move(cx, cy + 250); await n.mouse.down(); for (let k = 1; k <= 10; k++) await n.mouse.move(cx, cy + 250 - k * 50); await n.mouse.up(); await n.waitForTimeout(300); }
+      await n.waitForTimeout(800);
+      await dibujarManzana(n, [[cx + 6, cy + 6], [cx + 6, cy + 220]], [[cx + 200, cy + 6], [cx + 200, cy + 220]]);
+      await n.waitForTimeout(2500);
+      const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      const derecha = (m) => m.manzana.cortes.every((k) => Math.abs(k.b - k.f) < 0.12);
+      let d = await leer(), m = Object.values(d.capas).flat().find((c) => c.manzana);
+      exige(m && derecha(m), "los lotes salen cruzados: " + JSON.stringify(m && m.manzana.cortes.map((k) => [+k.f.toFixed(2), +k.b.toFixed(2)])));
+      // Una manzana que ya quedó volteada se endereza con «Repartir parejo»
+      const F = m.manzana.nFrente; m.puntos = m.puntos.slice(0, F).concat(m.puntos.slice(F).reverse());
+      await n.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }), [id, d]);
+      await n.reload(); await n.waitForTimeout(3500); await cerrarGuia(n);
+      await n.click('#nav button:has-text("Panoramas")'); await n.waitForTimeout(800);
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1500); await cerrarGuia(n);
+      await n.click('#lista li:has-text("Manzana 1")'); await n.waitForTimeout(500);
+      await n.click("[data-mz-parejo]"); await n.waitForTimeout(2500);
+      d = await leer(); m = Object.values(d.capas).flat().find((c) => c.manzana);
+      exige(derecha(m), "«Repartir parejo» no enderezó una manzana volteada");
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await n.context().close();
+    }, a);
+
     // 5. Los errores de JavaScript de todas las páginas
     await paso("Sin errores de JavaScript en el estudio", async () => { exige(!a.errs.length && !g.errs.length, (a.errs.concat(g.errs)).join(" | ").slice(0, 200)); });
     await navegador.close();

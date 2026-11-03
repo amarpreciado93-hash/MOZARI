@@ -5780,9 +5780,17 @@ void main(){
     if (h.tipo === "curva") { const p = c.puntos[h.i]; c.puntos[h.i] = (p[4] ? [p[0], p[1], 0, 0, p[4]] : p.slice(0, 2)); repartirManzana(c); } // doble clic en una manija: ese punto vuelve a ser esquina
     if (h.tipo === "radio") { const p = c.puntos[h.i]; c.puntos[h.i] = (p[2] || p[3] ? p.slice(0, 4) : p.slice(0, 2)); repartirManzana(c); } // doble clic: esquina recta otra vez
   }
-  function crearManzana(frente, fondo) {
+  // ¿El fondo va en el mismo sentido que el frente? Se mide en el suelo: con un dron mirando hacia abajo,
+  // un punto casi debajo de él tiene un "yaw" cualquiera y comparar en la imagen voltea el fondo (lotes cruzados).
+  function mismoSentido(frente, fondo) {
+    const ext = [frente[0], frente[frente.length - 1], fondo[0], fondo[fondo.length - 1]];
+    let P = ext.map(([y, p]) => aPlano(y, p));
+    if (P.some((q) => !q)) { const y0 = ext[0][0]; P = ext.map(([y, p]) => { let d = y - y0; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return [y0 + d, p]; }); }
     const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
-    if (d(frente[0], fondo[fondo.length - 1]) < d(frente[0], fondo[0])) fondo = fondo.slice().reverse(); // mismo sentido que el frente
+    return d(P[0], P[2]) + d(P[1], P[3]) <= d(P[0], P[3]) + d(P[1], P[2]);
+  }
+  function crearManzana(frente, fondo) {
+    if (!mismoSentido(frente, fondo)) fondo = fondo.slice().reverse(); // mismo sentido que el frente
     const sig = siguienteLote();
     // Cada manzana nueva lleva su propio número: si el último ya lo usa otra manzana, toma el siguiente libre
     const usadas = Object.values(est.capas).flat().filter((x) => x && x.manzana).map((x) => String(x.manzana.mz).trim().toLowerCase());
@@ -5807,7 +5815,12 @@ void main(){
     if (!c || !c.manzana) return;
     const b = ev.target.closest("[data-mz-n]");
     if (b) { c.manzana.n = Math.max(1, Math.min(60, c.manzana.n + +b.dataset.mzN)); c.manzana.cortes = null; cambio(); return; }
-    if (ev.target.closest("[data-mz-parejo]")) { repartirManzana(c, true); cambio(); avisar("Lotes repartidos parejo"); }
+    if (ev.target.closest("[data-mz-parejo]")) {
+      // Manzanas que se crearon con el fondo volteado (lotes cruzados): se enderezan, si su fondo no tiene curvas
+      const F = c.manzana.nFrente, fr = c.puntos.slice(0, F), atras = c.puntos.slice(F);
+      if (!mismoSentido(fr, atras.slice().reverse()) && !atras.some((p) => p[2] || p[3])) c.puntos = fr.concat(atras.reverse());
+      repartirManzana(c, true); cambio(); avisar("Lotes repartidos parejo");
+    }
     const nb = ev.target.closest("[data-mz-nb]");
     if (nb) { c.manzana.nB = Math.max(1, Math.min(60, (+c.manzana.nB || c.manzana.n) + +nb.dataset.mzNb)); cambio(); return; }
     if (ev.target.closest("[data-mz-suave]")) { // cada punto de en medio toma la dirección de sus vecinos (curva suave)
