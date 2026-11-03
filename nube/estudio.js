@@ -180,7 +180,11 @@ async function apiNovedades(request, env, partes, yo, plan) {
     return json({ novedades: ns });
   }
   if (!/^[a-z0-9]{6,20}$/.test(id || "")) return error(400, "Novedad inválida");
-  if (partes[3] === "media" && m === "GET") return servirR2(env, request, "novedades/" + id + ".media", "private, max-age=3600");
+  if (partes[3] === "media" && m === "GET") {
+    // Solo la imagen o el video de un anuncio ya publicado para esta cuenta (los borradores solo los ve el dueño)
+    if (!yo.admin) { const o = await env.R2.get("novedades/" + id + ".json"); const n = o ? await o.json().catch(() => null) : null; if (!n || !n.activa || !n.publicada || !paraQuien(n, plan)) return error(404, "No existe"); }
+    return servirR2(env, request, "novedades/" + id + ".media", "private, max-age=3600");
+  }
   if (partes[3] === "vista" && m === "POST") {
     const clave = "cuentas/" + yo.uid + "/perfil.json", o = await env.R2.get(clave); if (!o) return error(404, "Sin cuenta");
     const p = await o.json(); p.novedadesVistas = [...new Set([id].concat(p.novedadesVistas || []))].slice(0, 100);

@@ -1712,7 +1712,8 @@
   // Laboratorio: herramientas nuevas que solo ve quien las tiene activas (el dueño siempre; luego probadores o todos)
   const LAB = new Set(MODO === "nube" && Array.isArray(NUBE.lab) ? NUBE.lab : []);
   const enLab = (clave) => LAB.has(clave);
-  const CHIP_LAB = '<span class="chip-lab">LAB</span>';
+  // La etiqueta LAB solo la ves tú (el dueño): para tus usuarios, una función liberada es una función normal
+  const CHIP_LAB = MODO === "nube" && !NUBE.admin ? "" : '<span class="chip-lab">LAB</span>';
   const TOUR = MODO === "nube" ? (location.hash.match(/t=([a-z0-9-]+)/) || [])[1] || null : null;
   // Plan de la cuenta (el servidor es quien pone los límites; aquí solo se avisa a tiempo)
   const PLAN = MODO === "nube" && NUBE.plan ? NUBE.plan : null;

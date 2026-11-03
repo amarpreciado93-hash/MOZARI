@@ -337,6 +337,14 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(st === 403, "un usuario normal entró a la API del dueño (" + st + ")");
       const st2 = await g.evaluate((t) => fetch("api/admin/tours/" + t).then((r) => r.status), tour);
       exige(st2 === 403, "un usuario normal pudo leer el tour de otra cuenta (" + st2 + ")");
+      // Ninguna ruta del dueño responde a una cuenta normal, y no ve nada marcado LAB ni del panel
+      for (const r of ["cuentas", "cupones", "reportes", "laboratorio", "novedades", "respaldos"]) {
+        const x = await g.evaluate((r) => fetch("api/admin/" + r).then((y) => y.status), r);
+        exige(x === 403, "un usuario normal entró a api/admin/" + r + " (" + x + ")");
+      }
+      exige((await g.evaluate((t) => fetch("api/tours/" + t).then((y) => y.status), tour)) === 404, "un usuario normal pudo abrir el tour de otra cuenta");
+      exige(!(await g.$(".chip-lab")), "un usuario normal ve la etiqueta LAB");
+      exige(!(await g.$("#cuentas .cuentas-titulo")), "un usuario normal ve algo del Panel de dueño");
     }, g);
 
     await paso("Una cuenta se usa en 2 dispositivos; en el 3.º elige cuál cerrar", async () => {
