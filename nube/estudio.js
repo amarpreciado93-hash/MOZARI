@@ -29,6 +29,7 @@ import { rutasSesion, cuentaDe, perfil } from "./sesion.js";
 import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
 import { apiPagos, webhookMercadoPago, CODIGO, cuponClave } from "./pagos.js";
 import { EmailMessage } from "cloudflare:email";
+import { vigilarRespaldos, apiRespaldos } from "./respaldos.js";
 
 const MAX_PROYECTO = 8 * 1024 * 1024;   // 8 MB de JSON
 const MAX_ARCHIVO = 25 * 1024 * 1024;   // 25 MB por archivo
@@ -282,6 +283,7 @@ async function admin(request, env, partes) {
     if (partes[4] === "media" && m === "GET") return servirR2(env, request, "novedades/" + id + ".media", "private, max-age=60");
     return error(405, "Método no permitido");
   }
+  if (partes[2] === "respaldos") return apiRespaldos(request, env, partes);
   if (partes[2] === "laboratorio") {
     if (partes.length === 3 && m === "GET") {
       const cfg = await leerLab(env);
@@ -564,8 +566,12 @@ async function api(request, env, partes, yo) {
 
 const conAsset = (env, request, ruta) => env.ASSETS.fetch(new Request(new URL(ruta, request.url), { headers: request.headers }));
 
+// Una vez por copia del programa: si es una versión nueva de Mozari, respalda los datos antes de seguir
+let respaldoRevisado = false;
 export default {
-  async fetch(request, env) {
+  async scheduled(evento, env, ctx) { ctx.waitUntil(vigilarRespaldos(env)); },
+  async fetch(request, env, ctx) {
+    if (!respaldoRevisado && env.VERSION && ctx) { respaldoRevisado = true; ctx.waitUntil(vigilarRespaldos(env).catch(() => {})); }
     const url = new URL(request.url);
     const segs = url.pathname.replace(/^\/+/, "").split("/");
 

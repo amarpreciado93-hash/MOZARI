@@ -302,6 +302,18 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
 
     // 3. Plan Gratis
     const g = await pagina("gratis-" + Date.now() + "@prueba.mx");
+    await paso("Respaldos: se copian los proyectos y un tour dañado se puede regresar", async () => {
+      const api = (ruta, op) => a.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const r = await api("api/admin/respaldos", { method: "POST" });
+      exige(r.s === 200 && r.d.listo && r.d.ultimo.archivos > 0, "no se hizo el respaldo");
+      const sello = r.d.ultimo.sello, antes = (await api("api/tours/" + tour)).d;
+      const danado = JSON.parse(JSON.stringify(antes)); danado.proyecto.nombre = "DAÑADO";
+      await api("api/tours/" + tour, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(danado) });
+      exige((await api("api/tours/" + tour)).d.proyecto.nombre === "DAÑADO", "no se pudo cambiar el tour para la prueba");
+      exige((await api("api/admin/respaldos/" + sello + "/restaurar", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tour }) })).s === 200, "no se pudo restaurar");
+      exige((await api("api/tours/" + tour)).d.proyecto.nombre === antes.proyecto.nombre, "el tour no regresó a como estaba");
+      exige(((await api("api/admin/respaldos")).d.lista || []).length >= 1, "el panel no lista los respaldos");
+    }, a);
     await paso("Plan Gratis: crear, publicar con marca «Creado por Mozari» y sin descarga", async () => {
       await nuevoTour(g, "Gratis");
       const id = await idTour(g);

@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-03T02:17:05.071Z",
- "bien": 27,
- "total": 27,
+ "fecha": "2026-11-03T02:43:10.834Z",
+ "bien": 28,
+ "total": 28,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -85,6 +85,10 @@
   },
   {
    "nombre": "Panel de dueño: cuentas, links, reportes, laboratorio y actualizaciones",
+   "ok": true
+  },
+  {
+   "nombre": "Respaldos: se copian los proyectos y un tour dañado se puede regresar",
    "ok": true
   },
   {

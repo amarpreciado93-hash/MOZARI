@@ -850,6 +850,12 @@
   .pub-hosting { text-align: left; max-width: 560px; margin: 18px auto 0; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
   .pub-hosting > div { flex: 1 1 260px; display: grid; gap: 4px; }
   .pub-hosting span { color: var(--mz-tenue); }
+  .resp-cab { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 0 14px; }
+  .resp-cab .nota { flex: 1 1 380px; font-size: 12.5px; }
+  .resp-curso { color: #F2A900; font-size: 13px; margin: 0 0 10px; }
+  .resp-lista { display: grid; gap: 6px; }
+  .resp-fila { display: grid; grid-template-columns: 170px 1fr auto; gap: 12px; align-items: center; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 13px; }
+  .resp-fila span, .resp-fila small { color: var(--mz-tenue); }
   .pub-hosting-aviso { flex-basis: 100%; margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: #F2A900; }
   .comp { text-align: left; display: grid; gap: 18px; }
   .comp-cab h1 { margin: 4px 0 6px; }
@@ -2829,7 +2835,7 @@
   }
   // Panel del dueño: todas las cuentas y su plan (para dar acceso a tus alumnos)
   let vistaDueno = "cuentas";
-  const TABS_DUENO = (n) => '<div class="rep-tabs"><button class="mini' + (vistaDueno === "cuentas" ? " primario" : "") + '" data-dueno="cuentas">Cuentas</button><button class="mini' + (vistaDueno === "links" ? " primario" : "") + '" data-dueno="links">Links de regalo y descuento</button><button class="mini' + (vistaDueno === "reportes" ? " primario" : "") + '" data-dueno="reportes">Reportes' + (n ? " (" + n + " nuevos)" : "") + '</button><button class="mini' + (vistaDueno === "laboratorio" ? " primario" : "") + '" data-dueno="laboratorio">Laboratorio</button><button class="mini' + (vistaDueno === "novedades" ? " primario" : "") + '" data-dueno="novedades">Actualizaciones</button></div>';
+  const TABS_DUENO = (n) => '<div class="rep-tabs"><button class="mini' + (vistaDueno === "cuentas" ? " primario" : "") + '" data-dueno="cuentas">Cuentas</button><button class="mini' + (vistaDueno === "links" ? " primario" : "") + '" data-dueno="links">Links de regalo y descuento</button><button class="mini' + (vistaDueno === "reportes" ? " primario" : "") + '" data-dueno="reportes">Reportes' + (n ? " (" + n + " nuevos)" : "") + '</button><button class="mini' + (vistaDueno === "laboratorio" ? " primario" : "") + '" data-dueno="laboratorio">Laboratorio</button><button class="mini' + (vistaDueno === "novedades" ? " primario" : "") + '" data-dueno="novedades">Actualizaciones</button><button class="mini' + (vistaDueno === "respaldos" ? " primario" : "") + '" data-dueno="respaldos">Respaldos</button></div>';
   // Links de un solo uso: cada alumno recibe el suyo (licencia de regalo o descuento)
   const TIPOS_LINK = { "pro-100": ["Pro de regalo", 100, ["pro"]], "des-100": ["Desarrollos de regalo", 100, ["desarrollos"]], "des-50": ["Desarrollos con 50% de descuento", 50, ["desarrollos"]], "todo-30": ["30% en Pro y Desarrollos", 30, ["pro", "desarrollos"]] };
   const linkDe = (codigo) => location.origin + "/entrar?cupon=" + codigo;
@@ -2882,6 +2888,23 @@
   });
   // Laboratorio: cada función nueva nace "Solo yo"; cuando convence, se da a probadores o a todos
   const MODOS_LAB = [["yo", "Solo yo"], ["probadores", "Probadores"], ["todos", "Todos"]];
+  // Respaldos: copia diaria de los datos (proyectos, cuentas, planes); las fotos no cambian con las actualizaciones
+  const MOTIVO_RESP = { noche: "Copia de la noche", actualizacion: "Antes de una actualización", primero: "Primer respaldo", manual: "Hecho a mano" };
+  async function pintarRespaldos() {
+    const r = await fetch("api/admin/respaldos", { cache: "no-store" }).catch(() => null);
+    if (!r || !r.ok) { avisar("No se pudieron leer los respaldos"); return; }
+    const d = await r.json(), f = (iso) => new Date(iso).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    $("cuentas").innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) +
+      '<div class="resp-cab"><p class="nota">Cada noche y antes de cada actualización, Mozari guarda una copia de los proyectos de todos los tours, las cuentas y los planes. Las fotos 360 no se copian porque las actualizaciones no las tocan. Se guardan los últimos ' + d.guardar + '.</p><button class="btn-prim" id="resp-ahora">Respaldar ahora</button></div>' +
+      (d.enCurso ? '<p class="resp-curso">Respaldando… ' + d.enCurso.copiados + " archivos copiados, faltan " + d.enCurso.faltan + ".</p>" : "") +
+      (d.lista.length ? '<div class="resp-lista">' + d.lista.map((x) => '<div class="resp-fila"><b>' + esc(f(x.fin)) + "</b><span>" + esc(MOTIVO_RESP[x.motivo] || x.motivo) + "</span><small>" + x.archivos + " archivos</small></div>").join("") + "</div>" : '<p class="nota" style="padding:16px">Aún no hay respaldos.</p>');
+  }
+  document.addEventListener("click", async (ev) => {
+    if (ev.target.id !== "resp-ahora") return;
+    const b = ev.target; b.disabled = true; b.textContent = "Respaldando…";
+    const r = await fetch("api/admin/respaldos", { method: "POST" }).catch(() => null);
+    avisar(r && r.ok ? "Respaldo listo" : "No se pudo respaldar"); pintarRespaldos();
+  });
   async function pintarLaboratorio() {
     const r = await fetch("api/admin/laboratorio", { cache: "no-store" }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudo leer el Laboratorio"); return; }
@@ -3096,6 +3119,7 @@
     if (vistaDueno === "links") return pintarLinks();
     if (vistaDueno === "laboratorio") return pintarLaboratorio();
     if (vistaDueno === "novedades") return pintarNovedadesAdmin();
+    if (vistaDueno === "respaldos") return pintarRespaldos();
     const r = await fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudieron leer las cuentas"); return; }
     const { cuentas: todas } = await r.json();
