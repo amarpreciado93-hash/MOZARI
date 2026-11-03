@@ -16,6 +16,10 @@
   },
   "version_metadata": { "binding": "VERSION" },
   "triggers": { "crons": ["17 * * * *"] },
+  // Tope de cálculo por petición (plan Paid): si algo se cicla, se corta en 2 s y no genera cobros grandes
+  "limits": { "cpu_ms": 2000 },
+  // Registro de errores: para ver qué falló y a quién (Workers Logs)
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
   "r2_buckets": [{ "binding": "R2", "bucket_name": "mozari" }],
   // Correo de avisos (Email Routing de mozari.app): cada reporte de error le llega al dueño
   "send_email": [{ "name": "CORREO", "destination_address": "amarpreciado93@gmail.com" }],

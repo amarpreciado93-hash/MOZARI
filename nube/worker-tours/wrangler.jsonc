@@ -12,5 +12,9 @@
     "binding": "ASSETS",
     "run_worker_first": true
   },
+  // Tope de cálculo por petición (plan Paid): el visor solo sirve archivos, 500 ms sobra
+  "limits": { "cpu_ms": 500 },
+  // Registro de visitas y errores: 1 de cada 10 peticiones (son muchas piezas de esfera y así no cuesta)
+  "observability": { "enabled": true, "head_sampling_rate": 0.1 },
   "r2_buckets": [{ "binding": "R2", "bucket_name": "mozari" }]
 }
