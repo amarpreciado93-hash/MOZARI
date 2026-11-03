@@ -1743,7 +1743,19 @@
   const VACIO = () => ({ version: 2, proyecto: { nombre: "", escenaInicial: "", musica: { volumen: 0.6, repetir: true } }, escenas: [], capas: {} });
   let base, meta = {};
   try {
-    if (MODO === "nube") base = TOUR ? await (await fetch("api/tours/" + TOUR, { cache: "no-store" })).json() : VACIO();
+    if (MODO === "nube" && TOUR) {
+      const r = await fetch("api/tours/" + TOUR, { cache: "no-store" });
+      // Link del estudio de otra cuenta (alguien compartió el link de edición en vez del publicado)
+      if (r.status === 404) {
+        const pub = location.protocol + "//" + (/^(localhost|127\.)/.test(location.host) ? location.host : "tours." + location.host.replace(/^www\./, "")) + "/" + TOUR + "/";
+        document.body.innerHTML = '<div style="min-height:100vh;margin:0;display:grid;place-items:center;background:#0b0b0b;color:#F2F5EC;font:15px/1.6 Poppins,system-ui,sans-serif;padding:24px;box-sizing:border-box"><div style="max-width:440px;text-align:center"><h1 style="font-size:22px;margin:0 0 10px">Este tour es de otra cuenta</h1>' +
+          '<p style="color:#9CA38F;margin:0 0 18px">Este es el link para editarlo, y solo su dueño puede abrirlo. Para verlo, pídele el link de su tour publicado (Publicar → Compartir).</p>' +
+          '<p style="margin:0 0 22px"><a style="color:#D5FF40" href="' + pub + '">Ver el tour publicado</a> <span style="color:#9CA38F">(si ya lo publicó)</span></p>' +
+          '<a style="display:inline-block;background:#D5FF40;color:#0b0b0b;border-radius:999px;padding:9px 18px;font-weight:600;text-decoration:none" href="./">Ir a Mis Tours</a></div></div>';
+        return;
+      }
+      base = await r.json();
+    } else if (MODO === "nube") base = VACIO();
     else base = await (await fetch("proyecto.json", { cache: MODO === "tour" ? "no-cache" : "default" })).json();
     if (!base || !base.proyecto || !Array.isArray(base.escenas)) throw new Error("proyecto inválido");
     await Promise.all(base.escenas.map((e) => fetch(R(e.id) + "escena.json").then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) meta[e.id] = d; }).catch(() => {})));

@@ -346,6 +346,10 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige((await g.evaluate((t) => fetch("api/tours/" + t).then((y) => y.status), tour)) === 404, "un usuario normal pudo abrir el tour de otra cuenta");
       exige(!(await g.$(".chip-lab")), "un usuario normal ve la etiqueta LAB");
       exige(!(await g.$("#cuentas .cuentas-titulo")), "un usuario normal ve algo del Panel de dueño");
+      // Si abre el link de edición de un tour ajeno, ve un aviso claro (no una pantalla rota)
+      await g.goto("about:blank"); await g.goto(ESTUDIO + "/#t=" + tour); await g.waitForTimeout(2500);
+      exige(/Este tour es de otra cuenta/.test(await g.textContent("body")), "el link de edición de un tour ajeno no explica qué pasa");
+      await g.goto(ESTUDIO + "/"); await g.waitForTimeout(2500); await cerrarAnuncio(g);
     }, g);
 
     await paso("Una cuenta se usa en 2 dispositivos; en el 3.º elige cuál cerrar", async () => {
