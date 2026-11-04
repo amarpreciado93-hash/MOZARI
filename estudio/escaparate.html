@@ -72,6 +72,17 @@
   .paso h3 { margin: 0 0 8px; font-size: 22px; font-weight: 500; letter-spacing: -0.01em; }
   .paso p { margin: 0; color: var(--tenue); font-size: 15px; }
   .intro { max-width: 760px; margin-bottom: 44px; }
+  /* Equipo compatible: fotos de producto en tarjetas gris claro (el fondo blanco de la foto se funde con la tarjeta) */
+  #equipo { padding-top: 96px; }
+  .equipo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin: 0; }
+  .equipo figure { margin: 0; }
+  .eq-foto { background: var(--gris); border-radius: 18px; overflow: hidden; aspect-ratio: 3 / 4; }
+  .eq-foto img { width: 100%; height: 100%; object-fit: cover; mix-blend-mode: multiply; }
+  .equipo figcaption { padding: 14px 4px 0; }
+  .equipo figcaption b { display: block; font-size: 16px; font-weight: 500; }
+  .equipo figcaption span { display: block; color: var(--tenue); font-size: 14px; line-height: 1.5; margin-top: 2px; }
+  .eq-nota { margin: 28px 0 0; padding: 18px 22px; background: var(--gris); border-radius: 14px; color: var(--tenue); font-size: 15px; }
+  .eq-nota b { color: var(--texto); font-weight: 500; }
   h2 { margin: 0; font-size: clamp(30px, 4vw, 48px); line-height: 1.08; font-weight: 600; letter-spacing: -0.025em; }
   .intro p { margin: 14px 0 0; color: var(--tenue); font-size: 17px; }
 
@@ -145,6 +156,8 @@
     .tarjeta-hero { grid-template-columns: 1fr; transform: translate(-50%, 72%); }
     .esfera-marco { margin-bottom: 250px; }
     .pasos, .lista2, .lotif-tres, .planes { grid-template-columns: 1fr; gap: 28px; }
+    .equipo { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    #equipo { padding-top: 64px; }
     .lista2 { gap: 0; }
     .fila, .fila.inversa { grid-template-columns: 1fr; gap: 28px; }
     .fila.inversa .foto { order: 0; }
@@ -187,6 +200,17 @@
       <div class="paso"><b>02</b><h3>Conecta y personaliza</h3><p>Une las esferas arrastrando una sobre otra. Agrega textos, fotos, botones y tu logo.</p></div>
       <div class="paso"><b>03</b><h3>Publica y comparte</h3><p>Un clic y tienes el link. Si cambias algo, publicas de nuevo y el link sigue siendo el mismo.</p></div>
     </div>
+  </section>
+
+  <section id="equipo">
+    <div class="intro"><h2>Funciona con el equipo que ya tienes.</h2><p>Si tu cámara o tu dron te da una foto 360 equirectangular (2:1, en JPG), Mozari la recibe. Así trabajan prácticamente todas las cámaras 360 y los drones con panorámica esférica.</p></div>
+    <div class="equipo">
+      <figure><div class="eq-foto"><img src="equipo-1.webp" width="600" height="800" alt="Cámara 360 de bolsillo montada en un bastón" loading="lazy"></div><figcaption><b>Cámaras 360</b><span>Insta360, Ricoh Theta, Kandao, GoPro Max…</span></figcaption></figure>
+      <figure><div class="eq-foto"><img src="equipo-2.webp" width="600" height="800" alt="Dos cámaras 360 de mano" loading="lazy"></div><figcaption><b>Cámaras 360 de mano</b><span>Para interiores, amenidades y recorridos a pie.</span></figcaption></figure>
+      <figure><div class="eq-foto"><img src="equipo-3.webp" width="600" height="800" alt="Dron compacto" loading="lazy"></div><figcaption><b>Drones compactos</b><span>Con su modo de panorámica esférica, ideales para lotificaciones.</span></figcaption></figure>
+      <figure><div class="eq-foto"><img src="equipo-4.webp" width="600" height="800" alt="Dron profesional visto desde arriba" loading="lazy"></div><figcaption><b>Drones profesionales</b><span>Tomas aéreas más altas y nítidas para desarrollos grandes.</span></figcaption></figure>
+    </div>
+    <p class="eq-nota"><b>¿Usas réflex o mirrorless con cabezal panorámico?</b> También: une tus fotos en PTGui u otro programa y sube el panorama en 2:1. Si tu cámara guarda un formato propio, expórtalo como JPG 360 desde su app.</p>
   </section>
 
   <div class="fila">

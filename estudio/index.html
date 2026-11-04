@@ -1957,6 +1957,21 @@
   }
   // Contorno completo de una manzana: frente, lado derecho (con sus puntos), fondo y lado izquierdo.
   // Los lados pueden doblarse con puntos en medio (terrenos con relieve): manzana.lados = { a: [...], b: [...] }
+  // Ruta curva (como la pluma de Illustrator): un punto puede guardar su manija en el suelo [yaw, pitch, hx, hy];
+  // el tramo entre dos puntos con manija es una curva Bézier. Sin manijas la ruta queda igual que siempre.
+  function curvaCamino(P) {
+    if (!P.some((p) => p.length > 3 && (p[2] || p[3]))) return P;
+    const out = [P[0]];
+    for (let i = 1; i < P.length; i++) {
+      const a = P[i - 1], b = P[i], qa = aPlano(a[0], a[1]), qb = aPlano(b[0], b[1]), ha = [+a[2] || 0, +a[3] || 0], hb = [+b[2] || 0, +b[3] || 0];
+      if (qa && qb && (ha[0] || ha[1] || hb[0] || hb[1])) {
+        const c1 = [qa[0] + ha[0], qa[1] + ha[1]], c2 = [qb[0] - hb[0], qb[1] - hb[1]];
+        for (let k = 1; k < 16; k++) { const t = k / 16, u = 1 - t; out.push(dePlano([u * u * u * qa[0] + 3 * u * u * t * c1[0] + 3 * u * t * t * c2[0] + t * t * t * qb[0], u * u * u * qa[1] + 3 * u * u * t * c1[1] + 3 * u * t * t * c2[1] + t * t * t * qb[1]])); }
+      }
+      out.push(b);
+    }
+    return out;
+  }
   function contornoManzana(c) {
     const D = contornoCurvo(c.puntos, c.manzana.nFrente), L = c.manzana.lados || {};
     const a = Array.isArray(L.a) ? L.a : [], b = Array.isArray(L.b) ? L.b : [];
@@ -4093,7 +4108,7 @@
         if (c.tipo === "poligono") {
           const enCam = c.puntos.map(([y, p]) => aCamara(cam, y, p));
           const cerrado = !c.camino;
-          const curva = c.manzana ? contornoManzana(c) : c.puntos;
+          const curva = c.manzana ? contornoManzana(c) : c.camino ? curvaCamino(c.puntos) : c.puntos;
           const rec = recortar(curva === c.puntos ? enCam : curva.map(([y, p]) => aCamara(cam, y, p)), cerrado);
           const d = rec.length < (cerrado ? 3 : 2) ? "" : trazo(cam, rec, cerrado);
           n.path.setAttribute("d", d);
@@ -5354,10 +5369,10 @@ void main(){
         alCambiar: () => cambio(),
         alSoltar: (c) => { if (c.manzana) { repartirManzana(c); cambio(); return; } if (c.mzPlano) { soltarPlano(c); cambio(); return; } if (c.vinculo) propagar(c, motorEd.actual.id); },
         alArrastrar: (c) => { if (c.manzana) repartirManzana(c); if (c.mzPlano) arrastrarPlano(c); },
-        asasExtra: (c) => (c.manzana ? asasManzana(c) : c.mzPlano ? asasPlano(c) : null),
-        tomarAsaExtra: (c, h) => (c.mzPlano ? tomarAsaPlano(c, h) : tomarAsaManzana(c, h)),
-        moverAsaExtra: (c, h, k) => (c.mzPlano ? moverAsaPlano(c, h, k) : moverAsaManzana(c, h, k)),
-        quitarAsaExtra: (c, h) => (c.mzPlano ? quitarAsaPlano(c, h) : quitarAsaManzana(c, h)),
+        asasExtra: (c) => (c.manzana ? asasManzana(c) : c.mzPlano ? asasPlano(c) : c.camino && enLab("manzana-curvas") ? asasCamino(c) : null),
+        tomarAsaExtra: (c, h) => (c.camino ? h : c.mzPlano ? tomarAsaPlano(c, h) : tomarAsaManzana(c, h)),
+        moverAsaExtra: (c, h, k) => (c.camino ? moverAsaCamino(c, h, k) : c.mzPlano ? moverAsaPlano(c, h, k) : moverAsaManzana(c, h, k)),
+        quitarAsaExtra: (c, h) => (c.camino ? quitarAsaCamino(c, h) : c.mzPlano ? quitarAsaPlano(c, h) : quitarAsaManzana(c, h)),
         alEntrar: (c, origen) => { abrirEditor(c.destino, nav.sub, vistaLlegada(c, origen)); avisar("Llegaste a " + nombreDe(c.destino) + (c.llegada === "frente" ? " viendo de frente" : "")); },
         alCerrarDibujo: () => terminarDibujo(true),
         alPuntoDibujo: (d) => puntoPDF(d),
@@ -6733,6 +6748,27 @@ void main(){
     }
     return mejor;
   }
+  // Manijas de la ruta: dos por punto (en las puntas, una). Jalar una curva los dos tramos que tocan ese punto.
+  function asasCamino(c) {
+    const P = c.puntos, n = P.length, lineas = [], asas = [];
+    P.forEach((p, i) => {
+      const q = aPlano(p[0], p[1]); if (!q) return;
+      const a = aPlano(P[Math.max(0, i - 1)][0], P[Math.max(0, i - 1)][1]), b = aPlano(P[Math.min(n - 1, i + 1)][0], P[Math.min(n - 1, i + 1)][1]); if (!a || !b) return;
+      const tiene = p.length > 3 && (p[2] || p[3]);
+      const hh = tiene ? [+p[2], +p[3]] : [(b[0] - a[0]) / (i === 0 || i === n - 1 ? 3 : 6), (b[1] - a[1]) / (i === 0 || i === n - 1 ? 3 : 6)];
+      if (!hh[0] && !hh[1]) return;
+      const sal = i < n - 1 ? dePlano([q[0] + hh[0], q[1] + hh[1]]) : null, ent = i > 0 ? dePlano([q[0] - hh[0], q[1] - hh[1]]) : null;
+      if (tiene) { const ln = [ent || p, p, sal || p].map((x) => [x[0], x[1]]); ln.curva = true; lineas.push(ln); }
+      if (sal) asas.push({ tipo: "curva", i, lado: 1, pt: sal, nueva: !tiene });
+      if (ent) asas.push({ tipo: "curva", i, lado: -1, pt: ent, nueva: !tiene });
+    });
+    return { lineas, asas };
+  }
+  function moverAsaCamino(c, h, k) {
+    const p = c.puntos[h.i], q = p && aPlano(p[0], p[1]), r = aPlano(k.yaw, k.pitch); if (!q || !r) return;
+    c.puntos[h.i] = [p[0], p[1], +((r[0] - q[0]) * h.lado).toFixed(5), +((r[1] - q[1]) * h.lado).toFixed(5)];
+  }
+  function quitarAsaCamino(c, h) { const p = c.puntos[h.i]; if (p) c.puntos[h.i] = p.slice(0, 2); } // doble clic: ese punto vuelve a ser recto
   function tomarAsaManzana(c, h) {
     const m = c.manzana;
     if (h.tipo !== "mas") return h;
@@ -6874,6 +6910,11 @@ void main(){
     if (k === "inicio") { const n = parseInt(v, 10); if (n >= 0) { c.manzana.inicio = n; c.manzana.numeros = {}; } } // «Primer número» vuelve a numerar todos seguidos
     if (k === "mz") { c.manzana.mz = v; c.nombre = terminos().manzana + " " + v; }
     cambio();
+  });
+  $("props").addEventListener("click", (ev) => {
+    if (!ev.target.closest("[data-ruta-recta]")) return;
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.camino) return;
+    c.puntos = c.puntos.map((p) => p.slice(0, 2)); cambio(); avisar("Ruta sin curvas");
   });
   $("props").addEventListener("change", (ev) => {
     const k = ev.target.dataset && ev.target.dataset.mzp; if (!k) return;
@@ -7221,7 +7262,8 @@ void main(){
         '<button class="hs-estilo" data-k="camino.estilo" data-v="' + v + '" aria-pressed="' + (k.estilo === v) + '"><svg viewBox="0 0 40 8" width="40" height="8"><line x1="3" y1="4" x2="37" y2="4" stroke="currentColor" stroke-width="3" stroke-linecap="round"' + (v === "puntos" ? ' stroke-dasharray="0 7"' : v === "guiones" ? ' stroke-dasharray="9 6"' : "") + "/></svg>" + n + "</button>").join("") + "</div>" +
         campo("Color", campoColor("camino.color", k.color)) + campo("Grosor", campoRango("camino.grosor", k.grosor, 1, 16, 0.5, px)) + campo("Opacidad", campoRango("camino.opacidad", k.opacidad ?? 1, 0.1, 1, 0.05, pct)) + "</div>";
       h += '<div class="grupo">' + interruptor("Flecha al final", "camino.flecha", !!k.flecha) + interruptor("Movimiento", "camino.animada", !!k.animada) +
-        '<p class="nota">Arrastra la ruta para moverla y los puntos para ajustarla. Doble clic en un punto lo quita.</p></div>';
+        '<p class="nota">Arrastra la ruta para moverla y los puntos para ajustarla. Doble clic en un punto lo quita.</p>' +
+        (enLab("manzana-curvas") ? '<p class="nota"><b style="color:#FF2D55">● Rojas:</b> manijas de curva, como en Illustrator. Jálalas para curvar la ruta; doble clic en una la deja recta otra vez.</p><div class="orden"><button class="mini" data-ruta-recta>Quitar curvas</button></div>' : "") + "</div>";
     }
     else if (c.tipo === "poligono") {
       h += '<div class="grupo"><b>Relleno</b>' + campo("Color", campoColor("relleno.color", c.relleno.color)) + campo("Opacidad", campoRango("relleno.opacidad", c.relleno.opacidad, 0, 1, 0.05, pct)) + "</div>";

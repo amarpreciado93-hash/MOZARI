@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-04T04:23:20.941Z",
- "bien": 32,
- "total": 32,
+ "fecha": "2026-11-04T04:39:09.075Z",
+ "bien": 33,
+ "total": 33,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -121,6 +121,10 @@
   },
   {
    "nombre": "Rótulos parejos: un lote grande no agranda su texto, solo si se le sube a mano",
+   "ok": true
+  },
+  {
+   "nombre": "Ruta curva: manijas rojas en cada punto, como en Illustrator",
    "ok": true
   },
   {

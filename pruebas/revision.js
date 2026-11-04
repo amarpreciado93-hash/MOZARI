@@ -539,6 +539,26 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await n.context().close();
     }, a);
 
+    // Pedido de Amar (nov 2026): la ruta se curva con manijas, como la pluma de Illustrator
+    await paso("Ruta curva: manijas rojas en cada punto, como en Illustrator", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Ruta curva");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800);
+      await n.keyboard.press("Escape"); await n.click("#add-camino"); await n.waitForTimeout(300); await pasarGuias(n);
+      for (const [x, y] of [[520, 820], [640, 720], [780, 700], [920, 640]]) { await n.mouse.click(x, y); await n.waitForTimeout(150); }
+      await n.keyboard.press("Enter"); await n.waitForTimeout(1200);
+      const man = await n.$$eval("circle.mz-asa.curva", (l) => l.map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+      exige(man.length === 6, "la ruta no muestra sus manijas de curva (" + man.length + ")");
+      const tramos = () => n.$eval("path.cp-camino", (e) => (e.getAttribute("d").match(/[LC]/g) || []).length);
+      const antes = await tramos();
+      await n.mouse.move(man[2][0], man[2][1]); await n.mouse.down(); await n.mouse.move(man[2][0] + 10, man[2][1] + 40, { steps: 8 }); await n.mouse.up(); await n.waitForTimeout(2500);
+      const id = await idTour(n), d = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      const ruta = Object.values(d.capas).flat().find((c) => c.camino);
+      exige(ruta && ruta.puntos.some((p) => p.length > 3 && (p[2] || p[3])), "la manija no curvó la ruta");
+      exige((await tramos()) > antes + 10, "la ruta no se dibuja curva");
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await n.context().close();
+    }, a);
+
     // Pedido de Amar (nov 2026): del PDF del masterplan se arman los lotes de una manzana y se colocan con 4 esquinas.
     // Plano de prueba: manzana con dos filas y línea del centro en escalones (como la MZ-3 de El Mirador).
     await paso("Laboratorio · lotes desde el PDF: recuadro sobre la manzana y 4 esquinas en la esfera", async () => {
