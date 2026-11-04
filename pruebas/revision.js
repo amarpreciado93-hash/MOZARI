@@ -579,7 +579,12 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       const [tx, ty] = await aPant(ancho * (160 / 800), ancho * (350 / 800));
       await n.mouse.click(tx, ty); await n.waitForTimeout(200);
       exige(/^8 lotes/.test(await n.textContent("#ref-lotes-info")), "tocar un lote no lo quitó");
-      await n.mouse.click(tx, ty); await n.waitForTimeout(200);
+      // Ctrl+Z en el plano deshace el toque (y no toca el tour); Ctrl+Shift+Z lo rehace
+      await n.keyboard.press("Control+z"); await n.waitForTimeout(200);
+      exige(/^9 lotes/.test(await n.textContent("#ref-lotes-info")), "Ctrl+Z no deshizo el toque en el plano");
+      await n.keyboard.press("Control+Shift+z"); await n.waitForTimeout(200);
+      exige(/^8 lotes/.test(await n.textContent("#ref-lotes-info")), "Ctrl+Shift+Z no rehízo el toque en el plano");
+      await n.keyboard.press("Control+z"); await n.waitForTimeout(200);
       await n.fill("#ref-mz", "7");
       await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "300px"; p.style.height = "230px"; });
       const esquinas = [[st[0] + st[2] * 0.55, st[1] + st[3] * 0.5], [st[0] + st[2] * 0.9, st[1] + st[3] * 0.5], [st[0] + st[2] * 0.9, st[1] + st[3] * 0.9], [st[0] + st[2] * 0.55, st[1] + st[3] * 0.9]];
@@ -590,10 +595,22 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(!(await leer()).capas || !Object.values((await leer()).capas).flat().some((c) => c.lote && c.lote.manzana === "7"), "aceptó las esquinas en espejo");
       await n.keyboard.press("Escape"); await n.waitForTimeout(300);
       await n.click("#ref-colocar"); await n.waitForTimeout(300);
-      for (const [x, y] of esquinas) { await n.mouse.click(x, y); await n.waitForTimeout(250); }
+      // Un toque de más al poner las esquinas se quita con Ctrl+Z
+      for (const [x, y] of esquinas.slice(0, 2)) { await n.mouse.click(x, y); await n.waitForTimeout(250); }
+      await n.mouse.click(st[0] + st[2] * 0.7, st[1] + st[3] * 0.7); await n.waitForTimeout(250);
+      await n.keyboard.press("Control+z"); await n.waitForTimeout(250);
+      exige(/esquina 3 de 4/.test(await n.textContent("#banda")), "Ctrl+Z no quitó la esquina equivocada");
+      for (const [x, y] of esquinas.slice(2)) { await n.mouse.click(x, y); await n.waitForTimeout(250); }
       await n.waitForTimeout(3000);
-      const lotes = Object.values((await leer()).capas).flat().filter((c) => c.lote && c.lote.manzana === "7");
+      const lotes7 = async () => Object.values((await leer()).capas).flat().filter((c) => c.lote && c.lote.manzana === "7");
+      let lotes = await lotes7();
       exige(lotes.length === 9, "no se crearon los 9 lotes en la esfera (" + lotes.length + ")");
+      // Ctrl+Z justo después de colocarlos los quita; Ctrl+Shift+Z los regresa
+      await n.keyboard.press("Control+z"); await n.waitForTimeout(2500);
+      exige((await lotes7()).length === 0, "Ctrl+Z no quitó los lotes recién colocados");
+      await n.keyboard.press("Control+Shift+z"); await n.waitForTimeout(2500);
+      lotes = await lotes7();
+      exige(lotes.length === 9, "Ctrl+Shift+Z no regresó los lotes");
       exige(lotes.map((c) => +c.lote.numero).sort((a, b) => a - b).join() === "1,2,3,4,5,6,7,8,9", "los lotes no quedaron numerados del 1 al 9");
       exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
       await n.context().close();

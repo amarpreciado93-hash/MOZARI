@@ -2281,6 +2281,8 @@
     ev.preventDefault();
     // Dibujando un polígono: deshacer quita el último punto
     if (motorEd && motorEd.dibujo && k === "z" && !ev.shiftKey) { motorEd.dibujo.puntos.pop(); motorEd.render(); if (motorEd.dibujo.tipo === "pdf") { pintarSel(); bandaPDF(); } return; }
+    // Lo último fue en la ventana del plano (recuadro o toque a un lote): se deshace ahí, sin tocar el tour
+    if (historialSel(k === "z" && !ev.shiftKey)) return;
     viajarHistorial(k === "z" && !ev.shiftKey);
   });
   let consecutivo = Date.now() % 1e6;
@@ -3018,7 +3020,7 @@
   // =================== NOVEDADES ===================
   // Cada anuncio se ve una vez por cuenta (se anota en el servidor). El botón ✦ junto a BETA los vuelve a abrir.
   const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Lotes"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Skin"], ["publicar/web", "Publicar"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"]];
-  const LAB_DESTINO = { "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes" };
+  const LAB_DESTINO = { "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas" };
   let novedades = [], novActual = null;
   const fechaCorta = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
   function htmlNovedad(n, media) {
@@ -5441,7 +5443,7 @@ void main(){
       P().referencia = { img: ruta, ancho: cv.width, alto: cv.height };
       // El PDF original también se guarda (privado): de sus líneas salen los lotes (Laboratorio)
       if (escPDF) { const rp = "privado/referencia-" + sello + ".pdf"; await subirArchivo(rp, file); Object.assign(P().referencia, { pdf: rp, pdfEsc: escPDF }); }
-      REF.sel = null; REF.caja = null;
+      REF.sel = null; REF.caja = null; SELH.atras = []; SELH.adelante = [];
       cambio(); pintarRef(); avisar("Plano listo. Rueda para acercar, arrastra para moverte.");
     } catch (e) { avisar(e && e.limite ? e.message : "No se pudo leer ese archivo. Prueba con otro PDF o una imagen."); }
   }
@@ -5821,6 +5823,22 @@ void main(){
     return LPDF.tr;
   }
   const elegidasRef = () => (REF.sel || []).filter((f) => f.elegida);
+  // Deshacer/rehacer de la selección del plano (Ctrl/Cmd + Z): cada recuadro o toque es un paso
+  const SELH = { atras: [], adelante: [], aqui: false };
+  const fotoSel = () => ({ caja: REF.caja && REF.caja.slice(), sel: REF.sel && REF.sel.map((f) => f.elegida), formas: REF.sel });
+  function anotarSel() { SELH.atras.push(fotoSel()); if (SELH.atras.length > 60) SELH.atras.shift(); SELH.adelante = []; }
+  function historialSel(atras) {
+    if (!REF.lotes || !SELH.aqui || $("ref-panel").hidden) return false;
+    const de = atras ? SELH.atras : SELH.adelante, a = atras ? SELH.adelante : SELH.atras;
+    if (!de.length) { avisar(atras ? "No hay nada que deshacer en el plano" : "No hay nada que rehacer en el plano"); return true; }
+    a.push(fotoSel());
+    const f = de.pop();
+    REF.caja = f.caja; REF.sel = f.formas; if (REF.sel) REF.sel.forEach((x, i) => (x.elegida = f.sel[i]));
+    recalcularOrden(); pintarSel(); avisar(atras ? "Deshecho en el plano" : "Rehecho en el plano");
+    return true;
+  }
+  // Ctrl+Z va al plano si lo último que tocaste fue la ventana del plano; si fue la esfera, deshace en el tour
+  document.addEventListener("pointerdown", (ev) => { SELH.aqui = !!ev.target.closest("#ref-panel"); }, true);
   function infoLotes(t) { $("ref-lotes-info").textContent = t; }
   function recalcularOrden() {
     const el = elegidasRef();
@@ -5841,17 +5859,20 @@ void main(){
     sv.innerHTML = html;
   }
   function recuadroLotes(ev) {
-    const v = $("ref-vista"), a = puntoEnPlano(ev), x0 = ev.clientX, y0 = ev.clientY;
+    const v = $("ref-vista"), a = puntoEnPlano(ev), x0 = ev.clientX, y0 = ev.clientY, previa = REF.caja, antes = fotoSel();
     v.setPointerCapture(ev.pointerId);
     const mover = (e) => { const b = puntoEnPlano(e); REF.caja = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]; pintarSel(); };
     const soltar = async (e) => {
       v.removeEventListener("pointermove", mover); v.removeEventListener("pointerup", soltar); v.removeEventListener("pointercancel", soltar);
       if (Math.hypot(e.clientX - x0, e.clientY - y0) < 6) { // un toque: quita o agrega ese lote
         const q = puntoEnPlano(e), f = (REF.sel || []).filter((f) => dentroPol(f.puntos, q[0], q[1])).sort((x, y) => x.area - y.area)[0];
-        if (f) { f.elegida = !f.elegida; recalcularOrden(); pintarSel(); }
+        REF.caja = previa;
+        if (f) { anotarSel(); f.elegida = !f.elegida; recalcularOrden(); }
+        pintarSel();
         return;
       }
       const caja = REF.caja; if (!caja) return;
+      SELH.atras.push(antes); if (SELH.atras.length > 60) SELH.atras.shift(); SELH.adelante = [];
       infoLotes("Buscando los lotes…");
       const tr = await trazosRef();
       if (!tr) { REF.sel = null; REF.caja = null; recalcularOrden(); pintarSel(); infoLotes(P().referencia && P().referencia.pdf ? "No se pudo leer el PDF." : "Este plano se subió antes de esta función: vuelve a subir el PDF (botón Cambiar) para leer sus lotes."); return; }
