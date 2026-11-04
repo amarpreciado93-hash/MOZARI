@@ -611,6 +611,24 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await n.keyboard.press("Control+Shift+z"); await n.waitForTimeout(2500);
       lotes = await lotes7();
       exige(lotes.length === 9, "Ctrl+Shift+Z no regresó los lotes");
+      // Manzana completa (lo de inicio): los 9 lotes amarrados; jalar una esquina mueve a todos; un «+» agrega un punto que la dobla
+      let capas = Object.values((await leer()).capas).flat(), mzc = capas.find((c) => c.mzPlano);
+      exige(mzc && lotes.every((c) => c.deManzana === mzc.id), "no se creó la manzana completa con sus lotes amarrados");
+      await n.click('#lista li:has-text("Manzana 7")'); await n.waitForTimeout(600);
+      const centros = (sel) => n.$$eval(sel, (l) => l.map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+      const esq = await centros("circle.mz-asa"); exige(esq.length === 4, "la manzana del plano no muestra sus 4 esquinas (" + esq.length + ")");
+      const antes = JSON.stringify(lotes.map((c) => c.puntos));
+      await n.mouse.move(esq[2][0], esq[2][1]); await n.mouse.down(); await n.mouse.move(esq[2][0] + 30, esq[2][1] + 20, { steps: 8 }); await n.mouse.up(); await n.waitForTimeout(2500);
+      lotes = await lotes7();
+      exige(lotes.filter((c, i) => JSON.stringify(c.puntos) !== JSON.stringify(JSON.parse(antes)[i])).length >= 5, "jalar una esquina no estiró los lotes de la manzana");
+      const mas = await centros("circle.mz-mas"); exige(mas.length >= 4, "la manzana del plano no tiene «+» en la orilla");
+      await n.mouse.move(mas[0][0], mas[0][1]); await n.mouse.down(); await n.mouse.move(mas[0][0], mas[0][1] - 15, { steps: 6 }); await n.mouse.up(); await n.waitForTimeout(2500);
+      capas = Object.values((await leer()).capas).flat(); mzc = capas.find((c) => c.mzPlano);
+      exige(mzc.mzPlano.ctrl.length === 5, "el «+» no agregó un punto para doblar la manzana");
+      // «Soltar los lotes»: la manzana se quita y los 9 quedan sueltos
+      await n.click("[data-mzp-soltar]"); await n.waitForTimeout(2500);
+      capas = Object.values((await leer()).capas).flat();
+      exige(!capas.some((c) => c.mzPlano) && capas.filter((c) => c.lote && c.lote.manzana === "7" && !c.deManzana).length === 9, "«Soltar los lotes» no dejó los 9 lotes sueltos");
       exige(lotes.map((c) => +c.lote.numero).sort((a, b) => a - b).join() === "1,2,3,4,5,6,7,8,9", "los lotes no quedaron numerados del 1 al 9");
       exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
       await n.context().close();

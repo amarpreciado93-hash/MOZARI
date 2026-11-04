@@ -578,6 +578,9 @@
   .ref-lotes-barra { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding: 6px 10px; border-bottom: 1px solid var(--mz-linea-neutra); font-size: 11px; }
   #ref-lotes-info { flex: 1 1 100%; color: var(--mz-texto-2, #bbb); }
   .ref-lotes-barra label { display: flex; align-items: center; gap: 5px; }
+  .ref-modo { display: flex; gap: 0; }
+  .ref-modo .ref-btn:first-child { border-radius: var(--mz-pastilla) 0 0 var(--mz-pastilla); }
+  .ref-modo .ref-btn:last-child { border-radius: 0 var(--mz-pastilla) var(--mz-pastilla) 0; border-left: 0; }
   .ref-campo { width: 46px; font: 500 11px var(--mz-texto-ui); color: var(--mz-texto); background: transparent; border: 1px solid var(--mz-linea-neutra); border-radius: 6px; padding: 3px 6px; }
   #ref-colocar { margin-left: auto; }
   #ref-colocar:not(:disabled) { background: var(--mz-lima); color: var(--mz-tinta); border-color: var(--mz-lima); }
@@ -1569,7 +1572,7 @@
         <div class="ref-panel" id="ref-panel" hidden>
           <header><b>Plano de referencia</b><span class="ref-acc"><button class="ref-btn" id="ref-izq" title="Girar a la izquierda (15°)">↺</button><button class="ref-btn ref-grados" id="ref-grados" title="Regresar a 0°">0°</button><button class="ref-btn" id="ref-der" title="Girar a la derecha (15°)">↻</button><label class="ref-btn" title="Subir otro plano">Cambiar<input type="file" id="ref-archivo" accept="application/pdf,image/png,image/jpeg,image/webp" hidden></label><button class="ref-btn" id="ref-ajustar" title="Ver el plano completo">Ajustar</button><button class="ref-btn" id="ref-lotes" aria-pressed="false" title="Lotes desde el PDF: arrastra un recuadro sobre una manzana" hidden>▭ Lotes</button><button class="ref-btn" id="ref-pluma" aria-pressed="false" title="Pluma: dibujar sobre el plano">✎</button><button class="ref-btn ref-x" id="ref-cerrar" aria-label="Cerrar">×</button></span></header>
           <div class="ref-pluma-barra" id="ref-pluma-barra" hidden><span class="ref-colores"><button class="ref-color" data-ref-color="#FF2D55" style="--c:#FF2D55" aria-label="Rojo"></button><button class="ref-color" data-ref-color="#22B573" style="--c:#22B573" aria-label="Verde"></button><button class="ref-color" data-ref-color="#2F6BFF" style="--c:#2F6BFF" aria-label="Azul"></button></span><button class="ref-btn" id="ref-deshacer">Deshacer</button><button class="ref-btn" id="ref-borrar">Borrar todo</button></div>
-          <div class="ref-lotes-barra" id="ref-lotes-barra" hidden><span id="ref-lotes-info">Arrastra un recuadro sobre una manzana.</span><label>Manzana <input id="ref-mz" class="ref-campo" size="4" placeholder="3"></label><label>Desde el lote <input id="ref-ini" class="ref-campo" size="3" value="1" inputmode="numeric"></label><button class="guia-ayuda" id="ref-lotes-ayuda" title="Ver cómo se usa">?</button><button class="ref-btn" id="ref-colocar" disabled>Colocar en la esfera</button></div>
+          <div class="ref-lotes-barra" id="ref-lotes-barra" hidden><span id="ref-lotes-info">Arrastra un recuadro sobre una manzana.</span><span class="ref-modo" role="group" aria-label="Crear como"><button class="ref-btn" data-ref-modo="manzana" aria-pressed="true" title="Una manzana con todos sus lotes: jalas una esquina y se mueve todo">Manzana</button><button class="ref-btn" data-ref-modo="lotes" aria-pressed="false" title="Cada lote por su cuenta">Lotes sueltos</button></span><label>Manzana <input id="ref-mz" class="ref-campo" size="4" placeholder="3"></label><label>Desde el lote <input id="ref-ini" class="ref-campo" size="3" value="1" inputmode="numeric"></label><button class="guia-ayuda" id="ref-lotes-ayuda" title="Ver cómo se usa">?</button><button class="ref-btn" id="ref-colocar" disabled>Colocar en la esfera</button></div>
           <div class="ref-vista" id="ref-vista"><div class="ref-lienzo" id="ref-lienzo"><div class="ref-hoja" id="ref-hoja"><img id="ref-img" alt="Plano de referencia" draggable="false"><svg class="ref-dibujo" id="ref-dibujo"></svg><svg class="ref-sel" id="ref-sel"></svg></div></div><div class="ref-vacio" id="ref-vacio"><p>Sube tu masterplan para tenerlo a la vista mientras trazas.</p><label class="btn-prim">Subir PDF o imagen<input type="file" id="ref-archivo2" accept="application/pdf,image/png,image/jpeg,image/webp" hidden></label><small>Solo lo ves tú al editar; tus clientes no lo ven en el tour.</small></div></div>
         </div>
       </div>
@@ -4098,7 +4101,7 @@
           if (n.toque) n.toque.setAttribute("d", d);
           if (n.etq) etiquetasLote(n, cam, enCam, rec);
           n.svg.querySelectorAll(".cp-sel, .cp-vert").forEach((x) => x.remove());
-          if (editable && motor.modo === "capas" && id === motor.elegida && d && !c.deManzana) {
+          if (editable && motor.modo === "capas" && id === motor.elegida && d && !c.deManzana && !c.mzPlano) {
             const sel = document.createElementNS(SVGNS, "path");
             sel.setAttribute("class", "cp-sel"); sel.setAttribute("d", d);
             n.svg.appendChild(sel);
@@ -4152,8 +4155,8 @@
               extra.appendChild(g); return;
             }
             const e = document.createElementNS(SVGNS, "circle");
-            e.setAttribute("class", "mz-asa " + (h.tipo === "nodo" ? "nodo" : h.tipo === "centro" ? "centro" : h.tipo === "curva" || h.tipo === "radio" ? h.tipo + (h.nueva ? " nueva" : "") : "corte")); e.setAttribute("data-x", i);
-            e.setAttribute("cx", p.x.toFixed(1)); e.setAttribute("cy", p.y.toFixed(1)); e.setAttribute("r", h.tipo === "nodo" ? 5 : h.tipo === "curva" ? 5 : h.tipo === "radio" ? 5.5 : 6.5);
+            e.setAttribute("class", "mz-asa " + (h.tipo === "nodo" || h.tipo === "pin" ? "nodo" : h.tipo === "centro" ? "centro" : h.tipo === "curva" || h.tipo === "radio" ? h.tipo + (h.nueva ? " nueva" : "") : "corte")); e.setAttribute("data-x", i);
+            e.setAttribute("cx", p.x.toFixed(1)); e.setAttribute("cy", p.y.toFixed(1)); e.setAttribute("r", h.tipo === "nodo" ? 5 : h.tipo === "pin" ? 5.5 : h.tipo === "curva" ? 5 : h.tipo === "radio" ? 5.5 : 6.5);
             extra.appendChild(e);
           });
           motor._asasExtra = A.asas;
@@ -5349,12 +5352,12 @@ void main(){
         alSeleccionar: (cid, modo) => seleccionar(cid, modo),
         enSeleccion: (cid) => seleccion.size > 1 && seleccion.has(cid),
         alCambiar: () => cambio(),
-        alSoltar: (c) => { if (c.manzana) { repartirManzana(c); cambio(); return; } if (c.vinculo) propagar(c, motorEd.actual.id); },
-        alArrastrar: (c) => { if (c.manzana) repartirManzana(c); },
-        asasExtra: (c) => (c.manzana ? asasManzana(c) : null),
-        tomarAsaExtra: (c, h) => tomarAsaManzana(c, h),
-        moverAsaExtra: (c, h, k) => moverAsaManzana(c, h, k),
-        quitarAsaExtra: (c, h) => quitarAsaManzana(c, h),
+        alSoltar: (c) => { if (c.manzana) { repartirManzana(c); cambio(); return; } if (c.mzPlano) { soltarPlano(c); cambio(); return; } if (c.vinculo) propagar(c, motorEd.actual.id); },
+        alArrastrar: (c) => { if (c.manzana) repartirManzana(c); if (c.mzPlano) arrastrarPlano(c); },
+        asasExtra: (c) => (c.manzana ? asasManzana(c) : c.mzPlano ? asasPlano(c) : null),
+        tomarAsaExtra: (c, h) => (c.mzPlano ? tomarAsaPlano(c, h) : tomarAsaManzana(c, h)),
+        moverAsaExtra: (c, h, k) => (c.mzPlano ? moverAsaPlano(c, h, k) : moverAsaManzana(c, h, k)),
+        quitarAsaExtra: (c, h) => (c.mzPlano ? quitarAsaPlano(c, h) : quitarAsaManzana(c, h)),
         alEntrar: (c, origen) => { abrirEditor(c.destino, nav.sub, vistaLlegada(c, origen)); avisar("Llegaste a " + nombreDe(c.destino) + (c.llegada === "frente" ? " viendo de frente" : "")); },
         alCerrarDibujo: () => terminarDibujo(true),
         alPuntoDibujo: (d) => puntoPDF(d),
@@ -5384,7 +5387,7 @@ void main(){
   // =================== PLANO DE REFERENCIA (Laboratorio) ===================
   // El masterplan (PDF o imagen) en una ventanita arriba a la izquierda, para trazar viéndolo. Se guarda
   // en privado/ del tour: el estudio lo lee, pero el tour publicado y el .zip no lo sirven.
-  const REF = { on: false, s: 1, x: 0, y: 0, listo: false, pluma: false, color: "#FF2D55", lotes: false, sel: null, caja: null, orden: [], esq: [] };
+  const REF = { on: false, s: 1, x: 0, y: 0, listo: false, pluma: false, color: "#FF2D55", lotes: false, sel: null, caja: null, orden: [], esq: [], modo: "manzana" };
   function pintarRef() {
     const lab = MODO === "nube" && enLab("referencia") && nav.sub === "capas";
     const tit = $("ref-panel").querySelector("header b"); if (CHIP_LAB && !tit.querySelector(".chip-lab")) tit.insertAdjacentHTML("beforeend", " " + CHIP_LAB);
@@ -5804,8 +5807,8 @@ void main(){
       { el: "#ref-boton", titulo: "1 · Sube tu plano en PDF", dur: 4, anim: animLotesPDF(1), texto: "En <b>Plano de referencia</b> sube el PDF del masterplan, el que sale de AutoCAD o Illustrator (no escaneado). Si lo subiste antes de esta función, súbelo otra vez con <b>Cambiar</b>." },
       { el: "#ref-vista", titulo: "2 · Arrastra un recuadro", dur: 4.5, anim: animLotesPDF(2), texto: "Con <b>▭ Lotes</b> prendido, arrastra un recuadro sobre <b>una manzana</b>. Mozari lee las líneas del plano y sus lotes se iluminan con el orden en que se van a numerar." },
       { el: "#ref-vista", titulo: "3 · Quita o agrega con un toque", dur: 5, anim: animLotesPDF(3), texto: "Si se coló algo que no es lote (una calle, un letrero), <b>tócalo</b> y se quita. Si faltó uno, tócalo y se agrega. Lo que no se ilumine lo dibujas a mano después." },
-      { el: () => $("ref-lotes-barra").hidden ? null : $("ref-lotes-barra"), titulo: "4 · Manzana y primer número", dur: 4.5, anim: animLotesPDF(4), texto: "Escribe la <b>manzana</b> y el número del <b>primer lote</b>. Los demás se numeran solos. El área, el precio y el estado los subes después con tu <b>Excel</b>." },
-      { el: () => ($("ref-colocar").getClientRects().length ? $("ref-colocar") : null), titulo: "5 · Coloca con 4 esquinas", dur: 6.5, anim: animLotesPDF(5), boton: "Entendido", texto: "Dale <b>Colocar en la esfera</b> y toca en el suelo las <b>4 esquinas</b> marcadas en el plano, en orden: la azul es la que sigue. Salen todos los lotes; ajusta a mano los puntos que no cuadren. Si la ventana estorba, muévela de su barra." },
+      { el: () => $("ref-lotes-barra").hidden ? null : $("ref-lotes-barra"), titulo: "4 · Manzana y primer número", dur: 4.5, anim: animLotesPDF(4), texto: "Elige cómo se crea: <b>Manzana</b> (todos los lotes amarrados; jalas una esquina y se mueve todo) o <b>Lotes sueltos</b>. Escribe la <b>manzana</b> y el <b>primer número</b>; los demás se numeran solos. Área, precio y estado: con tu <b>Excel</b>." },
+      { el: () => ($("ref-colocar").getClientRects().length ? $("ref-colocar") : null), titulo: "5 · Coloca con 4 esquinas", dur: 6.5, anim: animLotesPDF(5), boton: "Entendido", texto: "Dale <b>Colocar en la esfera</b> y toca en el suelo las <b>4 esquinas</b> marcadas en el plano, en orden: la azul es la que sigue. Sale la manzana con todos sus lotes. Jala sus <b>esquinas verdes</b> para acomodarla y, donde no cuadre, arrastra un <b>+</b> de la orilla. Si la ventana estorba, muévela de su barra." },
     ], { repetir });
   }
   // La ventana del plano en modo «Lotes»: recuadro sobre la manzana → sus lotes iluminados → colocar en la esfera
@@ -5893,6 +5896,7 @@ void main(){
   $("ref-lotes-ayuda").addEventListener("click", () => guiaLotesPDF(true));
   $("ref-pluma").addEventListener("click", () => { if (REF.pluma && REF.lotes) { REF.lotes = false; pintarLotesModo(); } });
   $("ref-ini").addEventListener("input", pintarSel);
+  $("ref-lotes-barra").addEventListener("click", (ev) => { const b = ev.target.closest("[data-ref-modo]"); if (!b) return; REF.modo = b.dataset.refModo; document.querySelectorAll("[data-ref-modo]").forEach((x) => x.setAttribute("aria-pressed", x === b)); });
   // Colocar: tocas en la esfera las 4 esquinas marcadas en el plano, en orden, y salen todos los lotes
   function bandaPDF() {
     const d = motorEd && motorEd.dibujo; if (!d || d.tipo !== "pdf") return;
@@ -5912,6 +5916,142 @@ void main(){
     pintarSel(); bandaPDF(); motorEd.render();
     if (d.puntos.length === 4) terminarDibujo(true);
   }
+  // ---------- Manzana del plano: los lotes del PDF amarrados a una sola manzana ----------
+  // mzPlano = { mz, ini, lotes: [polígonos en el plano], frentes, ctrl: [{ p: punto del plano, s: [yaw, pitch] }], numeros, estiloLotes }
+  // Los 4 primeros puntos son las esquinas (homografía: el suelo plano). Los demás son puntos extra en la orilla
+  // que doblan toda la manzana con suavidad (thin-plate spline) donde el terreno o la toma no cuadran.
+  const geoPlano = new WeakMap();
+  function resolver(A, b) { // Gauss con pivote; b es una matriz de columnas
+    const n = A.length; A = A.map((r) => r.slice()); b = b.map((r) => r.slice());
+    for (let c = 0; c < n; c++) {
+      let p = c; for (let r = c + 1; r < n; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+      if (Math.abs(A[p][c]) < 1e-12) return null;
+      [A[c], A[p]] = [A[p], A[c]]; [b[c], b[p]] = [b[p], b[c]];
+      for (let r = 0; r < n; r++) if (r !== c) { const k = A[r][c] / A[c][c]; if (!k) continue; for (let j = c; j < n; j++) A[r][j] -= k * A[c][j]; for (let j = 0; j < b[r].length; j++) b[r][j] -= k * b[c][j]; }
+    }
+    return b.map((r, i) => r.map((v) => v / A[i][i]));
+  }
+  function deformacion(m) {
+    const G = m.ctrl.map((k) => aPlano(k.s[0], k.s[1]));
+    if (G.some((g) => !g)) return null;
+    const H = homografia(m.ctrl.slice(0, 4).map((k) => k.p), G.slice(0, 4));
+    if (!H) return null;
+    if (m.ctrl.length <= 4) return H;
+    const P = m.ctrl.map((k) => k.p), xs = P.map((p) => p[0]), ys = P.map((p) => p[1]);
+    const c0 = [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2], e = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) || 1;
+    const N = P.map((p) => [(p[0] - c0[0]) / e, (p[1] - c0[1]) / e]), n = N.length, U = (r) => (r > 1e-12 ? r * r * Math.log(r) : 0);
+    const A = [];
+    for (let i = 0; i < n; i++) A.push(N.map((q, j) => U(Math.hypot(N[i][0] - q[0], N[i][1] - q[1])) + (i === j ? 1e-7 : 0)).concat([1, N[i][0], N[i][1]]));
+    A.push(N.map(() => 1).concat([0, 0, 0])); A.push(N.map((q) => q[0]).concat([0, 0, 0])); A.push(N.map((q) => q[1]).concat([0, 0, 0]));
+    const b = m.ctrl.map((k, i) => { if (i < 4) return [0, 0]; const h = H(k.p); return [G[i][0] - h[0], G[i][1] - h[1]]; }).concat([[0, 0], [0, 0], [0, 0]]);
+    const w = resolver(A, b); if (!w) return H;
+    return (p) => {
+      const h = H(p), q = [(p[0] - c0[0]) / e, (p[1] - c0[1]) / e];
+      let rx = w[n][0] + w[n + 1][0] * q[0] + w[n + 2][0] * q[1], ry = w[n][1] + w[n + 1][1] * q[0] + w[n + 2][1] * q[1];
+      for (let i = 0; i < n; i++) { const u = U(Math.hypot(q[0] - N[i][0], q[1] - N[i][1])); rx += w[i][0] * u; ry += w[i][1] * u; }
+      return [h[0] + rx, h[1] + ry];
+    };
+  }
+  // Contorno de la manzana en el plano: las orillas que no comparten dos lotes
+  function contornoPlano(lotes) {
+    const pts = lotes.flat(), xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    const tol = Math.max(0.5, Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * 0.004);
+    const V = [], vk = new Map(), vert = (p) => { const k = Math.round(p[0] / tol) + "," + Math.round(p[1] / tol); for (const dx of [-1, 0, 1]) for (const dy of [-1, 0, 1]) { const g = vk.get((Math.round(p[0] / tol) + dx) + "," + (Math.round(p[1] / tol) + dy)); if (g !== undefined && Math.hypot(V[g][0] - p[0], V[g][1] - p[1]) <= tol) return g; } V.push(p.slice()); vk.set(k, V.length - 1); return V.length - 1; };
+    lotes.forEach((L) => L.forEach(vert));
+    const cuenta = new Map();
+    lotes.forEach((L) => L.forEach((a, i) => {
+      const b = L[(i + 1) % L.length], dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy; if (!l2) return;
+      const cortes = [0, 1]; V.forEach((v) => { const t = ((v[0] - a[0]) * dx + (v[1] - a[1]) * dy) / l2; if (t > 1e-6 && t < 1 - 1e-6 && Math.hypot(a[0] + dx * t - v[0], a[1] + dy * t - v[1]) <= tol) cortes.push(t); });
+      cortes.sort((x, y) => x - y);
+      for (let k = 1; k < cortes.length; k++) {
+        const u = vert([a[0] + dx * cortes[k - 1], a[1] + dy * cortes[k - 1]]), w = vert([a[0] + dx * cortes[k], a[1] + dy * cortes[k]]);
+        if (u === w) continue; const key = u < w ? u + "," + w : w + "," + u, e = cuenta.get(key) || { n: 0, u, w }; e.n++; cuenta.set(key, e);
+      }
+    }));
+    const sig = new Map(); cuenta.forEach((e) => { if (e.n !== 1) return; (sig.get(e.u) || sig.set(e.u, []).get(e.u)).push(e.w); (sig.get(e.w) || sig.set(e.w, []).get(e.w)).push(e.u); });
+    let mejor = null, usado = new Set();
+    sig.forEach((_, ini) => {
+      if (usado.has(ini)) return;
+      const lazo = [ini]; usado.add(ini); let prev = null, cur = ini;
+      for (let g = 0; g < 5000; g++) { const n = (sig.get(cur) || []).find((x) => x !== prev && (!usado.has(x) || (x === ini && lazo.length > 2))); if (n === undefined || n === ini) break; lazo.push(n); usado.add(n); prev = cur; cur = n; }
+      const P = lazo.map((i) => V[i]); if (P.length > 2 && (!mejor || Math.abs(areaPol(P)) > Math.abs(areaPol(mejor)))) mejor = P;
+    });
+    const total = lotes.reduce((s, L) => s + Math.abs(areaPol(L)), 0);
+    if (mejor && Math.abs(areaPol(mejor)) > total * 0.6) return simplificarPol(mejor, tol * 0.5);
+    // Lotes pintados con huecos entre ellos: la envolvente
+    const P = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]), cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], hi = [];
+    for (const p of P) { while (lo.length > 1 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+    for (const p of P.slice().reverse()) { while (hi.length > 1 && cr(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop(); hi.push(p); }
+    return lo.slice(0, -1).concat(hi.slice(0, -1));
+  }
+  function repartirPlano(c) {
+    const m = c.mzPlano, W = deformacion(m); if (!W) return;
+    let g = geoPlano.get(c); if (!g || g.lotes !== m.lotes) { g = { lotes: m.lotes, cont: contornoPlano(m.lotes) }; geoPlano.set(c, g); }
+    const aEsf = (p) => { const d = dePlano(W(p)); return [+d[0].toFixed(5), +d[1].toFixed(5)]; };
+    g.W = W; g.aEsf = aEsf;
+    c.puntos = g.cont.map(aEsf);
+    const l = cs(), viejos = lotesDeManzana(c);
+    m.lotes.forEach((L, k) => {
+      let x = viejos[k];
+      if (!x) {
+        x = { id: nuevoId(), tipo: "poligono", nombre: "Lote", visible: true, deManzana: c.id, iManzana: k, puntos: [],
+          relleno: { color: LIMA, opacidad: 0.35 }, trazo: { color: LIMA, grosor: 1.5, opacidad: 1 },
+          rollover: { activo: true, relleno: { color: LIMA, opacidad: 0.6 }, trazo: { color: BLANCO, grosor: 3, opacidad: 1 } },
+          lote: Object.assign({}, LOTE_DEF, { lados: L.map(() => "") }) };
+        Object.entries(m.estiloLotes || {}).forEach(([ruta, v]) => { try { escribir(x, ruta, v); } catch (e) { /* ruta vieja */ } });
+        const iz = l.indexOf(viejos[viejos.length - 1] || c); l.splice(iz + 1, 0, x); viejos.push(x);
+      }
+      x.puntos = L.map(aEsf); x.iManzana = k;
+      const fijo = m.numeros && m.numeros[k] != null && String(m.numeros[k]).trim() !== "" ? String(m.numeros[k]) : null;
+      x.lote.manzana = m.mz; x.lote.numero = fijo || String((+m.ini || 1) + k); x.lote.frente = (m.frentes || [])[k] || 0;
+      x.lote.lados = L.map((_, i) => (x.lote.lados || [])[i] || "");
+    });
+    viejos.slice(m.lotes.length).forEach((x) => { const i = l.indexOf(x); if (i >= 0) l.splice(i, 1); });
+  }
+  // Mover la manzana completa: la orilla se movió con el mouse; sus puntos de control se mueven igual (en el suelo)
+  function arrastrarPlano(c) {
+    const m = c.mzPlano, g = geoPlano.get(c); if (!g) return;
+    if (!g.arr) g.arr = { p0: g.cont.length ? g.aEsf(g.cont[0]) : null, ctrl: m.ctrl.map((k) => k.s.slice()) };
+    const a = g.arr.p0 && aPlano(g.arr.p0[0], g.arr.p0[1]), b = aPlano(c.puntos[0][0], c.puntos[0][1]);
+    if (!a || !b) return;
+    const d = [b[0] - a[0], b[1] - a[1]];
+    m.ctrl.forEach((k, i) => { const q = aPlano(g.arr.ctrl[i][0], g.arr.ctrl[i][1]); if (q) { const s = dePlano([q[0] + d[0], q[1] + d[1]]); k.s = [+s[0].toFixed(5), +s[1].toFixed(5)]; } });
+    repartirPlano(c);
+  }
+  function soltarPlano(c) { const g = geoPlano.get(c); if (g) g.arr = null; repartirPlano(c); }
+  function asasPlano(c) {
+    if (!geoPlano.get(c) || !geoPlano.get(c).aEsf) repartirPlano(c);
+    const m = c.mzPlano, g = geoPlano.get(c); if (!g || !g.aEsf) return null;
+    const asas = m.ctrl.map((k, i) => ({ tipo: i < 4 ? "esq" : "pin", i, pt: k.s }));
+    // «+» a la mitad de la orilla entre cada dos puntos de control
+    const C = g.cont, L = [0]; for (let i = 1; i <= C.length; i++) L.push(L[i - 1] + Math.hypot(C[i % C.length][0] - C[i - 1][0], C[i % C.length][1] - C[i - 1][1]));
+    const tot = L[L.length - 1] || 1;
+    const param = (p) => { let best = 0, dm = Infinity; for (let i = 1; i <= C.length; i++) { const a = C[i - 1], b = C[i % C.length], dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2)), d = Math.hypot(a[0] + dx * u - p[0], a[1] + dy * u - p[1]); if (d < dm) { dm = d; best = L[i - 1] + u * Math.sqrt(l2); } } return best; };
+    const enT = (t) => { t = ((t % tot) + tot) % tot; let i = 1; while (i < L.length - 1 && L[i] < t) i++; const a = C[i - 1], b = C[i % C.length], u = (t - L[i - 1]) / ((L[i] - L[i - 1]) || 1); return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]; };
+    const ts = m.ctrl.map((k) => param(k.p)).sort((a, b) => a - b);
+    ts.forEach((t, i) => { const t2 = i < ts.length - 1 ? ts[i + 1] : ts[0] + tot; if (t2 - t < tot * 0.02) return; const p = enT((t + t2) / 2); asas.push({ tipo: "mas", plan: p, pt: g.aEsf(p) }); });
+    return { lineas: [], asas };
+  }
+  function tomarAsaPlano(c, h) {
+    if (h.tipo !== "mas") return h;
+    c.mzPlano.ctrl.push({ p: h.plan.map((v) => +v.toFixed(1)), s: h.pt.slice() });
+    return { tipo: "pin", i: c.mzPlano.ctrl.length - 1 };
+  }
+  function moverAsaPlano(c, h, k) {
+    const m = c.mzPlano; if (!m.ctrl[h.i] || !aPlano(k.yaw, k.pitch)) return;
+    const antes = m.ctrl[h.i].s; m.ctrl[h.i].s = [+k.yaw.toFixed(5), +k.pitch.toFixed(5)];
+    if (!deformacion(m)) { m.ctrl[h.i].s = antes; return; } // esquinas imposibles (cruzadas): no se mueve
+    repartirPlano(c);
+  }
+  function quitarAsaPlano(c, h) { if (h.tipo === "pin") { c.mzPlano.ctrl.splice(h.i, 1); repartirPlano(c); } }
+  // «Soltar los lotes»: la manzana se quita y sus lotes quedan sueltos, cada uno con sus puntos
+  function soltarLotesPlano(c) {
+    const lotes = lotesDeManzana(c);
+    lotes.forEach((x) => { delete x.deManzana; delete x.iManzana; });
+    est.capas[motorEd.actual.id] = cs().filter((x) => x.id !== c.id);
+    motorEd.elegida = lotes[0] ? lotes[0].id : null; cambio();
+    avisar(lotes.length + " lotes sueltos: cada uno se edita por su cuenta");
+  }
   function crearLotesPDF(puntos) {
     const G = puntos.map(([y, p]) => aPlano(y, p)), E = REF.esq, lotes = REF.orden;
     if (G.some((g) => !g) || E.length !== 4 || !lotes.length) { avisar("No se pudo colocar: vuelve a tocar las 4 esquinas en el suelo"); return false; }
@@ -5930,6 +6070,17 @@ void main(){
       const tope = Math.max(...lados.map((x) => x.par));
       return lados.filter((x) => x.par >= tope * 0.85).sort((a, b) => b.fuera - a.fuera)[0].k;
     };
+    if (REF.modo !== "lotes") { // Manzana completa: una sola manzana con todos sus lotes amarrados
+      const c = { id: nuevoId(), tipo: "poligono", nombre: terminos().manzana + " " + mz, visible: true, puntos: [],
+        mzPlano: { mz, ini, lotes: lotes.map((f) => f.puntos.map((p) => [+p[0].toFixed(1), +p[1].toFixed(1)])), frentes: lotes.map((f) => (C.length > 1 ? frenteDe(f.puntos) : 0)), ctrl: E.map((p, i) => ({ p: p.map((v) => +v.toFixed(1)), s: puntos[i].map((v) => +v.toFixed(5)) })) },
+        relleno: { color: BLANCO, opacidad: 0 }, trazo: { color: BLANCO, grosor: 2, opacidad: 0.9 },
+        rollover: { activo: false, relleno: { color: BLANCO, opacidad: 0 }, trazo: { color: BLANCO, grosor: 2, opacidad: 1 } } };
+      cs().push(c); repartirPlano(c);
+      est.ultimoLote = { manzana: mz, numero: String(ini + lotes.length - 1) };
+      motorEd.elegida = c.id;
+      avisar(terminos().manzana + " " + mz + " con " + lotes.length + " lotes. Jala sus esquinas verdes y todos los lotes la siguen.");
+      return true;
+    }
     nuevos.forEach((P, i) => {
       const puntos = P.map((q) => { const d = dePlano(q); return [+d[0].toFixed(5), +d[1].toFixed(5)]; });
       const frente = C.length > 1 ? frenteDe(lotes[i].puntos) : 0;
@@ -6569,6 +6720,18 @@ void main(){
     if (k === "mz") { c.manzana.mz = v; c.nombre = terminos().manzana + " " + v; }
     cambio();
   });
+  $("props").addEventListener("change", (ev) => {
+    const k = ev.target.dataset && ev.target.dataset.mzp; if (!k) return;
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.mzPlano) return;
+    const v = ev.target.value.trim();
+    if (k === "ini") { const n = parseInt(v, 10); if (n >= 0) { c.mzPlano.ini = n; c.mzPlano.numeros = {}; } }
+    if (k === "mz" && v) { c.mzPlano.mz = v; c.nombre = terminos().manzana + " " + v; }
+    cambio();
+  });
+  $("props").addEventListener("click", (ev) => {
+    if (!ev.target.closest("[data-mzp-soltar]")) return;
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (c && c.mzPlano) soltarLotesPlano(c);
+  });
   // Numeración automática: cada lote nuevo sigue al anterior en la misma manzana
   function siguienteLote() {
     const u = est.ultimoLote || { manzana: "1", numero: "0" };
@@ -6686,7 +6849,7 @@ void main(){
     if (!l.length) { ul.innerHTML = '<li class="vacio" role="presentation">Este panorama no tiene capas. Agrega un polígono, un texto o un hotspot.</li>'; return; }
     ul.innerHTML = l.slice().reverse().map((c) =>
       '<li role="option" draggable="true" data-id="' + c.id + '" aria-selected="' + (c.id === motorEd.elegida || (seleccion.size > 1 && seleccion.has(c.id))) + '"' + (c.visible ? "" : ' class="oculta"') + ">" +
-      (c.lote ? ICONOS.lote : c.manzana ? ICONOS.manzana : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.tipo === "interes" ? (piDe(c).nombre || "Punto de interés") + (piDe(c).dato ? " · " + piDe(c).dato : "") : c.nombre)) + (c.vinculo ? ICO_VINC : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>").join("");
+      (c.lote ? ICONOS.lote : c.manzana || c.mzPlano ? ICONOS.manzana : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.tipo === "interes" ? (piDe(c).nombre || "Punto de interés") + (piDe(c).dato ? " · " + piDe(c).dato : "") : c.nombre)) + (c.vinculo ? ICO_VINC : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>").join("");
   }
   $("lista").addEventListener("click", (ev) => {
     const ojo = ev.target.closest("[data-ojo]");
@@ -6817,7 +6980,7 @@ void main(){
     const cont = $("props");
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
     if (!c) { $("props-titulo").textContent = "Propiedades"; cont.innerHTML = '<p class="vacio">Selecciona una capa en la lista o sobre la esfera para editarla.</p>'; return; }
-    $("props-titulo").textContent = c.lote ? nombreLote(c) : c.manzana ? terminos().manzana + " " + (c.manzana.mz || "") : c.camino ? "Ruta" : c.tipo === "interes" ? "Punto de interés" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
+    $("props-titulo").textContent = c.lote ? nombreLote(c) : c.manzana || c.mzPlano ? terminos().manzana + " " + ((c.manzana || c.mzPlano).mz || "") : c.camino ? "Ruta" : c.tipo === "interes" ? "Punto de interés" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
     const multi = seleccionadas().length > 1 ? seleccionadas() : null;
     if (multi) $("props-titulo").textContent = multi.length + (c.lote ? " lotes" : " capas") + " seleccionados";
     let h = (multi ? '<div class="sel-multi"><b>' + multi.length + ' seleccionados.</b> Lo que cambies aquí se aplica a todos' + (c.lote ? ": manzana, estado, precio, superficie y estilo. Para los números usa «Numerar desde»." : ".") + ' <button class="mini" data-acc="sel-una">Solo este</button></div>' : "") +
@@ -6843,6 +7006,23 @@ void main(){
           '<div class="orden"><button class="mini" data-mz-suave>Suavizar toda la orilla</button><button class="mini" data-mz-esquinas>Redondear las 4 esquinas</button><button class="mini" data-mz-recto>Quitar curvas</button></div></div>' : "");
       h += '<div class="grupo"><b>Estado</b><p class="nota">Toca cada lote en la esfera para cambiar su estado, precio y superficie.</p><div class="orden"><button class="mini" data-acc="ir-lotes">Llenar precios y m² desde Excel</button></div></div>';
       // Estilo de TODOS los lotes de la manzana a la vez (los nuevos lo heredan)
+      const l0 = Object.assign({}, LOTE_DEF, (lotes[0] && lotes[0].lote) || {}), g0 = lotes[0] && lotes[0].trazo ? lotes[0].trazo.grosor : 1.5;
+      h += '<p class="nota mz-aviso">Lo de abajo cambia los ' + lotes.length + ' lotes de esta manzana.</p>';
+      h += grupoRotulo("_lotes.lote.", l0);
+      h += '<div class="grupo"><b>Estilo de los lotes</b>' + campo("Color", campoRango("_lotes.lote.opacidad", l0.opacidad ?? 0.35, 0, 1, 0.05, pct)) + campo("Borde", campoRango("_lotes.trazo.grosor", g0, 0, 8, 0.5, px)) +
+        campo("Borde de", '<select data-k="_lotes.lote.borde"><option value="blanco"' + (l0.borde !== "estado" ? " selected" : "") + '>Blanco</option><option value="estado"' + (l0.borde === "estado" ? " selected" : "") + ">Color del estado</option></select>") +
+        interruptor("Rollover (se ilumina al pasar el mouse)", "_lotes.lote.rollover", l0.rollover !== false) + "</div>";
+      h += '<div class="grupo"><b>Contorno de la manzana</b>' + campo("Color", campoColor("trazo.color", c.trazo.color)) + campo("Grosor", campoRango("trazo.grosor", c.trazo.grosor, 0, 12, 0.5, px)) + campo("Opacidad", campoRango("trazo.opacidad", c.trazo.opacidad, 0, 1, 0.05, pct)) + "</div>";
+    }
+    else if (c.mzPlano) {
+      const m = c.mzPlano, lotes = lotesDeManzana(c), extra = m.ctrl.length - 4;
+      h += '<div class="grupo"><b>Manzana del plano ' + CHIP_LAB + "</b>" +
+        campo("Manzana", '<input type="text" data-mzp="mz" value="' + esc(m.mz) + '" placeholder="3">') +
+        campo("Primer número", '<input type="text" inputmode="numeric" data-mzp="ini" value="' + esc(m.ini) + '">') +
+        '<p class="nota">Sale de tu PDF: ' + lotes.length + ' lotes con su forma del plano. <b>Jala las esquinas verdes</b> para acomodarla: todos los lotes la siguen sin perder sus proporciones.</p>' +
+        '<p class="nota"><b>Si no cuadra en alguna parte</b> (relieve, perspectiva): arrastra un <b>+</b> de la orilla hasta su lugar en la foto y la manzana se dobla suavemente. Doble clic en un punto blanco lo quita' + (extra ? " (llevas " + extra + ")" : "") + '.</p>' +
+        '<div class="orden"><button class="mini" data-mzp-soltar>Soltar los lotes</button></div><p class="nota">«Soltar los lotes» quita la manzana y deja cada lote por su cuenta.</p></div>';
+      h += '<div class="grupo"><b>Estado</b><p class="nota">Toca cada lote en la esfera para cambiar su estado, precio y superficie.</p><div class="orden"><button class="mini" data-acc="ir-lotes">Llenar precios y m² desde Excel</button></div></div>';
       const l0 = Object.assign({}, LOTE_DEF, (lotes[0] && lotes[0].lote) || {}), g0 = lotes[0] && lotes[0].trazo ? lotes[0].trazo.grosor : 1.5;
       h += '<p class="nota mz-aviso">Lo de abajo cambia los ' + lotes.length + ' lotes de esta manzana.</p>';
       h += grupoRotulo("_lotes.lote.", l0);
@@ -6924,9 +7104,9 @@ void main(){
     if (el.type === "range" || el.dataset.k === "peso" || /pesoRotulo$/.test(el.dataset.k)) v = +v;
     if (v === "true" || v === "false") v = v === "true"; // botones de sí/no (por ejemplo: fijo en 3D)
     // Manzana: el cambio va a todos sus lotes y se guarda para los que se agreguen después
-    if (el.dataset.k.startsWith("_lotes.") && c.manzana) {
-      const ruta = el.dataset.k.slice(7);
-      c.manzana.estiloLotes = Object.assign({}, c.manzana.estiloLotes, { [ruta]: v });
+    if (el.dataset.k.startsWith("_lotes.") && (c.manzana || c.mzPlano)) {
+      const ruta = el.dataset.k.slice(7), M = c.manzana || c.mzPlano;
+      M.estiloLotes = Object.assign({}, M.estiloLotes, { [ruta]: v });
       lotesDeManzana(c).forEach((x) => { try { escribir(x, ruta, v); } catch (e) { return; } if (x.vinculo) propagar(x, motorEd.actual.id); });
       const etqM = document.querySelector('[data-v-de="' + el.dataset.k + '"]');
       if (etqM) etqM.textContent = (FMTS[el.dataset.k] || px)(v);
@@ -6949,14 +7129,14 @@ void main(){
     // Lotes que salen de una manzana: su manzana manda (si no, al repartirla se regresaría el número viejo)
     if (el.dataset.k === "lote.manzana") {
       const padres = new Set([c].concat(otras).filter((x) => x.deManzana).map((x) => x.deManzana));
-      padres.forEach((pid) => { const m = buscar(pid); if (!m || !m.manzana) return; m.manzana.mz = v; m.nombre = terminos().manzana + " " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); });
+      padres.forEach((pid) => { const m = buscar(pid); if (m && m.mzPlano) { m.mzPlano.mz = v; m.nombre = terminos().manzana + " " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); return; } if (!m || !m.manzana) return; m.manzana.mz = v; m.nombre = terminos().manzana + " " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); });
       if (otras.length) pintarCapas();
     }
     // Número escrito a mano en un lote de manzana: la manzana lo recuerda (si no, al ajustarla se perdía)
     if (el.dataset.k === "lote.numero") [c].concat(otras).forEach((x) => {
       if (!x.deManzana) return;
-      const m = buscar(x.deManzana); if (!m || !m.manzana) return;
-      m.manzana.numeros = Object.assign({}, m.manzana.numeros, { [x.iManzana]: x.lote.numero });
+      const m = buscar(x.deManzana), M = m && (m.manzana || m.mzPlano); if (!M) return;
+      M.numeros = Object.assign({}, M.numeros, { [x.iManzana]: x.lote.numero });
     });
     const etq = document.querySelector('[data-v-de="' + el.dataset.k + '"]');
     if (etq) etq.textContent = (FMTS[el.dataset.k] || px)(v);
@@ -6986,6 +7166,7 @@ void main(){
     new Set(deMz.map((x) => x.deManzana)).forEach((pid) => {
       const m = buscar(pid), todosMz = m ? lotesDeManzana(m) : [];
       if (!m) return;
+      if (m.mzPlano) { m.mzPlano.numeros = Object.assign({}, m.mzPlano.numeros); todosMz.filter((x) => lotes.includes(x)).forEach((x) => { x.lote.numero = String(desde + lotes.indexOf(x)); m.mzPlano.numeros[x.iManzana] = x.lote.numero; }); return; }
       if (todosMz.every((x) => lotes.includes(x))) { m.manzana.inicio = desde + Math.min(...todosMz.map((x) => lotes.indexOf(x))); m.manzana.numeros = {}; repartirManzana(m); }
       else { // solo algunos lotes de la manzana: llevan su número y la manzana lo recuerda
         m.manzana.numeros = Object.assign({}, m.manzana.numeros);
@@ -7101,7 +7282,7 @@ void main(){
   function duplicar() {
     const c = motorEd.elegida && buscar(motorEd.elegida);
     if (!c) return;
-    if (c.manzana || c.deManzana) { avisar("Las manzanas no se duplican; dibuja otra"); return; }
+    if (c.manzana || c.mzPlano || c.deManzana) { avisar("Las manzanas no se duplican; dibuja otra"); return; }
     const copia = JSON.parse(JSON.stringify(c));
     copia.id = nuevoId(); copia.nombre = c.nombre + " copia"; delete copia.vinculo;
     if (copia.lote) { const mz = String(c.lote.manzana).trim().toLowerCase(); let max = 0; Object.values(est.capas).flat().forEach((x) => { if (x.lote && String(x.lote.manzana).trim().toLowerCase() === mz) max = Math.max(max, parseInt(x.lote.numero, 10) || 0); }); copia.lote.numero = String(max + 1); copia.lote.estado = "disponible"; }
@@ -7123,7 +7304,7 @@ void main(){
     if (i < 0) return;
     const v = l[i].vinculo;
     if (l[i].deManzana) { avisar("Este lote es parte de una manzana. Quita lotes desde la manzana."); return; }
-    if (l[i].manzana) { const id = l[i].id; est.capas[motorEd.actual.id] = l.filter((x) => x.id !== id && x.deManzana !== id); motorEd.elegida = null; cambio(); avisar("Manzana y sus lotes eliminados"); return; }
+    if (l[i].manzana || l[i].mzPlano) { const id = l[i].id; est.capas[motorEd.actual.id] = l.filter((x) => x.id !== id && x.deManzana !== id); motorEd.elegida = null; cambio(); avisar("Manzana y sus lotes eliminados"); return; }
     l.splice(i, 1); motorEd.elegida = null;
     let n = 0;
     if (v) Object.keys(est.capas).forEach((id) => { const antes = est.capas[id].length; est.capas[id] = est.capas[id].filter((x) => x.vinculo !== v); n += antes - est.capas[id].length; });
@@ -7132,7 +7313,7 @@ void main(){
   // Selección: una capa "elegida" (la que muestra sus propiedades) más otras del mismo tipo que se editan juntas.
   // Shift + clic elige un rango en la lista; Cmd/Ctrl + clic suma o quita una (también sobre la esfera).
   let seleccion = new Set();
-  const tipoSel = (c) => (c.lote ? "lote" : c.manzana ? "manzana" : c.camino ? "camino" : c.tipo);
+  const tipoSel = (c) => (c.lote ? "lote" : c.manzana || c.mzPlano ? "manzana" : c.camino ? "camino" : c.tipo);
   const seleccionadas = () => { const l = cs(); return [...seleccion].map((id) => l.find((x) => x.id === id)).filter(Boolean); };
   function seleccionar(id, modo) {
     if (!motorEd) return;
@@ -7155,6 +7336,7 @@ void main(){
   function cambio() {
     const c = motorEd.elegida && buscar(motorEd.elegida);
     if (c && c.manzana) repartirManzana(c);
+    if (c && c.mzPlano) repartirPlano(c);
     if (c && c.vinculo) propagar(c, motorEd.actual.id);
     guardar(); motorEd.construir(); pintarCapas(); pintarProps(); pintarTira();
   }
