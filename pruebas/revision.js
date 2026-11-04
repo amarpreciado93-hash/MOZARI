@@ -631,6 +631,13 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await n.keyboard.press("Control+Shift+z"); await n.waitForTimeout(2500);
       lotes = await lotes7();
       exige(lotes.length === 9, "Ctrl+Shift+Z no regresó los lotes");
+      // Laboratorio · foto 360 con lotes: un JPG 2:1 con los datos 360 (XMP GPano) para Facebook y Google Fotos
+      exige(await n.isVisible("#foto360-boton"), "no está el botón «Foto 360 con lotes»");
+      const [descarga] = await Promise.all([n.waitForEvent("download", { timeout: 120000 }), n.click("#foto360-boton")]);
+      const bytes = fs.readFileSync(await descarga.path()), cab = bytes.slice(0, 3000).toString("latin1");
+      exige(bytes[0] === 0xff && bytes[1] === 0xd8 && /GPano:ProjectionType="equirectangular"/.test(cab), "la foto 360 no trae los datos 360 (XMP)");
+      const anchoF = +(cab.match(/FullPanoWidthPixels="(\d+)"/) || [])[1], altoF = +(cab.match(/FullPanoHeightPixels="(\d+)"/) || [])[1];
+      exige(anchoF >= 2048 && anchoF === 2 * altoF && /-lotes-360\.jpg$/.test(descarga.suggestedFilename()), "la foto 360 no es 2:1 (" + anchoF + "×" + altoF + ")");
       // Manzana completa (lo de inicio): los 9 lotes amarrados; jalar una esquina mueve a todos; un «+» agrega un punto que la dobla
       let capas = Object.values((await leer()).capas).flat(), mzc = capas.find((c) => c.mzPlano);
       exige(mzc && lotes.every((c) => c.deManzana === mzc.id), "no se creó la manzana completa con sus lotes amarrados");
