@@ -508,6 +508,34 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await n.context().close();
     }, a);
 
+    // Pedido de Amar (nov 2026): misma letra en toda la lotificación; un lote grande no agranda su texto (salvo a mano)
+    await paso("Rótulos parejos: un lote grande no agranda su texto, solo si se le sube a mano", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Rotulos parejos");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800);
+      const [cx, cy] = await n.evaluate(() => { const e = [...document.querySelectorAll(".capas")].find((x) => x.getClientRects().length && x.getBoundingClientRect().width > 300); const b = e.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
+      for (let i = 0; i < 4; i++) { await n.mouse.move(cx, cy + 250); await n.mouse.down(); for (let k = 1; k <= 10; k++) await n.mouse.move(cx, cy + 250 - k * 50); await n.mouse.up(); await n.waitForTimeout(300); }
+      await n.waitForTimeout(800);
+      await dibujarManzana(n, [[cx - 320, cy - 170], [cx - 160, cy - 180], [cx, cy - 170]], [[cx - 320, cy + 60], [cx, cy + 60]]);
+      await n.click('#lista li:has-text("Manzana 1")'); await n.waitForTimeout(500);
+      for (let i = 0; i < 5; i++) { await n.click('[data-mz-n="-1"]'); await n.waitForTimeout(200); }
+      await n.keyboard.press("Escape"); await n.click("#add-lote"); await n.waitForTimeout(300); await pasarGuias(n);
+      for (const [x, y] of [[cx + 50, cy - 170], [cx + 330, cy - 170], [cx + 330, cy + 140], [cx + 50, cy + 140]]) { await n.mouse.click(x, y); await n.waitForTimeout(120); }
+      await n.keyboard.press("Enter"); await n.waitForTimeout(800);
+      await n.fill('[data-k="lote.numero"]', "99"); await n.press('[data-k="lote.numero"]', "Tab");
+      await n.fill('[data-k="lote.manzana"]', "1"); await n.press('[data-k="lote.manzana"]', "Tab"); await n.waitForTimeout(1200);
+      const altos = () => n.evaluate(() => Object.fromEntries([...document.querySelectorAll(".lt-p.nom")].filter((e) => e.style.display !== "none" && e.style.visibility !== "hidden").map((e) => [e.firstChild.textContent, e.getBoundingClientRect().height])));
+      let h = await altos();
+      const chicos = Object.entries(h).filter(([k]) => !/99/.test(k)).map(([, v]) => v).sort((p, q) => p - q), med = chicos[Math.floor(chicos.length / 2)];
+      exige(chicos.length >= 4 && h["Lote 99 · M1"], "no se ven los rótulos (" + JSON.stringify(h) + ")");
+      exige(h["Lote 99 · M1"] < med * 1.3, "el lote grande tiene la letra más grande que los demás (" + h["Lote 99 · M1"].toFixed(1) + " vs " + med.toFixed(1) + ")");
+      await n.$eval('[data-k="lote.tamRotulo"]', (e) => { e.value = "1"; e.dispatchEvent(new Event("input", { bubbles: true })); e.dispatchEvent(new Event("change", { bubbles: true })); });
+      await n.waitForTimeout(1200);
+      const antes = h["Lote 99 · M1"]; h = await altos();
+      exige(h["Lote 99 · M1"] > antes * 1.4, "subirle el tamaño a mano no agranda su texto (" + h["Lote 99 · M1"].toFixed(1) + " vs " + antes.toFixed(1) + ")");
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await n.context().close();
+    }, a);
+
     // 5. Los errores de JavaScript de todas las páginas
     await paso("Sin errores de JavaScript en el estudio", async () => { exige(!a.errs.length && !g.errs.length, (a.errs.concat(g.errs)).join(" | ").slice(0, 200)); });
     await navegador.close();

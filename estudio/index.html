@@ -3930,6 +3930,7 @@
     }
     function rotulosPlanos(n, cam) {
       const c = n.c, l = loteDe(c), R = n.planos;
+      n.esc06 = 0; n.escLado06 = 0;
       const G = c.puntos.map(([y, p]) => aSuelo(y, p));
       if (G.some((g) => !g) || n.el.hidden) { R.cont.style.display = "none"; return false; }
       R.cont.style.display = "";
@@ -3950,10 +3951,14 @@
         const pu = G.map((g) => (g[0] - C[0]) * u[0] + (g[1] - C[1]) * u[1]), pv = G.map((g) => (g[0] - C[0]) * v[0] + (g[1] - C[1]) * v[1]);
         const extU = Math.max(...pu) - Math.min(...pu), extV = Math.max(...pv) - Math.min(...pv);
         // Ajusta el rótulo al lote y lo coloca; devuelve su tamaño de letra en pantalla
+        // Lo que le cabría al lote con el tamaño t (alto del rótulo en el suelo)
+        const ajuste = ([w, h], tt) => { const r = h / w; let Hg = tt * extU * r; if (Hg > 0.55 * tt / 0.6 * extV) Hg = 0.55 * tt / 0.6 * extV; return Hg; };
+        // Misma letra en toda la lotificación: un lote grande no agranda su texto; uno chico lo achica solo si no
+        // cabe. Si al lote le subes el tamaño a mano, ese sí crece (escala común × t/0.6).
+        n.esc06 = ajuste(R.med.nom, 0.6) / R.med.nom[1];
+        const tope = (h) => (escalaComun ? escalaComun * (t / 0.6) * h : Infinity);
         const poner = (el, [w, h], k) => {
-          const r = h / w;
-          let Wg = t * extU, Hg = Wg * r;
-          if (Hg > 0.55 * t / 0.6 * extV) { Hg = 0.55 * t / 0.6 * extV; Wg = Hg / r; }
+          const r = h / w, Hg = Math.min(ajuste([w, h], t), tope(h)), Wg = Hg / r;
           return (colocarPlano(cam, el, w, h, C, u, v, (Wg * k) / 2, (Hg * k) / 2) * 40) / h;
         };
         // Del más completo al más corto: el primero que quepa en el lote con letra legible. Las versiones
@@ -3965,8 +3970,7 @@
         const dist = Math.hypot(C[0], C[1], 1), dC = Math.hypot(C[0], C[1]) || 1, vr = (v[0] * C[0] + v[1] * C[1]) / dC;
         const fijo = (cam.f / dist) * Math.sqrt(vr * vr / (dist * dist) + (1 - vr * vr));
         const estimada = ([w, h]) => {
-          const rr = h / w; let Wg = t * extU, Hg = Wg * rr;
-          if (Hg > 0.55 * t / 0.6 * extV) Hg = 0.55 * t / 0.6 * extV;
+          const Hg = Math.min(ajuste([w, h], t), tope(h));
           return (Hg * fijo * 40) / h;
         };
         // Siempre el rótulo completo, a escala del lote: al alejarte se hace chico junto con el lote,
@@ -3982,7 +3986,10 @@
         let nrm = [-(B[1] - A[1]) / L, (B[0] - A[0]) / L];
         const M = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2];
         if ((C[0] - M[0]) * nrm[0] + (C[1] - M[1]) * nrm[1] < 0) nrm = [-nrm[0], -nrm[1]];
-        let Hg = 0.085 * S * (t / 0.6), Wg = Hg / r;
+        let Hg = 0.085 * S * (t / 0.6);
+        if (!n.escLado06) n.escLado06 = (0.085 * S) / h;
+        if (escalaLado) Hg = Math.min(Hg, escalaLado * (t / 0.6) * h); // medidas parejas: un lote grande no las agranda
+        let Wg = Hg / r;
         if (Wg > 0.8 * L) { Wg = 0.8 * L; Hg = Wg * r; }
         const Cm = [M[0] + nrm[0] * Hg * 0.85, M[1] + nrm[1] * Hg * 0.85];
         const eL = [(B[0] - A[0]) / L, (B[1] - A[1]) / L], [u, v] = marco ? alinearMarco(marco, eL) : orientar(ref, eL);
@@ -4046,6 +4053,15 @@
     let pendiente = false, sucio = false;
     function programar() { sucio = true; if (pendiente) return; pendiente = true; requestAnimationFrame(() => { pendiente = false; if (sucio) { sucio = false; render(); } }); }
     viewer.renderLoop().addEventListener("afterRender", () => { if (sucio) { sucio = false; render(); } });
+    // Escala común de los rótulos del panorama: el 30 % más chico de lo que le cabe a cada lote (con el
+    // tamaño normal). Se toma de la vuelta anterior; si cambia, se vuelve a pintar.
+    let escalaComun = 0, escalaLado = 0;
+    function escalaDe(k) {
+      const e = []; nodos.forEach((n) => { if (n[k] > 0) e.push(n[k]); });
+      if (!e.length) return 0;
+      e.sort((a, b) => a - b);
+      return e[Math.floor(0.3 * (e.length - 1))];
+    }
     function render() {
       if (!actual) return;
       const cam = camara();
@@ -4096,6 +4112,8 @@
           n.el.classList.toggle("elegida", editable && motor.modo === "capas" && id === motor.elegida);
         }
       });
+      const ec = escalaDe("esc06"), el = escalaDe("escLado06");
+      if (Math.abs(ec - escalaComun) > 0.005 * (ec || 1) || Math.abs(el - escalaLado) > 0.005 * (el || 1)) { escalaComun = ec; escalaLado = el; programar(); }
       extra.innerHTML = "";
       // Asas propias de una capa (las líneas de una manzana): las da el editor
       if (editable && motor.modo === "capas" && !motor.dibujo && motor.elegida && opciones.asasExtra) {
