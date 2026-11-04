@@ -8980,12 +8980,12 @@ void main(){
       return ids;
     };
     return {
-      // Lo indispensable antes de abrir; avisa el avance de 0 a 1. Nunca espera más de 15 s.
+      // Lo indispensable antes de abrir: la vista previa y el nivel ligero de ESTA esfera (≈1 MB). Avisa el avance de 0 a 1.
+      // Lo que se ve en alta lo pide el visor al abrir (solo lo que entra en pantalla, no las 6 caras) y lo demás
+      // (el resto de la esfera y las vecinas) se baja ya con el tour abierto. Antes se esperaban ~15 MB: en celular,
+      // 10 a 15 s viendo «Cargando». Nunca espera más de 15 s.
       inicial(id, alAvance) {
-        const ligeras = [id].concat(vecinas(id));
-        const urls = est.escenas.map((e) => R(e.id) + "preview.jpg")
-          .concat(...ligeras.map((x) => piezas(x, Math.min(1, meta[x].niveles.length - 1))))
-          .concat(piezas(id, nivelPara(id)));
+        const urls = meta[id] ? [R(id) + "preview.jpg"].concat(piezas(id, Math.min(1, meta[id].niveles.length - 1))) : [];
         let listo = 0;
         const total = urls.length;
         return new Promise((fin) => {
@@ -8997,17 +8997,22 @@ void main(){
         });
       },
       // Mientras navegas: las vecinas a buena resolución, en segundo plano
+      // En orden: lo ligero de las vecinas (para saltar rápido), el resto de esta esfera en alta (para girar
+      // sin ver borroso) y, en compu, las vecinas en alta.
       alrededor(id) {
         cola = [];
-        vecinas(id).forEach((x) => encolar(piezas(x, Math.min(1, meta[x].niveles.length - 1))));
-        if (!MOVIL) vecinas(id).forEach((x) => encolar(piezas(x, nivelPara(x))));
+        const vec = vecinas(id).filter((x) => meta[x]);
+        encolar(vec.map((x) => R(x) + "preview.jpg"));
+        vec.forEach((x) => encolar(piezas(x, Math.min(1, meta[x].niveles.length - 1))));
+        if (meta[id]) encolar(piezas(id, nivelPara(id)));
+        if (!MOVIL) vec.forEach((x) => encolar(piezas(x, nivelPara(x))));
       },
       parar() { gen++; cola = []; },
       // Ya: esta esfera primero (al pasar el mouse sobre un hotspot o al tocarlo)
       // Devuelve una promesa que se cumple cuando la esfera ya está en caché a la resolución que se va a ver
       ya(id) {
         if (!meta[id]) return Promise.resolve();
-        const urls = piezas(id, Math.min(1, meta[id].niveles.length - 1)).concat(piezas(id, nivelPara(id))).filter((u) => !hechas.has(u));
+        const urls = [R(id) + "preview.jpg"].concat(piezas(id, Math.min(1, meta[id].niveles.length - 1)), piezas(id, nivelPara(id))).filter((u) => !hechas.has(u));
         cola = cola.filter((u) => !urls.includes(u));
         return Promise.all(urls.map(bajar));
       },
@@ -9052,7 +9057,8 @@ void main(){
     $("pv-carga").textContent = "Cargando…";
     audioPrueba.pause(); $("m-play").innerHTML = ICO_PLAY;
     const g = ++previaGen;
-    await precarga.inicial(P().escenaInicial, (x) => { if (g === previaGen) $("pv-carga").textContent = "Cargando " + Math.round(x * 100) + "%"; });
+    const avancePv = (pct) => { if (g === previaGen) $("pv-carga").textContent = "Cargando " + Math.round(pct) + "%"; };
+    await precarga.inicial(P().escenaInicial, (x) => avancePv(40 * x));
     if (g !== previaGen || $("previa").hidden) return;
     orientPv = orientacionPantalla();
     tourPv = crearTour($("pv-stage"), $("pv-ui"), {
@@ -9065,7 +9071,10 @@ void main(){
     });
     sonar();
     // La pantalla de carga se quita cuando la primera esfera ya se ve nítida (máximo 8 s más)
+    // Mientras llega lo que se ve en alta, el avance sigue (no se queda en un número fijo)
+    let pct = 40; const sigue = setInterval(() => { pct += (96 - pct) * 0.07; avancePv(pct); }, 150);
     if (tourPv && tourPv.nitido) await tourPv.nitido(8000);
+    clearInterval(sigue);
     if (g !== previaGen) return;
     setTimeout(() => ($("pv-carga").hidden = true), 150);
   }

@@ -224,6 +224,29 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
       await t.context().close();
     }, a);
+    await paso("El tour abre sin esperar a bajar toda la esfera en alta (celular con 4G)", async () => {
+      // Reporte (nov 2026): en celular el tour tardaba 10-15 s en abrir porque esperaba las 6 caras en alta y las vecinas
+      if (!link) { await a.click('#nav button:has-text("Publicar")'); await a.waitForTimeout(800); await a.click("#pub-publicar"); await a.waitForTimeout(3500); link = TOURS + "/" + tour + "/"; }
+      const ctx = await navegador.newContext(Object.assign({}, devices["iPhone 13"])), t = await ctx.newPage();
+      await t.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+      const cdp = await ctx.newCDPSession(t); await cdp.send("Network.enable");
+      await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: 120, downloadThroughput: (9 * 1024 * 1024) / 8, uploadThroughput: (2 * 1024 * 1024) / 8 });
+      const pedidas = []; t.on("request", (r) => { const m = r.url().match(/\/escenas\/([^/]+)\/(\d+)\//); if (m) pedidas.push([m[1], +m[2]]); });
+      await t.goto(link, { waitUntil: "commit" });
+      await t.waitForFunction(() => { const c = document.getElementById("pv-carga"); return c && c.hidden; }, null, { timeout: 30000 });
+      const alAbrir = pedidas.slice();
+      const pj = await (await fetch(link + "proyecto.json")).json(), ini = pj.proyecto.escenaInicial || pj.escenas[0].id;
+      const meta = await (await fetch(link + "escenas/" + ini + "/escena.json")).json();
+      const z = Math.max(...alAbrir.filter((x) => x[0] === ini).map((x) => x[1])), nv = meta.niveles[z], total = 6 * Math.ceil(nv.size / nv.tileSize) ** 2;
+      const de = alAbrir.filter((x) => x[0] === ini && x[1] === z).length;
+      exige(z >= 2 && de > 0, "no pidió la esfera en alta para abrir");
+      exige(de < total, "esperó las " + total + " piezas en alta de la esfera antes de abrir (solo hacen falta las que se ven)");
+      exige(!alAbrir.some((x) => x[0] !== ini && x[1] >= 1), "antes de abrir bajó otras esferas");
+      await t.waitForTimeout(4000);
+      if (pj.escenas.length > 1) exige(pedidas.some((x) => x[0] !== ini), "con el tour abierto no se bajaron las esferas vecinas");
+      exige(pedidas.filter((x) => x[0] === ini && x[1] === z).length > de, "con el tour abierto no se bajó el resto de la esfera en alta");
+      await ctx.close();
+    }, a);
     await paso("Laboratorio · estadísticas: una visita al tour se cuenta (con el lote que abrió)", async () => {
       const t = await pagina(null); await t.goto(link); await t.waitForTimeout(4500);
       const centro = await t.$$eval("path.cp-pol.con-accion", (l) => l.map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2, r.width * r.height]; }).filter((x) => x[2] > 400).sort((a, b) => b[2] - a[2])[0]);
