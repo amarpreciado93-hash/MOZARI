@@ -492,6 +492,18 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await n.waitForTimeout(2500);
       const d4 = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id), rf = d4.proyecto.referencia;
       exige(rf.giro === 30 && (rf.trazos || []).length === 1 && rf.trazos[0].p.length > 5, "no se guardó el giro o el dibujo del plano (" + JSON.stringify({ giro: rf.giro, trazos: (rf.trazos || []).length }) + ")");
+      // Reporte de Amar: al volver a abrir el tour, la manzana debe mostrar todas sus asas desde el primer clic
+      await n.reload(); await n.waitForTimeout(3500); await cerrarGuia(n);
+      await n.click('#nav button:has-text("Panoramas")'); await n.waitForTimeout(600); await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800); await cerrarGuia(n);
+      await n.click('#lista li:has-text("Manzana 1")'); await n.waitForTimeout(800);
+      exige((await n.$$("circle.mz-asa")).length > 5 && (await n.$$("circle.mz-mas")).length > 2, "al reabrir el tour, la manzana solo muestra sus esquinas");
+      // Un lote sin número ni manzana (reserva ecológica) no lleva rótulo ni abre ficha
+      await n.keyboard.press("Escape"); await n.click("#add-lote"); await n.waitForTimeout(300); await pasarGuias(n);
+      for (const [x, y] of [[560, 330], [700, 330], [700, 420], [560, 420]]) { await n.mouse.click(x, y); await n.waitForTimeout(120); }
+      await n.keyboard.press("Enter"); await n.waitForTimeout(800);
+      for (const k of ["lote.numero", "lote.manzana"]) { await n.fill('[data-k="' + k + '"]', ""); await n.press('[data-k="' + k + '"]', "Tab"); }
+      await n.waitForTimeout(800);
+      exige(!/sin número/.test(await n.$eval("#ed-stage", (e) => e.innerText + " " + [...e.querySelectorAll("text")].map((t) => t.textContent).join(" "))), "el área sin número muestra «Lote sin número» en la esfera");
       exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
       await n.context().close();
     }, a);

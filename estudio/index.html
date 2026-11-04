@@ -1856,6 +1856,9 @@
     if (!l.numero && !l.manzana) return T.lote + " sin número";
     return T.lote + " " + (l.numero || "—") + (l.manzana ? " · " + mzCorta(l.manzana) : "");
   }
+  // Un lote sin número ni manzana no es un lote a la venta (reserva ecológica, área verde…): en la esfera
+  // no lleva rótulo, al tocarlo no abre ficha y no cuenta en la tabla de Lotes ni en el masterplan
+  const loteVacio = (c) => { const l = loteDe(c); return !String(l.numero || "").trim() && !String(l.manzana || "").trim(); };
   // El mismo lote en varias esferas: por número y manzana (o por su vínculo de terreno)
   const claveLote = (c) => { const l = loteDe(c); return l.numero ? "mz:" + String(l.manzana).trim().toLowerCase() + "|" + String(l.numero).trim().toLowerCase() : "v:" + (c.vinculo || c.id); };
   function copiasLote(c) {
@@ -2146,7 +2149,7 @@
       '<span class="pi-txt">' + (p.nombre ? "<b>" + esc(p.nombre) + "</b>" : "") + (p.detalle ? "<span>" + esc(p.detalle) + "</span>" : "") + "</span></div></div>";
     if (p.contraste === "caja-clara") el.style.setProperty("--pi-c", p.color.toUpperCase() === "#FFFFFF" ? "#111111" : p.color);
   }
-  const accionDe = (c) => c.accion || (c.tipo === "hotspot" ? "panorama" : c.lote ? "ficha" : "ninguna");
+  const accionDe = (c) => c.accion || (c.tipo === "hotspot" ? "panorama" : c.lote && !loteVacio(c) ? "ficha" : "ninguna");
   const ACCIONES = [["ninguna", "Nada"], ["panorama", "Ir a un panorama"], ["url", "Abrir enlace"], ["web", "Página en ventana"], ["imagen", "Imagen en ventana"], ["galeria", "Galería de fotos"], ["video", "Video en ventana"]];
   const ICO_ACCION = {
     panorama: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
@@ -3814,7 +3817,7 @@
         g.appendChild(t); cont.appendChild(g); return g;
       };
       const area = l.verArea ? fmtArea(l.area) : "";
-      const nom = l.etiqueta ? pieza([[nombreLote(c)]].concat(area ? [[area, true]] : []), "nom") : null;
+      const nom = l.etiqueta && !loteVacio(c) ? pieza([[nombreLote(c)]].concat(area ? [[area, true]] : []), "nom") : null;
       const lados = c.puntos.map((_, i) => { const v = l.medidas ? fmtLado((l.lados || [])[i]) : ""; return v ? pieza([[v]], "lt-medida") : null; });
       return { cont, nom, cortos: [], lados, med: null, svg: true };
     }
@@ -3831,9 +3834,10 @@
       nom.className = "lt-p nom";
       const area = l.verArea ? fmtArea(l.area) : "";
       nom.innerHTML = esc(nombreLote(c)) + (area ? "<small>" + esc(area) + "</small>" : "");
+      const et = l.etiqueta && !loteVacio(c); // un lote sin número ni manzana (reserva ecológica) no lleva rótulo
       // Versiones cortas para cuando el lote se ve chico al alejarse: "3 · B" y luego solo "3". El número nunca se borra.
       const cortos = [nombreCorto(l), l.numero || "—"].map((tx) => { const e = document.createElement("div"); e.className = "lt-p nom"; e.textContent = tx; return e; });
-      if (l.etiqueta) { cont.appendChild(nom); cortos.forEach((e) => cont.appendChild(e)); }
+      if (et) { cont.appendChild(nom); cortos.forEach((e) => cont.appendChild(e)); }
       const lados = c.puntos.map((_, i) => {
         const v = l.medidas ? fmtLado((l.lados || [])[i]) : "";
         if (!v) return null;
@@ -3841,7 +3845,7 @@
         e.className = "lt-p lt-medida"; e.textContent = v; cont.appendChild(e);
         return e;
       });
-      return { cont, nom: l.etiqueta ? nom : null, cortos: l.etiqueta ? cortos : [], lados, med: null };
+      return { cont, nom: et ? nom : null, cortos: et ? cortos : [], lados, med: null };
     }
     const nombreCorto = (l) => (l.numero || "—") + (l.manzana ? " · " + l.manzana : "");
     const LETRA_MIN = 9, LETRA_CORTA = 11; // px en pantalla: nombre completo desde 9; versiones cortas siempre a 11
@@ -4000,7 +4004,7 @@
         const v = c.puntos.reduce((a, [y, p]) => { const d = dir3(y, p); return [a[0] + d[0], a[1] + d[1], a[2] + d[2]]; }, [0, 0, 0]);
         const L = Math.hypot(v[0], v[1], v[2]) || 1, pc = aCamara(cam, Math.atan2(v[0], v[2]), Math.asin(-v[1] / L));
         const C = pc.z > CERCA ? aPantalla(cam, pc) : null;
-        if (C && l.etiqueta) {
+        if (C && l.etiqueta && !loteVacio(c)) {
           // Del más completo al más corto ("Lote 3 · Mz B" → "3 · B" → "3"): el número nunca se borra al alejarse
           const opciones = [nombreLote(c), nombreCorto(l), l.numero || "—"], cabe = (s) => (ancho * 0.92) / Math.max(1, s.length * 0.6);
           // Siempre el rótulo completo, del tamaño que le toca al lote (sin versiones cortas)
@@ -5867,6 +5871,9 @@ void main(){
   // Asas de la manzana elegida: puntas de cada corte (se deslizan por el frente o el fondo), nodos en
   // medio de los cortes y "+" para agregar nodos (en los cortes y en las orillas del frente y del fondo)
   function asasManzana(c) {
+    // Al abrir el tour la geometría de la manzana aún no está calculada: se calcula al elegirla, así salen
+    // todas sus asas (cortes, +, curvas, esquinas) desde el primer clic y no hasta mover un punto
+    if (!geoManzana.get(c)) repartirManzana(c);
     const g = geoManzana.get(c); if (!g) return null;
     const m = c.manzana, n = m.n, F = m.nFrente, lineas = [], asas = [];
     const mitad = (a, b) => { const qa = aPlano(a[0], a[1]), qb = aPlano(b[0], b[1]); if (qa && qb) return dePlano([(qa[0] + qb[0]) / 2, (qa[1] + qb[1]) / 2]); let dy = b[0] - a[0]; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI; return [a[0] + dy / 2, (a[1] + b[1]) / 2]; };
@@ -6249,7 +6256,8 @@ void main(){
         : '<label>' + esc(terminos().lote) + '<input type="text" data-k="lote.numero" value="' + val("numero") + '" placeholder="12"></label>') +
       '<label>' + esc(terminos().manzana) + '<input type="text" data-k="lote.manzana" value="' + val("manzana") + '" placeholder="3"></label>' +
       '<label>Superficie (m²)<input type="text" inputmode="decimal" data-k="lote.area" value="' + val("area") + '" placeholder="1250"></label>' +
-      '<label>Precio (' + monedaTour() + ')<input type="text" inputmode="decimal" data-k="lote.precio" value="' + val("precio") + '" placeholder="$"></label></div></div>';
+      '<label>Precio (' + monedaTour() + ')<input type="text" inputmode="decimal" data-k="lote.precio" value="' + val("precio") + '" placeholder="$"></label></div>' +
+      '<p class="nota">Sin número ni ' + esc(terminos().manzana.toLowerCase()) + ', el área no lleva rótulo ni ficha y no cuenta como ' + esc(terminos().lote.toLowerCase()) + ' (para reservas o áreas verdes).</p></div>';
     h += '<div class="grupo"><b>Estado</b><div class="estados">' + estadosLote().map((e) =>
       '<button data-estado="' + e.id + '" aria-pressed="' + (estadoDe(c).id === e.id) + '" style="--c:' + e.color + '"><i></i>' + esc(e.nombre) + "</button>").join("") + "</div>" +
       '<p class="nota">Cambia en todas las esferas donde aparece este lote y en su ficha.</p>' +
@@ -6697,7 +6705,7 @@ void main(){
     // Un mismo lote puede estar en varias esferas: se agrupa por número y manzana o por su vínculo de terreno
     const g = [];
     Object.keys(est.capas).forEach((id) => (est.capas[id] || []).forEach((c) => {
-      if (!c.lote) return;
+      if (!c.lote || loteVacio(c)) return;
       const k = claveLote(c);
       let gr = g.find((x) => (c.vinculo && x.vinc.has(c.vinculo)) || (x.claves.has(k) && !x.m.some((y) => y.id === id)));
       if (!gr) { gr = { k: g.some((x) => x.k === k) ? k + "#" + c.id : k, m: [], claves: new Set(), vinc: new Set() }; g.push(gr); }
