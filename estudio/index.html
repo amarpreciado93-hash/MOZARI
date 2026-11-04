@@ -5931,26 +5931,78 @@ void main(){
     }
     return b.map((r, i) => r.map((v) => v / A[i][i]));
   }
-  function deformacion(m) {
-    const G = m.ctrl.map((k) => aPlano(k.s[0], k.s[1]));
-    if (G.some((g) => !g)) return null;
-    const H = homografia(m.ctrl.slice(0, 4).map((k) => k.p), G.slice(0, 4));
-    if (!H) return null;
-    if (m.ctrl.length <= 4) return H;
-    const P = m.ctrl.map((k) => k.p), xs = P.map((p) => p[0]), ys = P.map((p) => p[1]);
+  // Thin-plate spline: P puntos del plano con su corrección R (en el suelo) → función suave que pasa por todos
+  function tps(P, R) {
+    if (!P.length || R.every((r) => !r[0] && !r[1])) return () => [0, 0];
+    const xs = P.map((p) => p[0]), ys = P.map((p) => p[1]);
     const c0 = [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2], e = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) || 1;
     const N = P.map((p) => [(p[0] - c0[0]) / e, (p[1] - c0[1]) / e]), n = N.length, U = (r) => (r > 1e-12 ? r * r * Math.log(r) : 0);
     const A = [];
     for (let i = 0; i < n; i++) A.push(N.map((q, j) => U(Math.hypot(N[i][0] - q[0], N[i][1] - q[1])) + (i === j ? 1e-7 : 0)).concat([1, N[i][0], N[i][1]]));
     A.push(N.map(() => 1).concat([0, 0, 0])); A.push(N.map((q) => q[0]).concat([0, 0, 0])); A.push(N.map((q) => q[1]).concat([0, 0, 0]));
-    const b = m.ctrl.map((k, i) => { if (i < 4) return [0, 0]; const h = H(k.p); return [G[i][0] - h[0], G[i][1] - h[1]]; }).concat([[0, 0], [0, 0], [0, 0]]);
-    const w = resolver(A, b); if (!w) return H;
+    const w = resolver(A, R.concat([[0, 0], [0, 0], [0, 0]])); if (!w) return () => [0, 0];
     return (p) => {
-      const h = H(p), q = [(p[0] - c0[0]) / e, (p[1] - c0[1]) / e];
+      const q = [(p[0] - c0[0]) / e, (p[1] - c0[1]) / e];
       let rx = w[n][0] + w[n + 1][0] * q[0] + w[n + 2][0] * q[1], ry = w[n][1] + w[n + 1][1] * q[0] + w[n + 2][1] * q[1];
       for (let i = 0; i < n; i++) { const u = U(Math.hypot(q[0] - N[i][0], q[1] - N[i][1])); rx += w[i][0] * u; ry += w[i][1] * u; }
-      return [h[0] + rx, h[1] + ry];
+      return [rx, ry];
     };
+  }
+  // Recorrido de la orilla del plano: largo, punto a cierta distancia y en qué distancia cae cada punto de control
+  function ordenCtrl(m, C) {
+    const L = [0]; for (let i = 1; i <= C.length; i++) L.push(L[i - 1] + Math.hypot(C[i % C.length][0] - C[i - 1][0], C[i % C.length][1] - C[i - 1][1]));
+    const tot = L[L.length - 1] || 1;
+    const param = (p) => { let best = 0, dm = Infinity; for (let i = 1; i <= C.length; i++) { const a = C[i - 1], b = C[i % C.length], dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2)), d = Math.hypot(a[0] + dx * u - p[0], a[1] + dy * u - p[1]); if (d < dm) { dm = d; best = L[i - 1] + u * Math.sqrt(l2); } } return best; };
+    const enT = (t) => { t = ((t % tot) + tot) % tot; let i = 1; while (i < L.length - 1 && L[i] < t) i++; const a = C[i - 1], b = C[i % C.length], u = (t - L[i - 1]) / ((L[i] - L[i - 1]) || 1); return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]; };
+    const ts = m.ctrl.map((k) => param(k.p)), orden = ts.map((_, i) => i).sort((a, b) => ts[a] - ts[b]);
+    return { tot, enT, ts, orden };
+  }
+  const conCurvas = (m) => m.ctrl.some((k) => (k.h && (k.h[0] || k.h[1])) || k.r);
+  // Del plano al suelo: homografía de las 4 esquinas + corrección suave por los puntos extra, las curvas y los redondeos
+  function deformacion(m, cont) {
+    const G = m.ctrl.map((k) => aPlano(k.s[0], k.s[1]));
+    if (G.some((g) => !g)) return null;
+    const H = homografia(m.ctrl.slice(0, 4).map((k) => k.p), G.slice(0, 4));
+    if (!H) return null;
+    const resto = (p, t) => { const h = H(p); return [t[0] - h[0], t[1] - h[1]]; };
+    const P = m.ctrl.map((k) => k.p), f0 = tps(P, P.map((p, i) => resto(p, G[i])));
+    const W0 = (p) => { const h = H(p), r = f0(p); return [h[0] + r[0], h[1] + r[1]]; };
+    if (!cont || !conCurvas(m)) return W0;
+    const O = ordenCtrl(m, cont), n = O.orden.length, T = G.slice(), extra = [], zonas = [];
+    // Esquinas redondeadas: la esquina se va a la mitad de un arco entre dos puntos de su orilla
+    m.ctrl.forEach((k, i) => {
+      if (i > 3 || !(+k.r > 0)) return;
+      const pos = O.orden.indexOf(i), tC = O.ts[i], tP = O.ts[O.orden[(pos - 1 + n) % n]], tN = O.ts[O.orden[(pos + 1) % n]];
+      const dP = ((tC - tP) % O.tot + O.tot) % O.tot || O.tot, dN = ((tN - tC) % O.tot + O.tot) % O.tot || O.tot, s = Math.min(0.5, +k.r) * Math.min(dP, dN);
+      const g1 = W0(O.enT(tC - s)), g2 = W0(O.enT(tC + s)), gC = G[i];
+      const bz = (u) => { const v = 1 - u; return [v * v * g1[0] + 2 * v * u * gC[0] + u * u * g2[0], v * v * g1[1] + 2 * v * u * gC[1] + u * u * g2[1]]; };
+      T[i] = bz(0.5);
+      extra.push([O.enT(tC - s), g1], [O.enT(tC - s / 2), bz(0.25)], [O.enT(tC + s / 2), bz(0.75)], [O.enT(tC + s), g2]);
+      zonas.push([tC - s, tC + s]);
+    });
+    const enZona = (t) => zonas.some(([a, b]) => [t, t + O.tot, t - O.tot].some((x) => x > a && x < b));
+    // Lados curvos: como la pluma de Illustrator, cada punto tiene su manija; la curva se suma a la forma del plano
+    O.orden.forEach((ia, k) => {
+      const ib = O.orden[(k + 1) % n], hA = m.ctrl[ia].h || [0, 0], hB = m.ctrl[ib].h || [0, 0];
+      if (!hA[0] && !hA[1] && !hB[0] && !hB[1]) return;
+      const tA = O.ts[ia]; let tB = O.ts[ib]; if (tB <= tA) tB += O.tot;
+      const gA = G[ia], gB = G[ib];
+      for (let j = 1; j < 8; j++) {
+        const u = j / 8, t = tA + (tB - tA) * u; if (enZona(t)) continue;
+        const p = O.enT(t), b = W0(p), v = 1 - u;
+        const Z = [0, 1].map((d) => v * v * v * gA[d] + 3 * v * v * u * (gA[d] + hA[d]) + 3 * v * u * u * (gB[d] - hB[d]) + u * u * u * gB[d]);
+        extra.push([p, [b[0] + Z[0] - (gA[0] + (gB[0] - gA[0]) * u), b[1] + Z[1] - (gA[1] + (gB[1] - gA[1]) * u)]]);
+      }
+    });
+    const todos = P.map((p, i) => [p, T[i]]).concat(extra.filter(([p]) => P.every((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) > 1e-3)));
+    const f = tps(todos.map((x) => x[0]), todos.map(([p, t]) => resto(p, t)));
+    return (p) => { const h = H(p), r = f(p); return [h[0] + r[0], h[1] + r[1]]; };
+  }
+  // Con curvas, las orillas largas se parten en tramos cortos para que se vean curvas (no quebradas)
+  function densificar(L, max) {
+    const out = [], idx = [];
+    L.forEach((a, i) => { const b = L[(i + 1) % L.length], k = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / max)); idx.push(out.length); for (let j = 0; j < k; j++) out.push([a[0] + ((b[0] - a[0]) * j) / k, a[1] + ((b[1] - a[1]) * j) / k]); });
+    return { pts: out, idx };
   }
   // Contorno de la manzana en el plano: las orillas que no comparten dos lotes
   function contornoPlano(lotes) {
@@ -5985,11 +6037,13 @@ void main(){
     return lo.slice(0, -1).concat(hi.slice(0, -1));
   }
   function repartirPlano(c) {
-    const m = c.mzPlano, W = deformacion(m); if (!W) return;
+    const m = c.mzPlano;
     let g = geoPlano.get(c); if (!g || g.lotes !== m.lotes) { g = { lotes: m.lotes, cont: contornoPlano(m.lotes) }; geoPlano.set(c, g); }
+    const W = deformacion(m, g.cont); if (!W) return;
     const aEsf = (p) => { const d = dePlano(W(p)); return [+d[0].toFixed(5), +d[1].toFixed(5)]; };
     g.W = W; g.aEsf = aEsf;
-    c.puntos = g.cont.map(aEsf);
+    const curvo = conCurvas(m), xs = g.cont.map((p) => p[0]), ys = g.cont.map((p) => p[1]), paso = Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) / 70;
+    c.puntos = (curvo ? densificar(g.cont, paso).pts : g.cont).map(aEsf);
     const l = cs(), viejos = lotesDeManzana(c);
     m.lotes.forEach((L, k) => {
       let x = viejos[k];
@@ -6001,10 +6055,12 @@ void main(){
         Object.entries(m.estiloLotes || {}).forEach(([ruta, v]) => { try { escribir(x, ruta, v); } catch (e) { /* ruta vieja */ } });
         const iz = l.indexOf(viejos[viejos.length - 1] || c); l.splice(iz + 1, 0, x); viejos.push(x);
       }
-      x.puntos = L.map(aEsf); x.iManzana = k;
+      const D = curvo ? densificar(L, paso) : { pts: L, idx: L.map((_, i) => i) }, nuevos = D.pts.map(aEsf);
+      if (x.puntos.length && x.puntos.length !== nuevos.length) x.lote.lados = [];
+      x.puntos = nuevos; x.iManzana = k;
       const fijo = m.numeros && m.numeros[k] != null && String(m.numeros[k]).trim() !== "" ? String(m.numeros[k]) : null;
-      x.lote.manzana = m.mz; x.lote.numero = fijo || String((+m.ini || 1) + k); x.lote.frente = (m.frentes || [])[k] || 0;
-      x.lote.lados = L.map((_, i) => (x.lote.lados || [])[i] || "");
+      x.lote.manzana = m.mz; x.lote.numero = fijo || String((+m.ini || 1) + k); x.lote.frente = D.idx[(m.frentes || [])[k] || 0] || 0;
+      x.lote.lados = nuevos.map((_, i) => (x.lote.lados || [])[i] || "");
     });
     viejos.slice(m.lotes.length).forEach((x) => { const i = l.indexOf(x); if (i >= 0) l.splice(i, 1); });
   }
@@ -6022,7 +6078,23 @@ void main(){
   function asasPlano(c) {
     if (!geoPlano.get(c) || !geoPlano.get(c).aEsf) repartirPlano(c);
     const m = c.mzPlano, g = geoPlano.get(c); if (!g || !g.aEsf) return null;
-    const asas = m.ctrl.map((k, i) => ({ tipo: i < 4 ? "esq" : "pin", i, pt: k.s }));
+    const asas = [], lineas = [];
+    if (enLab("manzana-curvas")) { // las mismas manijas que la manzana normal: curva (pluma) en cada punto y redondeo en las esquinas
+      const O = ordenCtrl(m, g.cont), n = O.orden.length, G = m.ctrl.map((k) => aPlano(k.s[0], k.s[1]));
+      O.orden.forEach((i, pos) => {
+        const q = G[i], a = G[O.orden[(pos - 1 + n) % n]], b = G[O.orden[(pos + 1) % n]], k = m.ctrl[i]; if (!q || !a || !b) return;
+        const tiene = k.h && (k.h[0] || k.h[1]), hh = tiene ? k.h : [(b[0] - a[0]) / 6, (b[1] - a[1]) / 6];
+        const sal = dePlano([q[0] + hh[0], q[1] + hh[1]]), ent = dePlano([q[0] - hh[0], q[1] - hh[1]]);
+        if (tiene) { const ln = [ent, k.s, sal].map((x) => [x[0], x[1]]); ln.curva = true; lineas.push(ln); }
+        asas.push({ tipo: "curva", i, lado: 1, pt: sal, nueva: !tiene }, { tipo: "curva", i, lado: -1, pt: ent, nueva: !tiene });
+        if (i > 3) return;
+        const la = Math.hypot(a[0] - q[0], a[1] - q[1]), lb = Math.hypot(b[0] - q[0], b[1] - q[1]); if (!la || !lb) return;
+        const w = [(a[0] - q[0]) / la + (b[0] - q[0]) / lb, (a[1] - q[1]) / la + (b[1] - q[1]) / lb]; if (Math.hypot(w[0], w[1]) < 0.05) return;
+        const wl = Math.hypot(w[0], w[1]), d = (0.05 + 0.6 * (+k.r || 0)) * Math.min(la, lb); // el aro se separa de la esquina para no taparla
+        asas.push({ tipo: "radio", i, pt: dePlano([q[0] + (w[0] / wl) * d, q[1] + (w[1] / wl) * d]), nueva: !k.r, a, b });
+      });
+    }
+    m.ctrl.forEach((k, i) => asas.push({ tipo: i < 4 ? "esq" : "pin", i, pt: k.s })); // al final: quedan encima de las manijas
     // «+» a la mitad de la orilla entre cada dos puntos de control
     const C = g.cont, L = [0]; for (let i = 1; i <= C.length; i++) L.push(L[i - 1] + Math.hypot(C[i % C.length][0] - C[i - 1][0], C[i % C.length][1] - C[i - 1][1]));
     const tot = L[L.length - 1] || 1;
@@ -6030,7 +6102,7 @@ void main(){
     const enT = (t) => { t = ((t % tot) + tot) % tot; let i = 1; while (i < L.length - 1 && L[i] < t) i++; const a = C[i - 1], b = C[i % C.length], u = (t - L[i - 1]) / ((L[i] - L[i - 1]) || 1); return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]; };
     const ts = m.ctrl.map((k) => param(k.p)).sort((a, b) => a - b);
     ts.forEach((t, i) => { const t2 = i < ts.length - 1 ? ts[i + 1] : ts[0] + tot; if (t2 - t < tot * 0.02) return; const p = enT((t + t2) / 2); asas.push({ tipo: "mas", plan: p, pt: g.aEsf(p) }); });
-    return { lineas: [], asas };
+    return { lineas, asas };
   }
   function tomarAsaPlano(c, h) {
     if (h.tipo !== "mas") return h;
@@ -6038,12 +6110,27 @@ void main(){
     return { tipo: "pin", i: c.mzPlano.ctrl.length - 1 };
   }
   function moverAsaPlano(c, h, k) {
-    const m = c.mzPlano; if (!m.ctrl[h.i] || !aPlano(k.yaw, k.pitch)) return;
-    const antes = m.ctrl[h.i].s; m.ctrl[h.i].s = [+k.yaw.toFixed(5), +k.pitch.toFixed(5)];
-    if (!deformacion(m)) { m.ctrl[h.i].s = antes; return; } // esquinas imposibles (cruzadas): no se mueve
+    const m = c.mzPlano, K = m.ctrl[h.i], r = aPlano(k.yaw, k.pitch); if (!K || !r) return;
+    if (h.tipo === "curva") { const q = aPlano(K.s[0], K.s[1]); if (!q) return; K.h = [+((r[0] - q[0]) * h.lado).toFixed(5), +((r[1] - q[1]) * h.lado).toFixed(5)]; repartirPlano(c); return; }
+    if (h.tipo === "radio") { // la manija vive a 1/4 del arco sobre la bisectriz, igual que en la manzana normal
+      const q = aPlano(K.s[0], K.s[1]), a = h.a, b = h.b; if (!q || !a || !b) return;
+      const la = Math.hypot(a[0] - q[0], a[1] - q[1]), lb = Math.hypot(b[0] - q[0], b[1] - q[1]), w = [(a[0] - q[0]) / la + (b[0] - q[0]) / lb, (a[1] - q[1]) / la + (b[1] - q[1]) / lb], wl = Math.hypot(w[0], w[1]) || 1;
+      const t = ((r[0] - q[0]) * w[0] + (r[1] - q[1]) * w[1]) / wl / Math.min(la, lb);
+      K.r = +Math.max(0, Math.min(0.5, (t - 0.05) / 0.6)).toFixed(3); if (!K.r) delete K.r;
+      repartirPlano(c); return;
+    }
+    const antes = K.s; K.s = [+k.yaw.toFixed(5), +k.pitch.toFixed(5)];
+    if (!deformacion(m)) { K.s = antes; return; } // esquinas imposibles (cruzadas): no se mueve
     repartirPlano(c);
   }
-  function quitarAsaPlano(c, h) { if (h.tipo === "pin") { c.mzPlano.ctrl.splice(h.i, 1); repartirPlano(c); } }
+  function quitarAsaPlano(c, h) {
+    const K = c.mzPlano.ctrl[h.i]; if (!K) return;
+    if (h.tipo === "pin") c.mzPlano.ctrl.splice(h.i, 1);
+    else if (h.tipo === "curva") delete K.h; // doble clic en una manija: ese lado vuelve a ser recto
+    else if (h.tipo === "radio") delete K.r; // doble clic en el aro: esquina recta otra vez
+    else return;
+    repartirPlano(c);
+  }
   // «Soltar los lotes»: la manzana se quita y sus lotes quedan sueltos, cada uno con sus puntos
   function soltarLotesPlano(c) {
     const lotes = lotesDeManzana(c);
@@ -6729,8 +6816,10 @@ void main(){
     cambio();
   });
   $("props").addEventListener("click", (ev) => {
-    if (!ev.target.closest("[data-mzp-soltar]")) return;
-    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (c && c.mzPlano) soltarLotesPlano(c);
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.mzPlano) return;
+    if (ev.target.closest("[data-mzp-soltar]")) { soltarLotesPlano(c); return; }
+    if (ev.target.closest("[data-mzp-esquinas]")) { c.mzPlano.ctrl.slice(0, 4).forEach((k) => { k.r = 0.15; }); cambio(); avisar("Esquinas redondeadas. Ajusta cada una con su aro rojo."); return; }
+    if (ev.target.closest("[data-mzp-recto]")) { c.mzPlano.ctrl.forEach((k) => { delete k.h; delete k.r; }); cambio(); avisar("Sin curvas: la manzana vuelve a su forma del plano"); }
   });
   // Numeración automática: cada lote nuevo sigue al anterior en la misma manzana
   function siguienteLote() {
@@ -7021,7 +7110,10 @@ void main(){
         campo("Primer número", '<input type="text" inputmode="numeric" data-mzp="ini" value="' + esc(m.ini) + '">') +
         '<p class="nota">Sale de tu PDF: ' + lotes.length + ' lotes con su forma del plano. <b>Jala las esquinas verdes</b> para acomodarla: todos los lotes la siguen sin perder sus proporciones.</p>' +
         '<p class="nota"><b>Si no cuadra en alguna parte</b> (relieve, perspectiva): arrastra un <b>+</b> de la orilla hasta su lugar en la foto y la manzana se dobla suavemente. Doble clic en un punto blanco lo quita' + (extra ? " (llevas " + extra + ")" : "") + '.</p>' +
-        '<div class="orden"><button class="mini" data-mzp-soltar>Soltar los lotes</button></div><p class="nota">«Soltar los lotes» quita la manzana y deja cada lote por su cuenta.</p></div>';
+        '<div class="orden"><button class="mini" data-mzp-soltar>Soltar los lotes</button></div><p class="nota">«Soltar los lotes» quita la manzana y deja cada lote por su cuenta.</p></div>' +
+        (enLab("manzana-curvas") ? '<div class="grupo"><b>Curvas y esquinas ' + CHIP_LAB + '</b><p class="nota"><b style="color:#FF2D55">● Rojas:</b> manijas de curva, como la pluma de Illustrator. Arrástralas para curvar la orilla; todos los lotes la siguen.</p>' +
+          '<p class="nota"><b style="color:#FF2D55">○ Aros rojos:</b> en cada esquina. Jálalo hacia adentro para redondearla; el lote de la esquina se redondea con ella.</p><p class="nota">Doble clic en una manija o un aro lo quita.</p>' +
+          '<div class="orden"><button class="mini" data-mzp-esquinas>Redondear las 4 esquinas</button><button class="mini" data-mzp-recto>Quitar curvas</button></div></div>' : "");
       h += '<div class="grupo"><b>Estado</b><p class="nota">Toca cada lote en la esfera para cambiar su estado, precio y superficie.</p><div class="orden"><button class="mini" data-acc="ir-lotes">Llenar precios y m² desde Excel</button></div></div>';
       const l0 = Object.assign({}, LOTE_DEF, (lotes[0] && lotes[0].lote) || {}), g0 = lotes[0] && lotes[0].trazo ? lotes[0].trazo.grosor : 1.5;
       h += '<p class="nota mz-aviso">Lo de abajo cambia los ' + lotes.length + ' lotes de esta manzana.</p>';
