@@ -645,8 +645,11 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       const divs = (await centros("circle.mz-asa.corte:not(.esq)")).filter((p) => p[0] > st[0] + 20 && p[0] < st[0] + st[2] - 20 && p[1] > st[1] + 20 && p[1] < st[1] + st[3] - 20);
       exige(divs.length >= 4 && (await n.$$("circle.mz-asa.centro")).length >= 4, "la manzana del plano no muestra los puntos de sus divisiones (" + divs.length + ")");
       const planoAntes = JSON.stringify(Object.values((await leer()).capas).flat().find((c) => c.mzPlano).mzPlano.lotes);
-      await n.mouse.move(divs[0][0], divs[0][1]); await n.mouse.down(); await n.mouse.move(divs[0][0] + 18, divs[0][1] + 2, { steps: 8 }); await n.mouse.up(); await n.waitForTimeout(2500);
-      exige(JSON.stringify(Object.values((await leer()).capas).flat().find((c) => c.mzPlano).mzPlano.lotes) !== planoAntes, "el punto verde de una división no cambió el ancho de los lotes");
+      await n.mouse.move(divs[0][0], divs[0][1]); await n.mouse.down(); await n.mouse.move(divs[0][0] + 12, divs[0][1] + 22, { steps: 8 }); await n.mouse.up(); await n.waitForTimeout(2500);
+      // Reporte de Amar (video): el punto verde se mueve libre, también fuera de la orilla, para cuadrar con la foto
+      const pa = JSON.parse(planoAntes), pd = Object.values((await leer()).capas).flat().find((c) => c.mzPlano).mzPlano.lotes;
+      const movidos = pa.flatMap((L, i) => L.map((p, j) => [p, pd[i][j]])).filter(([p, q]) => q && Math.hypot(p[0] - q[0], p[1] - q[1]) > 3);
+      exige(movidos.length && movidos.every(([p, q]) => Math.abs(p[1] - q[1]) > 3), "el punto verde de una división no se mueve libre (solo se desliza por la orilla)");
       const mas = await centros("circle.mz-mas"); exige(mas.length >= 4, "la manzana del plano no tiene «+» en la orilla");
       await n.mouse.move(mas[0][0], mas[0][1]); await n.mouse.down(); await n.mouse.move(mas[0][0], mas[0][1] - 15, { steps: 6 }); await n.mouse.up(); await n.waitForTimeout(2500);
       capas = Object.values((await leer()).capas).flat(); mzc = capas.find((c) => c.mzPlano);

@@ -6110,8 +6110,7 @@ void main(){
     });
     m.tj = true;
   }
-  // Nodos de las divisiones (como los puntos verdes de la manzana normal): los de la orilla se deslizan por la calle
-  // y cambian el ancho de los lotes; los de adentro (donde se juntan las divisiones) se mueven libres.
+  // Nodos de las divisiones (puntos verdes en la orilla, blancos adentro): todos se mueven libres para cuadrar con la foto
   function nodosPlano(m, cont) {
     const pts = m.lotes.flat(), xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
     const tol = Math.max(0.5, Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * 0.004), grupos = [];
@@ -6164,29 +6163,13 @@ void main(){
     return { lineas, asas };
   }
   function tomarAsaPlano(c, h) {
-    if (h.tipo === "div") { // se desliza entre los nodos vecinos de la misma orilla, sin pasarlos
-      const g = geoPlano.get(c), O = h.O, t0 = O.ts.length ? null : null, cont = g.cont;
-      const L = [0]; for (let i = 1; i <= cont.length; i++) L.push(L[i - 1] + Math.hypot(cont[i % cont.length][0] - cont[i - 1][0], cont[i % cont.length][1] - cont[i - 1][1]));
-      const param = (p) => { let best = 0, dm = Infinity; for (let i = 1; i <= cont.length; i++) { const a = cont[i - 1], b = cont[i % cont.length], dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2)), d = Math.hypot(a[0] + dx * u - p[0], a[1] + dy * u - p[1]); if (d < dm) { dm = d; best = L[i - 1] + u * Math.sqrt(l2); } } return best; };
-      const tot = L[L.length - 1], tN = param(h.p), otros = nodosPlano(c.mzPlano, cont).filter((x) => x.orilla).map((x) => x.p).concat(c.mzPlano.ctrl.slice(0, 4).map((k) => k.p)).map(param).filter((t) => Math.abs(t - tN) > 1e-6);
-      const dif = (t) => ((t - tN) % tot + tot) % tot, delante = Math.min(...otros.map(dif)), atras = Math.min(...otros.map((t) => tot - dif(t)));
-      return Object.assign({}, h, { cont: cont.map((p) => p.slice()), L, tot, tN, min: tN - atras * 0.9, max: tN + delante * 0.9, suelo: cont.map((p) => g.W(p)) });
-    }
     if (h.tipo !== "mas") return h;
     c.mzPlano.ctrl.push({ p: h.plan.map((v) => +v.toFixed(1)), s: h.pt.slice() });
     return { tipo: "pin", i: c.mzPlano.ctrl.length - 1 };
   }
   function moverAsaPlano(c, h, k) {
     const m = c.mzPlano, r = aPlano(k.yaw, k.pitch); if (!r) return;
-    if (h.tipo === "div") { // el punto en la foto se proyecta sobre la orilla (en el suelo) y se lleva al plano
-      const C = h.cont, S = h.suelo; let best = null, dm = Infinity;
-      for (let i = 1; i <= C.length; i++) { const a = S[i - 1], b = S[i % C.length], dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((r[0] - a[0]) * dx + (r[1] - a[1]) * dy) / l2)), d = Math.hypot(a[0] + dx * u - r[0], a[1] + dy * u - r[1]); if (d < dm) { dm = d; best = h.L[i - 1] + u * (h.L[i] - h.L[i - 1]); } }
-      let t = best; const cand = [t, t + h.tot, t - h.tot].sort((x, y) => Math.abs(x - h.tN) - Math.abs(y - h.tN))[0]; t = Math.max(h.min, Math.min(h.max, cand));
-      t = ((t % h.tot) + h.tot) % h.tot; let i = 1; while (i < h.L.length - 1 && h.L[i] < t) i++;
-      const a = C[i - 1], b = C[i % C.length], u = (t - h.L[i - 1]) / ((h.L[i] - h.L[i - 1]) || 1);
-      moverNodoPlano(m, h, [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]); repartirPlano(c); return;
-    }
-    if (h.tipo === "vnodo") { // adentro: libre; del suelo al plano invirtiendo la deformación (unas vueltas bastan)
+    if (h.tipo === "vnodo" || h.tipo === "div") { // libres (en la orilla o adentro): del suelo al plano invirtiendo la deformación (unas vueltas bastan)
       const g = geoPlano.get(c), G = m.ctrl.slice(0, 4).map((x) => aPlano(x.s[0], x.s[1])); if (!g || G.some((x) => !x)) return;
       const Hi = homografia(G, m.ctrl.slice(0, 4).map((x) => x.p)), H = homografia(m.ctrl.slice(0, 4).map((x) => x.p), G); if (!Hi || !H) return;
       let p = Hi(r); for (let j = 0; j < 8; j++) { const w = g.W(p), h0 = H(p); p = Hi([r[0] - (w[0] - h0[0]), r[1] - (w[1] - h0[1])]); }
@@ -7218,7 +7201,7 @@ void main(){
         campo("Manzana", '<input type="text" data-mzp="mz" value="' + esc(m.mz) + '" placeholder="3">') +
         campo("Primer número", '<input type="text" inputmode="numeric" data-mzp="ini" value="' + esc(m.ini) + '">') +
         '<p class="nota">Sale de tu PDF: ' + lotes.length + ' lotes con su forma del plano. <b>Jala las esquinas verdes</b> para acomodarla: todos los lotes la siguen sin perder sus proporciones.</p>' +
-        '<p class="nota"><b>Ancho de cada lote:</b> los puntos verdes de cada división se deslizan por la calle, como en tu manzana normal. Los blancos de adentro (donde se juntan las divisiones) se mueven libres.</p>' +
+        '<p class="nota"><b>Ajusta cada lote a la foto:</b> los puntos verdes (en la orilla) y los blancos (adentro, donde se juntan las divisiones) se mueven libres; los lotes que los comparten se mueven juntos.</p>' +
         '<p class="nota"><b>Si no cuadra en alguna parte</b> (relieve, perspectiva): arrastra un <b>+</b> de la orilla hasta su lugar en la foto y la manzana se dobla suavemente. Doble clic en un punto blanco lo quita' + (extra ? " (llevas " + extra + ")" : "") + '.</p>' +
         '<div class="orden"><button class="mini" data-mzp-soltar>Soltar los lotes</button></div><p class="nota">«Soltar los lotes» quita la manzana y deja cada lote por su cuenta.</p></div>' +
         (enLab("manzana-curvas") ? '<div class="grupo"><b>Curvas y esquinas ' + CHIP_LAB + '</b><p class="nota"><b style="color:#FF2D55">● Rojas:</b> manijas de curva, como la pluma de Illustrator. Arrástralas para curvar la orilla; todos los lotes la siguen.</p>' +
