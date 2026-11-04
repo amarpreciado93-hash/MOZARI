@@ -556,6 +556,19 @@
   .lienzo .stage { position: absolute; inset: 0; }
   .lienzo .herr { position: absolute; z-index: 6; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
   .lienzo .herr > * { pointer-events: auto; }
+  /* Plano de referencia (Laboratorio): una ventanita con el masterplan mientras se traza */
+  .ref-panel { position: absolute; z-index: 7; top: 58px; left: 12px; width: 360px; height: 270px; min-width: 220px; min-height: 160px; max-width: calc(100% - 24px); max-height: calc(100% - 70px); resize: both; overflow: hidden; display: flex; flex-direction: column; border-radius: 14px; border: 1px solid var(--mz-linea); background: rgba(14, 14, 14, 0.92); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45); backdrop-filter: blur(10px); }
+  .ref-panel header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 8px 7px 12px; font-size: 12px; border-bottom: 1px solid var(--mz-linea-neutra); }
+  .ref-acc { display: flex; gap: 4px; }
+  .ref-btn { font: 500 11px var(--mz-texto-ui); color: var(--mz-texto); background: transparent; border: 1px solid var(--mz-linea-neutra); border-radius: var(--mz-pastilla); padding: 3px 9px; cursor: pointer; }
+  .ref-btn:hover { border-color: var(--mz-lima); }
+  .ref-x { font-size: 14px; line-height: 1; padding: 2px 8px; }
+  .ref-vista { position: relative; flex: 1; overflow: hidden; background: #fff; cursor: grab; touch-action: none; }
+  .ref-vista.moviendo { cursor: grabbing; }
+  .ref-vista img { position: absolute; left: 0; top: 0; transform-origin: 0 0; max-width: none; user-select: none; pointer-events: none; }
+  .ref-vacio { position: absolute; inset: 0; display: grid; place-content: center; gap: 10px; justify-items: center; text-align: center; padding: 16px; background: var(--mz-superficie); cursor: default; }
+  .ref-vacio p { margin: 0; font-size: 13px; color: var(--mz-texto); }
+  .ref-vacio small { font-size: 11px; color: var(--mz-tenue); }
   .grupo-h { display: flex; gap: 6px; }
   .ico { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--mz-linea); background: var(--mz-vidrio); color: var(--mz-texto); cursor: pointer; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
   .ico:hover { background: var(--mz-lima); color: var(--mz-tinta); }
@@ -1516,13 +1529,17 @@
         <div class="encuadre" id="encuadre" hidden><i></i></div>
         <div class="drop-fantasma" id="drop-fantasma" hidden><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></i><b id="drop-nombre"></b></div>
         <div class="herr">
-          <div class="grupo-h"><button class="pastilla-v" id="pt-reproducir" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><span>Reproducir recorrido</span></button></div>
+          <div class="grupo-h"><button class="pastilla-v" id="ref-boton" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/></svg>Plano de referencia</button><button class="pastilla-v" id="pt-reproducir" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><span>Reproducir recorrido</span></button></div>
           <div class="grupo-h">
             <button class="ico" id="ed-menos" aria-label="Alejar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></button>
             <button class="ico" id="ed-mas" aria-label="Acercar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
           </div>
         </div>
         <div class="banda" id="banda" hidden></div>
+        <div class="ref-panel" id="ref-panel" hidden>
+          <header><b>Plano de referencia</b><span class="ref-acc"><label class="ref-btn" title="Subir otro plano">Cambiar<input type="file" id="ref-archivo" accept="application/pdf,image/png,image/jpeg,image/webp" hidden></label><button class="ref-btn" id="ref-ajustar" title="Ver el plano completo">Ajustar</button><button class="ref-btn ref-x" id="ref-cerrar" aria-label="Cerrar">×</button></span></header>
+          <div class="ref-vista" id="ref-vista"><img id="ref-img" alt="Plano de referencia" draggable="false"><div class="ref-vacio" id="ref-vacio"><p>Sube tu masterplan para tenerlo a la vista mientras trazas.</p><label class="btn-prim">Subir PDF o imagen<input type="file" id="ref-archivo2" accept="application/pdf,image/png,image/jpeg,image/webp" hidden></label><small>Solo lo ves tú al editar; tus clientes no lo ven en el tour.</small></div></div>
+        </div>
       </div>
 
       <aside class="ed-panel der" id="der-capas" aria-label="Propiedades">
@@ -5297,6 +5314,7 @@ void main(){
     $("izq-capas").hidden = piloto; $("der-capas").hidden = piloto;
     $("izq-piloto").hidden = !piloto; $("der-piloto").hidden = !piloto;
     $("pt-reproducir").hidden = !piloto;
+    pintarRef();
     $("mira").hidden = !piloto;
     $("encuadre").hidden = !piloto || !encuadreOn;
     motorEd.setModo(piloto ? "piloto" : "capas");
@@ -5304,6 +5322,69 @@ void main(){
     if (piloto) { pintarRecorrido(); pintarAjustes(); } else { motorEd.ruta = null; pintarCapas(); pintarProps(); }
     motorEd.render();
   }
+  // =================== PLANO DE REFERENCIA (Laboratorio) ===================
+  // El masterplan (PDF o imagen) en una ventanita arriba a la izquierda, para trazar viéndolo. Se guarda
+  // en privado/ del tour: el estudio lo lee, pero el tour publicado y el .zip no lo sirven.
+  const REF = { on: false, s: 1, x: 0, y: 0, listo: false };
+  function pintarRef() {
+    const lab = MODO === "nube" && enLab("referencia") && nav.sub === "capas";
+    const tit = $("ref-panel").querySelector("header b"); if (CHIP_LAB && !tit.querySelector(".chip-lab")) tit.insertAdjacentHTML("beforeend", " " + CHIP_LAB);
+    $("ref-boton").hidden = !lab; $("ref-boton").setAttribute("aria-pressed", REF.on);
+    $("ref-panel").hidden = !lab || !REF.on;
+    if (!lab || !REF.on) return;
+    const r = P().referencia, img = $("ref-img");
+    $("ref-vacio").hidden = !!(r && r.img); img.hidden = !(r && r.img);
+    if (r && r.img && img.dataset.src !== r.img) { img.dataset.src = r.img; REF.listo = false; img.onload = () => { REF.listo = true; ajustarRef(); }; img.src = urlArchivo(r.img); }
+    else if (r && r.img && REF.listo) moverRef();
+  }
+  function moverRef() { $("ref-img").style.transform = "translate(" + REF.x + "px," + REF.y + "px) scale(" + REF.s + ")"; }
+  function ajustarRef() {
+    const v = $("ref-vista").getBoundingClientRect(), img = $("ref-img"), w = img.naturalWidth || 1, h = img.naturalHeight || 1;
+    REF.s = Math.min(v.width / w, v.height / h); REF.x = (v.width - w * REF.s) / 2; REF.y = (v.height - h * REF.s) / 2; moverRef();
+  }
+  async function subirReferencia(file) {
+    if (!file) return;
+    avisar("Preparando el plano…");
+    try {
+      const cv = document.createElement("canvas"), MAX = 4000;
+      if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
+        const pdfjs = await import("/lib/pdf.min.mjs");
+        pdfjs.GlobalWorkerOptions.workerSrc = "/lib/pdf.worker.min.mjs";
+        const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false }).promise;
+        const pag = await doc.getPage(1), v1 = pag.getViewport({ scale: 1 }), esc = Math.min(5, MAX / Math.max(v1.width, v1.height)), vp = pag.getViewport({ scale: esc });
+        cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+        const x = cv.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, cv.width, cv.height);
+        await pag.render({ canvasContext: x, viewport: vp }).promise;
+      } else {
+        const bm = await createImageBitmap(file), e = Math.min(1, MAX / Math.max(bm.width, bm.height));
+        cv.width = Math.round(bm.width * e); cv.height = Math.round(bm.height * e);
+        const x = cv.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, cv.width, cv.height); x.drawImage(bm, 0, 0, cv.width, cv.height);
+      }
+      const blob = await new Promise((ok) => cv.toBlob(ok, "image/jpeg", 0.88));
+      const ruta = "privado/referencia-" + Date.now().toString(36) + ".jpg";
+      await subirArchivo(ruta, blob);
+      P().referencia = { img: ruta, ancho: cv.width, alto: cv.height };
+      cambio(); pintarRef(); avisar("Plano listo. Rueda para acercar, arrastra para moverte.");
+    } catch (e) { avisar(e && e.limite ? e.message : "No se pudo leer ese archivo. Prueba con otro PDF o una imagen."); }
+  }
+  $("ref-boton").addEventListener("click", () => { REF.on = !REF.on; pintarRef(); });
+  $("ref-cerrar").addEventListener("click", () => { REF.on = false; pintarRef(); });
+  $("ref-ajustar").addEventListener("click", ajustarRef);
+  ["ref-archivo", "ref-archivo2"].forEach((id) => $(id).addEventListener("change", (ev) => { subirReferencia(ev.target.files[0]); ev.target.value = ""; }));
+  $("ref-vista").addEventListener("wheel", (ev) => {
+    if (!REF.listo) return; ev.preventDefault();
+    const r = $("ref-vista").getBoundingClientRect(), mx = ev.clientX - r.left, my = ev.clientY - r.top;
+    const f = Math.pow(1.0015, -Math.max(-150, Math.min(150, ev.deltaMode === 1 ? ev.deltaY * 40 : ev.deltaY))), s2 = Math.max(0.02, Math.min(20, REF.s * f));
+    REF.x = mx - (mx - REF.x) * (s2 / REF.s); REF.y = my - (my - REF.y) * (s2 / REF.s); REF.s = s2; moverRef();
+  }, { passive: false });
+  $("ref-vista").addEventListener("pointerdown", (ev) => {
+    if (!REF.listo || ev.target.closest(".ref-vacio")) return;
+    const v = $("ref-vista"), x0 = ev.clientX - REF.x, y0 = ev.clientY - REF.y; v.setPointerCapture(ev.pointerId); v.classList.add("moviendo");
+    const mover = (e) => { REF.x = e.clientX - x0; REF.y = e.clientY - y0; moverRef(); };
+    const soltar = () => { v.classList.remove("moviendo"); v.removeEventListener("pointermove", mover); v.removeEventListener("pointerup", soltar); v.removeEventListener("pointercancel", soltar); };
+    v.addEventListener("pointermove", mover); v.addEventListener("pointerup", soltar); v.addEventListener("pointercancel", soltar);
+  });
+  $("ref-vista").addEventListener("dblclick", () => { if (REF.listo) ajustarRef(); });
   function cerrarEditor() {
     if (!motorEd) return;
     if (motorEd.dibujo) terminarDibujo(false);

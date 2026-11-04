@@ -144,6 +144,7 @@ export const LABORATORIO = {
   "manzana-curvas": { nombre: "Calle curva", texto: "Manijas en cada punto de la orilla de una manzana (como la pluma de Illustrator) para calles en curva u ola." },
   "estadisticas": { nombre: "Estadísticas de los tours", texto: "Publicar → Estadísticas: visitas, celular o compu, ciudades, de dónde llegan, tiempo, esferas y lotes más vistos y clics a contacto. Cuenta los tours publicados con esta función activa." },
   "fichas": { nombre: "Creador de fichas", texto: "En Lotes: diseña la ficha que ve tu cliente al tocar un lote, con el logo, colores y tipografía del desarrollo, el plano del lote y su ubicación." },
+  "referencia": { nombre: "Plano de referencia", texto: "En Capas: una ventanita con tu masterplan (PDF o imagen) para trazar manzanas y lotes viéndolo. Solo se ve al editar; tus clientes no lo ven en el tour." },
   "manzana-desfase": { nombre: "Doble manzana desfasada", texto: "En una manzana doble, la fila de atrás puede tener otro número de lotes y recorrerse para no coincidir con la del frente." },
 };
 const MODOS_LAB = ["yo", "probadores", "todos"];

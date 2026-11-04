@@ -471,6 +471,17 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await n.waitForTimeout(3000);
       const d2 = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id), m2 = Object.values(d2.capas).flat().find((c) => c.manzana);
       exige(Array.isArray(m2.manzana.centro) && m2.manzana.centro.some((v) => v && Math.abs(v - 0.5) > 0.05), "el punto de la línea del centro no se movió");
+      // Laboratorio · plano de referencia: se sube un PDF y se ve en la ventanita (las librerías salen de /lib)
+      const hoja = await navegador.newPage(); await hoja.setContent('<svg width="600" height="400" xmlns="http://www.w3.org/2000/svg"><rect width="600" height="400" fill="#fff"/><rect x="40" y="40" width="520" height="320" fill="#dfe" stroke="#000"/><text x="300" y="210" font-size="40" text-anchor="middle">MASTERPLAN</text></svg>');
+      const pdf = await hoja.pdf({ width: "600px", height: "400px", printBackground: true }); await hoja.close();
+      await n.keyboard.press("Escape"); await n.click("#ref-boton"); await n.waitForTimeout(400);
+      exige(await n.isVisible("#ref-panel"), "no abre la ventanita del plano de referencia");
+      await n.setInputFiles("#ref-archivo2", { name: "masterplan.pdf", mimeType: "application/pdf", buffer: pdf });
+      let ancho = 0; for (let i = 0; i < 25 && !ancho; i++) { await n.waitForTimeout(600); ancho = await n.$eval("#ref-img", (e) => (e.hidden ? 0 : e.naturalWidth)); }
+      exige(ancho > 500, "el PDF del plano de referencia no se pudo ver");
+      await n.waitForTimeout(2500);
+      const d3 = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      exige(d3.proyecto.referencia && /^privado\//.test(d3.proyecto.referencia.img), "el plano de referencia no se guardó en privado/");
       exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
       await n.context().close();
     }, a);
