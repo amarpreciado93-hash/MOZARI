@@ -616,11 +616,17 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(mzc && lotes.every((c) => c.deManzana === mzc.id), "no se creó la manzana completa con sus lotes amarrados");
       await n.click('#lista li:has-text("Manzana 7")'); await n.waitForTimeout(600);
       const centros = (sel) => n.$$eval(sel, (l) => l.map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
-      const esq = await centros("circle.mz-asa.corte"); exige(esq.length === 4, "la manzana del plano no muestra sus 4 esquinas (" + esq.length + ")");
+      const esq = await centros("circle.mz-asa.esq"); exige(esq.length === 4, "la manzana del plano no muestra sus 4 esquinas (" + esq.length + ")");
       const antes = JSON.stringify(lotes.map((c) => c.puntos));
       await n.mouse.move(esq[2][0], esq[2][1]); await n.mouse.down(); await n.mouse.move(esq[2][0] + 30, esq[2][1] + 20, { steps: 8 }); await n.mouse.up(); await n.waitForTimeout(2500);
       lotes = await lotes7();
       exige(lotes.filter((c, i) => JSON.stringify(c.puntos) !== JSON.stringify(JSON.parse(antes)[i])).length >= 5, "jalar una esquina no estiró los lotes de la manzana");
+      // Los puntos verdes de las divisiones se deslizan por la calle y cambian el ancho de los lotes (como la manzana normal)
+      const divs = (await centros("circle.mz-asa.corte:not(.esq)")).filter((p) => p[0] > st[0] + 20 && p[0] < st[0] + st[2] - 20 && p[1] > st[1] + 20 && p[1] < st[1] + st[3] - 20);
+      exige(divs.length >= 4 && (await n.$$("circle.mz-asa.centro")).length >= 4, "la manzana del plano no muestra los puntos de sus divisiones (" + divs.length + ")");
+      const planoAntes = JSON.stringify(Object.values((await leer()).capas).flat().find((c) => c.mzPlano).mzPlano.lotes);
+      await n.mouse.move(divs[0][0], divs[0][1]); await n.mouse.down(); await n.mouse.move(divs[0][0] + 18, divs[0][1] + 2, { steps: 8 }); await n.mouse.up(); await n.waitForTimeout(2500);
+      exige(JSON.stringify(Object.values((await leer()).capas).flat().find((c) => c.mzPlano).mzPlano.lotes) !== planoAntes, "el punto verde de una división no cambió el ancho de los lotes");
       const mas = await centros("circle.mz-mas"); exige(mas.length >= 4, "la manzana del plano no tiene «+» en la orilla");
       await n.mouse.move(mas[0][0], mas[0][1]); await n.mouse.down(); await n.mouse.move(mas[0][0], mas[0][1] - 15, { steps: 6 }); await n.mouse.up(); await n.waitForTimeout(2500);
       capas = Object.values((await leer()).capas).flat(); mzc = capas.find((c) => c.mzPlano);
