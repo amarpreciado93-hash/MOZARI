@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-04T20:20:03.674Z",
- "bien": 36,
- "total": 36,
+ "fecha": "2026-11-04T21:10:09.745Z",
+ "bien": 38,
+ "total": 38,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -125,6 +125,14 @@
   },
   {
    "nombre": "Manzana dibujada bajo el dron (mirando hacia abajo): lotes derechos, sin cruzarse",
+   "ok": true
+  },
+  {
+   "nombre": "Foto 360: un lote que rodea al dron no deja una línea atravesada y se rellena hasta abajo",
+   "ok": true
+  },
+  {
+   "nombre": "Foto 360: también se pegan los textos, las rutas, los polígonos y los puntos de interés",
    "ok": true
   },
   {

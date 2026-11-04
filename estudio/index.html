@@ -5563,21 +5563,56 @@ void main(){
         const a = P[i], b = P[(i + 1) % P.length], qa = aPlano(a[0], a[1]), qb = aPlano(b[0], b[1]);
         for (let k = 0; k < 16; k++) { const t = k / 16; out.push(qa && qb ? dePlano([qa[0] + (qb[0] - qa[0]) * t, qa[1] + (qb[1] - qa[1]) * t]) : [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
       }
-      if (!cerrado) out.push(P[P.length - 1]);
+      out.push(cerrado ? out[0] : P[P.length - 1]);
       let px = out.map(([yy, pp]) => aPx(yy, pp));
       for (let i = 1; i < px.length; i++) { while (px[i][0] - px[i - 1][0] > W / 2) px[i][0] -= W; while (px[i][0] - px[i - 1][0] < -W / 2) px[i][0] += W; } // sin saltos en la costura
+      // Una figura que rodea la cámara (la manzana o el lote justo debajo del dron) da la vuelta completa:
+      // en la foto 2:1 su orilla es una curva de lado a lado y no se cierra con una recta (salía una línea atravesada)
+      px.vuelta = cerrado && Math.abs(px[px.length - 1][0] - px[0][0]) > W / 2;
       return px;
+    };
+    // El camino de una figura: el relleno de una que da la vuelta se cierra por el polo (abajo, el nadir);
+    // su orilla queda abierta porque la curva ya es toda la orilla
+    const camino = (px, dx, relleno) => {
+      ox.beginPath(); px.forEach(([x, y], i) => (i ? ox.lineTo(x + dx, y) : ox.moveTo(x + dx, y)));
+      if (!px.vuelta) { ox.closePath(); return; }
+      if (!relleno) return;
+      const polo = px.reduce((s, p) => s + p[1], 0) / px.length > H / 2 ? H : 0;
+      ox.lineTo(px[px.length - 1][0] + dx, polo); ox.lineTo(px[0][0] + dx, polo); ox.closePath();
     };
     const trazar = (px, cerrado) => [-W, 0, W].forEach((dx) => { ox.beginPath(); px.forEach(([x, y], i) => (i ? ox.lineTo(x + dx, y) : ox.moveTo(x + dx, y))); if (cerrado) ox.closePath(); });
     const grosor = Math.max(2, W / 3200), capas = (est.capas[id] || []).filter((c) => c.visible !== false && c.tipo === "poligono" && c.puntos && c.puntos.length > 2);
     const hexA = (hex, a) => { const h = String(hex || "#D5FF40").replace("#", ""), v = parseInt(h.length === 3 ? h.split("").map((x) => x + x).join("") : h.slice(0, 6), 16); return "rgba(" + ((v >> 16) & 255) + "," + ((v >> 8) & 255) + "," + (v & 255) + "," + a + ")"; };
+    // Polígonos sueltos (áreas verdes, albercas, zonas): su relleno y su orilla. Los «invisibles hasta pasar el mouse» no salen.
+    capas.filter((c) => !c.lote && !c.manzana && !c.mzPlano && !c.camino && !(c.rollover && c.rollover.activo && c.rollover.oculto)).forEach((c) => {
+      const px = linea(c.puntos, true), rel = c.relleno || {}, tr = c.trazo || {};
+      [-W, 0, W].forEach((dx) => {
+        camino(px, dx, true); ox.fillStyle = hexA(rel.color || "#D5FF40", rel.opacidad ?? 0.3); ox.fill();
+        if ((+tr.grosor || 0) > 0) { camino(px, dx, false); ox.lineJoin = "round"; ox.lineWidth = (grosor * +tr.grosor) / 1.5; ox.strokeStyle = hexA(tr.color || "#fff", tr.opacidad ?? 1); ox.stroke(); }
+      });
+    });
     capas.filter((c) => c.lote && !loteVacio(c)).forEach((c) => {
       const l = Object.assign({}, LOTE_DEF, c.lote), e = estadoDe(c), px = linea(c.puntos, true);
-      [-W, 0, W].forEach((dx) => { ox.beginPath(); px.forEach(([x, y], i) => (i ? ox.lineTo(x + dx, y) : ox.moveTo(x + dx, y))); ox.closePath(); ox.fillStyle = hexA(e.color, l.opacidad ?? 0.35); ox.fill(); ox.lineJoin = "round"; ox.lineWidth = grosor * ((c.trazo && +c.trazo.grosor) || 1.5) / 1.5; ox.strokeStyle = l.borde === "estado" ? e.color : "#fff"; ox.stroke(); });
+      [-W, 0, W].forEach((dx) => { camino(px, dx, true); ox.fillStyle = hexA(e.color, l.opacidad ?? 0.35); ox.fill(); camino(px, dx, false); ox.lineJoin = "round"; ox.lineWidth = grosor * ((c.trazo && +c.trazo.grosor) || 1.5) / 1.5; ox.strokeStyle = l.borde === "estado" ? e.color : "#fff"; ox.stroke(); });
     });
     capas.filter((c) => c.manzana || c.mzPlano).forEach((c) => {
       const px = linea(c.manzana ? contornoManzana(c) : c.puntos, true);
-      [-W, 0, W].forEach((dx) => { ox.beginPath(); px.forEach(([x, y], i) => (i ? ox.lineTo(x + dx, y) : ox.moveTo(x + dx, y))); ox.closePath(); ox.lineWidth = grosor * 1.4; ox.strokeStyle = hexA((c.trazo && c.trazo.color) || "#fff", (c.trazo && c.trazo.opacidad) ?? 0.9); ox.stroke(); });
+      [-W, 0, W].forEach((dx) => { camino(px, dx, false); ox.lineWidth = grosor * 1.4; ox.strokeStyle = hexA((c.trazo && c.trazo.color) || "#fff", (c.trazo && c.trazo.opacidad) ?? 0.9); ox.stroke(); });
+    });
+    // Rutas: la línea (puntos, guiones o continua) con su color y su flecha al final, siguiendo el suelo
+    (est.capas[id] || []).filter((c) => c.visible !== false && c.tipo === "poligono" && c.camino && c.puntos && c.puntos.length > 1).forEach((c) => {
+      const k = c.camino, g = ((+k.grosor || 4) * grosor) / 1.5, px = linea(curvaCamino(c.puntos), false);
+      const dash = k.estilo === "continua" ? [] : k.estilo === "guiones" ? [g * 3.5, g * 2.4] : [0.01, g * 2.4];
+      [-W, 0, W].forEach((dx) => {
+        ox.beginPath(); px.forEach(([x, y], i) => (i ? ox.lineTo(x + dx, y) : ox.moveTo(x + dx, y)));
+        ox.setLineDash(dash); ox.lineCap = "round"; ox.lineJoin = "round"; ox.lineWidth = g; ox.strokeStyle = hexA(k.color || "#fff", k.opacidad ?? 1); ox.stroke(); ox.setLineDash([]);
+        if (k.flecha && px.length > 1) { // flecha en la punta, en la dirección del último tramo
+          const [xa, ya] = px[px.length - 2], [xb, yb] = px[px.length - 1], an = Math.atan2(yb - ya, xb - xa), L = g * 3.2;
+          ox.beginPath(); ox.moveTo(xb + dx + Math.cos(an) * L * 0.5, yb + Math.sin(an) * L * 0.5);
+          ox.lineTo(xb + dx + Math.cos(an + 2.5) * L * 0.6, yb + Math.sin(an + 2.5) * L * 0.6); ox.lineTo(xb + dx + Math.cos(an - 2.5) * L * 0.6, yb + Math.sin(an - 2.5) * L * 0.6);
+          ox.closePath(); ox.fillStyle = hexA(k.color || "#fff", k.opacidad ?? 1); ox.fill();
+        }
+      });
     });
     // 4. Rótulos «planchados» en el suelo: cada pixel cercano se lleva al suelo y se lee del texto
     const rot = capas.filter((c) => c.lote && !loteVacio(c) && c.lote.etiqueta !== false).map((c) => {
@@ -5625,7 +5660,100 @@ void main(){
         ox.putImageData(img, xa, y0);
       }
     }
-    // 5. JPG con los datos 360 (XMP GPano) y descarga
+    // 5. Textos y puntos de interés: se dibujan como en el tour (su tamaño, su giro en 3D) y se «pegan» a la esfera.
+    // Cada uno es un plano frente a la cámara a 400 px de distancia (como en el tour: tamaño × 2.5 a 1000 px);
+    // para cada pixel de la foto cerca de él se ve dónde cae el rayo en ese plano y se toma el color.
+    const R0 = 400, porCss = W / (2 * Math.PI * R0), rad = Math.PI / 180;
+    const elementos = (est.capas[id] || []).filter((c) => c.visible !== false && (c.tipo === "texto" ? String(c.texto || "").trim() : c.tipo === "interes"));
+    await Promise.all(["300", "400", "500", "600", "800"].map((p) => document.fonts.load(p + " 20px Poppins").catch(() => {})));
+    const caja = (x, X, Y, w, h, r) => { x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); };
+    const lienzo = (w, h, esc) => { const cv = document.createElement("canvas"); cv.width = Math.max(1, Math.ceil(w * esc)); cv.height = Math.max(1, Math.ceil(h * esc)); const x = cv.getContext("2d"); x.scale(esc, esc); return [cv, x]; };
+    function spriteTexto(c, esc) {
+      const tam = +c.tamano || 28, peso = c.peso || 500, txt = String(c.texto).replace(/\s+/g, " ").trim(), fuente = peso + " " + tam + 'px Poppins, "Helvetica Neue", Arial, sans-serif';
+      const med = document.createElement("canvas").getContext("2d"); med.font = fuente;
+      const padX = 0.7 * tam, padY = 0.28 * tam, ancho = med.measureText(txt).width + 2 * padX, alto = 1.3 * tam + 2 * padY, m = 10;
+      const [cv, x] = lienzo(ancho + 2 * m, alto + 2 * m, esc);
+      x.translate(m, m);
+      if (c.fondo && c.fondo.activo) { caja(x, 0, 0, ancho, alto, alto / 2); x.fillStyle = c.fondo.color; x.fill(); }
+      else { x.shadowColor = "rgba(0,0,0,0.35)"; x.shadowBlur = 6 * esc; x.shadowOffsetY = 1 * esc; }
+      x.font = fuente; x.fillStyle = c.color || "#fff"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(txt, ancho / 2, alto / 2 + tam * 0.04);
+      return { cv, esc, ax: m + ancho / 2, ay: m + alto / 2 };
+    }
+    function spriteInteres(c, esc) {
+      const p = piDe(c), der = p.lado !== "izq", sg = der ? 1 : -1, an = (Math.max(5, Math.min(85, +p.angulo)) * Math.PI) / 180, alto = Math.max(10, +p.alto), g = +p.grosor || 1.5, k = +p.tam || 1;
+      const x1 = (sg * alto) / Math.tan(an), y1 = -alto, x2 = x1 + sg * Math.max(0, +p.horiz), f = 14 * k, sombra = p.contraste === "sombra", conCaja = p.contraste === "caja" || p.contraste === "caja-clara";
+      const med = document.createElement("canvas").getContext("2d");
+      const fDato = "300 " + 3.1 * f + 'px Poppins, sans-serif', fNom = "600 " + f + 'px Poppins, sans-serif', fDet = "400 " + 0.82 * f + 'px Poppins, sans-serif';
+      med.font = fDato; const wD = p.dato ? med.measureText(p.dato).width : 0; med.font = fNom; const wN = p.nombre ? med.measureText(p.nombre).width : 0; med.font = fDet; const wT = p.detalle ? med.measureText(p.detalle).width : 0;
+      const gap = 0.55 * f, wTxt = Math.max(wN, wT), hTxt = (p.nombre ? 1.2 * f : 0) + (p.detalle ? 1.2 * 0.82 * f + 0.15 * f : 0), hD = p.dato ? 0.9 * 3.1 * f : 0;
+      const pad = conCaja ? [0.9 * f, 0.5 * f] : [0, 0], wE = wD + (wD && wTxt ? gap : 0) + wTxt + 2 * pad[0], hE = Math.max(hD, hTxt) + 2 * pad[1];
+      const ex = der ? x2 + 8 : x2 - 8 - wE, ey = y1 - hE / 2, r0 = 7 + g, m = 14;
+      const minX = Math.min(-r0, ex, x2), maxX = Math.max(r0, ex + wE, x2), minY = Math.min(ey, y1 - r0), maxY = r0;
+      const [cv, x] = lienzo(maxX - minX + 2 * m, maxY - minY + 2 * m, esc);
+      x.translate(m - minX, m - minY);
+      const dash = p.linea === "puntos" ? [0.01, g * 3] : p.linea === "guiones" ? [g * 5, g * 3] : [];
+      x.lineCap = "round"; x.lineJoin = "round";
+      const trazo = (w, col) => { x.beginPath(); x.moveTo(0, 0); x.lineTo(x1, y1); x.lineTo(x2, y1); x.setLineDash(dash); x.lineWidth = w; x.strokeStyle = col; x.stroke(); x.setLineDash([]); };
+      if (sombra) { x.beginPath(); x.arc(0, 0, 6 + g, 0, 2 * Math.PI); x.fillStyle = "rgba(0,0,0,0.35)"; x.fill(); trazo(g + 2.5, "rgba(0,0,0,0.55)"); }
+      trazo(g, p.color);
+      x.fillStyle = p.color; x.strokeStyle = p.color; x.lineWidth = g;
+      if (p.punto === "lleno") { x.beginPath(); x.arc(0, 0, 3.5 + g, 0, 2 * Math.PI); x.fill(); }
+      else if (p.punto === "doble") { x.beginPath(); x.arc(0, 0, 6 + g, 0, 2 * Math.PI); x.stroke(); x.beginPath(); x.arc(0, 0, 3 + g * 0.6, 0, 2 * Math.PI); x.fill(); }
+      else { x.beginPath(); x.arc(0, 0, 4 + g, 0, 2 * Math.PI); x.stroke(); x.beginPath(); x.arc(0, 0, 1.6 + g * 0.4, 0, 2 * Math.PI); x.fill(); }
+      if (conCaja) { caja(x, ex, ey, wE, hE, 10); x.fillStyle = p.contraste === "caja-clara" ? "rgba(255,255,255,0.9)" : "rgba(11,11,11,0.72)"; x.fill(); }
+      else if (sombra) { x.shadowColor = "rgba(0,0,0,0.55)"; x.shadowBlur = 6 * esc; x.shadowOffsetY = 1 * esc; }
+      x.fillStyle = p.color; x.textBaseline = "middle"; x.textAlign = "left";
+      let cx = ex + pad[0];
+      if (p.dato) { x.font = fDato; x.fillText(p.dato, cx, y1 + 0.04 * f); cx += wD + (wTxt ? gap : 0); }
+      let ty = y1 - hTxt / 2;
+      if (p.nombre) { x.font = fNom; x.fillText(p.nombre, cx, ty + 0.6 * f); ty += 1.2 * f + 0.15 * f; }
+      if (p.detalle) { x.globalAlpha = 0.85; x.font = fDet; x.fillText(p.detalle, cx, ty + 0.6 * 0.82 * f); x.globalAlpha = 1; }
+      return { cv, esc, ax: m - minX, ay: m - minY };
+    }
+    const dirDe = (yaw, m) => [Math.sin(yaw) * Math.cos(m), -Math.sin(m), Math.cos(yaw) * Math.cos(m)];
+    const punto = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    for (const c of elementos) {
+      const esc = porCss * 1.3, s = c.tipo === "texto" ? spriteTexto(c, esc) : spriteInteres(c, esc), sw = s.cv.width, sh = s.cv.height;
+      const sd = s.cv.getContext("2d").getImageData(0, 0, sw, sh).data, t = es3d(c) ? t3(c) : T3_DEF, yaw = c.yaw, m = c.pitch;
+      const d0 = dirDe(yaw, m), Rt = [Math.cos(yaw), 0, -Math.sin(yaw)], Dn = [-Math.sin(yaw) * Math.sin(m), -Math.cos(m), -Math.cos(yaw) * Math.sin(m)];
+      // Los giros como en CSS: rotateX(inclinar) rotateY(girar) rotateZ(rotar) scale(ancho, alto); x derecha, y abajo, z hacia la cámara
+      const rx = (v, a) => [v[0], v[1] * Math.cos(a) - v[2] * Math.sin(a), v[1] * Math.sin(a) + v[2] * Math.cos(a)];
+      const ry = (v, a) => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * Math.sin(a) + v[2] * Math.cos(a)];
+      const rz = (v, a) => [v[0] * Math.cos(a) - v[1] * Math.sin(a), v[0] * Math.sin(a) + v[1] * Math.cos(a), v[2]];
+      const gira = (v) => rx(ry(rz(v, t.rotar * rad), t.girar * rad), t.inclinar * rad);
+      const mundo = (v) => [0, 1, 2].map((i) => v[0] * Rt[i] + v[1] * Dn[i] - v[2] * d0[i]);
+      const Ux = mundo(gira([c.tipo === "interes" ? 1 : +t.ancho || 1, 0, 0])), Uy = mundo(gira([0, c.tipo === "interes" ? 1 : +t.alto || 1, 0])), C = d0.map((v) => v * R0);
+      const N = [Ux[1] * Uy[2] - Ux[2] * Uy[1], Ux[2] * Uy[0] - Ux[0] * Uy[2], Ux[0] * Uy[1] - Ux[1] * Uy[0]], CN = punto(C, N), ux2 = punto(Ux, Ux), uy2 = punto(Uy, Uy);
+      // Dónde cae en la foto: las 4 esquinas del dibujo
+      const esq = [[0, 0], [sw, 0], [sw, sh], [0, sh]].map(([a, b]) => { const u = a / esc - s.ax, v = b / esc - s.ay, P = [0, 1, 2].map((i) => C[i] + u * Ux[i] + v * Uy[i]), L = Math.hypot(...P); return aPx(Math.atan2(P[0], P[2]), -Math.asin(P[1] / L)); });
+      const xs = esq.map((p) => p[0]); for (let i = 1; i < 4; i++) { while (xs[i] - xs[0] > W / 2) xs[i] -= W; while (xs[i] - xs[0] < -W / 2) xs[i] += W; }
+      let x0 = Math.floor(Math.min(...xs)) - 2, x1 = Math.ceil(Math.max(...xs)) + 2; const ys = esq.map((p) => p[1]), y0 = Math.max(0, Math.floor(Math.min(...ys)) - 2), y1 = Math.min(H, Math.ceil(Math.max(...ys)) + 2);
+      if (x1 - x0 > W / 2) { x0 = 0; x1 = W; }
+      if (y1 <= y0) continue;
+      for (const dx of [0, W, -W]) {
+        const xa = Math.max(0, x0 + dx), xb = Math.min(W, x1 + dx); if (xb <= xa) continue;
+        const img = ox.getImageData(xa, y0, xb - xa, y1 - y0), dd = img.data;
+        for (let yy = y0; yy < y1; yy++) for (let xx = xa; xx < xb; xx++) {
+          let al = 0, cr = 0, cg = 0, cb = 0;
+          for (let sy = 0; sy < 2; sy++) for (let sx = 0; sx < 2; sx++) {
+            const yw = ((xx + 0.25 + 0.5 * sx) / W - 0.5) * 2 * Math.PI, p = (0.5 - (yy + 0.25 + 0.5 * sy) / H) * Math.PI;
+            const d = [Math.sin(yw) * Math.cos(p), Math.sin(p), Math.cos(yw) * Math.cos(p)], dn = punto(d, N);
+            if (Math.abs(dn) < 1e-9) continue;
+            const k = CN / dn; if (k <= 0) continue;
+            const Q = [d[0] * k - C[0], d[1] * k - C[1], d[2] * k - C[2]], u = punto(Q, Ux) / ux2, v = punto(Q, Uy) / uy2;
+            const px = Math.floor((u + s.ax) * esc), py = Math.floor((v + s.ay) * esc);
+            if (px < 0 || py < 0 || px >= sw || py >= sh) continue;
+            const o = (py * sw + px) * 4, a = sd[o + 3] / 255; al += a; cr += sd[o] * a; cg += sd[o + 1] * a; cb += sd[o + 2] * a;
+          }
+          if (al <= 0) continue;
+          const o = ((yy - y0) * (xb - xa) + (xx - xa)) * 4, A = al / 4;
+          dd[o] = dd[o] * (1 - A) + (cr / al) * A; dd[o + 1] = dd[o + 1] * (1 - A) + (cg / al) * A; dd[o + 2] = dd[o + 2] * (1 - A) + (cb / al) * A;
+        }
+        ox.putImageData(img, xa, y0);
+      }
+      await new Promise((ok) => setTimeout(ok, 0));
+    }
+    // 6. JPG con los datos 360 (XMP GPano) y descarga
     const blob = await new Promise((ok) => out.toBlob(ok, "image/jpeg", 0.9));
     const xmp = '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:GPano="http://ns.google.com/photos/1.0/panorama/" GPano:ProjectionType="equirectangular" GPano:UsePanoramaViewer="True" GPano:FullPanoWidthPixels="' + W + '" GPano:FullPanoHeightPixels="' + H + '" GPano:CroppedAreaImageWidthPixels="' + W + '" GPano:CroppedAreaImageHeightPixels="' + H + '" GPano:CroppedAreaLeftPixels="0" GPano:CroppedAreaTopPixels="0"/></rdf:RDF></x:xmpmeta>';
     const cab = new TextEncoder().encode("http://ns.adobe.com/xap/1.0/\0" + xmp), app1 = new Uint8Array(4 + cab.length);

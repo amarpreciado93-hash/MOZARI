@@ -52,6 +52,7 @@ async function paso(nombre, fn, pagina) {
     console.log("  ✓ " + nombre + "  (" + ((Date.now() - t0) / 1000).toFixed(1) + " s)");
   } catch (e) {
     resultados.push({ nombre, ok: false, motivo: String(e.message || e).split("\n")[0].slice(0, 220) });
+    if (pagina) await pagina.screenshot({ path: path.join(DATOS, "fallo-" + resultados.length + ".png") }).then(() => console.log("    captura: " + path.join(DATOS, "fallo-" + resultados.length + ".png")), () => {});
     console.log("  ✗ " + nombre + " — " + String(e.message || e).split("\n")[0].slice(0, 220));
   }
 }
@@ -375,7 +376,8 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await foto(a, "carga-previa");
       for (let i = 0; i < 30 && (await a.$("#previa .splash.en-previa")); i++) await a.waitForTimeout(500);
       exige(!(await a.$("#previa .splash.en-previa")), "en la vista previa la carga no se quitó");
-      await a.keyboard.press("Escape"); await a.waitForTimeout(500);
+      for (let i = 0; i < 4 && (await a.isVisible("#previa")); i++) { await a.keyboard.press("Escape"); await a.waitForTimeout(500); }
+      exige(!(await a.isVisible("#previa")), "la vista previa no se cerró");
       // El tour descargado para otro hosting también trae la carga con el logo
       const d = await a.evaluate((id) => fetch("api/tours/" + id + "/descargar").then((r) => r.json()), tour);
       exige(/<div class="splash propia" id="splash"/.test(d.html || "") && (d.html || "").includes('src="' + src + '"'), "el tour descargado no trae la carga con el logo");
@@ -580,6 +582,84 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await n.click("[data-mz-parejo]"); await n.waitForTimeout(2500);
       d = await leer(); m = Object.values(d.capas).flat().find((c) => c.manzana);
       exige(derecha(m), "«Repartir parejo» no enderezó una manzana volteada");
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await n.context().close();
+    }, a);
+
+    // Reporte de Amar (nov 2026): en la foto 360 salía una línea atravesada de lado a lado (la figura que rodea al dron)
+    await paso("Foto 360: un lote que rodea al dron no deja una línea atravesada y se rellena hasta abajo", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Nadir");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800); await cerrarGuia(n);
+      const [cx, cy] = await n.evaluate(() => { const e = [...document.querySelectorAll(".capas")].find((x) => x.getClientRects().length && x.getBoundingClientRect().width > 300); const b = e.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
+      for (let i = 0; i < 4; i++) { await n.mouse.move(cx, cy + 250); await n.mouse.down(); for (let k = 1; k <= 10; k++) await n.mouse.move(cx, cy + 250 - k * 50); await n.mouse.up(); await n.waitForTimeout(300); }
+      await n.waitForTimeout(800);
+      await n.click("#add-lote"); await n.waitForTimeout(300); await pasarGuias(n);
+      // Un triángulo con la punta lejos (como la manzana del reporte) y la cámara adentro
+      for (const [x, y] of [[cx, cy - 230], [cx + 90, cy + 70], [cx - 90, cy + 70]]) { await n.mouse.click(x, y); await n.waitForTimeout(150); }
+      await n.keyboard.press("Enter"); await n.waitForTimeout(1500);
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "nadir.png") });
+      await cerrarGuia(n);
+      exige((await lotes(n)).length === 1, "no se dibujó el lote debajo del dron");
+      await n.keyboard.press("Escape"); await n.waitForTimeout(300);
+      const [descarga] = await Promise.all([n.waitForEvent("download", { timeout: 120000 }), n.click("#foto360-boton")]);
+      const b64 = fs.readFileSync(await descarga.path()).toString("base64");
+      if (process.env.CAPTURAS) fs.copyFileSync(await descarga.path(), path.join(process.env.CAPTURAS, "nadir-360.jpg"));
+      const r = await n.evaluate(async (b64) => {
+        const bl = await (await fetch("data:image/jpeg;base64," + b64)).blob(), bm = await createImageBitmap(bl), cv = document.createElement("canvas");
+        cv.width = bm.width; cv.height = bm.height; const x = cv.getContext("2d"); x.drawImage(bm, 0, 0);
+        const W = cv.width, H = cv.height, d = x.getImageData(0, 0, W, H).data;
+        // Una línea de lado a lado (aunque vaya un poco inclinada): en una franja de 24 filas, casi todas las
+        // columnas tienen un punto más claro que el de 3 filas arriba y 3 abajo
+        const L = (y, i) => { const o = (y * W + i) * 4; return 0.3 * d[o] + 0.59 * d[o + 1] + 0.11 * d[o + 2]; };
+        const y0 = Math.round(H * 0.05), y1 = Math.round(H * 0.92), pico = new Uint8Array((y1 - y0) * W);
+        for (let y = y0; y < y1; y++) for (let i = 0; i < W; i++) if (L(y, i) - Math.max(L(y - 3, i), L(y + 3, i)) > 35) pico[(y - y0) * W + i] = 1;
+        let peor = 0, fila = -1;
+        for (let y = y0; y + 24 <= y1; y += 4) { let b = 0; for (let i = 0; i < W; i++) { for (let k = 0; k < 24; k++) if (pico[(y - y0 + k) * W + i]) { b++; break; } } if (b / W > peor) { peor = b / W; fila = y; } }
+        // Abajo (el nadir): el relleno verde del lote (#22B573) cubre filas completas; sin relleno el pasto es #66AA55
+        let abajo = 0; { const y = Math.round(H * 0.975); for (let i = 0; i < W; i++) { const o = (y * W + i) * 4; if (d[o] < 92 && d[o + 1] > 140) abajo++; } abajo /= W; }
+        return { W, H, peor: +peor.toFixed(2), fila, abajo: +abajo.toFixed(2) };
+      }, b64);
+      if (process.env.CAPTURAS) console.log("    nadir:", JSON.stringify(r));
+      exige(r.peor < 0.5, "la foto 360 trae una línea atravesada en la fila " + r.fila + " (" + Math.round(r.peor * 100) + "% del ancho)");
+      exige(r.abajo > 0.6, "el lote que rodea al dron no se rellena hasta abajo (" + Math.round(r.abajo * 100) + "%)");
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await n.context().close();
+    }, a);
+
+    // Pedido de Amar (nov 2026): en la foto 360 se pega todo (textos, rutas, polígonos, puntos de interés), no solo los lotes
+    await paso("Foto 360: también se pegan los textos, las rutas, los polígonos y los puntos de interés", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Todo pegado");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800); await cerrarGuia(n);
+      const [cx, cy] = await n.evaluate(() => { const e = [...document.querySelectorAll(".capas")].find((x) => x.getClientRects().length && x.getBoundingClientRect().width > 300); const b = e.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
+      const girar = async () => { await n.mouse.move(cx + 250, cy - 200); await n.mouse.down(); for (let k = 1; k <= 10; k++) await n.mouse.move(cx + 250 - k * 50, cy - 200); await n.mouse.up(); await n.waitForTimeout(400); };
+      await n.click("#add-txt"); await n.waitForTimeout(600); await pasarGuias(n); await n.keyboard.press("Escape"); await girar();
+      await n.click("#add-pi"); await n.waitForTimeout(600); await pasarGuias(n); await n.keyboard.press("Escape"); await girar();
+      await n.click("#add-pol"); await n.waitForTimeout(300); await pasarGuias(n);
+      for (const [x, y] of [[cx - 120, cy + 120], [cx + 120, cy + 120], [cx + 120, cy + 260], [cx - 120, cy + 260]]) { await n.mouse.click(x, y); await n.waitForTimeout(150); }
+      await n.keyboard.press("Enter"); await n.waitForTimeout(800); await cerrarGuia(n); await n.keyboard.press("Escape"); await girar();
+      await n.click("#add-camino"); await n.waitForTimeout(300); await pasarGuias(n);
+      for (const [x, y] of [[cx - 200, cy + 250], [cx, cy + 150], [cx + 200, cy + 250]]) { await n.mouse.click(x, y); await n.waitForTimeout(150); }
+      await n.keyboard.press("Enter"); await n.waitForTimeout(800); await cerrarGuia(n); await n.keyboard.press("Escape"); await n.waitForTimeout(1500);
+      const id = await idTour(n), d = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id), cs = Object.values(d.capas).flat();
+      const txt = cs.find((c) => c.tipo === "texto"), pi = cs.find((c) => c.tipo === "interes"), pol = cs.find((c) => c.tipo === "poligono" && !c.camino && !c.lote), ruta = cs.find((c) => c.camino);
+      exige(txt && pi && pol && ruta, "no se crearon todas las capas: " + cs.map((c) => c.tipo + (c.camino ? "/ruta" : "")).join(", "));
+      const [descarga] = await Promise.all([n.waitForEvent("download", { timeout: 120000 }), n.click("#foto360-boton")]);
+      if (process.env.CAPTURAS) fs.copyFileSync(await descarga.path(), path.join(process.env.CAPTURAS, "todo-360.jpg"));
+      const b64 = fs.readFileSync(await descarga.path()).toString("base64");
+      const centroPol = [pol.puntos.reduce((s, p) => s + p[0], 0) / pol.puntos.length, pol.puntos.reduce((s, p) => s + p[1], 0) / pol.puntos.length];
+      const r = await n.evaluate(async ([b64, puntos]) => {
+        const bl = await (await fetch("data:image/jpeg;base64," + b64)).blob(), bm = await createImageBitmap(bl), cv = document.createElement("canvas");
+        cv.width = bm.width; cv.height = bm.height; const x = cv.getContext("2d"); x.drawImage(bm, 0, 0);
+        const W = cv.width, H = cv.height, px = ([yaw, pitch]) => [Math.floor((((yaw / (2 * Math.PI) + 0.5) % 1) + 1) % 1 * W), Math.floor((pitch / Math.PI + 0.5) * H)];
+        const cuenta = (pt, rr, f) => { const [X, Y] = px(pt), d = x.getImageData(Math.max(0, X - rr), Math.max(0, Y - rr), 2 * rr, 2 * rr).data; let k = 0; for (let i = 0; i < d.length; i += 4) if (f(d[i], d[i + 1], d[i + 2])) k++; return k; };
+        const blanco = (r, g, b) => r > 225 && g > 225 && b > 225, lima = (r, g, b) => r > 180 && g > 225 && b < 130, tinte = (r, g, b) => r > 125 && g > 185 && b < 110;
+        return { texto: cuenta(puntos.txt, 40, blanco), interes: cuenta(puntos.pi, 30, blanco), ruta: cuenta(puntos.ruta, 30, lima), poligono: cuenta(puntos.pol, 6, tinte) };
+      }, [b64, { txt: [txt.yaw, txt.pitch], pi: [pi.yaw, pi.pitch], ruta: ruta.puntos[1], pol: centroPol }]);
+      if (process.env.CAPTURAS) console.log("    todo:", JSON.stringify(r));
+      exige(r.texto > 30, "el texto no se pegó en la foto 360");
+      exige(r.interes > 15, "el punto de interés no se pegó en la foto 360");
+      exige(r.ruta > 15, "la ruta no se pegó en la foto 360");
+      exige(r.poligono > 60, "el polígono no se pegó en la foto 360");
       exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
       await n.context().close();
     }, a);
