@@ -273,6 +273,45 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(!grandes.length, "en celular bajó piezas de más de 1024 px por cara (" + grandes.length + "; niveles " + Object.values(metas).map((m) => m.niveles.map((l) => l.size).join("/")).join(" · ") + "; pedidas por tamaño " + JSON.stringify(cuenta) + "; celular " + (await t.evaluate(() => matchMedia("(pointer: coarse)").matches + " " + screen.width)) + ")");
       await ctx.close();
     }, a);
+    // Pedido de Amar (nov 2026): calidad por tour como en 3DVista (Equilibrada por default)
+    await paso("Calidad del tour: Equilibrada por default, Máxima pide la foto completa y Ligera la más ligera", async () => {
+      const n = await pagina(DUENO);
+      await n.fill("#nuevo-tour input", "Calidad"); await n.click("#nuevo-tour button"); await n.waitForTimeout(3000);
+      await n.click('#nav button:has-text("Panoramas")'); await n.waitForTimeout(600);
+      await n.evaluate(async () => { // una esfera grande (8192): niveles de 768, 1536 y 3072 por cara
+        const cv = document.createElement("canvas"); cv.width = 8192; cv.height = 4096; const x = cv.getContext("2d");
+        x.fillStyle = "#7ab"; x.fillRect(0, 0, 8192, 2048); x.fillStyle = "#6a5"; x.fillRect(0, 2048, 8192, 2048);
+        x.strokeStyle = "#cdb"; x.lineWidth = 5; for (let i = 0; i < 128; i++) { x.beginPath(); x.moveTo(i * 64, 2048); x.lineTo(i * 64, 4096); x.stroke(); }
+        const bl = await new Promise((o) => cv.toBlob(o, "image/jpeg", 0.85));
+        const inp = document.querySelector("#subir-zona input[type=file]"), dt = new DataTransfer(); dt.items.add(new File([bl], "grande.jpg", { type: "image/jpeg" }));
+        inp.files = dt.files; inp.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      for (let i = 0; i < 90; i++) { await n.waitForTimeout(1000); if (await n.$("#pano-lista [data-abrir]")) break; }
+      await n.waitForTimeout(1500);
+      const id = await idTour(n), url = TOURS + "/" + id + "/";
+      const publicar = async () => { await n.click('#nav button:has-text("Publicar")'); await n.waitForTimeout(500); await n.click('#subtabs button:has-text("Web")'); await n.waitForTimeout(800); await n.click("#pub-publicar"); await n.waitForTimeout(3500); };
+      const elegir = async (c) => { await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(600); await n.click('#p-calidad [data-calidad="' + c + '"]'); await n.waitForTimeout(800); };
+      const tamanos = async () => { // compu con pantalla muy nítida: pediría la resolución más alta si la calidad lo deja
+        const ctx = await navegador.newContext({ viewport: { width: 1200, height: 1000 }, deviceScaleFactor: 3 }), t = await ctx.newPage(), z = new Set();
+        await t.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+        t.on("request", (r) => { const m = r.url().match(/\/escenas\/[^/]+\/(\d+)\//); if (m) z.add(+m[1]); });
+        await t.goto(url); await t.waitForFunction(() => { const c = document.getElementById("pv-carga"); return c && c.hidden; }, null, { timeout: 30000 }); await t.waitForTimeout(3000);
+        await ctx.close();
+        const meta = await (await fetch(url + "escenas/" + (await (await fetch(url + "proyecto.json")).json()).escenas[0].id + "/escena.json")).json();
+        return Math.max(...[...z].map((k) => meta.niveles[k].size));
+      };
+      await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(600);
+      exige(await n.$('#p-calidad [data-calidad="equilibrada"][aria-pressed="true"]'), "la calidad no empieza en Equilibrada");
+      if (process.env.CAPTURAS) { await n.$eval("#p-calidad", (e) => e.scrollIntoView({ block: "center" })); await n.waitForTimeout(300); await n.screenshot({ path: path.join(process.env.CAPTURAS, "calidad.png") }); }
+      await publicar(); let m = await tamanos();
+      exige(m > 1024 && m <= 2048, "Equilibrada pidió caras de " + m + " px (debe ser hasta 2048)");
+      await elegir("maxima"); await publicar(); m = await tamanos();
+      exige(m > 2048, "Máxima no pidió la foto completa (" + m + " px)");
+      await elegir("ligera"); await publicar(); m = await tamanos();
+      exige(m <= 1024, "Ligera pidió caras de " + m + " px");
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await n.context().close();
+    }, a);
     await paso("Laboratorio · estadísticas: una visita al tour se cuenta (con el lote que abrió)", async () => {
       const t = await pagina(null); await t.goto(link); await t.waitForTimeout(4500);
       const centro = await t.$$eval("path.cp-pol.con-accion", (l) => l.map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2, r.width * r.height]; }).filter((x) => x[2] > 400).sort((a, b) => b[2] - a[2])[0]);
