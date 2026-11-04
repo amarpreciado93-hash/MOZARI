@@ -37,7 +37,10 @@ function apagar() { procesos.forEach((p) => { try { process.kill(-p.pid, "SIGTER
 
 // ---------- resultados ----------
 const resultados = [];
+// SOLO="parte del nombre": corre solo esas pruebas (para probar una mientras se programa; no guarda el resultado)
+const SOLO = process.env.SOLO || "";
 async function paso(nombre, fn, pagina) {
+  if (SOLO && !nombre.includes(SOLO) && !/^Crear un tour/.test(nombre)) return;
   const antes = pagina ? pagina.errs.length : 0, t0 = Date.now();
   try {
     await fn();
@@ -536,6 +539,61 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await n.context().close();
     }, a);
 
+    // Pedido de Amar (nov 2026): del PDF del masterplan se arman los lotes de una manzana y se colocan con 4 esquinas.
+    // Plano de prueba: manzana con dos filas y línea del centro en escalones (como la MZ-3 de El Mirador).
+    await paso("Laboratorio · lotes desde el PDF: recuadro sobre la manzana y 4 esquinas en la esfera", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Lotes del PDF");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800);
+      const st = await n.evaluate(() => { const e = [...document.querySelectorAll(".capas")].find((x) => x.getClientRects().length && x.getBoundingClientRect().width > 300); const b = e.getBoundingClientRect(); return [b.x, b.y, b.width, b.height]; });
+      const [cx, cy] = [st[0] + st[2] / 2, st[1] + st[3] / 2];
+      for (let i = 0; i < 4; i++) { await n.mouse.move(cx, cy + 250); await n.mouse.down(); for (let k = 1; k <= 10; k++) await n.mouse.move(cx, cy + 250 - k * 50); await n.mouse.up(); await n.waitForTimeout(300); }
+      const L = (pts) => '<polyline fill="none" stroke="#000" stroke-width="1.5" points="' + pts.map((p) => p.join(",")).join(" ") + '"/>';
+      const svg = '<svg width="800" height="500" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="500" fill="#fff"/>' +
+        L([[100, 100], [700, 100], [700, 400], [100, 400], [100, 100]]) +
+        L([[100, 250], [220, 250], [220, 300], [340, 300], [340, 250], [460, 250], [460, 300], [580, 300], [580, 250], [700, 250]]) + // centro en escalones
+        [220, 340, 460, 580].map((x) => L([[x, 400], [x, 300]])).join("") + L([[250, 100], [250, 300]]) + L([[400, 100], [400, 250]]) + L([[550, 100], [550, 300]]) +
+        Array.from({ length: 12 }, (_, i) => L([[110 + i * 9, 120], [125 + i * 9, 150]])).join("") + // achurado suelto
+        '<text x="140" y="340" font-size="14">L-1</text><text x="160" y="180" font-size="14">L-9</text></svg>';
+      const hoja = await navegador.newPage(); await hoja.setContent('<!doctype html><html><body style="margin:0">' + svg + '</body></html>');
+      const pdf = await hoja.pdf({ width: "800px", height: "500px", printBackground: true }); await hoja.close();
+      await n.click("#ref-boton"); await n.waitForTimeout(400);
+      await n.setInputFiles("#ref-archivo2", { name: "manzana.pdf", mimeType: "application/pdf", buffer: pdf });
+      let ancho = 0; for (let i = 0; i < 25 && !ancho; i++) { await n.waitForTimeout(600); ancho = await n.$eval("#ref-img", (e) => (e.hidden ? 0 : e.naturalWidth)); }
+      exige(ancho > 500, "el PDF no se pudo ver");
+      await n.waitForTimeout(2500);
+      const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      exige(/^privado\/.*\.pdf$/.test((await leer()).proyecto.referencia.pdf || ""), "el PDF original no se guardó en privado/");
+      await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "560px"; p.style.height = "420px"; });
+      await n.click("#ref-ajustar"); await n.click("#ref-lotes"); await n.waitForTimeout(300);
+      const aPant = (x, y) => n.evaluate(([x, y]) => { const v = document.getElementById("ref-vista").getBoundingClientRect(), m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(document.getElementById("ref-lienzo").style.transform); return [v.left + +m[1] + x * +m[3], v.top + +m[2] + y * +m[3]]; }, [x, y]);
+      const [ax, ay] = await aPant(ancho * 0.08, ancho * 0.08), [bx, by] = await aPant(ancho * 0.93, ancho * 0.56);
+      await n.mouse.move(ax, ay); await n.mouse.down(); await n.mouse.move((ax + bx) / 2, (ay + by) / 2, { steps: 6 }); await n.mouse.move(bx, by, { steps: 6 }); await n.mouse.up();
+      let info = ""; for (let i = 0; i < 20 && !/elegid|No /.test(info); i++) { await n.waitForTimeout(400); info = await n.textContent("#ref-lotes-info"); }
+      exige(/^9 lotes elegidos/.test(info), "no encontró los 9 lotes de la manzana en escalones (" + info + ")");
+      // Un toque sobre un lote lo quita; otro toque lo regresa
+      const [tx, ty] = await aPant(ancho * (160 / 800), ancho * (350 / 800));
+      await n.mouse.click(tx, ty); await n.waitForTimeout(200);
+      exige(/^8 lotes/.test(await n.textContent("#ref-lotes-info")), "tocar un lote no lo quitó");
+      await n.mouse.click(tx, ty); await n.waitForTimeout(200);
+      await n.fill("#ref-mz", "7");
+      await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "300px"; p.style.height = "230px"; });
+      const esquinas = [[st[0] + st[2] * 0.55, st[1] + st[3] * 0.5], [st[0] + st[2] * 0.9, st[1] + st[3] * 0.5], [st[0] + st[2] * 0.9, st[1] + st[3] * 0.9], [st[0] + st[2] * 0.55, st[1] + st[3] * 0.9]];
+      // Al revés (espejo) no se acepta
+      await n.click("#ref-colocar"); await n.waitForTimeout(300);
+      for (const [x, y] of esquinas.slice().reverse()) { await n.mouse.click(x, y); await n.waitForTimeout(250); }
+      await n.waitForTimeout(800);
+      exige(!(await leer()).capas || !Object.values((await leer()).capas).flat().some((c) => c.lote && c.lote.manzana === "7"), "aceptó las esquinas en espejo");
+      await n.keyboard.press("Escape"); await n.waitForTimeout(300);
+      await n.click("#ref-colocar"); await n.waitForTimeout(300);
+      for (const [x, y] of esquinas) { await n.mouse.click(x, y); await n.waitForTimeout(250); }
+      await n.waitForTimeout(3000);
+      const lotes = Object.values((await leer()).capas).flat().filter((c) => c.lote && c.lote.manzana === "7");
+      exige(lotes.length === 9, "no se crearon los 9 lotes en la esfera (" + lotes.length + ")");
+      exige(lotes.map((c) => +c.lote.numero).sort((a, b) => a - b).join() === "1,2,3,4,5,6,7,8,9", "los lotes no quedaron numerados del 1 al 9");
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await n.context().close();
+    }, a);
+
     // 5. Los errores de JavaScript de todas las páginas
     await paso("Sin errores de JavaScript en el estudio", async () => { exige(!a.errs.length && !g.errs.length, (a.errs.concat(g.errs)).join(" | ").slice(0, 200)); });
     await navegador.close();
@@ -547,6 +605,6 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
   }
   const bien = resultados.filter((r) => r.ok).length;
   console.log("\n" + (bien === resultados.length ? "✓" : "✗") + " " + bien + " de " + resultados.length + " pruebas pasaron\n");
-  fs.writeFileSync(path.join(__dirname, "ultima-revision.json"), JSON.stringify({ fecha: new Date().toISOString(), bien, total: resultados.length, resultados }, null, 1));
+  if (!SOLO) fs.writeFileSync(path.join(__dirname, "ultima-revision.json"), JSON.stringify({ fecha: new Date().toISOString(), bien, total: resultados.length, resultados }, null, 1));
   process.exit(bien === resultados.length ? 0 : 1);
 })();

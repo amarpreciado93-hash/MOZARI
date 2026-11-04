@@ -574,7 +574,24 @@
   .ref-dibujo { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
   .ref-dibujo path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
   .ref-btn[aria-pressed="true"] { background: var(--mz-lima); color: var(--mz-tinta); border-color: var(--mz-lima); }
-  .ref-vista.pluma { cursor: crosshair; }
+  .ref-vista.pluma, .ref-vista.lotes { cursor: crosshair; }
+  .ref-lotes-barra { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding: 6px 10px; border-bottom: 1px solid var(--mz-linea-neutra); font-size: 11px; }
+  #ref-lotes-info { flex: 1 1 100%; color: var(--mz-texto-2, #bbb); }
+  .ref-lotes-barra label { display: flex; align-items: center; gap: 5px; }
+  .ref-campo { width: 46px; font: 500 11px var(--mz-texto-ui); color: var(--mz-texto); background: transparent; border: 1px solid var(--mz-linea-neutra); border-radius: 6px; padding: 3px 6px; }
+  #ref-colocar { margin-left: auto; }
+  #ref-colocar:not(:disabled) { background: var(--mz-lima); color: var(--mz-tinta); border-color: var(--mz-lima); }
+  #ref-colocar:disabled { opacity: 0.45; cursor: default; }
+  .ref-sel { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  .ref-sel .lf { fill: rgba(0, 0, 0, 0.06); stroke: #8a8a8a; stroke-width: 1; vector-effect: non-scaling-stroke; stroke-dasharray: 3 3; }
+  .ref-sel .lf.si { fill: rgba(206, 255, 0, 0.42); stroke: #4d6100; stroke-dasharray: none; stroke-width: 1.5; }
+  .ref-sel .caja { fill: rgba(47, 107, 255, 0.08); stroke: #2F6BFF; stroke-width: 1.5; vector-effect: non-scaling-stroke; stroke-dasharray: 6 4; }
+  .ref-sel .num { fill: #1a1a1a; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+  .ref-sel .esq circle { fill: #FF2D55; stroke: #fff; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+  .ref-sel .esq.sig circle { fill: #2F6BFF; }
+  .ref-sel .esq.hecha circle { fill: #9a9a9a; }
+  .ref-sel .esq text { fill: #fff; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+  .cp-borrador-num { fill: #fff; font: 700 13px var(--mz-texto-ui); paint-order: stroke; stroke: rgba(0, 0, 0, 0.7); stroke-width: 3px; }
   .ref-pluma-barra { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--mz-linea-neutra); }
   .ref-colores { display: flex; gap: 6px; margin-right: auto; }
   .ref-color { width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent; background: var(--c); padding: 0; cursor: pointer; }
@@ -1550,9 +1567,10 @@
         </div>
         <div class="banda" id="banda" hidden></div>
         <div class="ref-panel" id="ref-panel" hidden>
-          <header><b>Plano de referencia</b><span class="ref-acc"><button class="ref-btn" id="ref-izq" title="Girar a la izquierda (15°)">↺</button><button class="ref-btn ref-grados" id="ref-grados" title="Regresar a 0°">0°</button><button class="ref-btn" id="ref-der" title="Girar a la derecha (15°)">↻</button><label class="ref-btn" title="Subir otro plano">Cambiar<input type="file" id="ref-archivo" accept="application/pdf,image/png,image/jpeg,image/webp" hidden></label><button class="ref-btn" id="ref-ajustar" title="Ver el plano completo">Ajustar</button><button class="ref-btn" id="ref-pluma" aria-pressed="false" title="Pluma: dibujar sobre el plano">✎</button><button class="ref-btn ref-x" id="ref-cerrar" aria-label="Cerrar">×</button></span></header>
+          <header><b>Plano de referencia</b><span class="ref-acc"><button class="ref-btn" id="ref-izq" title="Girar a la izquierda (15°)">↺</button><button class="ref-btn ref-grados" id="ref-grados" title="Regresar a 0°">0°</button><button class="ref-btn" id="ref-der" title="Girar a la derecha (15°)">↻</button><label class="ref-btn" title="Subir otro plano">Cambiar<input type="file" id="ref-archivo" accept="application/pdf,image/png,image/jpeg,image/webp" hidden></label><button class="ref-btn" id="ref-ajustar" title="Ver el plano completo">Ajustar</button><button class="ref-btn" id="ref-lotes" aria-pressed="false" title="Lotes desde el PDF: arrastra un recuadro sobre una manzana" hidden>▭ Lotes</button><button class="ref-btn" id="ref-pluma" aria-pressed="false" title="Pluma: dibujar sobre el plano">✎</button><button class="ref-btn ref-x" id="ref-cerrar" aria-label="Cerrar">×</button></span></header>
           <div class="ref-pluma-barra" id="ref-pluma-barra" hidden><span class="ref-colores"><button class="ref-color" data-ref-color="#FF2D55" style="--c:#FF2D55" aria-label="Rojo"></button><button class="ref-color" data-ref-color="#22B573" style="--c:#22B573" aria-label="Verde"></button><button class="ref-color" data-ref-color="#2F6BFF" style="--c:#2F6BFF" aria-label="Azul"></button></span><button class="ref-btn" id="ref-deshacer">Deshacer</button><button class="ref-btn" id="ref-borrar">Borrar todo</button></div>
-          <div class="ref-vista" id="ref-vista"><div class="ref-lienzo" id="ref-lienzo"><div class="ref-hoja" id="ref-hoja"><img id="ref-img" alt="Plano de referencia" draggable="false"><svg class="ref-dibujo" id="ref-dibujo"></svg></div></div><div class="ref-vacio" id="ref-vacio"><p>Sube tu masterplan para tenerlo a la vista mientras trazas.</p><label class="btn-prim">Subir PDF o imagen<input type="file" id="ref-archivo2" accept="application/pdf,image/png,image/jpeg,image/webp" hidden></label><small>Solo lo ves tú al editar; tus clientes no lo ven en el tour.</small></div></div>
+          <div class="ref-lotes-barra" id="ref-lotes-barra" hidden><span id="ref-lotes-info">Arrastra un recuadro sobre una manzana.</span><label>Manzana <input id="ref-mz" class="ref-campo" size="4" placeholder="3"></label><label>Desde el lote <input id="ref-ini" class="ref-campo" size="3" value="1" inputmode="numeric"></label><button class="ref-btn" id="ref-colocar" disabled>Colocar en la esfera</button></div>
+          <div class="ref-vista" id="ref-vista"><div class="ref-lienzo" id="ref-lienzo"><div class="ref-hoja" id="ref-hoja"><img id="ref-img" alt="Plano de referencia" draggable="false"><svg class="ref-dibujo" id="ref-dibujo"></svg><svg class="ref-sel" id="ref-sel"></svg></div></div><div class="ref-vacio" id="ref-vacio"><p>Sube tu masterplan para tenerlo a la vista mientras trazas.</p><label class="btn-prim">Subir PDF o imagen<input type="file" id="ref-archivo2" accept="application/pdf,image/png,image/jpeg,image/webp" hidden></label><small>Solo lo ves tú al editar; tus clientes no lo ven en el tour.</small></div></div>
         </div>
       </div>
 
@@ -2262,7 +2280,7 @@
     if (!$("previa").hidden || /INPUT|TEXTAREA/.test(document.activeElement.tagName) && document.activeElement.type !== "range" && document.activeElement.type !== "checkbox") return;
     ev.preventDefault();
     // Dibujando un polígono: deshacer quita el último punto
-    if (motorEd && motorEd.dibujo && k === "z" && !ev.shiftKey) { motorEd.dibujo.puntos.pop(); motorEd.render(); return; }
+    if (motorEd && motorEd.dibujo && k === "z" && !ev.shiftKey) { motorEd.dibujo.puntos.pop(); motorEd.render(); if (motorEd.dibujo.tipo === "pdf") { pintarSel(); bandaPDF(); } return; }
     viajarHistorial(k === "z" && !ev.shiftKey);
   });
   let consecutivo = Date.now() % 1e6;
@@ -4240,6 +4258,7 @@
         k.setAttribute("class", "cp-borrador-pt" + (primero ? " primero" : ""));
         k.setAttribute("cx", s.x); k.setAttribute("cy", s.y); k.setAttribute("r", primero ? 7 : 4);
         extra.appendChild(k);
+        if (dib.tipo === "pdf") { const t = document.createElementNS(SVGNS, "text"); t.setAttribute("class", "cp-borrador-num"); t.setAttribute("x", s.x + 10); t.setAttribute("y", s.y - 10); t.textContent = i + 1; extra.appendChild(t); }
       });
     }
 
@@ -4436,12 +4455,13 @@
       if (dib) {
         const k = coordsEn(ev);
         if (!k) return;
-        if (dib.puntos.length >= 3 && dib.tipo !== "camino" && dib.tipo !== "manzana") {
+        if (dib.puntos.length >= 3 && dib.tipo !== "camino" && dib.tipo !== "manzana" && dib.tipo !== "pdf") {
           const cam = camara(), p0 = aCamara(cam, dib.puntos[0][0], dib.puntos[0][1]), r = stage.getBoundingClientRect();
           if (p0.z > CERCA) { const s = aPantalla(cam, p0); if (Math.hypot(s.x - (ev.clientX - r.left), s.y - (ev.clientY - r.top)) < 12) { opciones.alCerrarDibujo(); return; } }
         }
         dib.puntos.push([k.yaw, k.pitch]);
         programar();
+        if (dib.tipo === "pdf" && opciones.alPuntoDibujo) opciones.alPuntoDibujo(dib);
       } else if (motor.elegida) opciones.alSeleccionar(null);
     });
 
@@ -5335,6 +5355,7 @@ void main(){
         quitarAsaExtra: (c, h) => quitarAsaManzana(c, h),
         alEntrar: (c, origen) => { abrirEditor(c.destino, nav.sub, vistaLlegada(c, origen)); avisar("Llegaste a " + nombreDe(c.destino) + (c.llegada === "frente" ? " viendo de frente" : "")); },
         alCerrarDibujo: () => terminarDibujo(true),
+        alPuntoDibujo: (d) => puntoPDF(d),
         alInteractuar: () => { if (pilotoEd) detenerPilotoEd(); },
         alMoverVista: () => { if (motorEd && motorEd.modo === "piloto") marcarPuntoActual(); },
       });
@@ -5361,11 +5382,12 @@ void main(){
   // =================== PLANO DE REFERENCIA (Laboratorio) ===================
   // El masterplan (PDF o imagen) en una ventanita arriba a la izquierda, para trazar viéndolo. Se guarda
   // en privado/ del tour: el estudio lo lee, pero el tour publicado y el .zip no lo sirven.
-  const REF = { on: false, s: 1, x: 0, y: 0, listo: false, pluma: false, color: "#FF2D55" };
+  const REF = { on: false, s: 1, x: 0, y: 0, listo: false, pluma: false, color: "#FF2D55", lotes: false, sel: null, caja: null, orden: [], esq: [] };
   function pintarRef() {
     const lab = MODO === "nube" && enLab("referencia") && nav.sub === "capas";
     const tit = $("ref-panel").querySelector("header b"); if (CHIP_LAB && !tit.querySelector(".chip-lab")) tit.insertAdjacentHTML("beforeend", " " + CHIP_LAB);
     $("ref-boton").hidden = !lab; $("ref-boton").setAttribute("aria-pressed", REF.on);
+    $("ref-lotes").hidden = !enLab("lotes-pdf");
     $("ref-panel").hidden = !lab || !REF.on;
     if (!lab || !REF.on) return;
     const r = P().referencia, img = $("ref-img");
@@ -5378,6 +5400,7 @@ void main(){
   function moverRef() {
     $("ref-lienzo").style.transform = "translate(" + REF.x + "px," + REF.y + "px) scale(" + REF.s + ")";
     const g = giroRef(); $("ref-hoja").style.transform = "rotate(" + g + "deg)"; $("ref-grados").textContent = (g > 180 ? g - 360 : g) + "°";
+    if (REF.lotes) pintarSel();
   }
   function ajustarRef() { // el plano completo a la vista, aunque esté girado
     const v = $("ref-vista").getBoundingClientRect(), img = $("ref-img"), w = img.naturalWidth || 1, h = img.naturalHeight || 1, a = (giroRef() * Math.PI) / 180;
@@ -5397,7 +5420,7 @@ void main(){
     if (!file) return;
     avisar("Preparando el plano…");
     try {
-      const cv = document.createElement("canvas"), MAX = 4000;
+      const cv = document.createElement("canvas"), MAX = 4000; let escPDF = 0;
       if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
         const pdfjs = await import("/lib/pdf.min.mjs");
         pdfjs.GlobalWorkerOptions.workerSrc = "/lib/pdf.worker.min.mjs";
@@ -5406,15 +5429,19 @@ void main(){
         cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
         const x = cv.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, cv.width, cv.height);
         await pag.render({ canvasContext: x, viewport: vp }).promise;
+        escPDF = esc;
       } else {
         const bm = await createImageBitmap(file), e = Math.min(1, MAX / Math.max(bm.width, bm.height));
         cv.width = Math.round(bm.width * e); cv.height = Math.round(bm.height * e);
         const x = cv.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, cv.width, cv.height); x.drawImage(bm, 0, 0, cv.width, cv.height);
       }
       const blob = await new Promise((ok) => cv.toBlob(ok, "image/jpeg", 0.88));
-      const ruta = "privado/referencia-" + Date.now().toString(36) + ".jpg";
+      const sello = Date.now().toString(36), ruta = "privado/referencia-" + sello + ".jpg";
       await subirArchivo(ruta, blob);
       P().referencia = { img: ruta, ancho: cv.width, alto: cv.height };
+      // El PDF original también se guarda (privado): de sus líneas salen los lotes (Laboratorio)
+      if (escPDF) { const rp = "privado/referencia-" + sello + ".pdf"; await subirArchivo(rp, file); Object.assign(P().referencia, { pdf: rp, pdfEsc: escPDF }); }
+      REF.sel = null; REF.caja = null;
       cambio(); pintarRef(); avisar("Plano listo. Rueda para acercar, arrastra para moverte.");
     } catch (e) { avisar(e && e.limite ? e.message : "No se pudo leer ese archivo. Prueba con otro PDF o una imagen."); }
   }
@@ -5474,12 +5501,361 @@ void main(){
       v.addEventListener("pointermove", dibujar); v.addEventListener("pointerup", fin); v.addEventListener("pointercancel", fin);
       return;
     }
+    if (REF.lotes && !ev.altKey && ev.button === 0) { recuadroLotes(ev); return; }
     const v = $("ref-vista"), x0 = ev.clientX - REF.x, y0 = ev.clientY - REF.y; v.setPointerCapture(ev.pointerId); v.classList.add("moviendo");
     const mover = (e) => { REF.x = e.clientX - x0; REF.y = e.clientY - y0; moverRef(); };
     const soltar = () => { v.classList.remove("moviendo"); v.removeEventListener("pointermove", mover); v.removeEventListener("pointerup", soltar); v.removeEventListener("pointercancel", soltar); };
     v.addEventListener("pointermove", mover); v.addEventListener("pointerup", soltar); v.addEventListener("pointercancel", soltar);
   });
-  $("ref-vista").addEventListener("dblclick", () => { if (REF.listo && !REF.pluma) ajustarRef(); });
+  $("ref-vista").addEventListener("dblclick", () => { if (REF.listo && !REF.pluma && !REF.lotes) ajustarRef(); });
+  // =================== LOTES DESDE EL PDF (Laboratorio) ===================
+  // Lee las líneas del masterplan (PDF de AutoCAD/Illustrator, no escaneado) y arma los polígonos cerrados
+  // de una zona. Todo en coordenadas de la imagen del plano de referencia (misma escala y giro de página).
+  async function trazosDelPDF(pdfjs, pag, vp) {
+    const O = pdfjs.OPS, ol = await pag.getOperatorList(), fn = ol.fnArray, ar = ol.argsArray;
+    const segs = [], rellenos = [], pila = [];
+    const mul = (m, n) => [m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1], m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3], m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]];
+    let M = vp.transform.slice(), sub = [], cur = null;
+    const T = (x, y) => [M[0] * x + M[2] * y + M[4], M[1] * x + M[3] * y + M[5]];
+    const bez = (p0, p1, p2, p3) => { for (let i = 1; i <= 6; i++) { const t = i / 6, u = 1 - t; cur.push([u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0], u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1]]); } };
+    const ultimo = () => cur[cur.length - 1];
+    let corrida = [];
+    const angulo = (s) => { let g = Math.atan2(s[1][1] - s[0][1], s[1][0] - s[0][0]); if (g < 0) g += Math.PI; return g; };
+    const enCorrida = (s) => {
+      const u = corrida[corrida.length - 1]; if (!u) return false;
+      const d = Math.abs(angulo(s) - angulo(u)); if (Math.min(d, Math.PI - d) > 0.035) return false;
+      const L = Math.hypot(u[1][0] - u[0][0], u[1][1] - u[0][1]) || 1, sep = Math.abs((u[1][0] - u[0][0]) * (u[0][1] - s[0][1]) - (u[0][0] - s[0][0]) * (u[1][1] - u[0][1])) / L;
+      if (sep > 12) return false; corrida.push(s); return true;
+    };
+    const soltarCorrida = () => { if (corrida.length < 8) for (const s of corrida) segs.push(s[0][0], s[0][1], s[1][0], s[1][1]); corrida = []; };
+    for (let i = 0; i < fn.length; i++) {
+      const f = fn[i], a = ar[i];
+      if (f === O.save) pila.push(M);
+      else if (f === O.restore) { if (pila.length) M = pila.pop(); }
+      else if (f === O.transform) M = mul(M, a);
+      else if (f === O.paintFormXObjectBegin) { pila.push(M); if (a && a[0]) M = mul(M, a[0]); }
+      else if (f === O.paintFormXObjectEnd) { if (pila.length) M = pila.pop(); }
+      else if (f === O.constructPath) {
+        const ops = a[0], c = a[1]; let j = 0;
+        for (const op of ops) {
+          if (op === O.moveTo) { cur = [T(c[j], c[j + 1])]; sub.push(cur); j += 2; }
+          else if (op === O.lineTo) { if (!cur) { cur = []; sub.push(cur); } cur.push(T(c[j], c[j + 1])); j += 2; }
+          else if (op === O.curveTo) { if (cur) bez(ultimo(), T(c[j], c[j + 1]), T(c[j + 2], c[j + 3]), T(c[j + 4], c[j + 5])); j += 6; }
+          else if (op === O.curveTo2) { if (cur) { const p0 = ultimo(); bez(p0, p0, T(c[j], c[j + 1]), T(c[j + 2], c[j + 3])); } j += 4; }
+          else if (op === O.curveTo3) { if (cur) { const p3 = T(c[j + 2], c[j + 3]); bez(ultimo(), T(c[j], c[j + 1]), p3, p3); } j += 4; }
+          else if (op === O.closePath) { if (cur && cur.length > 1) { cur.cerrado = true; const p = cur[0]; cur = [p]; sub.push(cur); } }
+          else if (op === O.rectangle) { const x = c[j], y = c[j + 1], w = c[j + 2], h = c[j + 3]; const r = [T(x, y), T(x + w, y), T(x + w, y + h), T(x, y + h)]; r.cerrado = true; sub.push(r); cur = null; j += 4; }
+        }
+      } else if (f >= O.stroke && f <= O.endPath) {
+        // Solo las líneas (sin relleno) cuentan como orillas; lo pintado se toma aparte como forma completa
+        const raya = f === O.stroke || f === O.closeStroke, relleno = f >= O.fill && f <= O.closeEOFillStroke;
+        // Achurado: muchas rayitas paralelas y muy juntas (en un trazo o una tras otra) no son orillas de lotes
+        const rayitas = sub.filter((s) => s.length === 2);
+        if (raya && rayitas.length === sub.length && rayitas.length) {
+          for (const s of rayitas) if (!enCorrida(s)) { soltarCorrida(); corrida.push(s); }
+          sub = []; cur = null; continue;
+        }
+        soltarCorrida();
+        for (const s of sub) {
+          if (s.length < 2) continue;
+          if (raya) {
+            for (let k = 1; k < s.length; k++) segs.push(s[k - 1][0], s[k - 1][1], s[k][0], s[k][1]);
+            if (s.cerrado || f === O.closeStroke || f === O.closeFillStroke || f === O.closeEOFillStroke) segs.push(s[s.length - 1][0], s[s.length - 1][1], s[0][0], s[0][1]);
+          }
+          if (relleno && !raya && s.length >= 3) rellenos.push(s);
+        }
+        sub = []; cur = null;
+      }
+    }
+    soltarCorrida();
+    return { segs: new Float64Array(segs), rellenos };
+  }
+  const areaPol = (P) => { let s = 0; for (let i = 0; i < P.length; i++) { const p = P[i], q = P[(i + 1) % P.length]; s += p[0] * q[1] - q[0] * p[1]; } return s / 2; };
+  function centroPol(P) {
+    let A = 0, cx = 0, cy = 0;
+    for (let i = 0; i < P.length; i++) { const p = P[i], q = P[(i + 1) % P.length], k = p[0] * q[1] - q[0] * p[1]; A += k; cx += (p[0] + q[0]) * k; cy += (p[1] + q[1]) * k; }
+    if (Math.abs(A) < 1e-9) return [P.reduce((s, p) => s + p[0], 0) / P.length, P.reduce((s, p) => s + p[1], 0) / P.length];
+    return [cx / (3 * A), cy / (3 * A)];
+  }
+  function dentroPol(P, x, y) { let d = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const a = P[i], b = P[j]; if ((a[1] > y) !== (b[1] > y) && x < ((b[0] - a[0]) * (y - a[1])) / (b[1] - a[1]) + a[0]) d = !d; } return d; }
+  // Quita puntos que no cambian la forma (en línea recta o casi encimados)
+  function simplificarPol(P, tol) {
+    const dp = (pts, a, b, out) => {
+      let k = -1, dm = tol; const A = pts[a], B = pts[b], L = Math.hypot(B[0] - A[0], B[1] - A[1]) || 1e-9;
+      for (let i = a + 1; i < b; i++) { const d = Math.abs((B[0] - A[0]) * (A[1] - pts[i][1]) - (A[0] - pts[i][0]) * (B[1] - A[1])) / L; if (d > dm) { dm = d; k = i; } }
+      if (k < 0) { out.push(A); return; } dp(pts, a, k, out); dp(pts, k, b, out);
+    };
+    // Empieza en el punto más lejano del primero para no partir una esquina
+    let far = 0, dm = -1; P.forEach((p, i) => { const d = Math.hypot(p[0] - P[0][0], p[1] - P[0][1]); if (d > dm) { dm = d; far = i; } });
+    const out = [], ida = P.slice(0, far + 1), vuelta = P.slice(far).concat([P[0]]);
+    dp(ida, 0, ida.length - 1, out); dp(vuelta, 0, vuelta.length - 1, out);
+    return out.length >= 3 ? out : P;
+  }
+  // Polígonos cerrados de una zona: se cruzan todas las líneas, se unen las puntas que casi se tocan y se
+  // recorren las caras. Los rellenos de color (planos de Illustrator) también cuentan como lotes.
+  function lotesEnZona(tr, caja, tol) {
+    const [x0, y0, x1, y1] = caja, mx = Math.max(20, (x1 - x0) * 0.25), my = Math.max(20, (y1 - y0) * 0.25);
+    const R = [x0 - mx, y0 - my, x1 + mx, y1 + my], S = tr.segs, L = [];
+    for (let i = 0; i < S.length; i += 4) {
+      const a = S[i], b = S[i + 1], c = S[i + 2], d = S[i + 3];
+      if (Math.max(a, c) < R[0] || Math.min(a, c) > R[2] || Math.max(b, d) < R[1] || Math.min(b, d) > R[3]) continue;
+      if (Math.hypot(c - a, d - b) < tol * 0.2) continue;
+      L.push([a, b, c, d]);
+    }
+    if (L.length > 120000) return { error: "Hay demasiadas líneas en esa zona. Haz un recuadro más chico." };
+    // Rejilla para buscar vecinos rápido
+    const tam = Math.max(tol * 4, Math.max(R[2] - R[0], R[3] - R[1]) / 96), celdas = new Map();
+    const cel = (x, y) => Math.floor(x / tam) + "," + Math.floor(y / tam);
+    L.forEach((s, i) => {
+      const ax = Math.floor((Math.min(s[0], s[2]) - tol) / tam), bx = Math.floor((Math.max(s[0], s[2]) + tol) / tam), ay = Math.floor((Math.min(s[1], s[3]) - tol) / tam), by = Math.floor((Math.max(s[1], s[3]) + tol) / tam);
+      if ((bx - ax + 1) * (by - ay + 1) > 4000) { (celdas.get("*") || celdas.set("*", []).get("*")).push(i); return; }
+      for (let gx = ax; gx <= bx; gx++) for (let gy = ay; gy <= by; gy++) { const k = gx + "," + gy; (celdas.get(k) || celdas.set(k, []).get(k)).push(i); }
+    });
+    const cortes = L.map(() => [0, 1]), visto = new Int32Array(L.length).fill(-1), largos = celdas.get("*") || [];
+    const proy = (s, x, y) => { const dx = s[2] - s[0], dy = s[3] - s[1], l2 = dx * dx + dy * dy || 1e-12; return ((x - s[0]) * dx + (y - s[1]) * dy) / l2; };
+    const dist = (s, t, x, y) => Math.hypot(s[0] + (s[2] - s[0]) * t - x, s[1] + (s[3] - s[1]) * t - y);
+    for (let i = 0; i < L.length; i++) {
+      const s = L[i], li = Math.hypot(s[2] - s[0], s[3] - s[1]);
+      const ax = Math.floor((Math.min(s[0], s[2]) - tol) / tam), bx = Math.floor((Math.max(s[0], s[2]) + tol) / tam), ay = Math.floor((Math.min(s[1], s[3]) - tol) / tam), by = Math.floor((Math.max(s[1], s[3]) + tol) / tam);
+      const cand = (bx - ax + 1) * (by - ay + 1) > 4000 ? L.map((_, j) => j) : [];
+      if (!cand.length) { for (let gx = ax; gx <= bx; gx++) for (let gy = ay; gy <= by; gy++) { const g = celdas.get(gx + "," + gy); if (g) for (const j of g) cand.push(j); } for (const j of largos) cand.push(j); }
+      for (const j of cand) {
+        if (j <= i || visto[j] === i) continue; visto[j] = i;
+        const t = L[j], lj = Math.hypot(t[2] - t[0], t[3] - t[1]);
+        if (Math.max(s[0], s[2]) + tol < Math.min(t[0], t[2]) || Math.max(t[0], t[2]) + tol < Math.min(s[0], s[2]) || Math.max(s[1], s[3]) + tol < Math.min(t[1], t[3]) || Math.max(t[1], t[3]) + tol < Math.min(s[1], s[3])) continue;
+        const rx = s[2] - s[0], ry = s[3] - s[1], qx = t[2] - t[0], qy = t[3] - t[1], den = rx * qy - ry * qx;
+        if (Math.abs(den) > 1e-9 * li * lj && Math.abs(den) / (li * lj) > 0.02) {
+          const u = ((t[0] - s[0]) * qy - (t[1] - s[1]) * qx) / den, v = ((t[0] - s[0]) * ry - (t[1] - s[1]) * rx) / den;
+          const eu = tol / li, ev = tol / lj;
+          if (u >= -eu && u <= 1 + eu && v >= -ev && v <= 1 + ev) { cortes[i].push(Math.max(0, Math.min(1, u))); cortes[j].push(Math.max(0, Math.min(1, v))); }
+        } else {
+          // Casi paralelas: si se enciman, cada punta que cae sobre la otra la parte ahí
+          for (const [x, y] of [[t[0], t[1]], [t[2], t[3]]]) { const k = proy(s, x, y); if (k > 0 && k < 1 && dist(s, k, x, y) < tol) cortes[i].push(k); }
+          for (const [x, y] of [[s[0], s[1]], [s[2], s[3]]]) { const k = proy(t, x, y); if (k > 0 && k < 1 && dist(t, k, x, y) < tol) cortes[j].push(k); }
+        }
+      }
+    }
+    // Vértices: los puntos a menos de "tol" se vuelven uno
+    const V = [], rej = new Map(), vk = (x, y) => Math.floor(x / tol) + "," + Math.floor(y / tol);
+    const vertice = (x, y) => {
+      const gx = Math.floor(x / tol), gy = Math.floor(y / tol);
+      for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const g = rej.get(gx + a + "," + (gy + b)); if (g) for (const k of g) if (Math.hypot(V[k][0] - x, V[k][1] - y) < tol) return k; }
+      V.push([x, y]); const k = vk(x, y); (rej.get(k) || rej.set(k, []).get(k)).push(V.length - 1); return V.length - 1;
+    };
+    const aristas = new Set();
+    L.forEach((s, i) => {
+      const ts = [...new Set(cortes[i].map((t) => +t.toFixed(6)))].sort((a, b) => a - b);
+      let prev = vertice(s[0] + (s[2] - s[0]) * ts[0], s[1] + (s[3] - s[1]) * ts[0]);
+      for (let k = 1; k < ts.length; k++) {
+        const v = vertice(s[0] + (s[2] - s[0]) * ts[k], s[1] + (s[3] - s[1]) * ts[k]);
+        if (v !== prev) aristas.add(prev < v ? prev + "," + v : v + "," + prev);
+        prev = v;
+      }
+    });
+    const vec = V.map(() => []);
+    aristas.forEach((k) => { const [a, b] = k.split(",").map(Number); vec[a].push(b); vec[b].push(a); });
+    // Fuera las puntas sueltas (cotas, flechas, textos dibujados con líneas)
+    const pend = []; vec.forEach((n, i) => { if (n.length === 1) pend.push(i); });
+    while (pend.length) { const i = pend.pop(); if (vec[i].length !== 1) continue; const j = vec[i][0]; vec[i] = []; vec[j] = vec[j].filter((x) => x !== i); if (vec[j].length === 1) pend.push(j); }
+    vec.forEach((n, i) => n.sort((a, b) => Math.atan2(V[a][1] - V[i][1], V[a][0] - V[i][0]) - Math.atan2(V[b][1] - V[i][1], V[b][0] - V[i][0])));
+    // Caras: en cada vértice se dobla hacia la siguiente arista (la cara queda siempre del mismo lado)
+    const usada = new Set(), caras = [];
+    for (let a = 0; a < V.length; a++) for (const b of vec[a]) {
+      if (usada.has(a + ">" + b)) continue;
+      const cara = []; let u = a, v = b, n = 0;
+      while (!usada.has(u + ">" + v) && n++ < 5000) {
+        usada.add(u + ">" + v); cara.push(V[u]);
+        const nv = vec[v], k = nv.indexOf(u), w = nv[(k - 1 + nv.length) % nv.length];
+        u = v; v = w;
+      }
+      if (cara.length >= 3 && u === a) { const A = areaPol(cara); if (A > 0) caras.push(cara); }
+    }
+    // Rellenos de color (lotes pintados) que no repiten una cara de líneas
+    const enZona = (P) => P.some((p) => p[0] >= R[0] && p[0] <= R[2] && p[1] >= R[1] && p[1] <= R[3]);
+    let rel = tr.rellenos.filter(enZona).map((P) => (areaPol(P) < 0 ? P.slice().reverse() : P.slice())).filter((P) => areaPol(P) > tol * tol * 4);
+    rel = rel.filter((P) => { const c = centroPol(P); return !caras.some((F) => dentroPol(F, c[0], c[1]) && areaPol(F) > areaPol(P) * 0.4); });
+    rel.sort((p, q) => areaPol(p) - areaPol(q));
+    const relOk = [];
+    for (const P of rel) { const c = centroPol(P), A = areaPol(P); if (!relOk.some((Q) => dentroPol(Q, c[0], c[1]) && areaPol(Q) < A * 1.6)) relOk.push(P); }
+    const relFin = relOk.filter((P) => relOk.filter((Q) => Q !== P && areaPol(Q) < areaPol(P) && dentroPol(P, ...centroPol(Q))).length < 2);
+    // Solo formas del tamaño de un lote: ni las letras ni las calles completas
+    let todas = caras.concat(relFin).map((P) => ({ P: simplificarPol(P, tol * 0.6), A: areaPol(P), c: centroPol(P) })).filter((f) => f.P.length >= 3);
+    const dentro = (f) => f.c[0] >= x0 && f.c[0] <= x1 && f.c[1] >= y0 && f.c[1] <= y1;
+    const piso = Math.pow(Math.max(x1 - x0, y1 - y0) / 120, 2);
+    const perim = (P) => P.reduce((s, p, i) => s + Math.hypot(P[(i + 1) % P.length][0] - p[0], P[(i + 1) % P.length][1] - p[1]), 0);
+    todas = todas.filter((f) => f.A > piso && (4 * Math.PI * f.A) / Math.pow(perim(f.P), 2) > 0.1); // fuera las tiras (banquetas, calles)
+    // Una forma que envuelve a otras dos (la manzana completa, una calle) no es lote
+    todas = todas.filter((f) => todas.filter((g) => g !== f && g.A < f.A && dentroPol(f.P, g.c[0], g.c[1])).length < 2);
+    // Tamaño típico de lote: la mediana pesada por área (las rayitas y letras casi no pesan)
+    const ref = todas.filter(dentro).sort((a, b) => a.A - b.A), tot = ref.reduce((s, f) => s + f.A, 0);
+    if (!ref.length) return { formas: [] };
+    let acc = 0, med = ref[ref.length - 1].A; for (const f of ref) { acc += f.A; if (acc >= tot / 2) { med = f.A; break; } }
+    todas = todas.filter((f) => f.A > med / 15 && f.A < med * 8);
+    return { formas: todas.map((f) => ({ puntos: f.P, area: f.A, centro: f.c, elegida: dentro(f) })) };
+  }
+  // Orden de los lotes: a lo largo de la manzana; si son dos filas, la primera de ida y la otra de regreso (en U)
+  function ordenarLotes(formas) {
+    const C = formas.map((f) => f.centro), n = C.length;
+    if (n < 2) return formas;
+    const m = [C.reduce((s, c) => s + c[0], 0) / n, C.reduce((s, c) => s + c[1], 0) / n];
+    let sxx = 0, sxy = 0, syy = 0; C.forEach((c) => { const x = c[0] - m[0], y = c[1] - m[1]; sxx += x * x; sxy += x * y; syy += y * y; });
+    const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy), u = [Math.cos(ang), Math.sin(ang)], v = [-u[1], u[0]];
+    const pu = (c) => (c[0] - m[0]) * u[0] + (c[1] - m[1]) * u[1], pv = (c) => (c[0] - m[0]) * v[0] + (c[1] - m[1]) * v[1];
+    const lado = Math.sqrt(formas.map((f) => f.area).sort((a, b) => a - b)[Math.floor(n / 2)]);
+    const vs = formas.map((f) => pv(f.centro)).sort((a, b) => a - b); let gap = 0, corte = null;
+    for (let i = 1; i < vs.length; i++) if (vs[i] - vs[i - 1] > gap) { gap = vs[i] - vs[i - 1]; corte = (vs[i] + vs[i - 1]) / 2; }
+    const ida = (a, b) => pu(a.centro) - pu(b.centro);
+    if (gap > 0.35 * lado && n >= 4) {
+      const f1 = formas.filter((f) => pv(f.centro) < corte).sort(ida), f2 = formas.filter((f) => pv(f.centro) >= corte).sort(ida).reverse();
+      if (f1.length && f2.length) return f1.concat(f2);
+    }
+    return formas.slice().sort(ida);
+  }
+  // Las 4 esquinas de la manzana en el plano (para casarlas con la esfera), en orden alrededor
+  function esquinasDe(formas) {
+    const pts = formas.flatMap((f) => f.puntos), n = pts.length, m = [pts.reduce((s, p) => s + p[0], 0) / n, pts.reduce((s, p) => s + p[1], 0) / n];
+    let sxx = 0, sxy = 0, syy = 0; pts.forEach((p) => { const x = p[0] - m[0], y = p[1] - m[1]; sxx += x * x; sxy += x * y; syy += y * y; });
+    const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy), u = [Math.cos(ang), Math.sin(ang)], v = [-u[1], u[0]];
+    const dir = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => [a * u[0] + b * v[0], a * u[1] + b * v[1]]);
+    const E = dir.map((d) => pts.reduce((best, p) => ((p[0] - m[0]) * d[0] + (p[1] - m[1]) * d[1] > (best[0] - m[0]) * d[0] + (best[1] - m[1]) * d[1] ? p : best), pts[0]));
+    if (areaPol(E) < 0) E.reverse();
+    return E.map((p) => p.slice());
+  }
+  // Homografía: 4 puntos del plano → 4 puntos del suelo de la esfera
+  function homografia(de, a) {
+    const A = [], b = [];
+    for (let i = 0; i < 4; i++) {
+      const [x, y] = de[i], [X, Y] = a[i];
+      A.push([x, y, 1, 0, 0, 0, -x * X, -y * X]); b.push(X);
+      A.push([0, 0, 0, x, y, 1, -x * Y, -y * Y]); b.push(Y);
+    }
+    for (let c = 0; c < 8; c++) { // Gauss con pivote
+      let p = c; for (let r = c + 1; r < 8; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+      if (Math.abs(A[p][c]) < 1e-12) return null;
+      [A[c], A[p]] = [A[p], A[c]]; [b[c], b[p]] = [b[p], b[c]];
+      for (let r = 0; r < 8; r++) if (r !== c) { const k = A[r][c] / A[c][c]; for (let k2 = c; k2 < 8; k2++) A[r][k2] -= k * A[c][k2]; b[r] -= k * b[c]; }
+    }
+    const h = b.map((v, i) => v / A[i][i]);
+    return (p) => { const w = h[6] * p[0] + h[7] * p[1] + 1; return [(h[0] * p[0] + h[1] * p[1] + h[2]) / w, (h[3] * p[0] + h[4] * p[1] + h[5]) / w]; };
+  }
+
+  // La ventana del plano en modo «Lotes»: recuadro sobre la manzana → sus lotes iluminados → colocar en la esfera
+  const LPDF = { clave: null, tr: null };
+  function trazosRef() {
+    const r = P().referencia; if (!r || !r.pdf) return Promise.resolve(null);
+    if (LPDF.clave === r.pdf) return LPDF.tr;
+    LPDF.clave = r.pdf;
+    LPDF.tr = (async () => {
+      const pdfjs = await import("/lib/pdf.min.mjs"); pdfjs.GlobalWorkerOptions.workerSrc = "/lib/pdf.worker.min.mjs";
+      const buf = await (await fetch(urlArchivo(r.pdf))).arrayBuffer();
+      const doc = await pdfjs.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise, pag = await doc.getPage(1);
+      return trazosDelPDF(pdfjs, pag, pag.getViewport({ scale: +r.pdfEsc || 1 }));
+    })().catch(() => { LPDF.clave = null; return null; });
+    return LPDF.tr;
+  }
+  const elegidasRef = () => (REF.sel || []).filter((f) => f.elegida);
+  function infoLotes(t) { $("ref-lotes-info").textContent = t; }
+  function recalcularOrden() {
+    const el = elegidasRef();
+    REF.orden = ordenarLotes(el); REF.esq = el.length ? esquinasDe(el) : [];
+    $("ref-colocar").disabled = !el.length;
+    if (REF.sel) infoLotes(el.length ? el.length + (el.length === 1 ? " lote elegido" : " lotes elegidos") + ". Toca uno para quitarlo o agregarlo." : "Ningún lote elegido. Toca uno o haz otro recuadro.");
+  }
+  function pintarSel() {
+    const img = $("ref-img"), w = img.naturalWidth || 1, h = img.naturalHeight || 1, sv = $("ref-sel");
+    sv.setAttribute("viewBox", "0 0 " + w + " " + h);
+    if (!REF.lotes) { sv.innerHTML = ""; return; }
+    const k = 1 / (REF.s || 1), dib = motorEd && motorEd.dibujo && motorEd.dibujo.tipo === "pdf" ? motorEd.dibujo : null, sig = dib ? dib.puntos.length : -1;
+    let html = "";
+    if (REF.caja) { const [a, b, c, d] = REF.caja; html += '<rect class="caja" x="' + a + '" y="' + b + '" width="' + (c - a) + '" height="' + (d - b) + '"/>'; }
+    (REF.sel || []).forEach((f) => { html += '<path class="lf' + (f.elegida ? " si" : "") + '" d="M' + f.puntos.map((p) => p[0].toFixed(1) + " " + p[1].toFixed(1)).join("L") + 'Z"/>'; });
+    REF.orden.forEach((f, i) => { html += '<text class="num" x="' + f.centro[0].toFixed(1) + '" y="' + f.centro[1].toFixed(1) + '" font-size="' + (11 * k).toFixed(2) + '">' + ((parseInt($("ref-ini").value, 10) || 1) + i) + "</text>"; });
+    REF.esq.forEach((p, i) => { html += '<g class="esq' + (i === sig ? " sig" : i < sig ? " hecha" : "") + '" transform="translate(' + p[0].toFixed(1) + " " + p[1].toFixed(1) + ')"><circle r="' + (9 * k).toFixed(2) + '"/><text font-size="' + (11 * k).toFixed(2) + '">' + (i + 1) + "</text></g>"; });
+    sv.innerHTML = html;
+  }
+  function recuadroLotes(ev) {
+    const v = $("ref-vista"), a = puntoEnPlano(ev), x0 = ev.clientX, y0 = ev.clientY;
+    v.setPointerCapture(ev.pointerId);
+    const mover = (e) => { const b = puntoEnPlano(e); REF.caja = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]; pintarSel(); };
+    const soltar = async (e) => {
+      v.removeEventListener("pointermove", mover); v.removeEventListener("pointerup", soltar); v.removeEventListener("pointercancel", soltar);
+      if (Math.hypot(e.clientX - x0, e.clientY - y0) < 6) { // un toque: quita o agrega ese lote
+        const q = puntoEnPlano(e), f = (REF.sel || []).filter((f) => dentroPol(f.puntos, q[0], q[1])).sort((x, y) => x.area - y.area)[0];
+        if (f) { f.elegida = !f.elegida; recalcularOrden(); pintarSel(); }
+        return;
+      }
+      const caja = REF.caja; if (!caja) return;
+      infoLotes("Buscando los lotes…");
+      const tr = await trazosRef();
+      if (!tr) { REF.sel = null; REF.caja = null; recalcularOrden(); pintarSel(); infoLotes(P().referencia && P().referencia.pdf ? "No se pudo leer el PDF." : "Este plano se subió antes de esta función: vuelve a subir el PDF (botón Cambiar) para leer sus lotes."); return; }
+      const r = lotesEnZona(tr, caja, Math.max(1.5, 1.6 * (+P().referencia.pdfEsc || 1)));
+      if (r.error) { infoLotes(r.error); return; }
+      REF.sel = r.formas; recalcularOrden(); pintarSel();
+      if (!r.formas.length) infoLotes("No encontré lotes cerrados en esa zona. Prueba otro recuadro o dibújalos a mano.");
+    };
+    v.addEventListener("pointermove", mover); v.addEventListener("pointerup", soltar); v.addEventListener("pointercancel", soltar);
+  }
+  function pintarLotesModo() {
+    $("ref-lotes").setAttribute("aria-pressed", REF.lotes); $("ref-lotes-barra").hidden = !REF.lotes; $("ref-vista").classList.toggle("lotes", REF.lotes);
+    if (REF.lotes && !$("ref-mz").value) $("ref-mz").value = siguienteLote().manzana || "1";
+    if (REF.lotes) recalcularOrden();
+    pintarSel();
+  }
+  $("ref-lotes").addEventListener("click", () => { REF.lotes = !REF.lotes; if (REF.lotes && REF.pluma) { REF.pluma = false; pintarPluma(); } pintarLotesModo(); });
+  $("ref-pluma").addEventListener("click", () => { if (REF.pluma && REF.lotes) { REF.lotes = false; pintarLotesModo(); } });
+  $("ref-ini").addEventListener("input", pintarSel);
+  // Colocar: tocas en la esfera las 4 esquinas marcadas en el plano, en orden, y salen todos los lotes
+  function bandaPDF() {
+    const d = motorEd && motorEd.dibujo; if (!d || d.tipo !== "pdf") return;
+    banda('<span><b>Colocar la manzana ' + esc($("ref-mz").value || "") + '.</b> Toca en la esfera la <b>esquina ' + Math.min(4, d.puntos.length + 1) + ' de 4</b> (la azul en el plano), en el suelo.</span><button class="mini" data-a="deshacer">Quitar punto</button><button class="mini" data-a="cancelar">Cancelar</button>');
+  }
+  $("ref-colocar").addEventListener("click", () => {
+    if (!motorEd || !elegidasRef().length) return;
+    if (motorEd.dibujo) terminarDibujo(false);
+    seleccionar(null);
+    motorEd.dibujo = { puntos: [], cursor: null, tipo: "pdf" };
+    document.body.classList.add("dibujando");
+    bandaPDF(); pintarSel(); motorEd.render();
+  });
+  function puntoPDF(d) {
+    const u = d.puntos[d.puntos.length - 1];
+    if (!aPlano(u[0], u[1])) { d.puntos.pop(); avisar("Esa esquina debe caer en el suelo (abajo del horizonte)"); }
+    pintarSel(); bandaPDF(); motorEd.render();
+    if (d.puntos.length === 4) terminarDibujo(true);
+  }
+  function crearLotesPDF(puntos) {
+    const G = puntos.map(([y, p]) => aPlano(y, p)), E = REF.esq, lotes = REF.orden;
+    if (G.some((g) => !g) || E.length !== 4 || !lotes.length) { avisar("No se pudo colocar: vuelve a tocar las 4 esquinas en el suelo"); return false; }
+    // El plano (y hacia abajo) y el suelo visto desde arriba giran al revés: si coinciden, las esquinas van en otro orden
+    if (areaPol(G) > 0) { avisar("Las esquinas quedaron en otro orden. Tócalas 1, 2, 3, 4 como están en el plano."); return false; }
+    const H = homografia(E, G), mz = String($("ref-mz").value || "").trim() || "1", ini = parseInt($("ref-ini").value, 10) || 1;
+    const nuevos = lotes.map((f) => f.puntos.map((p) => H && H(p)));
+    if (!H || nuevos.some((P) => P.some((q) => !q || !isFinite(q[0]) || !isFinite(q[1])))) { avisar("Esas 4 esquinas no forman la manzana. Vuelve a tocarlas."); return false; }
+    // Frente de cada lote: su lado más paralelo a la manzana y más hacia afuera (la calle); así todos los rótulos leen igual
+    const C = lotes.map((f) => f.centro), m = [C.reduce((s, c) => s + c[0], 0) / C.length, C.reduce((s, c) => s + c[1], 0) / C.length];
+    let sxx = 0, sxy = 0, syy = 0; C.forEach((c) => { const x = c[0] - m[0], y = c[1] - m[1]; sxx += x * x; sxy += x * y; syy += y * y; });
+    const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy), u = [Math.cos(ang), Math.sin(ang)];
+    const frenteDe = (Q) => {
+      const lados = Q.map((p, k) => { const q = Q[(k + 1) % Q.length], L = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, mid = [(p[0] + q[0]) / 2 - m[0], (p[1] + q[1]) / 2 - m[1]];
+        return { k, par: Math.abs(((q[0] - p[0]) * u[0] + (q[1] - p[1]) * u[1]) / L), fuera: Math.abs(-mid[0] * u[1] + mid[1] * u[0]), L }; }).filter((x) => x.L > 1e-6);
+      const tope = Math.max(...lados.map((x) => x.par));
+      return lados.filter((x) => x.par >= tope * 0.85).sort((a, b) => b.fuera - a.fuera)[0].k;
+    };
+    nuevos.forEach((P, i) => {
+      const puntos = P.map((q) => { const d = dePlano(q); return [+d[0].toFixed(5), +d[1].toFixed(5)]; });
+      const frente = C.length > 1 ? frenteDe(lotes[i].puntos) : 0;
+      cs().push({
+        id: nuevoId(), tipo: "poligono", nombre: "Lote", visible: true, puntos,
+        relleno: { color: LIMA, opacidad: 0.35 }, trazo: { color: LIMA, grosor: 1.5, opacidad: 1 },
+        rollover: { activo: true, relleno: { color: LIMA, opacidad: 0.6 }, trazo: { color: BLANCO, grosor: 3, opacidad: 1 } },
+        lote: Object.assign({}, LOTE_DEF, { manzana: mz, numero: String(ini + i), frente, lados: puntos.map(() => "") }),
+      });
+    });
+    est.ultimoLote = { manzana: mz, numero: String(ini + lotes.length - 1) };
+    avisar(lotes.length + (lotes.length === 1 ? " lote" : " lotes") + " de la manzana " + mz + " listos. Ajusta los puntos que no cuadren.");
+    return true;
+  }
+
   function cerrarEditor() {
     if (!motorEd) return;
     if (motorEd.dibujo) terminarDibujo(false);
@@ -6112,7 +6488,10 @@ void main(){
   }
   function terminarDibujo(guardarlo) {
     const dib = motorEd && motorEd.dibujo;
-    if (guardarlo && dib && dib.tipo === "manzana") {
+    if (guardarlo && dib && dib.tipo === "pdf") {
+      if (dib.puntos.length < 4) { avisar("Faltan esquinas: toca las 4, en el orden del plano"); return; }
+      if (!crearLotesPDF(dib.puntos)) { dib.puntos = []; motorEd.render(); pintarSel(); bandaPDF(); return; }
+    } else if (guardarlo && dib && dib.tipo === "manzana") {
       if (dib.puntos.length < 2) { avisar(dib.frente ? "El fondo necesita al menos 2 puntos" : "El frente necesita al menos 2 puntos"); return; }
       if (!dib.frente) {
         dib.frente = dib.puntos.map((p) => p.slice()); dib.puntos = []; motorEd.render();
@@ -6150,6 +6529,7 @@ void main(){
       avisar(esLote ? nombreLote(c) + " creado. Escribe sus datos a la derecha." : "Polígono creado");
     }
     if (motorEd) { motorEd.dibujo = null; motorEd.sinPrecision(); }
+    if (dib && dib.tipo === "pdf") pintarSel();
     document.body.classList.remove("dibujando");
     $("add-pol").setAttribute("aria-pressed", "false"); $("add-lote").setAttribute("aria-pressed", "false"); $("add-camino").setAttribute("aria-pressed", "false"); $("add-manzana").setAttribute("aria-pressed", "false");
     banda(null);
@@ -6158,7 +6538,7 @@ void main(){
   $("banda").addEventListener("click", (ev) => {
     const a = ev.target.closest("[data-a]");
     if (!a) return;
-    if (a.dataset.a === "deshacer" && motorEd.dibujo) { motorEd.dibujo.puntos.pop(); motorEd.render(); }
+    if (a.dataset.a === "deshacer" && motorEd.dibujo) { motorEd.dibujo.puntos.pop(); motorEd.render(); if (motorEd.dibujo.tipo === "pdf") { pintarSel(); bandaPDF(); } }
     if (a.dataset.a === "cancelar") terminarDibujo(false);
     if (a.dataset.a === "cerrar") terminarDibujo(true);
   });
@@ -6708,7 +7088,7 @@ void main(){
     if (motorEd.dibujo) {
       if (ev.key === "Enter") terminarDibujo(true);
       if (ev.key === "Escape") terminarDibujo(false);
-      if (ev.key === "Backspace" && !escribiendo) { ev.preventDefault(); motorEd.dibujo.puntos.pop(); motorEd.render(); }
+      if (ev.key === "Backspace" && !escribiendo) { ev.preventDefault(); motorEd.dibujo.puntos.pop(); motorEd.render(); if (motorEd.dibujo.tipo === "pdf") { pintarSel(); bandaPDF(); } }
       return;
     }
     if (escribiendo) return;

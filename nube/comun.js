@@ -10,7 +10,7 @@
 export const TIPOS = {
   jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", svg: "image/svg+xml",
   json: "application/json; charset=utf-8", mp3: "audio/mpeg", m4a: "audio/mp4", wav: "audio/wav",
-  mp4: "video/mp4", html: "text/html; charset=utf-8",
+  mp4: "video/mp4", html: "text/html; charset=utf-8", pdf: "application/pdf",
 };
 
 export const ID_TOUR = /^[a-z0-9][a-z0-9-]{2,60}$/;

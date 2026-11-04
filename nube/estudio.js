@@ -146,6 +146,7 @@ export const LABORATORIO = {
   "fichas": { nombre: "Creador de fichas", texto: "En Lotes: diseña la ficha que ve tu cliente al tocar un lote, con el logo, colores y tipografía del desarrollo, el plano del lote y su ubicación." },
   "referencia": { nombre: "Plano de referencia", texto: "En Capas: una ventanita con tu masterplan (PDF o imagen) para trazar manzanas y lotes viéndolo. Solo se ve al editar; tus clientes no lo ven en el tour." },
   "manzana-desfase": { nombre: "Doble manzana desfasada", texto: "En una manzana doble, la fila de atrás puede tener otro número de lotes y recorrerse para no coincidir con la del frente." },
+  "lotes-pdf": { nombre: "Lotes desde el PDF", texto: "En el plano de referencia: arrastras un recuadro sobre una manzana del PDF, Mozari arma sus lotes y los colocas en la esfera tocando 4 esquinas. Necesita también «Plano de referencia»." },
 };
 const MODOS_LAB = ["yo", "probadores", "todos"];
 async function leerLab(env) {

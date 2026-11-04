@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-04T01:14:03.494Z",
- "bien": 31,
- "total": 31,
+ "fecha": "2026-11-04T02:06:13.900Z",
+ "bien": 32,
+ "total": 32,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -121,6 +121,10 @@
   },
   {
    "nombre": "Rótulos parejos: un lote grande no agranda su texto, solo si se le sube a mano",
+   "ok": true
+  },
+  {
+   "nombre": "Laboratorio · lotes desde el PDF: recuadro sobre la manzana y 4 esquinas en la esfera",
    "ok": true
   },
   {
