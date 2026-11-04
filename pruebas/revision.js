@@ -564,7 +564,12 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
       exige(/^privado\/.*\.pdf$/.test((await leer()).proyecto.referencia.pdf || ""), "el PDF original no se guardó en privado/");
       await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "560px"; p.style.height = "420px"; });
-      await n.click("#ref-ajustar"); await n.click("#ref-lotes"); await n.waitForTimeout(300);
+      await n.click("#ref-ajustar"); await n.click("#ref-lotes"); await n.waitForTimeout(500);
+      exige(await n.isVisible(".guia-tarjeta .guia-anim") && (await n.$$(".guia-tarjeta .puntos i")).length === 5, "no salió el tutorial de 5 pasos de Lotes desde el PDF");
+      await pasarGuias(n); await n.waitForTimeout(300);
+      await n.click("#ref-lotes-ayuda"); await n.waitForTimeout(300);
+      exige(await n.isVisible(".guia-tarjeta"), "el botón ? no vuelve a mostrar el tutorial");
+      await pasarGuias(n); await n.waitForTimeout(300);
       const aPant = (x, y) => n.evaluate(([x, y]) => { const v = document.getElementById("ref-vista").getBoundingClientRect(), m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(document.getElementById("ref-lienzo").style.transform); return [v.left + +m[1] + x * +m[3], v.top + +m[2] + y * +m[3]]; }, [x, y]);
       const [ax, ay] = await aPant(ancho * 0.08, ancho * 0.08), [bx, by] = await aPant(ancho * 0.93, ancho * 0.56);
       await n.mouse.move(ax, ay); await n.mouse.down(); await n.mouse.move((ax + bx) / 2, (ay + by) / 2, { steps: 6 }); await n.mouse.move(bx, by, { steps: 6 }); await n.mouse.up();
