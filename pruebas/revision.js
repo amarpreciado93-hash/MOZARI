@@ -24,6 +24,9 @@ const LIB = {
   pngjs: busca(path.join(__dirname, "node_modules/pngjs"), "/tmp/qr/node_modules/pngjs"),
 };
 const DUENO = "amarpreciado93@gmail.com";
+// Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
+const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -121,6 +124,8 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
 
     // 2. Dueño: tour completo
     const a = await pagina(DUENO);
+    // El dueño ya vio los tutoriales nuevos (se prueban con una cuenta Pro); así no estorban a las demás pruebas
+    await a.evaluate((l) => Promise.all(l.map((k) => fetch("api/guias/" + k, { method: "POST" }))), GUIAS_NUEVAS); await a.reload(); await a.waitForTimeout(2500); await cerrarAnuncio(a);
     let tour = null;
     await paso("Crear un tour y subir una esfera", async () => { await nuevoTour(a, "Revision"); tour = await idTour(a); exige(tour, "sin id de tour"); }, a);
     await paso("Vista previa del tour", async () => {
@@ -320,6 +325,65 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       const [dl2] = await Promise.all([a.waitForEvent("download", { timeout: 30000 }), a.click('[data-comp="svg"]')]);
       exige((await dl2.suggestedFilename()).endsWith(".svg"), "no bajó el SVG");
     }, a);
+    await paso("Pantalla de carga con el logo del proyecto, no con Mozari", async () => {
+      const foto = (p, n) => (process.env.CAPTURAS ? p.screenshot({ path: path.join(process.env.CAPTURAS, n + ".png") }) : null);
+      const publicar = async () => { await a.click('#nav button:has-text("Publicar")'); await a.waitForTimeout(500); await a.click('#subtabs button:has-text("Web")'); await a.waitForTimeout(800); await a.click("#pub-publicar"); await a.waitForTimeout(3500); };
+      const crudo = async () => (await fetch(TOURS + "/" + tour + "/")).text();
+      // Sin logo en el Skin: solo el nombre del proyecto (y nada de Mozari ni del crédito)
+      await publicar();
+      let h = await crudo();
+      exige(/<div class="splash propia sin-logo" id="splash"/.test(h), "sin logo: el servidor no puso la pantalla de carga del proyecto");
+      const splash = (x) => { const i = x.indexOf('id="splash"'), j = i < 0 ? -1 : x.indexOf("</div></div>", i); return i < 0 ? "" : x.slice(i, j < 0 ? i + 600 : j + 12); };
+      exige(!/MOZARI|Created by|R360/.test(splash(h)), "la pantalla de carga todavía muestra a Mozari: " + splash(h).slice(0, 160));
+      exige(h.includes('class="splash-nombre">Revision</b>'), "sin logo: no sale el nombre del proyecto");
+      // Con el logo del cliente en el Skin y paneles blancos: sale el logo, con letras oscuras que se leen
+      await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(1200);
+      await a.click('button[data-sk-k="logo.tipo"][data-v="propio"]'); await a.waitForTimeout(500);
+      await a.evaluate(async () => {
+        const cv = document.createElement("canvas"); cv.width = 480; cv.height = 200; const x = cv.getContext("2d");
+        x.fillStyle = "#1F4D3A"; x.beginPath(); x.moveTo(60, 170); x.lineTo(110, 40); x.lineTo(160, 170); x.closePath(); x.fill();
+        x.fillStyle = "#3E7D5E"; x.beginPath(); x.moveTo(110, 170); x.lineTo(150, 70); x.lineTo(190, 170); x.closePath(); x.fill();
+        x.fillStyle = "#1F4D3A"; x.font = "700 52px Arial"; x.fillText("BOSQUE", 210, 105); x.font = "400 40px Arial"; x.fillText("ALTO", 212, 160);
+        const bl = await new Promise((o) => cv.toBlob(o, "image/png"));
+        const inp = document.getElementById("sk-logo-archivo"), dt = new DataTransfer(); dt.items.add(new File([bl], "logo.png", { type: "image/png" }));
+        inp.files = dt.files; inp.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      await a.waitForTimeout(2000);
+      await a.click('button[data-sk-k="panel"][data-v="#FFFFFF"]'); await a.waitForTimeout(400);
+      await a.click('button[data-sk-k="acento"][data-v="#127A5E"]'); await a.waitForTimeout(900);
+      exige(await a.$eval(".grupo .nota", (e) => /carga con este logo/.test(e.textContent)).catch(() => false) || /carga con este logo/.test(await a.textContent("body")), "el Skin no avisa que el logo sale en la carga");
+      await publicar();
+      h = await crudo();
+      const src = (h.match(/<img class="splash-logo" src="([^"]+)"/) || [])[1];
+      exige(src && /^archivos\//.test(src), "con logo: la pantalla de carga no trae el logo del Skin");
+      exige((await fetch(TOURS + "/" + tour + "/" + src)).status === 200, "el logo de la carga no se puede abrir en el tour público");
+      exige(/--c-fondo:#FFFFFF;--c-acento:#127A5E;--c-texto:#1C1C1C/i.test(h), "la carga no usa los colores del Skin (o el texto no se lee)");
+      // El visitante: la carga con el logo se ve desde el inicio y se quita cuando la esfera está lista
+      const t = await pagina(null);
+      await t.route(/\/escenas\/.*\/[1-9]\//, async (r) => { await espera(1500); r.continue(); }); // esferas lentas, como en celular
+      await t.goto(TOURS + "/" + tour + "/", { waitUntil: "commit" }); await t.waitForTimeout(900);
+      exige(await t.$eval("#splash", (e) => e.classList.contains("propia") && getComputedStyle(e).visibility !== "hidden" && e.querySelector(".splash-logo").complete && e.querySelector(".splash-logo").naturalWidth > 0).catch(() => false), "el visitante no ve el logo mientras carga");
+      await foto(t, "carga-logo");
+      for (let i = 0; i < 30 && (await t.$("#splash")); i++) await t.waitForTimeout(500);
+      exige(!(await t.$("#splash")), "la pantalla de carga no se quitó al terminar");
+      exige(await t.$("canvas") && !(await t.$(".agua-mozari")) && !(await t.$(".intro-mozari")), "el tour no quedó listo o salió con marca de Mozari");
+      exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
+      await t.context().close();
+      // Vista previa del estudio: igual que el tour publicado
+      await a.click('button:has-text("Vista previa")'); await a.waitForTimeout(300);
+      exige(await a.$("#previa .splash.propia.en-previa .splash-logo"), "la vista previa no muestra la carga con el logo");
+      await foto(a, "carga-previa");
+      for (let i = 0; i < 30 && (await a.$("#previa .splash.en-previa")); i++) await a.waitForTimeout(500);
+      exige(!(await a.$("#previa .splash.en-previa")), "en la vista previa la carga no se quitó");
+      await a.keyboard.press("Escape"); await a.waitForTimeout(500);
+      // El tour descargado para otro hosting también trae la carga con el logo
+      const d = await a.evaluate((id) => fetch("api/tours/" + id + "/descargar").then((r) => r.json()), tour);
+      exige(/<div class="splash propia" id="splash"/.test(d.html || "") && (d.html || "").includes('src="' + src + '"'), "el tour descargado no trae la carga con el logo");
+      // Se regresa el Skin como estaba para las demás pruebas
+      await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(800);
+      await a.click('button[data-sk-k="logo.tipo"][data-v="ninguno"]'); await a.click('button[data-sk-k="panel"][data-v="#111111"]'); await a.waitForTimeout(600);
+      await publicar();
+    }, a);
     await paso("Panel de dueño: cuentas, links, reportes, laboratorio y actualizaciones", async () => {
       await a.click('#nav button:has-text("Mis Tours")'); await a.waitForTimeout(800);
       await a.click("#ver-cuentas"); await a.waitForTimeout(1200);
@@ -354,6 +418,7 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(st === 403, "el servidor dejó descargar al plan Gratis (" + st + ")");
       const t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(4000);
       exige(await t.$(".agua-mozari"), "el tour Gratis salió sin marca de agua");
+      exige(!/<div class="splash propia[^"]*" id="splash"/.test(await (await fetch(TOURS + "/" + id + "/")).text()), "el plan Gratis quitó la pantalla de carga de Mozari");
       await t.context().close();
     }, g);
     await paso("Plan Gratis no ve herramientas del Laboratorio ni el panel de dueño", async () => {
@@ -378,6 +443,52 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await g.goto(ESTUDIO + "/"); await g.waitForTimeout(2500); await cerrarAnuncio(g);
     }, g);
 
+    await paso("Pro: tiene todas las herramientas nuevas, sin etiqueta LAB y con su tutorial la primera vez", async () => {
+      const correo = "pro-" + Date.now() + "@prueba.mx", pr = await pagina(correo);
+      const foto = (n) => (process.env.CAPTURAS ? pr.screenshot({ path: path.join(process.env.CAPTURAS, n + ".png") }) : null);
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const cta = ((await api(a, "api/admin/cuentas")).d.cuentas || []).find((x) => x.email === correo);
+      exige(cta, "no aparece la cuenta nueva en el panel");
+      exige((await api(a, "api/admin/cuentas/" + cta.uid, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ plan: "pro" }) })).s === 200, "no se pudo poner en Pro");
+      await pr.reload(); await pr.waitForTimeout(2500); await cerrarAnuncio(pr);
+      const lab = (await api(pr, "api/yo")).d.lab || [];
+      exige(LANZADAS.every((k) => lab.includes(k)), "a la cuenta Pro le faltan herramientas: " + LANZADAS.filter((k) => !lab.includes(k)).join(", "));
+      await nuevoTour(pr, "Pro"); await irCapas(pr);
+      await pr.waitForSelector(".guia-tarjeta", { timeout: 6000 }).catch(() => {});
+      exige(/plano de referencia/i.test(await pr.textContent(".guia-tarjeta").catch(() => "")), "en Capas no salió el tutorial de las herramientas nuevas");
+      exige(await pr.$(".guia-tarjeta .guia-anim"), "el tutorial no trae su animación");
+      await pr.waitForTimeout(2500); await foto("tuto-capas");
+      await pr.click('.guia-tarjeta [data-guia="seguir"]'); await pr.waitForTimeout(400);
+      exige(/foto 360/i.test(await pr.textContent(".guia-tarjeta").catch(() => "")), "no explica la foto 360");
+      await pr.click('.guia-tarjeta [data-guia="seguir"]'); await pr.waitForTimeout(400);
+      exige(!(await pr.isVisible(".guia-tarjeta")), "el tutorial no se cerró");
+      await pr.click("#ref-boton"); await pr.waitForTimeout(400);
+      await pr.waitForSelector(".guia-tarjeta", { timeout: 6000 }).catch(() => {});
+      exige(/sube tu plano/i.test(await pr.textContent(".guia-tarjeta").catch(() => "")), "al abrir el plano de referencia no explica cómo usarlo");
+      await pr.keyboard.press("Escape"); await pr.click("#ref-boton"); await pr.waitForTimeout(300);
+      await pr.click('#nav button:has-text("Skin")'); await pr.waitForTimeout(400);
+      await pr.waitForSelector(".guia-tarjeta", { timeout: 6000 }).catch(() => {});
+      exige(/logo al cargar/i.test(await pr.textContent(".guia-tarjeta").catch(() => "")), "en Skin no salió el tutorial del logo en la carga");
+      await pr.waitForTimeout(2500); await foto("tuto-skin");
+      await pr.keyboard.press("Escape");
+      await pr.click('#nav button:has-text("Publicar")'); await pr.waitForTimeout(400);
+      await pr.waitForSelector(".guia-tarjeta", { timeout: 6000 }).catch(() => {});
+      exige(/estadísticas/i.test(await pr.textContent(".guia-tarjeta").catch(() => "")), "en Publicar no salió el tutorial de estadísticas");
+      await pr.keyboard.press("Escape");
+      exige(!(await pr.$(".chip-lab")) && !/\bLAB\b/.test(await pr.innerText("body")), "todavía se ve la etiqueta LAB");
+      // Una vez vistos ya no salen
+      await pr.reload(); await pr.waitForTimeout(3000); await cerrarAnuncio(pr); await irCapas(pr); await pr.waitForTimeout(2500);
+      exige(!(await pr.isVisible(".guia-tarjeta")), "el tutorial de Capas salió otra vez");
+      // Si una falla, el dueño la regresa a «Solo yo» y la cuenta Pro deja de tenerla
+      const cambia = (modo) => api(a, "api/admin/laboratorio/foto360", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ modo }) });
+      exige((await cambia("yo")).s === 200, "no se pudo regresar a «Solo yo»");
+      exige(!((await api(pr, "api/yo")).d.lab || []).includes("foto360"), "la cuenta Pro sigue con una función regresada a «Solo yo»");
+      exige(((await api(pr, "api/yo")).d.lab || []).includes("fichas"), "al cambiar una, las demás se movieron");
+      await cambia("pago");
+      exige(((await api(pr, "api/yo")).d.lab || []).includes("foto360"), "no regresó a Pro y Desarrollos");
+      exige(!pr.errs.length, "errores: " + pr.errs.join(" | ").slice(0, 160));
+      await pr.context().close();
+    }, a);
     await paso("Una cuenta se usa en 2 dispositivos; en el 3.º elige cuál cerrar", async () => {
       const correo = "dispositivos-" + Date.now() + "@prueba.mx", UA = ["Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36",
         "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"];

@@ -1321,6 +1321,15 @@
   .splash-barra i { display: block; height: 100%; width: 0; background: var(--mz-lima); animation: carga 1.9s cubic-bezier(.6, 0, .2, 1) forwards 0.2s; }
   .splash-credito { position: absolute; bottom: calc(env(safe-area-inset-bottom, 0px) + 44px); left: 50%; transform: translateX(-50%); width: 190px; color: rgba(242, 245, 236, 0.86); animation: aparece 0.8s ease both 0.5s; }
   .splash-credito svg, .credito svg { width: 100%; height: auto; display: block; }
+  /* Pantalla de carga con la marca del cliente (Laboratorio «carga-logo»): logo, nombre y avance real */
+  .splash.propia { background: var(--c-fondo, #111); color: var(--c-texto, #F2F5EC); cursor: default; }
+  .splash.propia .splash-centro { gap: 18px; padding: 0 24px; text-align: center; }
+  .splash.propia .splash-logo { display: block; max-width: min(240px, 62vw); max-height: 120px; width: auto; height: auto; object-fit: contain; }
+  .splash.propia .splash-nombre { font-weight: 400; font-size: 15px; letter-spacing: 0.24em; margin-right: -0.24em; text-transform: uppercase; opacity: 0.86; max-width: 80vw; line-height: 1.5; }
+  .splash.propia.sin-logo .splash-nombre { font-size: 22px; letter-spacing: 0.18em; margin-right: -0.18em; opacity: 1; }
+  .splash.propia .splash-barra { width: 160px; background: color-mix(in srgb, var(--c-texto, #fff) 16%, transparent); }
+  .splash.propia .splash-barra i { animation: none; width: var(--avance, 4%); background: var(--c-acento, #fff); transition: width 0.35s ease; }
+  .splash.en-previa { position: absolute; z-index: 5; }
   .credito { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 48px; color: var(--mz-tenue); font-size: 11px; }
   .credito span { width: 128px; color: var(--mz-texto); opacity: 0.7; }
   @keyframes entra { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: none; } }
@@ -1766,7 +1775,8 @@
   const LAB = new Set(MODO === "nube" && Array.isArray(NUBE.lab) ? NUBE.lab : []);
   const enLab = (clave) => LAB.has(clave);
   // La etiqueta LAB solo la ves tú (el dueño): para tus usuarios, una función liberada es una función normal
-  const CHIP_LAB = MODO === "nube" && !NUBE.admin ? "" : '<span class="chip-lab">LAB</span>';
+  // Ya sin etiqueta «LAB» en ningún lado (nov 2026): las funciones salieron a Pro y Desarrollos y se ven como cualquier otra
+  const CHIP_LAB = "";
   const TOUR = MODO === "nube" ? (location.hash.match(/t=([a-z0-9-]+)/) || [])[1] || null : null;
   // Plan de la cuenta (el servidor es quien pone los límites; aquí solo se avisa a tiempo)
   const PLAN = MODO === "nube" && NUBE.plan ? NUBE.plan : null;
@@ -2392,6 +2402,7 @@
     if (clave === "panoramas/lotes") pintarLotes();
     if (clave === "panoramas/masterplan") pintarMasterplan();
     if (sec === "skin") requestAnimationFrame(() => abrirSkin(sub));
+    guiasDeSeccion(clave);
   }
 
   // =================== PUBLICAR (nube) ===================
@@ -2726,6 +2737,107 @@
       texto: "Cuántos lotes lleva, si es <b>doble</b>, el <b>primer número</b> y repartir parejo. En la esfera, los <b>puntos verdes</b> mueven cada división." },
   ], { repetir });
 
+  // =================== TUTORIALES DE LAS HERRAMIENTAS NUEVAS ===================
+  // Salen la primera vez que la persona llega a cada herramienta (una vez por cuenta), cuando no hay otro tutorial
+  // abierto. Si se va de esa pantalla antes, se intenta otra vez la próxima que llegue.
+  const guiaEnEspera = new Set();
+  function guiaNueva(clave, pasos, sigue) {
+    if (MODO !== "nube" || guiasVistas.has(clave) || guiaEnEspera.has(clave)) return;
+    guiaEnEspera.add(clave);
+    let n = 0;
+    const intento = () => {
+      const p = typeof pasos === "function" ? pasos() : pasos;
+      if (guiasVistas.has(clave) || ++n > 30 || (sigue && !sigue())) { guiaEnEspera.delete(clave); return; }
+      if (!p.length || guiaActual || document.querySelector("dialog[open]") || !$("previa").hidden) { setTimeout(intento, 1000); return; }
+      guiaEnEspera.delete(clave); mostrarGuia(clave, p);
+    };
+    setTimeout(intento, 900);
+  }
+  const esVisible = (sel) => { const e = typeof sel === "string" ? document.querySelector(sel) : sel; return !!(e && !e.hidden && e.getClientRects().length); };
+  const CURSOR_G = (x, y) => '<path transform="translate(' + x.toFixed(1) + " " + y.toFixed(1) + ')" d="M0 0 L0 15 L4 11.5 L7 18 L10 16.5 L7 10.5 L12.5 10.5 Z" fill="#fff" stroke="#111" stroke-width="1.2"/>';
+  const sv = (u) => { u = Math.max(0, Math.min(1, u)); return u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2; };
+  const pieG = (txt, listo) => '<text x="180" y="194" fill="' + (listo ? "#D5FF40" : "#fff") + '" font-size="11" font-weight="600" text-anchor="middle">' + txt + "</text>";
+  // Plano de referencia: la ventanita con el plano y el lote que se traza en la esfera viéndolo
+  function animRef(svg, t) {
+    let h = '<rect width="360" height="200" fill="#1a2014"/><path d="M0 92 Q180 74 360 96 L360 108 Q180 86 0 104Z" fill="#2c2f2a"/>';
+    h += '<g transform="translate(14 12)"><rect width="128" height="92" rx="8" fill="#F4F2EC"/><rect y="0" width="128" height="16" rx="8" fill="#2a2a2a"/><text x="8" y="11" fill="#fff" font-size="8" font-weight="700">Plano de referencia</text>';
+    for (let k = 0; k < 4; k++) h += '<rect x="' + (12 + k * 26) + '" y="28" width="24" height="50" fill="' + (k === 2 && t > 0.8 ? "#FF2D55" : "none") + '" fill-opacity=".35" stroke="#555" stroke-width="1.2"/>';
+    h += "</g>";
+    const L = [[196, 120], [252, 116], [268, 168], [200, 174]], u = sv((t - 1.2) / 2.2), n = Math.floor(u * 4);
+    const vis = L.slice(0, Math.max(0, n + (u > 0 ? 1 : 0)));
+    if (u >= 1) h += '<path d="M' + L.map((p) => p.join(" ")).join("L") + 'Z" fill="#D5FF40" fill-opacity=".35" stroke="#fff" stroke-width="2"/>';
+    else if (vis.length > 1) h += '<path d="M' + vis.map((p) => p.join(" ")).join("L") + '" fill="none" stroke="#D5FF40" stroke-width="2" stroke-dasharray="5 4"/>';
+    vis.forEach((p) => (h += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="4.5" fill="#D5FF40" stroke="#0b0b0b" stroke-width="1.5"/>'));
+    const c = u > 0 && u < 1 ? L[Math.min(3, n)] : [320, 182];
+    h += CURSOR_G(c[0], c[1]) + pieG(u >= 1 ? "Trazas viendo tu plano, sin adivinar" : "Tu masterplan a un lado mientras trazas", u >= 1);
+    svg.innerHTML = h;
+  }
+  // Calle curva: la manija roja se jala y la orilla con sus lotes se dobla
+  function animCurva(svg, t) {
+    const u = sv((t - 1) / 1.6), hy = 64 - 46 * u, y = (x) => { const s = (x - 40) / 280; return (1 - s) * (1 - s) * 64 + 2 * (1 - s) * s * hy + s * s * 64; };
+    let h = '<rect width="360" height="200" fill="#1a2014"/><path d="M40 ' + 64 + " Q180 " + hy.toFixed(1) + " 320 64 L320 52 Q180 " + (hy - 12).toFixed(1) + ' 40 52Z" fill="#2c2f2a"/>';
+    h += '<path d="M40 64 Q180 ' + hy.toFixed(1) + ' 320 64 L320 160 L40 160Z" fill="#D5FF40" fill-opacity=".28" stroke="#fff" stroke-width="1.6"/>';
+    for (let k = 1; k < 6; k++) { const x = 40 + (280 * k) / 6, mx = 40 + (280 * k) / 6; h += '<path d="M' + x.toFixed(1) + " " + y(x).toFixed(1) + "L" + mx.toFixed(1) + ' 160" stroke="#fff" stroke-width="1.2"/>'; }
+    const my = (64 + hy) / 2;
+    h += '<path d="M120 ' + my.toFixed(1) + " L240 " + my.toFixed(1) + '" stroke="#FF2D55" stroke-width="1.5"/><circle cx="180" cy="' + my.toFixed(1) + '" r="6" fill="#FF2D55" stroke="#fff" stroke-width="1.5"/>';
+    h += CURSOR_G(t < 1 ? 300 - 114 * sv(t) : 186, t < 1 ? 180 - (180 - my - 4) * sv(t) : my + 4) + pieG(u >= 1 ? "La calle se curva y los lotes la siguen" : "Jala la manija roja", u >= 1);
+    svg.innerHTML = h;
+  }
+  // Fila de atrás distinta: otro número de lotes y recorrida para no coincidir con la de enfrente
+  function animDesfase(svg, t) {
+    const d = 24 * sv((t - 1.2) / 1.4);
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="0" y="36" width="360" height="12" fill="#2c2f2a"/><rect x="0" y="164" width="360" height="12" fill="#2c2f2a"/>';
+    for (let k = 0; k < 5; k++) h += '<rect x="' + (40 + k * 56) + '" y="52" width="56" height="52" fill="#D5FF40" fill-opacity=".3" stroke="#fff" stroke-width="1.3"/>';
+    for (let k = 0; k < 4; k++) { const x0 = Math.max(40, 40 + k * 70 - (k ? d : 0)), x1 = Math.min(320, 40 + (k + 1) * 70 - (k < 3 ? d : 0)); h += '<rect x="' + x0.toFixed(1) + '" y="106" width="' + (x1 - x0).toFixed(1) + '" height="54" fill="#4FC3F7" fill-opacity=".3" stroke="#fff" stroke-width="1.3"/>'; }
+    h += '<text x="20" y="82" fill="#fff" font-size="9" text-anchor="middle">5</text><text x="20" y="137" fill="#fff" font-size="9" text-anchor="middle">4</text>' + pieG(t > 2.7 ? "Cada fila con sus propios lotes" : "Frente con 5, atrás con 4 y recorridos", t > 2.7);
+    svg.innerHTML = h;
+  }
+  // Pantalla de carga con el logo del cliente
+  function animCarga(svg, t) {
+    const u = Math.min(1, t / 3.2);
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="70" y="18" width="220" height="150" rx="10" fill="#111" stroke="rgba(255,255,255,.2)"/>';
+    h += '<g transform="translate(180 70)"><path d="M-46 22 L-30 -18 L-14 22Z" fill="#fff"/><path d="M-26 22 L-14 -4 L-2 22Z" fill="rgba(255,255,255,.6)"/><text x="6" y="2" fill="#fff" font-size="14" font-weight="800">TU LOGO</text><text x="6" y="18" fill="rgba(255,255,255,.7)" font-size="8" letter-spacing="2">DESARROLLO</text></g>';
+    h += '<rect x="130" y="124" width="100" height="3" rx="2" fill="rgba(255,255,255,.15)"/><rect x="130" y="124" width="' + (100 * sv(u)).toFixed(1) + '" height="3" rx="2" fill="#D5FF40"/>' + pieG(u >= 1 ? "Tu cliente ve su marca desde el primer segundo" : "Así carga tu tour, sin Mozari", u >= 1);
+    svg.innerHTML = h;
+  }
+  // Capas: los dos botones nuevos de arriba (plano de referencia y foto 360)
+  const guiaCapasNuevas = () => guiaNueva("nuevo-capas", () => [
+    esVisible("#ref-boton") && { el: "#ref-boton", titulo: "Nuevo: plano de referencia", anim: animRef, dur: 4.5,
+      texto: "Abre tu <b>masterplan</b> (PDF o imagen) en una ventanita para trazar manzanas y lotes viéndolo. Solo tú lo ves; tus clientes no." },
+    esVisible("#foto360-boton") && { el: "#foto360-boton", titulo: "Nuevo: foto 360 con lotes",
+      texto: "Descarga esta esfera como <b>foto 360</b> (JPG 2:1) con los lotes dibujados, lista para subir a Facebook, Google Fotos o cualquier visor 360." },
+  ].filter(Boolean), () => nav.sub === "capas");
+  // Al abrir el plano de referencia por primera vez
+  const guiaRefUso = () => guiaNueva("nuevo-referencia", () => [
+    { el: "#ref-panel", titulo: "Sube tu plano aquí",
+      texto: "Pica la ventanita y sube el <b>PDF o la imagen</b> del masterplan. Arrástrala, hazla más grande desde la esquina y gírala con <b>↺ ↻</b> hasta que coincida con la esfera." },
+    esVisible("#ref-lotes") && { el: "#ref-lotes", titulo: "¿Tienes el PDF original?",
+      texto: "Con <b>▭ Lotes</b> arrastras un recuadro sobre una manzana y Mozari arma sus lotes por ti. Te explica los pasos la primera vez." },
+  ].filter(Boolean), () => REF.on && esVisible("#ref-panel"));
+  // Manzana elegida: curvas y fila de atrás desfasada
+  function guiasDeManzana(c) {
+    if (!c || !(c.manzana || c.mzPlano) || !guiasVistas.has("manzana-editar")) return;
+    if (enLab("manzana-curvas") && esVisible("[data-mz-suave]")) guiaNueva("nuevo-curvas", () => [{ el: () => document.querySelector("[data-mz-suave]") && document.querySelector("[data-mz-suave]").closest(".grupo"),
+      titulo: "Nuevo: calles curvas y esquinas redondeadas", anim: animCurva, dur: 4.5,
+      texto: "Pica <b>Suavizar toda la orilla</b> o <b>Redondear las 4 esquinas</b> y salen <b>manijas rojas</b> en la esfera. Jálalas para curvar la calle como la pluma de Illustrator, o para redondear una esquina." }], () => esVisible("[data-mz-suave]"));
+    if (enLab("manzana-desfase") && esVisible('[data-mz="nB"]')) guiaNueva("nuevo-desfase", () => [{ el: () => document.querySelector('[data-mz="nB"]') && document.querySelector('[data-mz="nB"]').closest(".campo, label, .grupo") || document.querySelector('[data-mz="nB"]'),
+      titulo: "Nuevo: fila de atrás distinta", anim: animDesfase, dur: 4.5,
+      texto: "En una manzana doble, la fila de atrás puede llevar <b>otro número de lotes</b> y recorrerse con <b>Desfase de atrás</b> para que no coincida con la de enfrente." }], () => esVisible('[data-mz="nB"]'));
+  }
+  // Las demás: la ficha del lote, las estadísticas y el logo en la carga
+  function guiasDeSeccion(clave) {
+    if (MODO !== "nube") return;
+    if (clave === "panoramas/capas") guiaCapasNuevas();
+    if (clave === "panoramas/lotes" && enLab("fichas")) guiaNueva("nuevo-fichas", [{ el: "#ficha-editor", titulo: "Nuevo: la ficha del lote con tu marca",
+      texto: "Diseña lo que ve tu cliente al tocar un lote: <b>logo</b>, colores, tipografía, el plano del lote y su ubicación. Elige una plantilla y prende <b>Usar esta ficha en el tour</b>." }], () => nav.sub === "lotes" && esVisible("#ficha-editor"));
+    if (/^publicar\//.test(clave) && enLab("estadisticas")) guiaNueva("nuevo-estadisticas", [{ el: () => [...document.querySelectorAll("#subtabs button")].find((b) => /Estad/.test(b.textContent)),
+      titulo: "Nuevo: estadísticas de tu tour",
+      texto: "Cuántas visitas tiene, si entran por celular o compu, de qué ciudades, cuánto se quedan, qué esferas y lotes ven más y cuántos le dan a contacto. Empieza a contar cuando <b>vuelves a publicar</b>." }], () => nav.sec === "publicar");
+    if (/^skin\//.test(clave) && enLab("carga-logo")) guiaNueva("nuevo-carga-logo", [{ el: () => document.querySelector(".logo-fila") && document.querySelector(".logo-fila").closest(".grupo"),
+      titulo: "Nuevo: tu logo al cargar el tour", anim: animCarga, dur: 4.5,
+      texto: "Elige <b>Del cliente</b> y sube su logo: el tour publicado carga con ese logo, el nombre y los colores del Skin, sin Mozari. Se ve al <b>volver a publicar</b>." + (conMarcaPrueba() ? " En tu plan actual se queda la de Mozari." : "") }], () => nav.sec === "skin" && esVisible(".logo-fila"));
+  }
+
   // =================== DESCARGAR PARA OTRO HOSTING ===================
   // El servidor da la página y la lista de archivos; aquí se baja cada uno y se arma el .zip
   // (sin comprimir: las fotos ya vienen comprimidas). En Chrome y Edge se escribe directo al disco.
@@ -2990,7 +3102,7 @@
     }
   });
   // Laboratorio: cada función nueva nace "Solo yo"; cuando convence, se da a probadores o a todos
-  const MODOS_LAB = [["yo", "Solo yo"], ["probadores", "Probadores"], ["todos", "Todos"]];
+  const MODOS_LAB = [["yo", "Solo yo"], ["probadores", "Probadores"], ["pago", "Pro y Desarrollos"], ["todos", "Todos"]];
   // Respaldos: copia diaria de los datos (proyectos, cuentas, planes); las fotos no cambian con las actualizaciones
   const MOTIVO_RESP = { noche: "Copia de la noche", actualizacion: "Antes de una actualización", primero: "Primer respaldo", manual: "Hecho a mano" };
   async function pintarRespaldos() {
@@ -3013,10 +3125,10 @@
     if (!r || !r.ok) { avisar("No se pudo leer el Laboratorio"); return; }
     const { funciones } = await r.json();
     $("cuentas").innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) +
-      '<p class="nota lab-intro">Herramientas nuevas en prueba. Tú siempre las ves (con la etiqueta ' + CHIP_LAB + '). Cuando una te convenza, dásela a tus probadores o a todos. Ojo: lo que publiques con ellas sí lo ven tus clientes en el tour.</p>' +
+      '<p class="nota lab-intro">Herramientas nuevas en prueba. Tú siempre las ves. Cuando una te convenza, dásela a tus probadores, a Pro y Desarrollos, o a todos (también Gratis). Si alguna falla, regrésala a «Solo yo». Ojo: lo que publiques con ellas sí lo ven tus clientes en el tour.</p>' +
       funciones.map((f) => '<div class="lab-fila" data-lab="' + esc(f.clave) + '"><div><b>' + esc(f.nombre) + " " + CHIP_LAB + "</b><span>" + esc(f.texto) + "</span></div>" +
         '<div class="estados">' + MODOS_LAB.map(([v, n]) => '<button data-lab-modo="' + v + '" aria-pressed="' + (f.modo === v) + '">' + n + "</button>").join("") + "</div>" +
-        (f.modo === "todos" ? '<button class="mini primario" data-lab-anunciar>Anunciarla a todos</button>' : "") +
+        (f.modo === "todos" || f.modo === "pago" ? '<button class="mini primario" data-lab-anunciar>' + (f.modo === "pago" ? "Anunciarla a Pro y Desarrollos" : "Anunciarla a todos") + "</button>" : "") +
         (f.modo === "probadores" ? '<label class="lab-probadores">Correos de tus probadores (uno por renglón o separados por coma)<textarea rows="3" data-lab-correos placeholder="marco@ejemplo.com">' + esc(f.probadores.join("\n")) + '</textarea><button class="mini primario" data-lab-guardar>Guardar probadores</button></label>' : "") + "</div>").join("");
   }
   document.addEventListener("click", async (ev) => {
@@ -3024,7 +3136,8 @@
     const modo = ev.target.closest("[data-lab-modo]"), guardar = ev.target.closest("[data-lab-guardar]");
     if (ev.target.closest("[data-lab-anunciar]")) { // la novedad sale medio escrita con el nombre y la descripción de la función
       const nombre = fila.querySelector("b").firstChild.textContent.trim(), texto = fila.querySelector("span:not(.chip-lab)").textContent.trim();
-      await crearNovedad({ titulo: nombre, texto, destino: LAB_DESTINO[fila.dataset.lab] || "" });
+      const enPago = fila.querySelector('[data-lab-modo="pago"][aria-pressed="true"]');
+      await crearNovedad({ titulo: nombre, texto, destino: LAB_DESTINO[fila.dataset.lab] || "", publico: enPago ? "pagados" : "todos" });
       return;
     }
     if (!modo && !guardar) return;
@@ -3032,13 +3145,13 @@
     const r = await fetch("api/admin/laboratorio/" + fila.dataset.lab, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(cuerpo) }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudo guardar"); return; }
     const d = await r.json();
-    avisar(guardar ? d.funcion.probadores.length + " probadores guardados" : d.funcion.modo === "todos" ? "Activada para toda la comunidad" : d.funcion.modo === "probadores" ? "Solo tú y tus probadores la ven" : "Solo tú la ves");
+    avisar(guardar ? d.funcion.probadores.length + " probadores guardados" : d.funcion.modo === "todos" ? "Activada para toda la comunidad" : d.funcion.modo === "pago" ? "Activada para Pro y Desarrollos" : d.funcion.modo === "probadores" ? "Solo tú y tus probadores la ven" : "Solo tú la ves");
     pintarLaboratorio();
   });
   // =================== NOVEDADES ===================
   // Cada anuncio se ve una vez por cuenta (se anota en el servidor). El botón ✦ junto a BETA los vuelve a abrir.
   const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Lotes"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Skin"], ["publicar/web", "Publicar"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"]];
-  const LAB_DESTINO = { "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas" };
+  const LAB_DESTINO = { "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
   let novedades = [], novActual = null;
   const fechaCorta = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
   function htmlNovedad(n, media) {
@@ -5592,7 +5705,7 @@ void main(){
       cambio(); pintarRef(); avisar("Plano listo. Rueda para acercar, arrastra para moverte.");
     } catch (e) { avisar(e && e.limite ? e.message : "No se pudo leer ese archivo. Prueba con otro PDF o una imagen."); }
   }
-  $("ref-boton").addEventListener("click", () => { REF.on = !REF.on; pintarRef(); });
+  $("ref-boton").addEventListener("click", () => { REF.on = !REF.on; pintarRef(); if (REF.on) guiaRefUso(); });
   $("foto360-boton").addEventListener("click", async () => {
     const b = $("foto360-boton"); if (b.disabled || !motorEd || !motorEd.actual) return;
     b.disabled = true;
@@ -7429,6 +7542,7 @@ void main(){
     h += '<div class="grupo"><b>Orden</b><div class="orden"><button class="mini" data-orden="frente">Arriba</button><button class="mini" data-orden="subir">Subir</button><button class="mini" data-orden="bajar">Bajar</button><button class="mini" data-orden="fondo">Abajo</button></div></div>';
     h += '<div class="acciones"><button class="mini" data-acc="duplicar">Duplicar</button><button class="mini peligro" data-acc="eliminar">Eliminar</button>' + (c.lote ? '<button class="mini" data-acc="quitar-lote">Quitar datos de lote</button>' : "") + "</div>";
     cont.innerHTML = h;
+    guiasDeManzana(c);
   }
   function aplicar(el, repintar) {
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
@@ -8695,7 +8809,8 @@ void main(){
       '<div class="grupo"><b>Marca</b>' +
       '<div class="logo-fila"><span class="muestra-logo">' + logoMuestra + "</span>" + seg("logo.tipo", sk.logo.tipo, [["ninguno", "Sin logo"], ["propio", "Del cliente"], ["mozari", "Mozari"]]) + "</div>" +
       (sk.logo.tipo === "propio" ? '<label class="btn-sec" for="sk-logo-archivo" style="justify-self:start">' + (sk.logo.img ? "Cambiar logo" : "Subir logo (PNG o SVG)") + '</label><input type="file" id="sk-logo-archivo" accept="image/png,image/svg+xml,image/webp,image/jpeg" hidden>' : "") +
-      tgl("nombre", sk.nombre, "Mostrar el nombre del tour") + "</div>" +
+      tgl("nombre", sk.nombre, "Mostrar el nombre del tour") +
+      (enLab("carga-logo") ? '<span class="nota">El tour publicado carga con este logo, el nombre y los colores del Skin.' + (conMarcaPrueba() ? " En tu plan actual se queda la de Mozari." : "") + "</span>" : "") + "</div>" +
       '<div class="grupo"><b>Colores</b>' +
       campo("Acento", '<div class="color"><input type="color" data-sk-k="acento" value="' + sk.acento + '" aria-label="Color de acento">' + SK_MUESTRAS.map((m) => '<button class="muestra" style="background:' + m + '" data-sk-k="acento" data-v="' + m + '" aria-label="Usar ' + m + '"></button>').join("") + "</div>") +
       campo("Paneles", '<div class="color"><input type="color" data-sk-k="panel" value="' + sk.panel + '" aria-label="Color de paneles">' + ["#111111", "#1B2430", "#2B2722", "#FFFFFF"].map((m) => '<button class="muestra" style="background:' + m + '" data-sk-k="panel" data-v="' + m + '" aria-label="Usar ' + m + '"></button>').join("") + "</div>") +
@@ -9044,9 +9159,41 @@ void main(){
     ["gesturestart", "gesturechange", "gestureend"].forEach((n) => document.addEventListener(n, no, { passive: false }));
     document.addEventListener("touchmove", (e) => { if (e.touches.length > 1) no(e); }, { passive: false });
   })();
-  let previaGen = 0;
+  // Pantalla de carga con la marca del cliente (Laboratorio «carga-logo»). En el tour publicado la escribe
+  // el servidor (nube/comun.js · datosCarga, mismas reglas); aquí se arma igual para la vista previa.
+  function cargaMarcaPrevia() {
+    if (MODO !== "nube" || !enLab("carga-logo") || conMarcaPrueba()) return null;
+    const color = (c, d) => (/^#[0-9a-fA-F]{6}$/.test(c || "") ? c : d);
+    const luz = (c) => { const n = parseInt(c.slice(1), 16), v = [n >> 16, (n >> 8) & 255, n & 255].map((x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; }); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
+    const contraste = (a, b) => { const [x, y] = [luz(a), luz(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+    const sk = est.skin || {}, lg = sk.logo || {}, f = P().ficha || {};
+    let img = "", fondo = color(sk.panel, "#111111"), acento = color(sk.acento, "#FFFFFF");
+    if (lg.tipo === "propio" && lg.img) img = lg.img;
+    else if (f.logo === "propio" && f.logoImg) { img = f.logoImg; fondo = color(f.fondo, "#ECEAE6"); acento = color(f.acento, "#8A5A3C"); }
+    const texto = luz(fondo) > 0.35 ? "#1C1C1C" : "#F2F5EC";
+    if (contraste(acento, fondo) < 1.8) acento = texto;
+    const nombre = !img || sk.nombre !== false ? String(P().nombre || "").slice(0, 90) : "";
+    const el = document.createElement("div");
+    el.className = "splash propia en-previa" + (img ? "" : " sin-logo");
+    el.setAttribute("aria-hidden", "true");
+    el.style.cssText = "--c-fondo:" + fondo + ";--c-acento:" + acento + ";--c-texto:" + texto;
+    el.innerHTML = '<div class="splash-centro">' + (img ? '<img class="splash-logo" src="' + esc(urlArchivo(img)) + '" alt="">' : "") + (nombre ? '<b class="splash-nombre">' + esc(nombre) + "</b>" : "") + '<div class="splash-barra"><i></i></div></div>';
+    return el;
+  }
+  let previaGen = 0, cargaMarca = null;
+  const quitarCargaMarca = () => {
+    const cm = cargaMarca; cargaMarca = null;
+    if (!cm) return;
+    cm.style.setProperty("--avance", "100%");
+    setTimeout(() => { cm.classList.add("fuera"); setTimeout(() => cm.remove(), 700); }, 300);
+  };
+  const avancePv = (g, pct) => {
+    if (g !== previaGen) return;
+    $("pv-carga").textContent = "Cargando " + Math.round(pct) + "%";
+    if (cargaMarca) cargaMarca.style.setProperty("--avance", (4 + 0.86 * pct).toFixed(1) + "%");
+  };
   async function abrirPrevia() {
-    if (!est.escenas.length) { avisar("Primero sube una esfera"); return; }
+    if (!est.escenas.length) { quitarCargaMarca(); avisar("Primero sube una esfera"); return; }
     // Vista previa: igual que se verá publicado (con marca si es versión de prueba)
     $("previa").querySelectorAll(".agua-mozari, .marca-mozari").forEach((x) => x.remove());
     if (conMarcaPrueba()) { const agua = document.createElement("div"); agua.className = "agua-mozari"; agua.setAttribute("aria-hidden", "true"); $("previa").appendChild(agua); marcaGratis($("previa"), false, false); }
@@ -9055,10 +9202,14 @@ void main(){
     $("previa").hidden = false;
     $("pv-carga").hidden = false;
     $("pv-carga").textContent = "Cargando…";
+    // Vista previa del estudio: la misma pantalla de carga con la marca que verá el tour publicado
+    if (MODO !== "tour") { $("previa").querySelectorAll(".splash.en-previa").forEach((x) => x.remove()); cargaMarca = cargaMarcaPrevia(); if (cargaMarca) $("previa").appendChild(cargaMarca); }
     audioPrueba.pause(); $("m-play").innerHTML = ICO_PLAY;
     const g = ++previaGen;
-    const avancePv = (pct) => { if (g === previaGen) $("pv-carga").textContent = "Cargando " + Math.round(pct) + "%"; };
-    await precarga.inicial(P().escenaInicial, (x) => avancePv(40 * x));
+    await precarga.inicial(P().escenaInicial, (x) => {
+      if (g !== previaGen) return;
+      avancePv(g, 40 * x);
+    });
     if (g !== previaGen || $("previa").hidden) return;
     orientPv = orientacionPantalla();
     tourPv = crearTour($("pv-stage"), $("pv-ui"), {
@@ -9072,10 +9223,11 @@ void main(){
     sonar();
     // La pantalla de carga se quita cuando la primera esfera ya se ve nítida (máximo 8 s más)
     // Mientras llega lo que se ve en alta, el avance sigue (no se queda en un número fijo)
-    let pct = 40; const sigue = setInterval(() => { pct += (96 - pct) * 0.07; avancePv(pct); }, 150);
+    let pct = 40; const sigue = setInterval(() => { pct += (96 - pct) * 0.07; avancePv(g, pct); }, 150);
     if (tourPv && tourPv.nitido) await tourPv.nitido(8000);
     clearInterval(sigue);
     if (g !== previaGen) return;
+    quitarCargaMarca();
     setTimeout(() => ($("pv-carga").hidden = true), 150);
   }
   window.addEventListener("resize", () => {
@@ -9094,6 +9246,7 @@ void main(){
     audioTour.pause();
     try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { /* nada */ }
     previaGen++; precarga.parar();
+    if (cargaMarca && MODO !== "tour") { cargaMarca.remove(); cargaMarca = null; }
     if (tourPv) { tourPv.destruir(); tourPv = null; }
     $("previa").hidden = true;
   }
@@ -9101,8 +9254,9 @@ void main(){
 
   // =================== ARRANQUE ===================
   if (MODO === "tour") {
-    // Link público: directo al tour, sin el estudio ni la pantalla de Mozari
-    $("splash").remove();
+    // Link público: directo al tour, sin el estudio ni la pantalla de Mozari.
+    // Si el servidor puso la pantalla con la marca del cliente, se queda hasta que la esfera se ve nítida.
+    if ($("splash").classList.contains("propia")) cargaMarca = $("splash"); else $("splash").remove();
     document.title = P().nombre || "Tour 360";
     abrirPrevia();
     // Plan Gratis: etiqueta "Hecho con Mozari" y presentación breve al abrir (lo decide el servidor al publicar)

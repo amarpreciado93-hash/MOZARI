@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-04T19:41:52.609Z",
- "bien": 34,
- "total": 34,
+ "fecha": "2026-11-04T20:20:03.674Z",
+ "bien": 36,
+ "total": 36,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -88,6 +88,10 @@
    "ok": true
   },
   {
+   "nombre": "Pantalla de carga con el logo del proyecto, no con Mozari",
+   "ok": true
+  },
+  {
    "nombre": "Panel de dueño: cuentas, links, reportes, laboratorio y actualizaciones",
    "ok": true
   },
@@ -101,6 +105,10 @@
   },
   {
    "nombre": "Plan Gratis no ve herramientas del Laboratorio ni el panel de dueño",
+   "ok": true
+  },
+  {
+   "nombre": "Pro: tiene todas las herramientas nuevas, sin etiqueta LAB y con su tutorial la primera vez",
    "ok": true
   },
   {

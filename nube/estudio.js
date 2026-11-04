@@ -19,13 +19,13 @@
 //   GET    /api/admin/tours/:id       (solo el dueño) lee el proyecto de cualquier tour, para revisar reportes
 //   GET    /api/novedades             anuncios para esta cuenta (y si ya los vio) · POST /api/novedades/:id/vista
 //   GET|POST /api/admin/novedades     (solo el dueño) crear y editar anuncios · PUT /:id · PUT /:id/media
-//   PUT    /api/admin/laboratorio/:clave   { modo: yo|probadores|todos, probadores: [correos] }
+//   PUT    /api/admin/laboratorio/:clave   { modo: yo|probadores|pago|todos, probadores: [correos] }
 //   GET    /t/:id/<ruta>      archivos de tu tour (el estudio los usa para mostrar las esferas)
 //
 // Cada tour pertenece a una cuenta: cuentas/<uid>/tours/<id>. Nadie puede leer, cambiar ni borrar
 // tours de otra cuenta. Los tours publicados se ven en el Worker de tours (público, solo lectura).
 
-import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR } from "./comun.js";
+import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR, conCarga, cargaEnViejos } from "./comun.js";
 import { rutasSesion, cuentaDe, perfil } from "./sesion.js";
 import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
 import { apiPagos, webhookMercadoPago, CODIGO, cuponClave } from "./pagos.js";
@@ -147,20 +147,28 @@ export const LABORATORIO = {
   "referencia": { nombre: "Plano de referencia", texto: "En Capas: una ventanita con tu masterplan (PDF o imagen) para trazar manzanas y lotes viéndolo. Solo se ve al editar; tus clientes no lo ven en el tour." },
   "manzana-desfase": { nombre: "Doble manzana desfasada", texto: "En una manzana doble, la fila de atrás puede tener otro número de lotes y recorrerse para no coincidir con la del frente." },
   "foto360": { nombre: "Foto 360 con lotes", texto: "En Capas: descarga la esfera como foto 360 (JPG 2:1) con los lotes dibujados, lista para Facebook, Google Fotos u otros visores 360." },
+  "carga-logo": { nombre: "Pantalla de carga con tu logo", texto: "El tour publicado carga con el logo y el nombre del proyecto (del Skin), en sus colores, en lugar de Mozari. Se aplica al volver a publicar. En el plan Gratis sigue la de Mozari." },
   "lotes-pdf": { nombre: "Lotes desde el PDF", texto: "En el plano de referencia: arrastras un recuadro sobre una manzana del PDF, Mozari arma sus lotes y los colocas en la esfera tocando 4 esquinas. Necesita también «Plano de referencia»." },
 };
-const MODOS_LAB = ["yo", "probadores", "todos"];
+// "pago": las cuentas Pro y Desarrollos (con su plan vigente); "todos" incluye también Gratis
+const MODOS_LAB = ["yo", "probadores", "pago", "todos"];
+// Noviembre 2026: todo lo que estaba en el Laboratorio salió a Pro y Desarrollos (versión 2 de la configuración).
+// Lo que se agregue después nace "Solo yo". Desde el panel cada función se puede regresar a "Solo yo".
+const LANZADAS_V2 = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
 async function leerLab(env) {
   const o = await env.R2.get("config/laboratorio.json");
-  const c = o ? await o.json().catch(() => ({})) : {};
+  const c = (o ? await o.json().catch(() => ({})) : {}) || {};
+  const v2 = +c._v >= 2;
   return Object.fromEntries(Object.keys(LABORATORIO).map((k) => {
-    const f = (c && c[k]) || {};
-    return [k, { modo: MODOS_LAB.includes(f.modo) ? f.modo : "yo", probadores: Array.isArray(f.probadores) ? f.probadores : [] }];
+    const f = c[k] || {};
+    let modo = MODOS_LAB.includes(f.modo) ? f.modo : "yo";
+    if (!v2 && LANZADAS_V2.includes(k) && modo !== "todos") modo = "pago";
+    return [k, { modo, probadores: Array.isArray(f.probadores) ? f.probadores : [] }];
   }));
 }
 async function labDe(env, yo) {
-  const cfg = await leerLab(env), correo = String(yo.email || "").toLowerCase();
-  return Object.keys(cfg).filter((k) => yo.admin || cfg[k].modo === "todos" || (cfg[k].modo === "probadores" && cfg[k].probadores.includes(correo)));
+  const cfg = await leerLab(env), correo = String(yo.email || "").toLowerCase(), pago = !planDe(yo).marca;
+  return Object.keys(cfg).filter((k) => yo.admin || cfg[k].modo === "todos" || (cfg[k].modo === "pago" && pago) || (cfg[k].modo === "probadores" && cfg[k].probadores.includes(correo)));
 }
 
 // Novedades: anuncios de herramientas nuevas que cada cuenta ve UNA vez (se anota en su perfil, no en el navegador)
@@ -304,8 +312,8 @@ async function admin(request, env, partes) {
     }
     if (partes.length === 4 && m === "PUT" && LABORATORIO[partes[3]]) {
       const cuerpo = await request.json().catch(() => ({}));
-      const o = await env.R2.get("config/laboratorio.json");
-      const c = (o ? await o.json().catch(() => ({})) : {}) || {};
+      // Se guarda la configuración que rige hoy (con lo ya lanzado), así ninguna otra función cambia sola
+      const c = Object.assign(await leerLab(env), { _v: 2 });
       const antes = c[partes[3]] || {};
       c[partes[3]] = {
         modo: MODOS_LAB.includes(cuerpo.modo) ? cuerpo.modo : antes.modo || "yo",
@@ -522,7 +530,7 @@ async function api(request, env, partes, yo) {
     const pon = (v) => ({ element: (el) => el.setAttribute("content", v) });
     const quita = { element: (el) => el.remove() };
     const pagina = await env.ASSETS.fetch(new Request(new URL("/", request.url)));
-    const html = await new HTMLRewriter()
+    const html = await conCarga(new HTMLRewriter(), p, pr.cargaPropia === undefined && (await cargaEnViejos(env).catch(() => false)))
       .on("body", { element: (el) => { el.setAttribute("data-modo", "tour"); el.setAttribute("data-exportado", "1"); } })
       .on("title", { element: (el) => el.setInnerContent(nombre) })
       .on('meta[property="og:title"]', pon(nombre)).on('meta[property="og:site_name"]', pon(nombre))
@@ -548,7 +556,10 @@ async function api(request, env, partes, yo) {
     // (Gratis siempre; un tour con lotes sin el plan Desarrollos). Lo decide el servidor, no la página.
     p.proyecto.marcaMozari = !!plan.marca || (!plan.lotificacion && usaLotificacion(p));
     // Estadísticas (Laboratorio): el tour publicado solo cuenta visitas si su dueño tiene la función activa
-    p.proyecto.estadisticas = (await labDe(env, yo)).includes("estadisticas");
+    const lab = await labDe(env, yo);
+    p.proyecto.estadisticas = lab.includes("estadisticas");
+    // Pantalla de carga con el logo del proyecto (Laboratorio): el servidor la arma al servir el tour
+    p.proyecto.cargaPropia = lab.includes("carga-logo");
     await env.R2.put("publicado/" + id + "/proyecto.json", JSON.stringify(p), { httpMetadata: { contentType: tipoDe("x.json"), cacheControl: "no-cache" } });
     await guardarIndice(env, uid, id, { publicado: new Date().toISOString() });
     return json({ ok: true });

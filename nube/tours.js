@@ -6,7 +6,7 @@
 //
 // Este Worker no tiene ninguna forma de escribir ni borrar: aunque alguien lo intente, no puede.
 
-import { error, rutaValida, servirR2, ID_TOUR } from "./comun.js";
+import { error, rutaValida, servirR2, ID_TOUR, conCarga, cargaEnViejos } from "./comun.js";
 
 const pagina = (titulo, texto) => `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${titulo}</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0B0B0B;color:#F2F5EC;font:15px/1.5 system-ui,sans-serif;text-align:center}p{color:#9CA38F}</style></head>
@@ -38,9 +38,9 @@ export default {
       const pub = await env.R2.get("publicado/" + id + "/proyecto.json");
       if (!pub) return new Response(NO_PUBLICADO, { status: 404, headers: { "content-type": "text/html; charset=utf-8" } });
       // Al compartir el link se ve el nombre del tour y su portada (o la vista de su esfera de inicio)
-      let nombre = "Recorrido virtual 360", imagen = "", descripcion = "";
+      let nombre = "Recorrido virtual 360", imagen = "", descripcion = "", p = null;
       try {
-        const p = await pub.json(), pr = p.proyecto || {};
+        p = await pub.json(); const pr = p.proyecto || {};
         if (pr.nombre) nombre = String(pr.nombre).slice(0, 90);
         if (typeof pr.descripcion === "string") descripcion = pr.descripcion.replace(/\s+/g, " ").trim().slice(0, 200);
         const base = url.origin + "/" + id + "/";
@@ -61,6 +61,9 @@ export default {
       if (imagen) rw = rw.on('meta[property="og:image"]', meta(0, imagen)).on('meta[name="twitter:image"]', meta(0, imagen))
         .on('meta[property="og:image:width"]', { element: (el) => el.remove() }).on('meta[property="og:image:height"]', { element: (el) => el.remove() })
         .on('meta[property="og:image:alt"]', meta(0, nombre));
+      // Pantalla de carga con el logo del proyecto (si el plan y el Laboratorio lo permiten)
+      const viejo = !!(p && p.proyecto && p.proyecto.cargaPropia === undefined && p.proyecto.marcaMozari === false);
+      rw = conCarga(rw, p, viejo && (await cargaEnViejos(env).catch(() => false)));
       const r = rw.transform(pagina);
       const h = new Headers(r.headers);
       h.set("cache-control", "no-cache");
