@@ -482,6 +482,16 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await n.waitForTimeout(2500);
       const d3 = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
       exige(d3.proyecto.referencia && /^privado\//.test(d3.proyecto.referencia.img), "el plano de referencia no se guardó en privado/");
+      // Girar, dibujar con la pluma y mover la ventana
+      await n.click("#ref-der"); await n.click("#ref-der"); await n.click("#ref-pluma"); await n.waitForTimeout(200);
+      const vv = await n.$eval("#ref-vista", (e) => { const b = e.getBoundingClientRect(); return [b.x, b.y, b.width, b.height]; });
+      await n.mouse.move(vv[0] + vv[2] * 0.3, vv[1] + vv[3] * 0.4); await n.mouse.down(); for (let k = 1; k <= 12; k++) await n.mouse.move(vv[0] + vv[2] * (0.3 + k * 0.03), vv[1] + vv[3] * 0.5); await n.mouse.up();
+      const hb = await n.$eval("#ref-panel header b", (e) => { const b = e.getBoundingClientRect(); return [b.x + 10, b.y + b.height / 2]; });
+      await n.mouse.move(hb[0], hb[1]); await n.mouse.down(); for (let k = 1; k <= 6; k++) await n.mouse.move(hb[0] + k * 30, hb[1] + k * 20); await n.mouse.up();
+      exige(parseFloat(await n.$eval("#ref-panel", (e) => e.style.left)) > 100, "la ventana del plano no se mueve");
+      await n.waitForTimeout(2500);
+      const d4 = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id), rf = d4.proyecto.referencia;
+      exige(rf.giro === 30 && (rf.trazos || []).length === 1 && rf.trazos[0].p.length > 5, "no se guardó el giro o el dibujo del plano (" + JSON.stringify({ giro: rf.giro, trazos: (rf.trazos || []).length }) + ")");
       exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
       await n.context().close();
     }, a);
