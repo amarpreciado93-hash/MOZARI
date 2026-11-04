@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-04T21:10:09.745Z",
- "bien": 38,
- "total": 38,
+ "fecha": "2026-11-04T21:56:45.319Z",
+ "bien": 39,
+ "total": 39,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -60,7 +60,11 @@
    "ok": true
   },
   {
-   "nombre": "El tour abre sin esperar a bajar toda la esfera en alta (celular con 4G)",
+   "nombre": "El tour abre sin esperar a bajar toda la esfera en alta (conexión 4G)",
+   "ok": true
+  },
+  {
+   "nombre": "En celular el tour usa la resolución ligera (hasta 1024 px por cara) y no baja piezas grandes",
    "ok": true
   },
   {

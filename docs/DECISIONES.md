@@ -206,3 +206,4 @@
 | 2026-11-04 | El tour publicado abre sin esperar la esfera completa en alta ni las vecinas (celular 4G: de 13.7 s a 5.3 s). Prueba nueva. | Amar |
 | 2026-11-04 | Todo el Laboratorio pasa a Pro y Desarrollos (modo nuevo «pago»), sin etiqueta LAB; mini tutorial de cada herramienta la primera vez; pantalla de carga con el logo del proyecto en tours de pago (Gratis conserva Mozari). | Amar |
 | 2026-11-04 | Foto 360: una figura que rodea al dron ya no deja una línea atravesada (se rellena hasta el nadir); ahora se pegan también textos, rutas, polígonos y puntos de interés (hotspots no). | Amar |
+| 2026-11-04 | Celular: resolución ligera por default (hasta 1024 px por cara; tablets siguen en 2048) y nunca se bajan piezas por encima del tope. | Amar |

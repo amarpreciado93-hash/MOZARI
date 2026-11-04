@@ -230,10 +230,11 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
       await t.context().close();
     }, a);
-    await paso("El tour abre sin esperar a bajar toda la esfera en alta (celular con 4G)", async () => {
-      // Reporte (nov 2026): en celular el tour tardaba 10-15 s en abrir porque esperaba las 6 caras en alta y las vecinas
+    await paso("El tour abre sin esperar a bajar toda la esfera en alta (conexión 4G)", async () => {
+      // Reporte (nov 2026): el tour tardaba 10-15 s en abrir porque esperaba las 6 caras en alta y las vecinas
       if (!link) { await a.click('#nav button:has-text("Publicar")'); await a.waitForTimeout(800); await a.click("#pub-publicar"); await a.waitForTimeout(3500); link = TOURS + "/" + tour + "/"; }
-      const ctx = await navegador.newContext(Object.assign({}, devices["iPhone 13"])), t = await ctx.newPage();
+      // Pantalla angosta y nítida (sin ser celular, que usa la resolución ligera): pide el nivel alto y ve solo una parte
+      const ctx = await navegador.newContext({ viewport: { width: 430, height: 900 }, deviceScaleFactor: 3 }), t = await ctx.newPage();
       await t.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
       const cdp = await ctx.newCDPSession(t); await cdp.send("Network.enable");
       await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: 120, downloadThroughput: (9 * 1024 * 1024) / 8, uploadThroughput: (2 * 1024 * 1024) / 8 });
@@ -251,6 +252,25 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       await t.waitForTimeout(4000);
       if (pj.escenas.length > 1) exige(pedidas.some((x) => x[0] !== ini), "con el tour abierto no se bajaron las esferas vecinas");
       exige(pedidas.filter((x) => x[0] === ini && x[1] === z).length > de, "con el tour abierto no se bajó el resto de la esfera en alta");
+      await ctx.close();
+    }, a);
+    await paso("En celular el tour usa la resolución ligera (hasta 1024 px por cara) y no baja piezas grandes", async () => {
+      // Reporte (nov 2026): en celular se trababa los primeros segundos mientras subía piezas grandes a la tarjeta de video
+      if (!link) { await a.click('#nav button:has-text("Publicar")'); await a.waitForTimeout(800); await a.click("#pub-publicar"); await a.waitForTimeout(3500); link = TOURS + "/" + tour + "/"; }
+      const ctx = await navegador.newContext(Object.assign({}, devices["iPhone 13"])), t = await ctx.newPage();
+      await t.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+      const pedidas = []; t.on("request", (r) => { const m = r.url().match(/\/escenas\/([^/]+)\/(\d+)\//); if (m) pedidas.push([m[1], +m[2]]); });
+      await t.goto(link); await t.waitForFunction(() => { const c = document.getElementById("pv-carga"); return c && c.hidden; }, null, { timeout: 30000 });
+      for (let r = 0; r < 2; r++) { await t.mouse.move(300, 330); await t.mouse.down(); for (let k = 1; k <= 12; k++) await t.mouse.move(300 - k * 18, 330); await t.mouse.up(); }
+      await t.waitForTimeout(3000);
+      const pj = await (await fetch(link + "proyecto.json")).json(), metas = {};
+      for (const e of pj.escenas) metas[e.id] = await (await fetch(link + "escenas/" + e.id + "/escena.json")).json();
+      // El nivel más alto permitido: el mayor de hasta 1024 px (o el primero, si la esfera no tiene uno así de chico)
+      const tope = (e) => { const nv = metas[e].niveles; let z = 1; nv.forEach((l, i) => { if (i >= 1 && l.size <= 1024) z = i; }); return z; };
+      const grandes = pedidas.filter(([e, z]) => metas[e] && z > tope(e));
+      exige(pedidas.length > 0, "el celular no pidió ninguna pieza");
+      const cuenta = {}; pedidas.forEach(([e, z]) => { const k = metas[e] ? metas[e].niveles[z].size : z; cuenta[k] = (cuenta[k] || 0) + 1; });
+      exige(!grandes.length, "en celular bajó piezas de más de 1024 px por cara (" + grandes.length + "; niveles " + Object.values(metas).map((m) => m.niveles.map((l) => l.size).join("/")).join(" · ") + "; pedidas por tamaño " + JSON.stringify(cuenta) + "; celular " + (await t.evaluate(() => matchMedia("(pointer: coarse)").matches + " " + screen.width)) + ")");
       await ctx.close();
     }, a);
     await paso("Laboratorio · estadísticas: una visita al tour se cuenta (con el lote que abrió)", async () => {
