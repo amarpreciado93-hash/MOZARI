@@ -657,6 +657,11 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       const pa = JSON.parse(planoAntes), pd = Object.values((await leer()).capas).flat().find((c) => c.mzPlano).mzPlano.lotes;
       const movidos = pa.flatMap((L, i) => L.map((p, j) => [p, pd[i][j]])).filter(([p, q]) => q && Math.hypot(p[0] - q[0], p[1] - q[1]) > 3);
       exige(movidos.length && movidos.every(([p, q]) => Math.abs(p[1] - q[1]) > 3), "el punto verde de una división no se mueve libre (solo se desliza por la orilla)");
+      // Reporte de Amar: al mover puntos salía una línea en diagonal (la orilla de la manzana se cortaba). El contorno debe cubrir a sus lotes.
+      const suelo = (P) => P.map(([y, p]) => [Math.sin(y) / Math.tan(p), Math.cos(y) / Math.tan(p)]), area = (P) => Math.abs(P.reduce((s, a, i) => { const b = P[(i + 1) % P.length]; return s + a[0] * b[1] - b[0] * a[1]; }, 0)) / 2;
+      const cps = Object.values((await leer()).capas).flat(), mzx = cps.find((c) => c.mzPlano), sumaLotes = cps.filter((c) => c.deManzana === mzx.id).reduce((s, c) => s + area(suelo(c.puntos)), 0), aMz = area(suelo(mzx.puntos));
+      exige(Math.abs(aMz - sumaLotes) < sumaLotes * 0.08, "el contorno de la manzana no coincide con sus lotes (" + aMz.toFixed(3) + " vs " + sumaLotes.toFixed(3) + ")");
+      exige((await n.$$("circle.mz-asa.corte:not(.esq)")).length + (await n.$$("circle.mz-asa.centro")).length >= 12, "faltan puntos para mover las esquinas de los lotes");
       const mas = await centros("circle.mz-mas"); exige(mas.length >= 4, "la manzana del plano no tiene «+» en la orilla");
       await n.mouse.move(mas[0][0], mas[0][1]); await n.mouse.down(); await n.mouse.move(mas[0][0], mas[0][1] - 15, { steps: 6 }); await n.mouse.up(); await n.waitForTimeout(2500);
       capas = Object.values((await leer()).capas).flat(); mzc = capas.find((c) => c.mzPlano);

@@ -6158,24 +6158,37 @@ void main(){
     const tol = Math.max(0.5, Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * 0.004);
     const V = [], vk = new Map(), vert = (p) => { const k = Math.round(p[0] / tol) + "," + Math.round(p[1] / tol); for (const dx of [-1, 0, 1]) for (const dy of [-1, 0, 1]) { const g = vk.get((Math.round(p[0] / tol) + dx) + "," + (Math.round(p[1] / tol) + dy)); if (g !== undefined && Math.hypot(V[g][0] - p[0], V[g][1] - p[1]) <= tol) return g; } V.push(p.slice()); vk.set(k, V.length - 1); return V.length - 1; };
     lotes.forEach((L) => L.forEach(vert));
-    const cuenta = new Map();
-    lotes.forEach((L) => L.forEach((a, i) => {
-      const b = L[(i + 1) % L.length], dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy; if (!l2) return;
-      const cortes = [0, 1]; V.forEach((v) => { const t = ((v[0] - a[0]) * dx + (v[1] - a[1]) * dy) / l2; if (t > 1e-6 && t < 1 - 1e-6 && Math.hypot(a[0] + dx * t - v[0], a[1] + dy * t - v[1]) <= tol) cortes.push(t); });
-      cortes.sort((x, y) => x - y);
-      for (let k = 1; k < cortes.length; k++) {
-        const u = vert([a[0] + dx * cortes[k - 1], a[1] + dy * cortes[k - 1]]), w = vert([a[0] + dx * cortes[k], a[1] + dy * cortes[k]]);
-        if (u === w) continue; const key = u < w ? u + "," + w : w + "," + u, e = cuenta.get(key) || { n: 0, u, w }; e.n++; cuenta.set(key, e);
-      }
-    }));
-    const sig = new Map(); cuenta.forEach((e) => { if (e.n !== 1) return; (sig.get(e.u) || sig.set(e.u, []).get(e.u)).push(e.w); (sig.get(e.w) || sig.set(e.w, []).get(e.w)).push(e.u); });
-    let mejor = null, usado = new Set();
-    sig.forEach((_, ini) => {
-      if (usado.has(ini)) return;
-      const lazo = [ini]; usado.add(ini); let prev = null, cur = ini;
-      for (let g = 0; g < 5000; g++) { const n = (sig.get(cur) || []).find((x) => x !== prev && (!usado.has(x) || (x === ini && lazo.length > 2))); if (n === undefined || n === ini) break; lazo.push(n); usado.add(n); prev = cur; cur = n; }
-      const P = lazo.map((i) => V[i]); if (P.length > 2 && (!mejor || Math.abs(areaPol(P)) > Math.abs(areaPol(mejor)))) mejor = P;
+    // Orillas con sentido: todos los lotes girando igual; una orilla es de la manzana si su contraria no existe
+    const dir = new Map(), sale = new Map();
+    lotes.forEach((L0) => {
+      const L = areaPol(L0) < 0 ? L0.slice().reverse() : L0;
+      L.forEach((a, i) => {
+        const b = L[(i + 1) % L.length], dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy; if (!l2) return;
+        const cortes = [0, 1]; V.forEach((v) => { const t = ((v[0] - a[0]) * dx + (v[1] - a[1]) * dy) / l2; if (t > 1e-6 && t < 1 - 1e-6 && Math.hypot(a[0] + dx * t - v[0], a[1] + dy * t - v[1]) <= tol) cortes.push(t); });
+        cortes.sort((x, y) => x - y);
+        for (let k = 1; k < cortes.length; k++) {
+          const u = vert([a[0] + dx * cortes[k - 1], a[1] + dy * cortes[k - 1]]), w = vert([a[0] + dx * cortes[k], a[1] + dy * cortes[k]]);
+          if (u !== w) dir.set(u + ">" + w, (dir.get(u + ">" + w) || 0) + 1);
+        }
+      });
     });
+    // (cuenta neta: si dos lotes se enciman en un tramo —un punto movido de más—, ese tramo sigue siendo orilla)
+    dir.forEach((n, k) => { const [u, w] = k.split(">").map(Number); if (n - (dir.get(w + ">" + u) || 0) > 0) (sale.get(u) || sale.set(u, []).get(u)).push(w); });
+    // Se recorre siguiendo el sentido; en un vértice con dos salidas se toma la que más gira hacia el mismo lado
+    const ang = (a, b) => Math.atan2(V[b][1] - V[a][1], V[b][0] - V[a][0]), usadas = new Set();
+    let mejor = null;
+    sale.forEach((ws, ini) => ws.forEach((w0) => {
+      if (usadas.has(ini + ">" + w0)) return;
+      const lazo = [ini]; let u = ini, w = w0;
+      for (let g = 0; g < 5000 && !usadas.has(u + ">" + w); g++) {
+        usadas.add(u + ">" + w); if (w === ini) break; lazo.push(w);
+        const opciones = (sale.get(w) || []).filter((x) => !usadas.has(w + ">" + x)); if (!opciones.length) break;
+        const llega = ang(w, u);
+        const giro = (x) => { let d = ang(w, x) - llega; while (d <= 0) d += 2 * Math.PI; return d; };
+        const sig = opciones.sort((p, q) => giro(p) - giro(q))[0]; u = w; w = sig;
+      }
+      const P = lazo.map((i) => V[i]); if (P.length > 2 && (!mejor || Math.abs(areaPol(P)) > Math.abs(areaPol(mejor)))) mejor = P;
+    }));
     const total = lotes.reduce((s, L) => s + Math.abs(areaPol(L)), 0);
     if (mejor && Math.abs(areaPol(mejor)) > total * 0.6) return simplificarPol(mejor, tol * 0.5);
     // Lotes pintados con huecos entre ellos: la envolvente
@@ -6253,7 +6266,8 @@ void main(){
     }));
     const O = ordenCtrl(m, cont), dOrilla = (p) => { let dm = Infinity; for (let i = 0; i < cont.length; i++) { const a = cont[i], b = cont[(i + 1) % cont.length], dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2)); dm = Math.min(dm, Math.hypot(a[0] + dx * u - p[0], a[1] + dy * u - p[1])); } return dm; };
     const esCtrl = (p) => m.ctrl.some((k) => Math.hypot(k.p[0] - p[0], k.p[1] - p[1]) <= tol * 2);
-    return grupos.filter((g) => g.lotes.size >= 2 && !esCtrl(g.p)).map((g) => ({ p: g.p, refs: g.refs, orilla: dOrilla(g.p) <= tol, t: null, O }));
+    // Todos los puntos (también las esquinas de un solo lote), para retocar a mano al 100 %
+    return grupos.filter((g) => !esCtrl(g.p)).map((g) => ({ p: g.p, refs: g.refs, orilla: dOrilla(g.p) <= tol, t: null, O }));
   }
   function moverNodoPlano(m, h, p) {
     m.lotes = m.lotes.map((L) => L.slice());
