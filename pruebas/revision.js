@@ -1092,8 +1092,8 @@ async function capasPesadas(p) {
       await n.waitForTimeout(2500);
       const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
       exige(/^privado\/.*\.pdf$/.test((await leer()).proyecto.referencia.pdf || ""), "el PDF original no se guardó en privado/");
-      await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "560px"; p.style.height = "420px"; });
-      await n.click("#ref-ajustar"); await n.click("#ref-lotes"); await n.waitForTimeout(500);
+      await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "560px"; p.style.height = "480px"; });
+      await pasarGuias(n); await n.click("#ref-ajustar"); await n.click("#ref-lotes"); await n.waitForTimeout(500);
       exige(await n.isVisible(".guia-tarjeta .guia-anim") && (await n.$$(".guia-tarjeta .puntos i")).length === 5, "no salió el tutorial de 5 pasos de Lotes desde el PDF");
       await pasarGuias(n); await n.waitForTimeout(300);
       await n.click("#ref-lotes-ayuda"); await n.waitForTimeout(300);
@@ -1231,7 +1231,7 @@ async function capasPesadas(p) {
       await n.evaluate(() => { const r = document.getElementById("tema-rango"); r.value = 0; r.dispatchEvent(new Event("input")); }); await n.waitForTimeout(200);
       exige(luzClaro > 0.6, "con la apariencia clara, los botones del plano casi no se leen (luz " + luzClaro.toFixed(2) + ")");
       await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "560px"; p.style.height = "420px"; });
-      await n.click("#ref-ajustar"); await n.click("#ref-lotes"); await n.waitForTimeout(500); await pasarGuias(n); await n.waitForTimeout(300);
+      await pasarGuias(n); await n.click("#ref-ajustar"); await n.click("#ref-lotes"); await n.waitForTimeout(500); await pasarGuias(n); await n.waitForTimeout(300);
       const aPant = (x, y) => n.evaluate(([x, y]) => { const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(document.getElementById("ref-lienzo").style.transform), v = document.getElementById("ref-vista").getBoundingClientRect(); return [v.x + +m[1] + x * +m[3], v.y + +m[2] + y * +m[3]]; }, [x, y]);
       const k = ancho / 800, [ax, ay] = await aPant(80 * k, 80 * k), [bx, by] = await aPant(720 * k, 420 * k);
       await n.mouse.move(ax, ay); await n.mouse.down(); await n.mouse.move((ax + bx) / 2, (ay + by) / 2, { steps: 6 }); await n.mouse.move(bx, by, { steps: 6 }); await n.mouse.up();
@@ -1288,7 +1288,7 @@ async function capasPesadas(p) {
       exige(ancho > 500, "el PDF no se pudo ver");
       await n.waitForTimeout(3000);
       await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "560px"; p.style.height = "420px"; });
-      await n.click("#ref-ajustar"); await n.click("#ref-lotes"); await n.waitForTimeout(500); await pasarGuias(n); await n.waitForTimeout(300);
+      await pasarGuias(n); await n.click("#ref-ajustar"); await n.click("#ref-lotes"); await n.waitForTimeout(500); await pasarGuias(n); await n.waitForTimeout(300);
       const aPant = (x, y) => n.evaluate(([x, y]) => { const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(document.getElementById("ref-lienzo").style.transform), v = document.getElementById("ref-vista").getBoundingClientRect(); return [v.x + +m[1] + x * +m[3], v.y + +m[2] + y * +m[3]]; }, [x, y]);
       const k = ancho / 800, [ax, ay] = await aPant(80 * k, 80 * k), [bx, by] = await aPant(720 * k, 420 * k);
       await n.mouse.move(ax, ay); await n.mouse.down(); await n.mouse.move((ax + bx) / 2, (ay + by) / 2, { steps: 6 }); await n.mouse.move(bx, by, { steps: 6 }); await n.mouse.up();
@@ -1322,6 +1322,89 @@ async function capasPesadas(p) {
       exige(cp.n <= MAX_CAPAS_GRANDES, "demasiadas capas de pantalla completa para un iPhone: " + JSON.stringify(cp));
       exige(!m.errs.length, "errores en el iPhone: " + m.errs.join(" | ").slice(0, 160));
       await m.context().close();
+    });
+    // Pasó con Las Alamedas (nov 2026): la manzana del tour quedó como «1» (la de siempre) y en el inventario era la 30,
+    // con un lote 15-A. El plano sí traía escrito, como texto, el número y la superficie de cada lote. Ahora Mozari los lee,
+    // y al importar el Excel avisa antes de cambiar nada si las superficies no van con los lotes dibujados.
+    await paso("Plano con textos: lee número, superficie y manzana; y el Excel de otra manzana avisa antes de importar", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Plano con textos");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800);
+      const st = await n.evaluate(() => { const e = [...document.querySelectorAll(".capas")].find((x) => x.getClientRects().length && x.getBoundingClientRect().width > 300); const b = e.getBoundingClientRect(); return [b.x, b.y, b.width, b.height]; });
+      const [cx, cy] = [st[0] + st[2] / 2, st[1] + st[3] / 2];
+      for (let i = 0; i < 4; i++) { await n.mouse.move(cx, cy + 250); await n.mouse.down(); for (let k = 1; k <= 10; k++) await n.mouse.move(cx, cy + 250 - k * 50); await n.mouse.up(); await n.waitForTimeout(300); }
+      // Manzana de 2 × 4 con el número y la superficie escritos (texto de verdad) dentro de cada lote, y «MZA XXX» arriba
+      const L = (pts) => '<polyline fill="none" stroke="#000" stroke-width="1.5" points="' + pts.map((p) => p.join(",")).join(" ") + '"/>';
+      const T = (x, y, t, tam) => '<text x="' + x + '" y="' + y + '" font-family="Arial" font-size="' + (tam || 9) + '" text-anchor="middle">' + t + "</text>";
+      const nums = ["L-1", "L-2", "L-3A", "L-4", "L-5", "L-6", "L-7", "L-8"], sups = [1000, 1010.5, 1200, 1210, 990, 1005, 1499.99, 1500];
+      let svg = '<svg width="800" height="500" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="500" fill="#fff"/>' +
+        L([[100, 100], [700, 100], [700, 400], [100, 400], [100, 100]]) + L([[100, 250], [700, 250]]) + [250, 400, 550].map((x) => L([[x, 100], [x, 400]])).join("") + T(400, 80, "MZA XXX", 14);
+      for (let k = 0; k < 8; k++) { const x = 175 + (k % 4) * 150, y = k < 4 ? 170 : 320; svg += T(x, y, nums[k]) + T(x, y + 14, "S=" + sups[k].toLocaleString("en-US", { minimumFractionDigits: 2 }) + "m2", 7); }
+      svg += "</svg>";
+      const hoja = await navegador.newPage(); await hoja.setContent('<!doctype html><html><body style="margin:0">' + svg + "</body></html>");
+      const pdf = await hoja.pdf({ width: "800px", height: "500px", printBackground: true }); await hoja.close();
+      await n.click("#ref-boton"); await n.waitForTimeout(400);
+      await n.setInputFiles("#ref-archivo2", { name: "manzana-con-textos.pdf", mimeType: "application/pdf", buffer: pdf });
+      let ancho = 0; for (let i = 0; i < 25 && !ancho; i++) { await n.waitForTimeout(600); ancho = await n.$eval("#ref-img", (e) => (e.hidden ? 0 : e.naturalWidth)); }
+      exige(ancho > 500, "el PDF no se pudo ver"); await n.waitForTimeout(3000);
+      exige(/Plano bueno/.test(await n.textContent("#ref-calidad")), "un PDF vectorial sencillo (una manzana) no salió como «Plano bueno»: " + (await n.textContent("#ref-calidad")));
+      await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "560px"; p.style.height = "420px"; });
+      await pasarGuias(n); await n.click("#ref-ajustar"); await n.click("#ref-lotes"); await n.waitForTimeout(500); await pasarGuias(n); await n.waitForTimeout(300);
+      const aPant = (x, y) => n.evaluate(([x, y]) => { const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(document.getElementById("ref-lienzo").style.transform), v = document.getElementById("ref-vista").getBoundingClientRect(); return [v.x + +m[1] + x * +m[3], v.y + +m[2] + y * +m[3]]; }, [x, y]);
+      const k = ancho / 800, [ax, ay] = await aPant(80 * k, 60 * k), [bx, by] = await aPant(720 * k, 420 * k);
+      await n.mouse.move(ax, ay); await n.mouse.down(); await n.mouse.move((ax + bx) / 2, (ay + by) / 2, { steps: 6 }); await n.mouse.move(bx, by, { steps: 6 }); await n.mouse.up();
+      let info = ""; for (let i = 0; i < 20 && !/elegid|No /.test(info); i++) { await n.waitForTimeout(400); info = await n.textContent("#ref-lotes-info"); }
+      exige(/^8 lotes elegidos/.test(info), "no salieron los 8 lotes (" + info + ")");
+      exige(/números y las superficies salen del plano/.test(info) && /Manzana 30, leída del plano/.test(info), "no leyó del plano los números, las superficies o la manzana: " + info);
+      exige((await n.inputValue("#ref-mz")) === "30", "la manzana no quedó en 30 (leída de «MZA XXX»)");
+      const vistos = await n.$$eval("#ref-sel text.num", (l) => l.map((e) => e.textContent));
+      exige(vistos.includes("3-A") && vistos.includes("8"), "el plano no muestra los números leídos: " + vistos.join(","));
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "plano-textos.png") });
+      // Colocar la manzana: los lotes salen con el número y la superficie del plano
+      await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "300px"; p.style.height = "230px"; });
+      await n.click("#ref-colocar"); await n.waitForTimeout(300);
+      for (const [x, y] of [[0.4, 0.5], [0.9, 0.5], [0.9, 0.9], [0.4, 0.9]]) { await n.mouse.click(st[0] + st[2] * x, st[1] + st[3] * y); await n.waitForTimeout(250); }
+      await n.waitForTimeout(3000);
+      const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      const lotes = async () => Object.values((await leer()).capas).flat().filter((c) => c.lote && c.lote.manzana === "30");
+      const ls = await lotes(), porNum = Object.fromEntries(ls.map((c) => [c.lote.numero, c.lote]));
+      exige(ls.length === 8 && ["1", "2", "3-A", "4", "5", "6", "7", "8"].every((x) => porNum[x]), "los lotes no salieron con los números del plano: " + ls.map((c) => c.lote.numero).join(","));
+      exige(+porNum["3-A"].area === 1200 && +porNum["7"].area === 1499.99, "los lotes no salieron con la superficie del plano: " + ls.map((c) => c.lote.numero + "=" + c.lote.area).join(", "));
+      // Excel de otra manzana (superficies que no van): avisa y, si dices que no, no cambia nada
+      await n.keyboard.press("Escape"); await n.waitForTimeout(300);
+      await n.click('#subtabs button:has-text("Lotes")'); await n.waitForTimeout(1200); await pasarGuias(n);
+      await n.evaluate(() => { window.__conf = []; window.confirm = (m) => { window.__conf.push(m); return window.__si === true; }; });
+      const csv = (filas) => ({ name: "lotes.csv", mimeType: "text/csv", buffer: Buffer.from("Manzana,Lote,Superficie m2,Precio\n" + filas.map((f) => f.join(",")).join("\n")) });
+      const otra = [[30, 1, 1757.75, 500000], [30, 2, 1428.38, 500000], [30, "3-A", 1050.21, 500000], [30, 4, 999.91, 500000], [30, 5, 2205.1, 500000], [30, 6, 1683.02, 500000], [30, 7, 1000.51, 500000], [30, 8, 6189.57, 500000]];
+      await n.setInputFiles("#lx-archivo", csv(otra)); await n.waitForTimeout(1200);
+      const conf1 = await n.evaluate(() => window.__conf.slice());
+      exige(conf1.length === 1 && /no se parecen a los lotes dibujados/.test(conf1[0]), "con superficies de otra manzana no avisó: " + JSON.stringify(conf1));
+      exige(+(await lotes()).find((c) => c.lote.numero === "1").lote.area === 1000 && !(await lotes()).some((c) => c.lote.precio), "dijo que no y aun así cambió los lotes");
+      // Números recorridos (el Excel trae el 9 y lo dibujado el 8): también avisa
+      await n.evaluate(() => (window.__conf = []));
+      await n.setInputFiles("#lx-archivo", csv(sups.map((a, i) => [30, i === 2 ? "3A" : i === 7 ? 9 : i + 1, a, 750000]))); await n.waitForTimeout(1200);
+      const conf2 = await n.evaluate(() => window.__conf.slice());
+      exige(conf2.length === 1 && /recorridos/.test(conf2[0]) && /lote 9/i.test(conf2[0]), "con los números recorridos no avisó: " + JSON.stringify(conf2));
+      // El Excel correcto (con «3A» escrito sin guion) entra sin preguntar
+      await n.evaluate(() => (window.__conf = []));
+      await n.setInputFiles("#lx-archivo", csv(sups.map((a, i) => [30, i === 2 ? "3A" : i + 1, a, 750000 + i]))); await n.waitForTimeout(1200);
+      exige(!(await n.evaluate(() => window.__conf.length)), "con el Excel correcto preguntó de todos modos");
+      const ls2 = await lotes();
+      exige(ls2.every((c) => +c.lote.precio >= 750000) && +ls2.find((c) => c.lote.numero === "3-A").lote.precio === 750002, "el Excel correcto no llenó los precios (incluido el 3-A escrito «3A»)");
+      // Lotes sin superficie (como los que se hicieron antes de leer el plano): se compara el tamaño dibujado en la esfera
+      const d = await leer(); Object.values(d.capas).flat().forEach((c) => { if (c.lote && c.lote.manzana === "30") { c.lote.area = ""; c.lote.precio = ""; } });
+      exige((await n.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [id, d])) === 200, "no se pudieron quitar las superficies");
+      await n.goto(ESTUDIO + "/#t=" + id); await n.reload(); await n.waitForTimeout(2500); await cerrarAnuncio(n);
+      await n.click('#nav button:has-text("Panoramas")'); await n.waitForTimeout(400); await n.click('#subtabs button:has-text("Lotes")'); await n.waitForTimeout(1200); await pasarGuias(n);
+      await n.evaluate(() => { window.__conf = []; window.confirm = (m) => { window.__conf.push(m); return false; }; });
+      await n.setInputFiles("#lx-archivo", csv(otra)); await n.waitForTimeout(1200);
+      const conf3 = await n.evaluate(() => window.__conf.slice());
+      exige(conf3.length === 1 && /no se parecen a los lotes dibujados/.test(conf3[0]), "sin superficies, el Excel de otra manzana no avisó: " + JSON.stringify(conf3));
+      await n.evaluate(() => (window.__conf = []));
+      await n.setInputFiles("#lx-archivo", csv(sups.map((a, i) => [30, i === 2 ? "3-A" : i + 1, a, 750000]))); await n.waitForTimeout(1200);
+      exige(!(await n.evaluate(() => window.__conf.length)), "sin superficies, el Excel correcto preguntó de todos modos");
+      exige((await lotes()).every((c) => +c.lote.area > 0), "sin superficies, el Excel correcto no las llenó");
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
     });
     // Reporte de OBED (nov 2026): en un lote de la fila de atrás (su calle real es otra) la ficha ponía el frente de lado.
     // El botón «Frente» existía pero la ficha no le hacía caso en lotes de manzana, y al mover la manzana se borraba.
