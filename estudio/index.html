@@ -3908,6 +3908,7 @@
       const capaEtq = document.createElement("div"), svgEtq = document.createElementNS(SVGNS, "svg");
       capaEtq.className = "capa-etq"; svgEtq.setAttribute("class", "cp-svg");
       capaEtq.appendChild(svgEtq);
+      const arriba = []; // hotspots, textos y puntos de interés: van encima de todos los polígonos
       lista().forEach((c) => {
         if (!editable && !c.visible) return;
         if (!editable && c.manzana) return;
@@ -3985,10 +3986,14 @@
           if (!editable && accionDe(c) !== "ninguna") { el.classList.add("con-accion"); el.addEventListener("click", (ev) => { ev.stopPropagation(); ejecutar(c); }); }
           medir(nodos.get(c.id));
         }
-        capasEl.appendChild(el);
+        if (c.tipo === "poligono") capasEl.appendChild(el); else arriba.push(el);
       });
-      const pols = capasEl.querySelectorAll(".cp-poligono"), ultimo = pols[pols.length - 1];
-      capasEl.insertBefore(capaEtq, ultimo ? ultimo.nextSibling : capasEl.firstChild);
+      // Orden fijo, sin importar en qué orden se crearon: polígonos y lotes abajo, sus rótulos, y hasta
+      // arriba hotspots, textos y puntos de interés. Un polígono (mide toda la pantalla) que queda encima
+      // de algo animado o en 3D obliga al iPhone a guardarlo en su propia capa de pantalla completa: con
+      // unos 20 lotes así Safari se queda sin memoria y cierra el tour (pasó con El Mirador).
+      capasEl.appendChild(capaEtq);
+      arriba.forEach((el) => capasEl.appendChild(el));
       render();
       // Al llegar una tipografía nueva, los rótulos se vuelven a medir con ella
       if (fuentesPendientes.size) Promise.all([...fuentesPendientes].map(cargarFuente)).then(() => { nodos.forEach((n) => { if (n.planos) n.planos.med = null; }); render(); });

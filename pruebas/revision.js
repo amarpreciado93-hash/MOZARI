@@ -358,6 +358,37 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(!m.errs.length, "errores en celular: " + m.errs.join(" | ").slice(0, 160));
       await m.context().close();
     });
+    // Reporte (El Mirador, nov 2026): el tour se cerraba solo en iPhone («Ocurrió un problema varias veces»).
+    // Los lotes del PDF se hicieron después del hotspot y del punto de interés, así que quedaban encima de ellos.
+    // Cada lote encima de algo animado o en 3D le costaba al iPhone una capa del tamaño de la pantalla.
+    // Ahora los polígonos siempre van abajo y los puntos arriba, sin importar en qué orden se crearon.
+    await paso("En el tour los lotes van abajo y los puntos arriba aunque se hayan creado después (iPhone sin memoria)", async () => {
+      link = link || TOURS + "/" + tour + "/";
+      const leer = () => a.evaluate((id) => fetch("api/tours/" + id).then((r) => r.json()), tour);
+      const guardar = (d) => a.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [tour, d]);
+      const publicar = () => a.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), tour);
+      // Como en El Mirador: un texto en 3D hasta abajo de la lista y TODOS los lotes creados después de él
+      const original = await leer(), d = JSON.parse(JSON.stringify(original));
+      const esc = [d.proyecto.escenaInicial || (d.escenas[0] || {}).id].find((k) => (d.capas[k] || []).some((c) => c.tipo === "poligono" && c.visible !== false));
+      exige(esc, "el tour de prueba no tiene lotes");
+      const [y0, p0] = d.capas[esc].find((c) => c.tipo === "poligono").puntos[0];
+      d.capas[esc].unshift({ id: "orden-prueba", tipo: "texto", nombre: "Texto", visible: true, en3d: true, yaw: y0, pitch: p0, texto: "Encima", tamano: 18, peso: 600, color: "#FFFFFF", fondo: { activo: false, color: "#0B0B0B" } });
+      exige((await guardar(d)) === 200 && (await publicar()) === 200, "no se pudo preparar el tour de prueba");
+      const m = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
+      try { await m.goto(link); await m.waitForTimeout(5000); }
+      finally { await guardar(original); await publicar(); } // el tour regresa a como estaba
+      const r = await m.evaluate(() => {
+        const hijos = [...document.querySelectorAll(".capas > *")];
+        const pols = hijos.map((e, i) => (e.classList.contains("cp-poligono") ? i : -1)).filter((i) => i >= 0);
+        const puntos = hijos.map((e, i) => (e.classList.contains("cp") && !e.classList.contains("cp-poligono") ? i : -1)).filter((i) => i >= 0);
+        const etq = hijos.findIndex((e) => e.classList.contains("capa-etq"));
+        return { pols: pols.length, puntos: puntos.length, ultimoPol: Math.max(...pols), primerPunto: Math.min(...puntos), etq };
+      });
+      exige(r.pols && r.puntos, "no se ven lotes y puntos en el tour (" + JSON.stringify(r) + ")");
+      exige(r.ultimoPol < r.etq && r.etq < r.primerPunto, "un polígono quedó encima de un punto: " + JSON.stringify(r));
+      exige(!m.errs.length, "errores en celular: " + m.errs.join(" | ").slice(0, 160));
+      await m.context().close();
+    });
     await paso("Descargar el tour (.zip) para otro hosting", async () => {
       const [dl] = await Promise.all([a.waitForEvent("download", { timeout: 60000 }), a.click("#pub-descargar")]);
       const destino = path.join(DATOS, "tour.zip"); await dl.saveAs(destino);

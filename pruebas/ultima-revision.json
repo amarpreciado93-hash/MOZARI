@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-05T03:45:35.456Z",
- "bien": 42,
- "total": 42,
+ "fecha": "2026-11-05T05:08:15.452Z",
+ "bien": 43,
+ "total": 43,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -85,6 +85,10 @@
   },
   {
    "nombre": "El tour público abre en celular",
+   "ok": true
+  },
+  {
+   "nombre": "En el tour los lotes van abajo y los puntos arriba aunque se hayan creado después (iPhone sin memoria)",
    "ok": true
   },
   {
