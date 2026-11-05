@@ -208,3 +208,4 @@
 | 2026-11-04 | Foto 360: una figura que rodea al dron ya no deja una línea atravesada (se rellena hasta el nadir); ahora se pegan también textos, rutas, polígonos y puntos de interés (hotspots no). | Amar |
 | 2026-11-04 | Celular: resolución ligera por default (hasta 1024 px por cara; tablets siguen en 2048) y nunca se bajan piezas por encima del tope. | Amar |
 | 2026-11-04 | Calidad por tour (Proyecto): Máxima / Equilibrada (default para todos) / Ligera. Topes de cara [compu, tablet, cel]: Máxima ∞/2048/2048, Equilibrada 2048/2048/1024, Ligera 1024. El editor siempre en alta. | Amar |
+| 2026-11-05 | Sitio, equipo compatible: una sola tarjeta de Cámaras 360 (eran dos del mismo tipo) y la nota de réflex ya no recomienda otro software: «sube tu foto equirectangular». | Amar |
