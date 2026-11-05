@@ -43,7 +43,7 @@ const resultados = [];
 // SOLO="parte del nombre": corre solo esas pruebas (para probar una mientras se programa; no guarda el resultado)
 const SOLO = process.env.SOLO || "";
 async function paso(nombre, fn, pagina) {
-  if (SOLO && !nombre.includes(SOLO) && !/^Crear un tour/.test(nombre)) return;
+  if (SOLO && !SOLO.split("|").some((s) => nombre.includes(s)) && !/^Crear un tour/.test(nombre)) return;
   const antes = pagina ? pagina.errs.length : 0, t0 = Date.now();
   try {
     await fn();
@@ -384,6 +384,59 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       exige(leido && leido.data === url + "?utm_source=qr", "el QR descargado no se lee o no lleva al tour (" + (leido && leido.data) + ")");
       const [dl2] = await Promise.all([a.waitForEvent("download", { timeout: 30000 }), a.click('[data-comp="svg"]')]);
       exige((await dl2.suggestedFilename()).endsWith(".svg"), "no bajó el SVG");
+    }, a);
+    // Pedido de un cliente (OBED, nov 2026): leyenda de colores de los lotes con cuántos hay de cada estado
+    await paso("Leyenda de lotes en el tour: el color de cada estado y cuántos hay", async () => {
+      const foto = (p, n) => (process.env.CAPTURAS ? p.screenshot({ path: path.join(process.env.CAPTURAS, n + ".png") }) : null);
+      await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(1200);
+      exige(!(await a.$("#sk-ui .sk-leyenda")), "la leyenda sale sin prenderla");
+      await a.check('[data-sk-k="extra.leyenda"]'); await a.waitForTimeout(900);
+      const ley = await a.$$eval("#sk-ui .sk-leyenda .ley-it", (l) => l.map((x) => x.textContent.trim()));
+      exige(ley.some((x) => /^Disponible\d+$/.test(x)) && ley.some((x) => /^Vendido\d+$/.test(x)), "la leyenda no muestra Disponible y Vendido con su cantidad: " + JSON.stringify(ley));
+      exige(!ley.some((x) => /^Apartado/.test(x)), "la leyenda muestra un estado que no tiene lotes");
+      for (const pl of ["cine", "desarrollo", "dock", "brujula"]) {
+        await a.click('[data-sk-k="plantilla"][data-v="' + pl + '"]'); await a.waitForTimeout(700);
+        exige(await a.$("#sk-ui .sk-leyenda"), "la leyenda no sale en la plantilla " + pl);
+        await foto(a, "leyenda-" + pl);
+      }
+      await a.click('#subtabs button:has-text("9:16")'); await a.waitForTimeout(1000); await foto(a, "leyenda-brujula-v");
+      await a.click('[data-sk-k="plantilla"][data-v="cine"]'); await a.waitForTimeout(700); await foto(a, "leyenda-cine-v");
+      await a.click('#subtabs button:has-text("16:9")'); await a.waitForTimeout(700);
+      await a.uncheck('[data-sk-k="extra.leyendaCantidad"]'); await a.waitForTimeout(700);
+      exige(await a.$$eval("#sk-ui .sk-leyenda .ley-it b", (l) => l.length) === 0, "«Con cuántos hay» no quita las cantidades");
+      await a.check('[data-sk-k="extra.leyendaCantidad"]'); await a.waitForTimeout(500);
+      // En el tour publicado
+      await a.click('#nav button:has-text("Publicar")'); await a.waitForTimeout(500); await a.click('#subtabs button:has-text("Web")'); await a.waitForTimeout(800); await a.click("#pub-publicar"); await a.waitForTimeout(3500);
+      const t = await pagina(null); await t.goto(TOURS + "/" + tour + "/"); await t.waitForTimeout(4500);
+      const pub = await t.$$eval(".sk-leyenda .ley-it", (l) => l.map((x) => x.textContent.trim()));
+      exige(JSON.stringify(pub) === JSON.stringify(ley), "el tour publicado no muestra la misma leyenda: " + JSON.stringify(pub));
+      await foto(t, "leyenda-publicado");
+      exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
+      await t.context().close();
+      // Se apaga para no cambiar las demás pruebas
+      await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(1000); await a.uncheck('[data-sk-k="extra.leyenda"]'); await a.waitForTimeout(600);
+    }, a);
+    // Pedido de un cliente (OBED, nov 2026): su propio crédito abajo del tour («Desarrollado por…»)
+    await paso("Crédito propio abajo del tour («Desarrollado por…») con su enlace", async () => {
+      const foto = (p, n) => (process.env.CAPTURAS ? p.screenshot({ path: path.join(process.env.CAPTURAS, n + ".png") }) : null);
+      await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(1000);
+      exige(!(await a.$("#sk-ui .sk-credito")), "sale un crédito sin escribirlo");
+      await a.fill('[data-sk-k="credito.texto"]', "Desarrollado por R360"); await a.fill('[data-sk-k="credito.enlace"]', "r360.mx"); await a.waitForTimeout(900);
+      const c = await a.$eval("#sk-ui .sk-credito", (e) => [e.textContent, e.getAttribute("href"), e.getAttribute("target")]).catch(() => null);
+      exige(c && c[0] === "Desarrollado por R360" && c[1] === "https://r360.mx" && c[2] === "_blank", "el crédito no sale con su enlace: " + JSON.stringify(c));
+      await a.click('[data-sk-k="plantilla"][data-v="desarrollo"]'); await a.waitForTimeout(700);
+      exige(await a.$("#sk-ui .d-pie .sk-credito"), "en la plantilla Desarrollo el crédito no va dentro del panel");
+      await foto(a, "credito-desarrollo");
+      await a.click('[data-sk-k="plantilla"][data-v="dock"]'); await a.waitForTimeout(700); await foto(a, "credito-dock");
+      await a.click('[data-sk-k="plantilla"][data-v="cine"]'); await a.waitForTimeout(700);
+      await a.click('#nav button:has-text("Publicar")'); await a.waitForTimeout(500); await a.click('#subtabs button:has-text("Web")'); await a.waitForTimeout(800); await a.click("#pub-publicar"); await a.waitForTimeout(3500);
+      const t = await pagina(null); await t.goto(TOURS + "/" + tour + "/"); await t.waitForTimeout(4500);
+      exige(await t.$eval(".sk-credito", (e) => e.textContent + " " + e.getAttribute("href")).catch(() => "") === "Desarrollado por R360 https://r360.mx", "el tour publicado no trae el crédito");
+      await foto(t, "credito-publicado");
+      await t.context().close();
+      await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(1000);
+      await a.fill('[data-sk-k="credito.texto"]', ""); await a.fill('[data-sk-k="credito.enlace"]', ""); await a.waitForTimeout(600);
+      exige(!(await a.$("#sk-ui .sk-credito")), "al borrar el texto el crédito no se quita");
     }, a);
     await paso("Pantalla de carga con el logo del proyecto, no con Mozari", async () => {
       const foto = (p, n) => (process.env.CAPTURAS ? p.screenshot({ path: path.join(process.env.CAPTURAS, n + ".png") }) : null);

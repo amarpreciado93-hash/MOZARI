@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-05T01:06:14.690Z",
- "bien": 40,
- "total": 40,
+ "fecha": "2026-11-05T03:45:35.456Z",
+ "bien": 42,
+ "total": 42,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -93,6 +93,14 @@
   },
   {
    "nombre": "Compartir: link, código para insertar y QR que se lee",
+   "ok": true
+  },
+  {
+   "nombre": "Leyenda de lotes en el tour: el color de cada estado y cuántos hay",
+   "ok": true
+  },
+  {
+   "nombre": "Crédito propio abajo del tour («Desarrollado por…») con su enlace",
    "ok": true
   },
   {

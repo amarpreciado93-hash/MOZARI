@@ -1133,6 +1133,23 @@
   .sk-btn svg { width: 17px; height: 17px; }
   .capas, .capa-etq { transition: opacity 0.3s, visibility 0.3s; }
   .escena-limpia .capas, .escena-limpia .capa-etq { opacity: 0; visibility: hidden; pointer-events: none; }
+  /* Leyenda de lotes (Skin): el color de cada estado y cuántos hay, para que el cliente sepa qué es qué */
+  .sk-leyenda { position: absolute; z-index: 2; display: grid; gap: 7px; padding: 11px 14px; font-size: 12px; line-height: 1.2; pointer-events: auto; min-width: 140px; }
+  .sk-leyenda .ley-it { display: flex; align-items: center; gap: 9px; white-space: nowrap; }
+  .sk-leyenda .ley-it i { flex: none; width: 11px; height: 11px; border-radius: 3px; background: var(--c); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); }
+  .sk-leyenda .ley-it b { margin-left: auto; padding-left: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .escena-limpia .sk-leyenda { display: none; }
+  /* Crédito propio (Skin): «Desarrollado por…», chiquito abajo al centro, debajo de las barras de cada plantilla */
+  .sk-credito { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 4px); transform: translateX(-50%); z-index: 2; max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; letter-spacing: 0.04em; color: rgba(255, 255, 255, 0.88); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); text-decoration: none; pointer-events: auto; }
+  a.sk-credito:hover { color: #fff; text-decoration: underline; }
+  .sk-credito.en-panel { position: static; transform: none; display: block; text-align: center; padding-top: 2px; text-shadow: none; color: inherit; opacity: 0.6; }
+  .t-cine .sk-leyenda { top: calc(env(safe-area-inset-top, 0px) + 80px); left: max(28px, env(safe-area-inset-left, 0px)); }
+  .t-cine.sk--v .sk-leyenda { top: calc(env(safe-area-inset-top, 0px) + 72px); left: 18px; }
+  .t-dock .sk-leyenda { top: 84px; left: max(16px, env(safe-area-inset-left, 0px)); }
+  .t-dock.sk--v .sk-leyenda { top: 76px; left: 12px; }
+  .t-brujula .sk-leyenda { top: 94px; left: max(16px, env(safe-area-inset-left, 0px)); }
+  .t-brujula.sk--v .sk-leyenda { top: 74px; left: 12px; }
+  .sk-leyenda.en-panel { position: static; padding: 4px 2px 6px; background: none; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; min-width: 0; }
   .sk-btn[aria-pressed="true"] { background: var(--sk-acento); color: var(--sk-sobre); }
   .sk-cta { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--sk-acento); color: var(--sk-sobre); text-decoration: none; font-weight: 600; font-size: 13px; padding: 11px 18px; border-radius: var(--sk-radio-btn); white-space: nowrap; border: 0; cursor: pointer; }
   .sk-cta svg { width: 16px; height: 16px; }
@@ -1917,7 +1934,8 @@
     plantilla: "cine", acento: "#FFFFFF", panel: "#111111", opacidad: 0.6, radio: 14,
     logo: { tipo: "ninguno", img: "" }, nombre: true,
     cta: { mostrar: true, texto: "Agendar visita", enlace: "" },
-    extra: { numero: true, brujula: true, ruta: true },
+    credito: { texto: "", enlace: "" },
+    extra: { numero: true, brujula: true, ruta: true, leyenda: false, leyendaCantidad: true },
     botones: { pantalla: true, musica: true, zoom: false, piloto: true, limpiar: true },
   };
   function mezclar(def, val) {
@@ -8635,6 +8653,24 @@ void main(){
       },
     };
     ui.innerHTML = PLANTILLAS[T].html(c);
+    // Leyenda de lotes: un renglón por estado que tenga lotes (con su color del tour), y cuántos hay
+    if (sk.extra.leyenda) {
+      const cuenta = {}; lotesUnicos().forEach((x) => { const e = estadoDe(x.c); cuenta[e.id] = (cuenta[e.id] || 0) + 1; });
+      const filas = estadosLote().filter((e) => cuenta[e.id]).map((e) => '<span class="ley-it" style="--c:' + esc(e.color) + '"><i></i>' + esc(e.nombre) + (sk.extra.leyendaCantidad ? "<b>" + cuenta[e.id] + "</b>" : "") + "</span>").join("");
+      if (filas) {
+        const pie = T === "desarrollo" && ui.querySelector(".d-pie");
+        if (pie) pie.insertAdjacentHTML("afterbegin", '<div class="sk-leyenda en-panel" aria-label="Leyenda de ' + esc(plural(terminos().lote).toLowerCase()) + '">' + filas + "</div>");
+        else ui.insertAdjacentHTML("beforeend", '<div class="sk-leyenda sk-panel" aria-label="Leyenda de ' + esc(plural(terminos().lote).toLowerCase()) + '">' + filas + "</div>");
+      }
+    }
+    // Crédito propio: en los planes de pago (con la marca de Mozari de la versión de prueba no se pone)
+    const cred = String((sk.credito && sk.credito.texto) || "").trim(), conMarca = MODO === "tour" ? !!P().marcaMozari : MODO === "nube" && conMarcaPrueba();
+    if (cred && !conMarca) {
+      let url = String(sk.credito.enlace || "").trim(); if (url && !/^https?:\/\//i.test(url)) url = "https://" + url;
+      const h = url ? '<a class="sk-credito" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(cred) + "</a>" : '<span class="sk-credito">' + esc(cred) + "</span>";
+      const pie = T === "desarrollo" && ui.querySelector(".d-pie");
+      if (pie) pie.insertAdjacentHTML("beforeend", h.replace('class="sk-credito"', 'class="sk-credito en-panel"')); else ui.insertAdjacentHTML("beforeend", h);
+    }
     let actualId = null;
     const ids = est.escenas.map((e) => e.id);
     const irRel = (d) => { if (!actualId || !o.motor()) return; const i = ids.indexOf(actualId); o.motor().mostrar(ids[(i + d + ids.length) % ids.length]); };
@@ -8978,9 +9014,14 @@ void main(){
       campo("Esquinas", '<div class="rango"><input type="range" data-sk-k="radio" min="0" max="24" step="1" value="' + sk.radio + '" aria-label="Redondeo de esquinas"><span class="valor" id="sk-radio-v">' + sk.radio + " px</span></div>") + "</div>" +
       '<div class="grupo"><b>Contacto</b>' + tgl("cta.mostrar", sk.cta.mostrar, "Botón de contacto") +
       (sk.cta.mostrar ? campo("Texto", '<input type="text" data-sk-k="cta.texto" maxlength="28" value="' + esc(sk.cta.texto) + '">') + campo("Enlace", '<input type="url" data-sk-k="cta.enlace" placeholder="https://wa.me/52…" value="' + esc(sk.cta.enlace) + '">') + '<p class="nota">WhatsApp, formulario o página del desarrollo. Se abre en otra pestaña.</p>' : "") + "</div>" +
+      '<div class="grupo"><b>Crédito</b>' + campo("Texto", '<input type="text" data-sk-k="credito.texto" maxlength="60" placeholder="Desarrollado por Tu Empresa" value="' + esc((sk.credito && sk.credito.texto) || "") + '">') +
+        campo("Enlace", '<input type="url" data-sk-k="credito.enlace" placeholder="tuempresa.com (opcional)" value="' + esc((sk.credito && sk.credito.enlace) || "") + '">') +
+        '<p class="nota">Sale chiquito abajo del tour, con tu marca. ' + (conMarcaPrueba() ? "En tu plan actual sale la marca de Mozari en su lugar." : "Déjalo vacío para no mostrar nada.") + "</p></div>" +
       '<div class="grupo"><b>Elementos</b>' +
       (T === "cine" || T === "dock" ? tgl("extra.numero", sk.extra.numero, "Número de panorama (01 / 03)") : "") +
       (T === "brujula" ? tgl("extra.brujula", sk.extra.brujula, "Brújula de orientación") + tgl("extra.ruta", sk.extra.ruta, "Ruta paso a paso") : "") +
+      tgl("extra.leyenda", sk.extra.leyenda, "Leyenda de " + plural(terminos().lote).toLowerCase() + " (qué color es cada estado)") +
+      (sk.extra.leyenda ? tgl("extra.leyendaCantidad", sk.extra.leyendaCantidad, "Con cuántos hay de cada uno") : "") +
       tgl("botones.pantalla", sk.botones.pantalla, "Pantalla completa") + tgl("botones.musica", sk.botones.musica, "Música (si el tour tiene)") +
       tgl("botones.zoom", sk.botones.zoom, "Zoom + / −") + tgl("botones.limpiar", sk.botones.limpiar, "Limpiar escena (ocultar puntos y lotes)") + tgl("botones.piloto", sk.botones.piloto, "Aviso de piloto automático") + "</div>";
   }
