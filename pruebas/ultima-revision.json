@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-05T20:21:15.352Z",
- "bien": 47,
- "total": 47,
+ "fecha": "2026-11-05T21:22:46.057Z",
+ "bien": 49,
+ "total": 49,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -85,6 +85,14 @@
   },
   {
    "nombre": "El tour público abre en celular",
+   "ok": true
+  },
+  {
+   "nombre": "Aviso si se cae: un tour que se cierra solo en el celular llega como reporte al Panel de dueño",
+   "ok": true
+  },
+  {
+   "nombre": "Manual: abre con los temas de la sección, busca, muestra los pasos y lleva a Reportar un error",
    "ok": true
   },
   {

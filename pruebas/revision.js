@@ -402,6 +402,74 @@ async function capasPesadas(p) {
       exige(!m.errs.length, "errores en celular: " + m.errs.join(" | ").slice(0, 160));
       await m.context().close();
     });
+    // Aviso si se cae: si el navegador tumba el tour mientras está en pantalla (sin memoria), la próxima vez que se
+    // abre en ese celular llega un reporte al Panel de dueño. Un cierre normal (salir, cambiar de página) no avisa.
+    await paso("Aviso si se cae: un tour que se cierra solo en el celular llega como reporte al Panel de dueño", async () => {
+      link = link || TOURS + "/" + tour + "/";
+      const caidas = async () => (await a.evaluate(() => fetch("api/admin/reportes", { cache: "no-store" }).then((r) => r.json()))).reportes.filter((x) => x.tipo === "caida");
+      const antes = (await caidas()).length;
+      exige((await a.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), tour)) === 200, "no se pudo publicar el tour de prueba");
+      const m = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
+      await m.goto(link); await m.waitForTimeout(5000);
+      const marca = await m.evaluate((id) => JSON.parse(localStorage.getItem("mz-vivo:" + id) || "null"), tour);
+      exige(marca && marca.visible && marca.esfera, "el tour no deja su marca mientras está abierto: " + JSON.stringify(marca));
+      // El navegador lo tumba (como Safari sin memoria): no alcanza a quitar su marca. Aquí se simula dejando la
+      // marca tal cual estaba en pantalla y abriendo el tour otra vez en el mismo celular.
+      await m.goto(TOURS + "/"); // salir normal: el tour quita su marca
+      exige((await m.evaluate((k) => localStorage.getItem(k), "mz-vivo:" + tour)) === null, "al salir normal del tour no se quitó su marca");
+      await m.evaluate(([k, v]) => localStorage.setItem(k, JSON.stringify(v)), ["mz-vivo:" + tour, marca]);
+      const m2 = m; m2.errs = [];
+      await m2.goto(link); await m2.waitForTimeout(4000);
+      let lista = []; for (let i = 0; i < 10 && lista.length <= antes; i++) { await new Promise((r) => setTimeout(r, 500)); lista = await caidas(); }
+      exige(lista.length === antes + 1, "no llegó el aviso de que el tour se cerró solo (" + lista.length + " vs " + antes + ")");
+      const rep = lista[0];
+      console.log("    aviso: " + rep.texto);
+      exige(rep.contexto.tour === tour && /iPhone/.test(rep.texto) && /esfera «/.test(rep.texto) && rep.caida && rep.caida.lotes === marca.lotes, "el aviso no dice el tour, el celular, la esfera o los lotes: " + rep.texto);
+      // Cerrarlo normal (irse a otra página) no es falla: al volver a abrirlo no llega otro aviso
+      await m2.goto("about:blank"); await m2.waitForTimeout(500);
+      await m2.goto(link); await m2.waitForTimeout(4000);
+      exige((await caidas()).length === antes + 1, "un cierre normal mandó un aviso de caída");
+      // En el Panel de dueño sale marcado como aviso automático, con el link al tour
+      const dn = await pagina(DUENO);
+      await dn.click('#nav button:has-text("Mis Tours")'); await dn.waitForTimeout(800);
+      await dn.click("#ver-cuentas"); await dn.waitForTimeout(1200);
+      await dn.click('[data-dueno="reportes"]'); await dn.waitForTimeout(1200);
+      exige(await dn.isVisible(".rep-item.caida"), "el aviso no sale en el Panel de dueño");
+      exige(/Abrir el tour/.test(await dn.textContent(".rep-item.caida")), "el aviso no trae el link al tour");
+      if (process.env.CAPTURAS) { await dn.$eval(".rep-item.caida", (e) => e.scrollIntoView({ block: "center" })); await dn.screenshot({ path: path.join(process.env.CAPTURAS, "aviso-caida.png") }); }
+      await dn.context().close();
+      exige(!m2.errs.length, "errores en el celular: " + m2.errs.join(" | ").slice(0, 160));
+      await m.context().close();
+    });
+    // Manual dentro de Mozari (Laboratorio): primero se busca la respuesta ahí; si no, «Reportar un error»
+    await paso("Manual: abre con los temas de la sección, busca, muestra los pasos y lleva a Reportar un error", async () => {
+      const dn = await pagina(DUENO);
+      await dn.goto(ESTUDIO + "/#t=" + tour); await dn.reload(); await dn.waitForTimeout(2500); await cerrarAnuncio(dn); await cerrarGuia(dn);
+      await dn.click('#nav button:has-text("Panoramas")'); await dn.waitForTimeout(500);
+      await dn.click('#subtabs button:has-text("Capas")'); await dn.waitForTimeout(1500); await cerrarGuia(dn);
+      exige(await dn.isVisible("#abrir-manual"), "no está el botón del Manual");
+      await dn.click("#abrir-manual"); await dn.waitForTimeout(400);
+      exige(await dn.isVisible("#manual"), "no se abrió el Manual");
+      const sug = await dn.$$eval("#mn-cuerpo .mn-cap", (l) => l.map((e) => e.textContent));
+      exige(sug[0] === "Para esta sección" && /Hotspots/.test(await dn.textContent("#mn-cuerpo")), "el Manual no sugiere los temas de Capas: " + sug.join(" | "));
+      if (process.env.CAPTURAS) await dn.screenshot({ path: path.join(process.env.CAPTURAS, "manual-capas.png") });
+      await dn.fill("#mn-buscar", "pdf"); await dn.waitForTimeout(300);
+      exige(/Lotes desde tu PDF/.test(await dn.textContent("#mn-cuerpo")), "buscar «pdf» no encontró el tema de Lotes desde tu PDF");
+      await dn.click('[data-mn="3.5"]'); await dn.waitForTimeout(300);
+      exige(/Lotes desde tu PDF/.test(await dn.textContent("#mn-cuerpo h3")) && (await dn.$$("#mn-cuerpo ol li")).length >= 6 && /Plano bueno/.test(await dn.textContent("#mn-cuerpo")), "el tema 3.5 no muestra sus pasos");
+      if (process.env.CAPTURAS) await dn.screenshot({ path: path.join(process.env.CAPTURAS, "manual-tema.png") });
+      await dn.click("#manual [data-reportar]"); await dn.waitForTimeout(400);
+      exige(await dn.isVisible("#rep-texto"), "«Reportar un error» del Manual no abre el reporte");
+      await dn.click("[data-dp-cerrar]").catch(() => dn.keyboard.press("Escape")); await dn.waitForTimeout(300);
+      await dn.click("#mn-cerrar"); await dn.waitForTimeout(200);
+      exige(!(await dn.isVisible("#manual")), "el Manual no se cierra");
+      exige(!dn.errs.length, "errores en el estudio: " + dn.errs.join(" | ").slice(0, 200));
+      await dn.context().close();
+      // Es del Laboratorio («Solo yo» al nacer): una cuenta normal todavía no lo ve
+      const u = await pagina("manual-" + Date.now() + "@prueba.mx");
+      exige(!(await u.isVisible("#abrir-manual")), "una cuenta normal ya ve el Manual (debe nacer en el Laboratorio)");
+      await u.context().close();
+    });
     // Reporte (El Mirador, nov 2026): el tour se cerraba solo en iPhone («Ocurrió un problema varias veces»).
     // Los lotes del PDF se hicieron después del hotspot y del punto de interés, así que quedaban encima de ellos.
     // Cada lote encima de algo animado o en 3D le costaba al iPhone una capa del tamaño de la pantalla.
@@ -1119,6 +1187,12 @@ async function capasPesadas(p) {
       exige(ancho > 500, "el PDF no se pudo ver");
       await n.waitForTimeout(3000);
       exige(/Plano bueno/.test(await n.textContent("#ref-calidad")) && (await n.isVisible("#ref-calidad")), "el plano vectorial no salió calificado como bueno");
+      // Con la apariencia clara, los botones de la ventanita (que siempre es oscura) se siguen leyendo
+      const luz = () => n.evaluate(() => { const m = getComputedStyle(document.getElementById("ref-ajustar")).color.match(/\d+/g).map(Number); return (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) / 255; });
+      await n.evaluate(() => { const r = document.getElementById("tema-rango"); r.value = 100; r.dispatchEvent(new Event("input")); }); await n.waitForTimeout(200);
+      const luzClaro = await luz();
+      await n.evaluate(() => { const r = document.getElementById("tema-rango"); r.value = 0; r.dispatchEvent(new Event("input")); }); await n.waitForTimeout(200);
+      exige(luzClaro > 0.6, "con la apariencia clara, los botones del plano casi no se leen (luz " + luzClaro.toFixed(2) + ")");
       await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "560px"; p.style.height = "420px"; });
       await n.click("#ref-ajustar"); await n.click("#ref-lotes"); await n.waitForTimeout(500); await pasarGuias(n); await n.waitForTimeout(300);
       const aPant = (x, y) => n.evaluate(([x, y]) => { const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(document.getElementById("ref-lienzo").style.transform), v = document.getElementById("ref-vista").getBoundingClientRect(); return [v.x + +m[1] + x * +m[3], v.y + +m[2] + y * +m[3]]; }, [x, y]);

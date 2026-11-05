@@ -21,6 +21,7 @@
 //   GET|POST /api/admin/novedades     (solo el dueño) crear y editar anuncios · PUT /:id · PUT /:id/media
 //   PUT    /api/admin/laboratorio/:clave   { modo: yo|probadores|pago|todos, probadores: [correos] }
 //   GET    /t/:id/<ruta>      archivos de tu tour (el estudio los usa para mostrar las esferas)
+//   POST   /v/:id  y  /c/:id  (públicos, desde el tour) resumen anónimo de una visita · aviso de que el tour se cerró solo
 //
 // Cada tour pertenece a una cuenta: cuentas/<uid>/tours/<id>. Nadie puede leer, cambiar ni borrar
 // tours de otra cuenta. Los tours publicados se ven en el Worker de tours (público, solo lectura).
@@ -148,6 +149,7 @@ export const LABORATORIO = {
   "manzana-desfase": { nombre: "Doble manzana desfasada", texto: "En una manzana doble, la fila de atrás puede tener otro número de lotes y recorrerse para no coincidir con la del frente." },
   "foto360": { nombre: "Foto 360 con lotes", texto: "En Capas: descarga la esfera como foto 360 (JPG 2:1) con los lotes dibujados, lista para Facebook, Google Fotos u otros visores 360." },
   "carga-logo": { nombre: "Pantalla de carga con tu logo", texto: "El tour publicado carga con el logo y el nombre del proyecto (del Skin), en sus colores, en lugar de Mozari. Se aplica al volver a publicar. En el plan Gratis sigue la de Mozari." },
+  "manual": { nombre: "Manual", texto: "Botón del librito, arriba a la derecha: los temas del manual de Mozari con sus pasos, un buscador y, primero, los temas de la sección donde estás. Si no se resuelve, lleva a Reportar un error." },
   "lotes-pdf": { nombre: "Lotes desde el PDF", texto: "En el plano de referencia: arrastras un recuadro sobre una manzana del PDF, Mozari arma sus lotes y los colocas en la esfera tocando 4 esquinas. Necesita también «Plano de referencia»." },
 };
 // "pago": las cuentas Pro y Desarrollos (con su plan vigente); "todos" incluye también Gratis
@@ -235,6 +237,44 @@ async function registrarVisita(request, env, id) {
     esferas: mapa(d.esferas, 60, 4 * 3600), lotes: mapa(d.lotes, 150, 100), contacto: num(d.contacto, 50),
   };
   await env.R2.put("stats/" + id + "/" + ahora.toISOString().slice(0, 10) + "/" + d.v + ".json", JSON.stringify(reg), { httpMetadata: { contentType: "application/json" } });
+  return ok;
+}
+// ---------- Aviso si se cae un tour ----------
+// El tour publicado deja una marca mientras está en pantalla y la borra al cerrarse bien. Si la próxima vez
+// que se abre en ese celular la marca sigue ahí, el tour se cerró solo (sin memoria, el navegador lo tumbó):
+// llega como reporte al Panel de dueño, con el celular, el tour y la esfera. Así nos enteramos antes que el cliente.
+const CAIDAS_DIA = 20; // por tour, para que nadie llene los reportes
+async function registrarCaida(request, env, id) {
+  const ok = new Response(null, { status: 204, headers: { "access-control-allow-origin": "*" } });
+  if (!ID_TOUR.test(id || "")) return ok;
+  const txt = await request.text().catch(() => "");
+  if (!txt || txt.length > 8000) return ok;
+  let d; try { d = JSON.parse(txt); } catch (e) { return ok; }
+  if (!d || typeof d !== "object") return ok;
+  const pub = await env.R2.get("publicado/" + id + "/proyecto.json");
+  if (!pub) return ok;
+  const p = await pub.json().catch(() => null);
+  const hoy = new Date().toISOString().slice(0, 10), clave = "caidas/" + id + "/" + hoy;
+  const n = +((await (await env.R2.get(clave))?.text()) || 0);
+  if (n >= CAIDAS_DIA) return ok;
+  await env.R2.put(clave, String(n + 1));
+  const corto = (v, k) => String(v == null ? "" : v).slice(0, k);
+  const cf = request.cf || {}, disp = ["celular", "tablet", "compu"].includes(d.disp) ? d.disp : "compu";
+  const esfera = corto(d.esferaNombre || d.esfera || "—", 80), lotes = num(d.lotes, 5000), dur = num(d.dur, 24 * 3600);
+  const veces = Math.max(1, num(d.veces, 50));
+  const tiempo = dur < 90 ? Math.round(dur) + " s" : Math.round(dur / 60) + " min";
+  const rid = hoy.replace(/-/g, "") + "-" + Date.now().toString(36) + crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
+  const nombreTour = corto((p && p.proyecto && p.proyecto.nombre) || id, 80);
+  const rep = {
+    id: rid, fecha: new Date().toISOString(), estado: "nuevo", tipo: "caida", uid: "", email: env.ADMIN || "", nombre: "Se cerró un tour solo", plan: "aviso automático",
+    texto: "El tour «" + nombreTour + "» se cerró solo en un " + disp + " (" + corto(d.modelo || "", 60) + ") en la esfera «" + esfera + "», con " + lotes + (lotes === 1 ? " lote" : " lotes") +
+      " y " + num(d.capas, 5000) + " capas en total. " + (dur < 10 ? "Se cerró en los primeros segundos" : "Llevaba " + tiempo + " abierto") + (veces > 1 ? " y ya es la vez " + veces + " seguida en ese celular" : "") + "." + (cf.country ? " País: " + corto(cf.country, 2) + "." : ""),
+    contexto: { tour: id, seccion: "tour publicado · " + esfera, navegador: corto(d.ua, 300), pantalla: corto(d.pantalla, 40), errores: (Array.isArray(d.errores) ? d.errores : []).slice(-5).map((e) => corto(e, 300)) },
+    imagen: false,
+    caida: { esfera: corto(d.esfera, 80), lotes, capas: num(d.capas, 5000), dur, veces, memoria: num(d.memoria, 64), calidad: corto(d.calidad, 20), cambios: num(d.cambios, 10000) },
+  };
+  await env.R2.put("reportes/" + rid + ".json", JSON.stringify(rep), { httpMetadata: { contentType: "application/json" } });
+  await avisarPorCorreo(env, rep, new URL(request.url));
   return ok;
 }
 async function resumenVisitas(env, id, dias) {
@@ -609,6 +649,8 @@ export default {
 
     // Visitas de los tours publicados (público, sin sesión): solo guarda un resumen anónimo
     if (segs[0] === "v" && segs.length === 2 && request.method === "POST") return registrarVisita(request, env, segs[1]);
+    // Aviso si un tour publicado se cerró solo en un celular (público, sin sesión)
+    if (segs[0] === "c" && segs.length === 2 && request.method === "POST") return registrarCaida(request, env, segs[1]);
 
     const s = await rutasSesion(request, env, (p) => adoptarTours(env, p));
     if (s) return s;
