@@ -17,6 +17,7 @@
 //   PUT    /api/admin/cuentas/:uid    (solo el dueño) cambia el plan de una cuenta  { plan }
 //   GET    /api/admin/laboratorio     (solo el dueño) funciones en prueba y para quién están
 //   GET    /api/admin/tours/:id       (solo el dueño) lee el proyecto de cualquier tour, para revisar reportes
+//   GET|PUT /api/admin/cupo           (solo el dueño) cupo de cuentas { cupo } y la lista de espera
 //   GET    /api/novedades             anuncios para esta cuenta (y si ya los vio) · POST /api/novedades/:id/vista
 //   GET|POST /api/admin/novedades     (solo el dueño) crear y editar anuncios · PUT /:id · PUT /:id/media
 //   PUT    /api/admin/laboratorio/:clave   { modo: yo|probadores|pago|todos, probadores: [correos] }
@@ -27,7 +28,7 @@
 // tours de otra cuenta. Los tours publicados se ven en el Worker de tours (público, solo lectura).
 
 import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR, conCarga, cargaEnViejos } from "./comun.js";
-import { rutasSesion, cuentaDe, perfil } from "./sesion.js";
+import { rutasSesion, cuentaDe, perfil, leerCupo, contarCuentas } from "./sesion.js";
 import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
 import { apiPagos, webhookMercadoPago, CODIGO, cuponClave } from "./pagos.js";
 import { EmailMessage } from "cloudflare:email";
@@ -340,6 +341,20 @@ async function admin(request, env, partes) {
     return error(405, "Método no permitido");
   }
   if (partes[2] === "respaldos") return apiRespaldos(request, env, partes);
+  // Cupo de cuentas y lista de espera (quien llegó con el cupo lleno)
+  if (partes[2] === "cupo" && partes.length === 3) {
+    if (m === "PUT") {
+      const c = await request.json().catch(() => ({})), cupo = Math.floor(+c.cupo);
+      if (!Number.isFinite(cupo) || cupo < 0 || cupo > 1000000) return error(400, "Cupo inválido");
+      await env.R2.put("config/cupo.json", JSON.stringify({ cupo, cambiado: new Date().toISOString() }), { httpMetadata: { contentType: "application/json" } });
+      return json({ ok: true, cupo });
+    }
+    if (m !== "GET") return error(405, "Método no permitido");
+    const claves = []; let cur;
+    do { const l = await env.R2.list({ prefix: "lista-espera/", cursor: cur, limit: 1000 }); l.objects.forEach((o) => claves.push(o.key)); cur = l.truncated ? l.cursor : undefined; } while (cur && claves.length < 5000);
+    const espera = (await Promise.all(claves.slice(0, 1000).map(async (k) => (await env.R2.get(k))?.json().catch(() => null)))).filter(Boolean).sort((x, y) => String(x.fecha).localeCompare(String(y.fecha)));
+    return json({ cupo: await leerCupo(env), cuentas: await contarCuentas(env), espera, enEspera: claves.length });
+  }
   // Soporte: el dueño puede leer (solo leer) el proyecto de cualquier tour para revisar un reporte
   if (partes[2] === "tours" && partes.length === 4 && request.method === "GET") {
     if (!ID_TOUR.test(partes[3])) return error(400, "Tour inválido");

@@ -756,6 +756,14 @@
   .cuentas-conteo { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 16px 2px; }
   .cuentas-conteo span { padding: 8px 12px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 12px; color: var(--mz-tenue); }
   .cuentas-conteo b { display: block; font-size: 20px; font-weight: 600; color: var(--mz-texto); }
+  .cupo-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 10px 16px 0; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); font-size: 13px; }
+  .cupo-fila.lleno { border-color: var(--mz-aviso); }
+  .cupo-fila b { font-weight: 600; }
+  .cupo-fila input { width: 80px; margin-left: 6px; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); color: var(--mz-texto); font: inherit; }
+  .cupo-fila small { color: var(--mz-tenue); }
+  .cupo-lista { display: flex; flex-direction: column; gap: 4px; margin: 8px 16px 0; padding: 10px 14px; border-radius: 12px; background: var(--mz-superficie); font-size: 13px; max-height: 260px; overflow-y: auto; }
+  .cupo-lista small { color: var(--mz-tenue); }
+  .cupo-lista .mini { align-self: flex-start; margin-top: 6px; }
   .cuenta-n { color: var(--mz-tenue); font-variant-numeric: tabular-nums; }
   .cuenta-alta { display: block; font-size: 11px; color: var(--mz-tenue); font-weight: 400; }
   .cuentas-total { margin: 4px 16px 10px; font-size: 13px; color: var(--mz-tenue); }
@@ -3407,9 +3415,10 @@
     if (vistaDueno === "laboratorio") return pintarLaboratorio();
     if (vistaDueno === "novedades") return pintarNovedadesAdmin();
     if (vistaDueno === "respaldos") return pintarRespaldos();
-    const r = await fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null);
+    const [r, rc] = await Promise.all([fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null), fetch("api/admin/cupo", { cache: "no-store" }).catch(() => null)]);
     if (!r || !r.ok) { avisar("No se pudieron leer las cuentas"); return; }
     const { cuentas: todas } = await r.json();
+    const cupo = rc && rc.ok ? await rc.json().catch(() => null) : null;
     // Número de usuario = orden en que se registraron (el primero es #1). Se muestran del más nuevo al más viejo.
     const porAlta = todas.slice().sort((a, b) => String(a.creado || "").localeCompare(String(b.creado || "")));
     porAlta.forEach((c, i) => (c.n = i + 1));
@@ -3421,13 +3430,28 @@
       "<span><b>" + cuantos((c) => String(c.creado || "") >= semana) + "</b> esta semana</span>" +
       "<span><b>" + cuantos((c) => (c.plan || "gratis") === "gratis") + "</b> Gratis</span>" +
       "<span><b>" + cuantos((c) => c.plan === "pro") + "</b> Pro</span>" +
-      "<span><b>" + cuantos((c) => c.plan === "desarrollos") + "</b> Desarrollos</span></div>";
+      "<span><b>" + cuantos((c) => c.plan === "desarrollos") + "</b> Desarrollos</span></div>" +
+      // Cupo: cuántas cuentas caben por ahora. Quien compra o llega con un link de regalo entra aunque esté lleno.
+      (cupo ? '<div class="cupo-fila' + (cupo.cuentas >= cupo.cupo ? " lleno" : "") + '"><span><b>' + cupo.cuentas + " de " + cupo.cupo + "</b> cuentas" + (cupo.cuentas >= cupo.cupo ? " · cupo lleno" : " · quedan " + (cupo.cupo - cupo.cuentas)) + "</span>" +
+        '<label>Cupo <input id="cupo-num" type="number" min="0" step="10" value="' + cupo.cupo + '"></label><button class="mini" id="cupo-guardar">Guardar</button>' +
+        (cupo.enEspera ? '<button class="mini" id="cupo-espera">Lista de espera (' + cupo.enEspera + ")</button>" : '<small>Nadie en lista de espera</small>') + "</div>" +
+        '<div class="cupo-lista" id="cupo-lista" hidden>' + (cupo.espera || []).map((x) => "<span>" + esc(x.nombre || "") + " <small>" + esc(x.email) + " · " + new Date(x.fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) + (x.veces > 1 ? " · intentó " + x.veces + " veces" : "") + "</small></span>").join("") +
+        '<button class="mini" id="cupo-copiar">Copiar correos</button></div>' : "");
     let caja = $("cuentas");
     if (!caja) { caja = document.createElement("div"); caja.id = "cuentas"; caja.className = "cuentas"; $("mi-plan").after(caja); }
     caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p>' + TABS_DUENO(0) + resumen + '<p class="cuentas-total">' + totalPagos(cuentas) + '</p><table class="lotes-tabla"><thead><tr><th>#</th><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Pagó</th><th>Última entrada</th><th></th></tr></thead><tbody>' + cuentas.map((c) =>
       '<tr' + (c.pausada ? ' class="pausada"' : "") + '><td class="cuenta-n">' + c.n + "</td><td><b>" + esc(c.nombre || "") + "</b>" + (c.creado ? '<small class="cuenta-alta">desde ' + new Date(c.creado).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) + "</small>" : "") + "</td><td>" + esc(c.email) + "</td><td>" + (c.admin ? "Dueño" : '<select data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
       "</td><td>" + (c.admin ? "" : pagoDe(c)) + "</td><td>" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td><td>" + (c.admin ? "" : '<button class="mini' + (c.pausada ? " primario" : "") + '" data-pausar="' + esc(c.uid) + '" data-v="' + (c.pausada ? "0" : "1") + '">' + (c.pausada ? "Reactivar" : "Pausar") + "</button>") + "</td></tr>").join("") + "</tbody></table>";
   }
+  document.addEventListener("click", async (ev) => {
+    if (ev.target.id === "cupo-espera") { const l = $("cupo-lista"); if (l) l.hidden = !l.hidden; return; }
+    if (ev.target.id === "cupo-copiar") { const t = [...document.querySelectorAll("#cupo-lista small")].map((x) => x.textContent.split(" · ")[0]).join(", "); try { await navigator.clipboard.writeText(t); avisar("Correos copiados"); } catch (e) { avisar("No se pudo copiar"); } return; }
+    if (ev.target.id !== "cupo-guardar") return;
+    const n = Math.floor(+$("cupo-num").value);
+    if (!Number.isFinite(n) || n < 0) { avisar("Escribe un número"); return; }
+    const r = await fetch("api/admin/cupo", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ cupo: n }) }).catch(() => null);
+    avisar(r && r.ok ? "Cupo: " + n + " cuentas" : "No se pudo cambiar el cupo"); pintarCuentas();
+  });
   document.addEventListener("click", (ev) => { if (ev.target.id === "ver-cuentas") { const c = $("cuentas"); if (c && !c.hidden) { c.hidden = true; return; } if (c) c.hidden = false; pintarCuentas(); } });
   document.addEventListener("click", async (ev) => {
     const b = ev.target.closest("[data-pausar]"); if (!b) return;

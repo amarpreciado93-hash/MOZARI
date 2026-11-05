@@ -651,6 +651,43 @@ async function capasPesadas(p) {
       for (const t of ["links", "reportes", "laboratorio", "novedades"]) { await a.click('[data-dueno="' + t + '"]'); await a.waitForTimeout(900); }
     }, a);
 
+    // Cupo de cuentas (beta): al llenarse, una cuenta nueva queda en lista de espera; quien compra entra siempre
+    await paso("Cupo de cuentas: lleno manda a lista de espera, quien compra entra, y el dueño lo cambia en el Panel", async () => {
+      const dn = await pagina(DUENO), api = (ruta, op) => dn.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const ponerCupo = (n) => api("api/admin/cupo", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ cupo: n }) });
+      const antes = (await api("api/admin/cupo")).d;
+      exige(antes && antes.cupo === 300, "el cupo no empieza en 300: " + JSON.stringify(antes && antes.cupo));
+      const t = Date.now(), ya = "ya-" + t + "@prueba.mx", nuevo = "espera-" + t + "@prueba.mx", compra = "compra-" + t + "@prueba.mx";
+      const entra = async (correo, extra) => {
+        const x = await pagina(null); await x.goto(ESTUDIO + "/entrar?dev=" + encodeURIComponent(correo) + (extra || "")); await x.waitForTimeout(1500);
+        const yo = await x.evaluate(() => fetch("api/yo").then((r) => r.status).catch(() => 0));
+        return { x, adentro: yo === 200, texto: await x.textContent("body") };
+      };
+      const e1 = await entra(ya); await e1.x.context().close(); // una cuenta que ya existía antes de llenarse
+      try {
+        const n = (await api("api/admin/cupo")).d.cuentas;
+        exige((await ponerCupo(n)).s === 200, "no se pudo cambiar el cupo");
+        const e2 = await entra(nuevo);
+        exige(!e2.adentro && /Cupo lleno/.test(e2.texto) && e2.texto.includes(nuevo), "con el cupo lleno, una cuenta nueva entró o no vio «Cupo lleno»");
+        exige(!/gratis/i.test(e2.texto), "la página de cupo lleno dice «gratis»");
+        if (process.env.CAPTURAS) { await e2.x.setViewportSize({ width: 430, height: 820 }); await e2.x.screenshot({ path: path.join(process.env.CAPTURAS, "cupo-lleno.png") }); }
+        await e2.x.context().close();
+        exige((await api("api/admin/cupo")).d.cuentas === n, "con el cupo lleno se creó la cuenta de todos modos");
+        const e3 = await entra(ya); exige(e3.adentro, "una cuenta que ya existía no pudo entrar con el cupo lleno"); await e3.x.context().close();
+        const e4 = await entra(compra, "&comprar=pro"); exige(e4.adentro, "quien viene a comprar no pudo entrar con el cupo lleno"); await e4.x.context().close();
+        // En el Panel de dueño: cupo lleno, la lista de espera con su correo, y se cambia el número
+        await dn.click('#nav button:has-text("Mis Tours")'); await dn.waitForTimeout(600);
+        await dn.click("#ver-cuentas"); await dn.waitForTimeout(1200);
+        exige(await dn.isVisible(".cupo-fila.lleno"), "el Panel no dice que el cupo está lleno");
+        await dn.click("#cupo-espera"); await dn.waitForTimeout(200);
+        exige((await dn.textContent("#cupo-lista")).includes(nuevo), "la lista de espera no trae el correo de quien llegó");
+        if (process.env.CAPTURAS) { await dn.$eval(".cupo-fila", (e) => e.scrollIntoView({ block: "center" })); await dn.screenshot({ path: path.join(process.env.CAPTURAS, "cupo-panel.png") }); }
+        await dn.fill("#cupo-num", String(n + 20)); await dn.click("#cupo-guardar"); await dn.waitForTimeout(1200);
+        exige((await api("api/admin/cupo")).d.cupo === n + 20, "el botón Guardar no cambió el cupo");
+        const e5 = await entra(nuevo); exige(e5.adentro, "con lugar libre, quien estaba en espera no pudo entrar"); await e5.x.context().close();
+        exige(!dn.errs.length, "errores en el estudio: " + dn.errs.join(" | ").slice(0, 200));
+      } finally { await ponerCupo(antes.cupo); await dn.context().close(); }
+    });
     // 3. Plan Gratis
     const g = await pagina("gratis-" + Date.now() + "@prueba.mx");
     await paso("Respaldos: se copian los proyectos y un tour dañado se puede regresar", async () => {

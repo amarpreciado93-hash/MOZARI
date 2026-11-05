@@ -28,6 +28,38 @@ const PAUSADA = `<!doctype html><html lang="es"><head><meta charset="utf-8"><met
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0B0B0B;color:#F2F5EC;font:15px/1.5 system-ui,sans-serif;text-align:center;padding:24px;box-sizing:border-box}p{color:#9CA38F;max-width:420px}a{color:#F2F5EC}</style></head>
 <body><div><h1 style="font-weight:600;letter-spacing:.2em">MOZARI</h1><p>Tu cuenta está en pausa. Si crees que es un error, escríbenos a <a href="mailto:hola@mozari.app">hola@mozari.app</a>.</p></div></body></html>`;
 
+// Cupo de cuentas: cuántas cuentas puede tener Mozari por ahora (beta). Quien entra para comprar una licencia
+// o con un link de regalo pasa siempre. El dueño lo cambia en el Panel (config/cupo.json). Al llenarse, quien
+// llega queda en la lista de espera (lista-espera/<correo>.json) y ve «Cupo lleno», con la opción de comprar.
+export const CUPO_INICIAL = 300;
+export async function leerCupo(env) {
+  const o = await env.R2.get("config/cupo.json"), c = o ? await o.json().catch(() => ({})) : {};
+  return Number.isFinite(+c.cupo) && +c.cupo >= 0 ? Math.floor(+c.cupo) : CUPO_INICIAL;
+}
+export async function contarCuentas(env) {
+  let n = 0, cursor;
+  do {
+    const l = await env.R2.list({ prefix: "cuentas/", delimiter: "/", cursor, limit: 1000 });
+    n += (l.delimitedPrefixes || []).length;
+    cursor = l.truncated ? l.cursor : undefined;
+  } while (cursor);
+  return n;
+}
+const claveEspera = (email) => "lista-espera/" + String(email || "").toLowerCase().replace(/[^a-z0-9@._+-]/g, "_").slice(0, 120) + ".json";
+async function anotarEspera(env, g) {
+  const k = claveEspera(g.email), o = await env.R2.get(k), antes = o ? await o.json().catch(() => null) : null, ahora = new Date().toISOString();
+  const d = Object.assign({ email: g.email, nombre: g.name || "", fecha: ahora, veces: 0 }, antes || {}, { ultima: ahora });
+  d.veces = (+d.veces || 0) + 1;
+  await env.R2.put(k, JSON.stringify(d), { httpMetadata: { contentType: "application/json" } });
+}
+const paginaCupoLleno = (email) => `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Cupo lleno · Mozari</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F4F5F2;color:#0B0B0B;font:15px/1.55 Poppins,system-ui,sans-serif;text-align:center;padding:24px;box-sizing:border-box}
+.c{max-width:440px}h1{font-weight:600;letter-spacing:.3em;font-size:18px;margin:0 0 28px}h2{font-size:26px;margin:0 0 10px}p{color:#4A4D45;margin:0 0 14px}
+a.b{display:inline-block;margin-top:10px;padding:12px 22px;border-radius:999px;background:#0B0B0B;color:#fff;text-decoration:none;font-weight:600}small{display:block;margin-top:18px;color:#7A7D74}</style></head>
+<body><div class="c"><h1>MOZARI</h1><h2>Cupo lleno</h2><p>Por ahora Mozari está abierto a un número limitado de cuentas y ya se llenó.</p>
+<p>Te anotamos en la lista de espera con <b>${String(email || "").replace(/[&<>"']/g, "")}</b>. Te escribimos en cuanto se abran más lugares.</p>
+<a class="b" href="/#planes">¿Ya quieres entrar? Con una licencia entras directo</a><small>Pro y Desarrollos no tienen cupo.</small></div></body></html>`;
+
 const b64u = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const deB64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(s.length / 4) * 4, "=")), (c) => c.charCodeAt(0));
 const txt = new TextEncoder();
@@ -122,6 +154,17 @@ async function guardarCuenta(env, g) {
 }
 
 async function iniciarSesion(request, url, env, g, adopcion, comprar) {
+  // Cuenta nueva con el cupo lleno: a la lista de espera (salvo que venga a comprar o con un link de regalo)
+  const esDueno = env.ADMIN && String(g.email || "").toLowerCase() === env.ADMIN.toLowerCase();
+  if (!esDueno && !comprar && !(await perfil(env, "g" + g.sub))) {
+    const [cupo, n] = await Promise.all([leerCupo(env), contarCuentas(env)]);
+    if (n >= cupo) {
+      await anotarEspera(env, g);
+      const h = new Headers({ "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      h.append("set-cookie", cookie(url, ESTADO, "", 0)); h.append("set-cookie", cookie(url, COMPRAR, "", 0));
+      return new Response(paginaCupoLleno(g.email), { status: 200, headers: h });
+    }
+  }
   const { p, nueva } = await guardarCuenta(env, g);
   if (p.bloqueado) return new Response(PAUSADA, { status: 403, headers: { "content-type": "text/html; charset=utf-8", "set-cookie": cookie(url, COMPRAR, "", 0) } });
   if (nueva && adopcion) await adopcion(p);

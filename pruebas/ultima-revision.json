@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-05T21:22:46.057Z",
- "bien": 49,
- "total": 49,
+ "fecha": "2026-11-05T22:13:48.580Z",
+ "bien": 50,
+ "total": 50,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -121,6 +121,10 @@
   },
   {
    "nombre": "Panel de dueño: cuentas, links, reportes, laboratorio y actualizaciones",
+   "ok": true
+  },
+  {
+   "nombre": "Cupo de cuentas: lleno manda a lista de espera, quien compra entra, y el dueño lo cambia en el Panel",
    "ok": true
   },
   {
