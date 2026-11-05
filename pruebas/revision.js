@@ -105,6 +105,46 @@ async function dibujarManzana(p, frente, fondo) {
   await cerrarGuia(p);
 }
 const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) || [])[1]);
+// Detector de capas pesadas (lección de El Mirador, nov 2026). El iPhone guarda en su propia capa de memoria
+// todo lo que va en 3D, se anima (movimiento u opacidad), un canvas, un video o un vidrio esmerilado. Y si algo
+// GRANDE se pinta encima de una de esas, también le da su propia capa. Cada capa de pantalla completa pesa
+// ~12 MB en un iPhone; con unas 20 Safari cierra la página. Cuenta cuántas capas grandes de más hay.
+const MAX_CAPAS_GRANDES = 6; // hoy un tour normal tiene 4 (la esfera, las capas, las asas y el skin), sin importar cuántos lotes
+async function capasPesadas(p) {
+  return p.evaluate(() => {
+    const W = innerWidth, H = innerHeight, rect = (e) => e.getBoundingClientRect();
+    const visible = (e) => { const s = getComputedStyle(e); return e.isConnected && s.display !== "none" && s.visibility !== "hidden" && +s.opacity > 0; };
+    const cruza = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+    const propias = new Set();
+    document.querySelectorAll("body *").forEach((e) => {
+      const s = getComputedStyle(e);
+      if (/matrix3d|perspective/.test(s.transform) || s.willChange !== "auto" || (s.backdropFilter || s.webkitBackdropFilter || "none") !== "none" || e.tagName === "CANVAS" || e.tagName === "VIDEO") propias.add(e);
+    });
+    document.getAnimations().forEach((a) => {
+      const ef = a.effect, t = ef && ef.target;
+      if (t && a.playState === "running" && ef.getKeyframes().some((k) => "transform" in k || "opacity" in k || "scale" in k)) propias.add(t);
+    });
+    const contexto = (e) => {
+      for (let a = e.parentElement; a; a = a.parentElement) {
+        const s = getComputedStyle(a);
+        if ((s.position !== "static" && s.zIndex !== "auto") || +s.opacity < 1 || s.transform !== "none" || s.isolation === "isolate" || s.filter !== "none") return a;
+      }
+      return document.documentElement;
+    };
+    const lista = [...propias].filter(visible), pesadas = [];
+    document.querySelectorAll("body *").forEach((g) => {
+      if (!visible(g)) return;
+      const rg = rect(g);
+      if (Math.min(rg.right, W) - Math.max(rg.left, 0) < W * 0.6 || Math.min(rg.bottom, H) - Math.max(rg.top, 0) < H * 0.6) return; // solo lo grande
+      const S = contexto(g);
+      if (pesadas.some((x) => x !== S && S.contains(x) && x.contains(g))) return; // ya se pinta dentro de otra capa grande
+      const debajo = lista.find((c) => c !== g && S.contains(c) && !c.contains(g) && !g.contains(c) && (c.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING) && cruza(rect(c), rg));
+      if (debajo) pesadas.push(g);
+    });
+    const nombre = (e) => e.tagName.toLowerCase() + (e.className && typeof e.className === "string" ? "." + e.className.trim().split(/\s+/).join(".") : "");
+    return { n: pesadas.length, ejemplos: pesadas.slice(0, 4).map(nombre) };
+  });
+}
 
 // ---------- la revisión ----------
 (async () => {
@@ -355,6 +395,8 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       const m = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
       await m.goto(link); await m.waitForTimeout(5000);
       exige(await m.$("canvas"), "el tour no dibujó la esfera en celular");
+      const cp = await capasPesadas(m); // lo grande encima de algo animado o en 3D le cuesta muchísima memoria al iPhone
+      exige(cp.n <= MAX_CAPAS_GRANDES, "demasiadas capas de pantalla completa para un iPhone: " + JSON.stringify(cp));
       exige(!m.errs.length, "errores en celular: " + m.errs.join(" | ").slice(0, 160));
       await m.context().close();
     });
@@ -371,7 +413,7 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
       const original = await leer(), d = JSON.parse(JSON.stringify(original));
       const esc = [d.proyecto.escenaInicial || (d.escenas[0] || {}).id].find((k) => (d.capas[k] || []).some((c) => c.tipo === "poligono" && c.visible !== false));
       exige(esc, "el tour de prueba no tiene lotes");
-      const [y0, p0] = d.capas[esc].find((c) => c.tipo === "poligono").puntos[0];
+      const vista = (d.escenas.find((e) => e.id === esc) || {}).vista || {}, y0 = vista.yaw || 0, p0 = vista.pitch || 0; // a la vista, como el hotspot de El Mirador
       d.capas[esc].unshift({ id: "orden-prueba", tipo: "texto", nombre: "Texto", visible: true, en3d: true, yaw: y0, pitch: p0, texto: "Encima", tamano: 18, peso: 600, color: "#FFFFFF", fondo: { activo: false, color: "#0B0B0B" } });
       exige((await guardar(d)) === 200 && (await publicar()) === 200, "no se pudo preparar el tour de prueba");
       const m = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
@@ -385,6 +427,9 @@ const idTour = (p) => p.evaluate(() => (location.hash.match(/t=([a-z0-9-]+)/) ||
         return { pols: pols.length, puntos: puntos.length, ultimoPol: Math.max(...pols), primerPunto: Math.min(...puntos), etq };
       });
       exige(r.pols && r.puntos, "no se ven lotes y puntos en el tour (" + JSON.stringify(r) + ")");
+      const cp = await capasPesadas(m);
+      console.log("    capas grandes en el celular: " + JSON.stringify(cp));
+      exige(cp.n <= MAX_CAPAS_GRANDES, "demasiadas capas de pantalla completa para un iPhone: " + JSON.stringify(cp));
       exige(r.ultimoPol < r.etq && r.etq < r.primerPunto, "un polígono quedó encima de un punto: " + JSON.stringify(r));
       exige(!m.errs.length, "errores en celular: " + m.errs.join(" | ").slice(0, 160));
       await m.context().close();
