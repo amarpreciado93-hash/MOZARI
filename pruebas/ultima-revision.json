@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-05T06:19:08.246Z",
- "bien": 44,
- "total": 44,
+ "fecha": "2026-11-05T17:17:04.060Z",
+ "bien": 45,
+ "total": 45,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -169,6 +169,10 @@
   },
   {
    "nombre": "Laboratorio · lotes desde el PDF: recuadro sobre la manzana y 4 esquinas en la esfera",
+   "ok": true
+  },
+  {
+   "nombre": "El frente que elige el usuario manda en la ficha, también en lotes de manzana, y no se borra al mover la manzana",
    "ok": true
   },
   {

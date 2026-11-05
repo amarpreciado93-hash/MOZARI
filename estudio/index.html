@@ -6534,10 +6534,10 @@ void main(){
         const iz = l.indexOf(viejos[viejos.length - 1] || c); l.splice(iz + 1, 0, x); viejos.push(x);
       }
       const D = curvo ? densificar(L, paso) : { pts: L, idx: L.map((_, i) => i) }, nuevos = D.pts.map(aEsf);
-      if (x.puntos.length && x.puntos.length !== nuevos.length) x.lote.lados = [];
+      if (x.puntos.length && x.puntos.length !== nuevos.length) { x.lote.lados = []; delete x.lote.frenteManual; }
       x.puntos = nuevos; x.iManzana = k;
       const fijo = m.numeros && m.numeros[k] != null && String(m.numeros[k]).trim() !== "" ? String(m.numeros[k]) : null;
-      x.lote.manzana = m.mz; x.lote.numero = fijo || String((+m.ini || 1) + k); x.lote.frente = D.idx[(m.frentes || [])[k] || 0] || 0;
+      x.lote.manzana = m.mz; x.lote.numero = fijo || String((+m.ini || 1) + k); if (!x.lote.frenteManual) x.lote.frente = D.idx[(m.frentes || [])[k] || 0] || 0; // el frente que eligió el usuario se respeta
       x.lote.lados = nuevos.map((_, i) => (x.lote.lados || [])[i] || "");
     });
     viejos.slice(m.lotes.length).forEach((x) => { const i = l.indexOf(x); if (i >= 0) l.splice(i, 1); });
@@ -7108,11 +7108,12 @@ void main(){
         const iz = l.indexOf(viejos[viejos.length - 1] || c);
         l.splice(iz + 1, 0, x); viejos.push(x);
       }
-      if (x.puntos.length !== puntos.length) x.lote.lados = [];
+      if (x.puntos.length !== puntos.length) { x.lote.lados = []; delete x.lote.frenteManual; }
       x.puntos = puntos; x.iManzana = k; x.frenteN = formas[k].nf || 0;
       // Un número que el usuario escribió a mano en un lote de la manzana se respeta al volver a repartirla
       const fijo = m.numeros && m.numeros[k] != null && String(m.numeros[k]).trim() !== "" ? String(m.numeros[k]) : null;
-      x.lote.manzana = m.mz; x.lote.numero = fijo || String(formas[k].numero); x.lote.frente = 0;
+      x.lote.manzana = m.mz; x.lote.numero = fijo || String(formas[k].numero);
+      if (!x.lote.frenteManual) x.lote.frente = 0; // el frente que eligió el usuario se respeta (un lote de esquina da a otra calle)
       x.lote.lados = puntos.map((_, i) => (x.lote.lados || [])[i] || "");
     }
     viejos.slice(formas.length).forEach((x) => { const i = l.indexOf(x); if (i >= 0) l.splice(i, 1); });
@@ -7838,7 +7839,7 @@ void main(){
   }
   $("props").addEventListener("change", (ev) => {
     if (ev.target.dataset.k === "_vinculo") { vincular(ev.target.checked); return; }
-    if (ev.target.dataset.frente !== undefined) { const c = buscar(motorEd.elegida); c.lote.frente = +ev.target.dataset.frente; if (c.vinculo) propagar(c, motorEd.actual.id); guardar(); pintarProps(); return; }
+    if (ev.target.dataset.frente !== undefined) { const c = buscar(motorEd.elegida); c.lote.frente = +ev.target.dataset.frente; c.lote.frenteManual = true; if (c.vinculo) propagar(c, motorEd.actual.id); guardar(); pintarProps(); return; }
     if (ev.target.dataset.subir === "imagen") { subirImagenAccion(ev.target); return; }
     if (ev.target.dataset.galFoto) {
       const c = buscar(motorEd.elegida), id = ev.target.dataset.galFoto;
@@ -8763,7 +8764,9 @@ void main(){
     if (Q.length < 3 || Q.some((q) => !q)) return "";
     let S = Q.map(([x, y]) => [x, -y]);
     // El frente: en lotes de manzana, sus primeros puntos (la calle, aunque sea curva); en los dibujados a mano, el lado marcado como frente
-    const n = S.length, fi = c.frenteN >= 2 ? 0 : Math.min(+l.frente || 0, n - 1), A = S[fi], B = c.frenteN >= 2 ? S[Math.min(c.frenteN, n) - 1] : S[(fi + 1) % n];
+    // Si el usuario eligió el frente a mano (botón «Frente»), manda ese: un lote de esquina o de la fila de atrás puede dar a otra calle
+    const deCalle = c.frenteN >= 2 && !l.frenteManual;
+    const n = S.length, fi = deCalle ? 0 : Math.min(+l.frente || 0, n - 1), A = S[fi], B = deCalle ? S[Math.min(c.frenteN, n) - 1] : S[(fi + 1) % n];
     const ang = Math.atan2(B[1] - A[1], B[0] - A[0]), co = Math.cos(-ang), si = Math.sin(-ang);
     S = S.map(([x, y]) => [x * co - y * si, x * si + y * co]);
     const cy = S.reduce((t, q) => t + q[1], 0) / n;

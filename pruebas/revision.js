@@ -1089,6 +1089,43 @@ async function capasPesadas(p) {
     }, a);
 
     // 5. Los errores de JavaScript de todas las páginas
+    // Reporte de OBED (nov 2026): en un lote de la fila de atrás (su calle real es otra) la ficha ponía el frente de lado.
+    // El botón «Frente» existía pero la ficha no le hacía caso en lotes de manzana, y al mover la manzana se borraba.
+    await paso("El frente que elige el usuario manda en la ficha, también en lotes de manzana, y no se borra al mover la manzana", async () => {
+      const leer = () => a.evaluate((id) => fetch("api/tours/" + id).then((r) => r.json()), tour);
+      const guardar = (d) => a.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [tour, d]);
+      await a.keyboard.press("Escape"); await a.waitForTimeout(1500);
+      const original = await leer(), esc = original.proyecto.escenaInicial || original.escenas[0].id, l = original.capas[esc] || [];
+      const x = l.find((c) => c.lote && c.deManzana && (l.find((m) => m.id === c.deManzana) || {}).manzana && c.puntos.length === 4);
+      exige(x, "el tour de prueba no tiene un lote de manzana");
+      try {
+        await a.goto(ESTUDIO + "/#t=" + tour); await a.reload(); await a.waitForTimeout(2500); await cerrarAnuncio(a); await irCapas(a);
+        const elegirLote = async () => {
+          const nom = await a.evaluate(([n, mz]) => { const li = [...document.querySelectorAll("#lista li")].find((e) => new RegExp("^\\S+ " + n + "( |$)").test(e.innerText.trim()) && e.innerText.trim().endsWith(mz)); if (li) li.querySelector("span").click(); return li ? li.querySelector("span").textContent.trim() : null; }, [x.lote.numero, x.lote.manzana]);
+          exige(nom, "no encontré el lote " + x.lote.numero + " en la lista"); await a.waitForTimeout(500);
+          return nom;
+        };
+        const nombre = await elegirLote();
+        for (const [i, v] of [["0", "11"], ["1", "22"], ["2", "33"], ["3", "44"]]) { await a.fill('[data-lado="' + i + '"]', v); await a.dispatchEvent('[data-lado="' + i + '"]', "change"); await a.waitForTimeout(150); }
+        await a.click('[data-frente="1"]'); await a.waitForTimeout(400);
+        // Se mueve la manzana (un lote más y uno menos): el frente elegido sigue ahí
+        await a.click('[data-acc="ir-manzana"]'); await a.waitForTimeout(500);
+        await a.click('[data-mz-n="1"]'); await a.waitForTimeout(500); await a.click('[data-mz-n="-1"]'); await a.waitForTimeout(800);
+        await elegirLote();
+        exige(await a.isChecked('[data-frente="1"]'), "al mover la manzana se borró el frente que eligió el usuario");
+        // La ficha dibuja ese lado abajo
+        await a.click('#subtabs button:has-text("Lotes")'); await a.waitForTimeout(1200); await pasarGuias(a);
+        await a.check('[data-fe="activa"]'); await a.waitForTimeout(400);
+        const op = await a.evaluate((nom) => { const o = [...document.querySelectorAll("#fe-muestra option")].find((e) => e.textContent.trim() === nom); return o && o.value; }, nombre);
+        exige(op, "el lote no está en «Ver con» de la ficha");
+        await a.selectOption("#fe-muestra", op); await a.waitForTimeout(500);
+        const abajo = await a.evaluate(() => { const t = [...document.querySelectorAll("#fe-lienzo .fd-medida")]; t.sort((p, q) => +q.getAttribute("y") - +p.getAttribute("y")); return t.map((e) => e.textContent); });
+        exige(abajo.length === 4, "la ficha no muestra las 4 medidas: " + JSON.stringify(abajo));
+        exige(/^22/.test(abajo[0]), "en la ficha el frente elegido (22 m) no quedó abajo: " + JSON.stringify(abajo));
+      } finally {
+        await a.waitForTimeout(1200); await guardar(original); await a.goto(ESTUDIO + "/#t=" + tour); await a.reload(); await a.waitForTimeout(2500); await cerrarAnuncio(a); // el tour regresa a como estaba
+      }
+    }, a);
     // Límite probado en un iPhone real (nov 2026): 1,100 lotes en una esfera aguanta, 1,500 cierra Safari.
     // Con margen para iPhones viejos: aviso desde 300 lotes por esfera y tope en 500.
     await paso("Tope de lotes por esfera: avisa en 300 y no deja pasar de 500 (el celular no lo aguanta)", async () => {
