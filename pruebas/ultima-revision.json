@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-05T19:41:12.956Z",
- "bien": 46,
- "total": 46,
+ "fecha": "2026-11-05T20:21:15.352Z",
+ "bien": 47,
+ "total": 47,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -173,6 +173,10 @@
   },
   {
    "nombre": "Plano de referencia: las letras dibujadas con líneas no cortan los lotes y el PDF trae su calificación",
+   "ok": true
+  },
+  {
+   "nombre": "Lotes del PDF colocados después de un punto en 3D: en el tour de iPhone van abajo y sin capas pesadas",
    "ok": true
   },
   {

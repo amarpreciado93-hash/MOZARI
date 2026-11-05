@@ -54,6 +54,8 @@ async function paso(nombre, fn, pagina) {
     resultados.push({ nombre, ok: false, motivo: String(e.message || e).split("\n")[0].slice(0, 220) });
     if (pagina) await pagina.screenshot({ path: path.join(DATOS, "fallo-" + resultados.length + ".png") }).then(() => console.log("    captura: " + path.join(DATOS, "fallo-" + resultados.length + ".png")), () => {});
     console.log("  ✗ " + nombre + " — " + String(e.message || e).split("\n")[0].slice(0, 220));
+    const donde = String(e.message || e).split("\n").find((l) => /waiting for/.test(l)); // en qué botón se atoró
+    if (donde) console.log("    " + donde.trim().slice(0, 200));
   }
 }
 const exige = (cond, msg) => { if (!cond) throw new Error(msg); };
@@ -1143,6 +1145,72 @@ async function capasPesadas(p) {
       await n.waitForTimeout(800); await capt("plano-guia");
       exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
       await n.context().close();
+    });
+    // Lección de El Mirador (nov 2026): los lotes que salen del PDF se colocan DESPUÉS de los puntos que ya había
+    // (hotspot, punto de interés, texto en 3D). Así fue como el iPhone se quedó sin memoria. Esta prueba hace el
+    // camino completo del usuario con la herramienta del PDF y revisa el tour publicado en un iPhone.
+    await paso("Lotes del PDF colocados después de un punto en 3D: en el tour de iPhone van abajo y sin capas pesadas", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "PDF después de un punto");
+      const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      // 1) Primero un texto en 3D en la vista inicial (como el hotspot de El Mirador)
+      const d = await leer(), esc = d.proyecto.escenaInicial || d.escenas[0].id;
+      d.capas = d.capas || {}; d.capas[esc] = [{ id: "punto-antes", tipo: "texto", nombre: "Texto", visible: true, en3d: true, yaw: 0, pitch: 0, texto: "Ventas", tamano: 18, peso: 600, color: "#FFFFFF", fondo: { activo: false, color: "#0B0B0B" } }];
+      exige((await n.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [id, d])) === 200, "no se pudo poner el texto en 3D");
+      await n.reload(); await n.waitForTimeout(3000); await cerrarGuia(n);
+      await n.click('#nav button:has-text("Panoramas")'); await n.waitForTimeout(600);
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800);
+      // 2) Mirar hacia el suelo, subir el PDF con letras y cotas encima, y elegir la manzana
+      const st = await n.evaluate(() => { const e = [...document.querySelectorAll(".capas")].find((x) => x.getClientRects().length && x.getBoundingClientRect().width > 300); const b = e.getBoundingClientRect(); return [b.x, b.y, b.width, b.height]; });
+      const [cx, cy] = [st[0] + st[2] / 2, st[1] + st[3] / 2];
+      for (let i = 0; i < 4; i++) { await n.mouse.move(cx, cy + 250); await n.mouse.down(); for (let k = 1; k <= 10; k++) await n.mouse.move(cx, cy + 250 - k * 50); await n.mouse.up(); await n.waitForTimeout(300); }
+      const L = (pts, c, w) => '<polyline fill="none" stroke="' + (c || "#000") + '" stroke-width="' + (w || 1.5) + '" points="' + pts.map((p) => p.join(",")).join(" ") + '"/>';
+      const letra = (x, y, f) => f.map((poly) => L(poly.concat([poly[0]]).map(([a, b]) => [x + a * 0.4, y + b * 0.4]), "#CD6928", 1)).join("");
+      const svg = '<svg width="800" height="500" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="500" fill="#fff"/>' +
+        L([[100, 100], [700, 100], [700, 400], [100, 400], [100, 100]]) + L([[100, 250], [700, 250]]) + [250, 400, 550].map((x) => L([[x, 100], [x, 400]])).join("") +
+        letra(390, 165, [[[0, 60], [0, 0], [12, 0], [27, 30], [42, 0], [54, 0], [54, 60], [44, 60], [44, 20], [27, 50], [10, 20], [10, 60]]]) +
+        letra(540, 165, [[[0, 60], [22, 0], [34, 0], [56, 60], [44, 60], [39, 46], [17, 46], [12, 60]], [[20, 36], [36, 36], [28, 12]]]) + "</svg>";
+      const hoja = await navegador.newPage(); await hoja.setContent('<!doctype html><html><body style="margin:0">' + svg + "</body></html>");
+      const pdf = await hoja.pdf({ width: "800px", height: "500px", printBackground: true }); await hoja.close();
+      await n.click("#ref-boton"); await n.waitForTimeout(400);
+      await n.setInputFiles("#ref-archivo2", { name: "manzana.pdf", mimeType: "application/pdf", buffer: pdf });
+      let ancho = 0; for (let i = 0; i < 25 && !ancho; i++) { await n.waitForTimeout(600); ancho = await n.$eval("#ref-img", (e) => (e.hidden ? 0 : e.naturalWidth)); }
+      exige(ancho > 500, "el PDF no se pudo ver");
+      await n.waitForTimeout(3000);
+      await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "560px"; p.style.height = "420px"; });
+      await n.click("#ref-ajustar"); await n.click("#ref-lotes"); await n.waitForTimeout(500); await pasarGuias(n); await n.waitForTimeout(300);
+      const aPant = (x, y) => n.evaluate(([x, y]) => { const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(document.getElementById("ref-lienzo").style.transform), v = document.getElementById("ref-vista").getBoundingClientRect(); return [v.x + +m[1] + x * +m[3], v.y + +m[2] + y * +m[3]]; }, [x, y]);
+      const k = ancho / 800, [ax, ay] = await aPant(80 * k, 80 * k), [bx, by] = await aPant(720 * k, 420 * k);
+      await n.mouse.move(ax, ay); await n.mouse.down(); await n.mouse.move((ax + bx) / 2, (ay + by) / 2, { steps: 6 }); await n.mouse.move(bx, by, { steps: 6 }); await n.mouse.up();
+      let info = ""; for (let i = 0; i < 20 && !/elegid|No /.test(info); i++) { await n.waitForTimeout(400); info = await n.textContent("#ref-lotes-info"); }
+      exige(/^8 lotes elegidos/.test(info), "no salieron los 8 lotes del PDF (" + info + ")");
+      // 3) Colocar en la esfera: las 4 esquinas en el suelo
+      await n.fill("#ref-mz", "1");
+      await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "300px"; p.style.height = "230px"; });
+      await n.click("#ref-colocar"); await n.waitForTimeout(300);
+      for (const [x, y] of [[0.4, 0.5], [0.9, 0.5], [0.9, 0.9], [0.4, 0.9]]) { await n.mouse.click(st[0] + st[2] * x, st[1] + st[3] * y); await n.waitForTimeout(250); }
+      await n.waitForTimeout(3000);
+      const lista = (await leer()).capas[esc] || [], iLotes = lista.map((c, i) => (c.tipo === "poligono" && c.lote ? i : -1)).filter((i) => i >= 0);
+      console.log("    en la esfera: " + lista.map((c) => c.tipo + (c.lote ? "·lote" : "")).join(", "));
+      exige(iLotes.length === 8, "no se colocaron los 8 lotes en la esfera (" + iLotes.length + ")");
+      exige(lista.findIndex((c) => c.id === "punto-antes") < Math.min(...iLotes), "los lotes no quedaron creados después del texto (no es el caso de El Mirador)");
+      // 4) Publicar y abrirlo en un iPhone
+      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
+      await n.context().close();
+      const m = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
+      await m.goto(TOURS + "/" + id + "/"); await m.waitForTimeout(5000);
+      const r = await m.evaluate(() => {
+        const hijos = [...document.querySelectorAll(".capas > *")];
+        const pols = hijos.map((e, i) => (e.classList.contains("cp-poligono") ? i : -1)).filter((i) => i >= 0);
+        const puntos = hijos.map((e, i) => (e.classList.contains("cp") && !e.classList.contains("cp-poligono") ? i : -1)).filter((i) => i >= 0);
+        return { pols: pols.length, puntos: puntos.length, ultimoPol: Math.max(...pols), primerPunto: Math.min(...puntos) };
+      });
+      exige(r.pols >= 8 && r.puntos === 1, "en el tour no se ven los 8 lotes y el texto (" + JSON.stringify(r) + ")");
+      exige(r.ultimoPol < r.primerPunto, "un lote del PDF quedó encima del texto en 3D: " + JSON.stringify(r));
+      const cp = await capasPesadas(m);
+      console.log("    capas grandes en el iPhone: " + JSON.stringify(cp));
+      exige(cp.n <= MAX_CAPAS_GRANDES, "demasiadas capas de pantalla completa para un iPhone: " + JSON.stringify(cp));
+      exige(!m.errs.length, "errores en el iPhone: " + m.errs.join(" | ").slice(0, 160));
+      await m.context().close();
     });
     // Reporte de OBED (nov 2026): en un lote de la fila de atrás (su calle real es otra) la ficha ponía el frente de lado.
     // El botón «Frente» existía pero la ficha no le hacía caso en lotes de manzana, y al mover la manzana se borraba.
