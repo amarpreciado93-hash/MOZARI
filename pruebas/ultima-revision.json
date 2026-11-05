@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-05T05:33:29.719Z",
- "bien": 43,
- "total": 43,
+ "fecha": "2026-11-05T06:19:08.246Z",
+ "bien": 44,
+ "total": 44,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -169,6 +169,10 @@
   },
   {
    "nombre": "Laboratorio · lotes desde el PDF: recuadro sobre la manzana y 4 esquinas en la esfera",
+   "ok": true
+  },
+  {
+   "nombre": "Tope de lotes por esfera: avisa en 300 y no deja pasar de 500 (el celular no lo aguanta)",
    "ok": true
   },
   {

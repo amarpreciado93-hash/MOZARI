@@ -1089,6 +1089,50 @@ async function capasPesadas(p) {
     }, a);
 
     // 5. Los errores de JavaScript de todas las páginas
+    // Límite probado en un iPhone real (nov 2026): 1,100 lotes en una esfera aguanta, 1,500 cierra Safari.
+    // Con margen para iPhones viejos: aviso desde 300 lotes por esfera y tope en 500.
+    await paso("Tope de lotes por esfera: avisa en 300 y no deja pasar de 500 (el celular no lo aguanta)", async () => {
+      const leer = () => a.evaluate((id) => fetch("api/tours/" + id).then((r) => r.json()), tour);
+      const guardar = (d) => a.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [tour, d]);
+      await a.keyboard.press("Escape"); await a.waitForTimeout(1500); // que termine de guardar lo pendiente
+      const original = await leer(), esc = original.proyecto.escenaInicial || original.escenas[0].id;
+      const cuantos = (d) => (d.capas[esc] || []).filter((c) => c.lote).length;
+      // Lotes de relleno a espaldas de la vista inicial, para no estorbar al dibujar el lote nuevo
+      const yv = ((original.escenas.find((e) => e.id === esc) || {}).vista || {}).yaw || 0;
+      const conLotes = (total) => {
+        const d = JSON.parse(JSON.stringify(original)), faltan = total - cuantos(d);
+        const suelo = (x, z) => { const a2 = Math.atan2(x, z) + yv + Math.PI; return [+a2.toFixed(5), +Math.asin(1 / Math.hypot(x, 1, z)).toFixed(5)]; };
+        for (let i = 0; i < faltan; i++) {
+          const x0 = (i % 40) * 0.12 - 2.4, z0 = 1 + Math.floor(i / 40) * 0.2;
+          d.capas[esc].push({ id: "relleno" + i, tipo: "poligono", nombre: "Lote", visible: true, puntos: [[x0, z0], [x0 + 0.1, z0], [x0 + 0.1, z0 + 0.18], [x0, z0 + 0.18]].map(([x, z]) => suelo(x, z)),
+            relleno: { color: "#D5FF40", opacidad: 0.35 }, trazo: { color: "#D5FF40", grosor: 1.5, opacidad: 1 }, lote: { numero: String(900 + i), manzana: "Z", estado: "disponible", lados: ["", "", "", ""] } });
+        }
+        return d;
+      };
+      const dibujarLote = async () => {
+        await a.goto(ESTUDIO + "/#t=" + tour); await a.reload(); await a.waitForTimeout(2500); await cerrarAnuncio(a); await irCapas(a);
+        await a.click("#add-lote"); await a.waitForTimeout(300); await pasarGuias(a);
+        for (const [x, y] of [[460, 700], [560, 700], [560, 780], [460, 780]]) { await a.mouse.click(x, y); await a.waitForTimeout(120); }
+        await a.keyboard.press("Enter"); await a.waitForTimeout(600);
+        const aviso = await a.textContent("#toast").catch(() => "");
+        if (process.env.CAPTURAS) await a.screenshot({ path: path.join(process.env.CAPTURAS, "tope-" + (/Máximo/.test(aviso) ? "500" : "300") + ".png") });
+        await a.waitForTimeout(1500); // guardado en la nube
+        return aviso;
+      };
+      try {
+        exige((await guardar(conLotes(299))) === 200, "no se pudo preparar el tour con 299 lotes");
+        const a1 = await dibujarLote();
+        exige(/ya tiene 300 lotes/.test(a1), "al llegar a 300 lotes no avisó (dijo: «" + a1 + "»)");
+        exige(cuantos(await leer()) === 300, "el lote 300 no se guardó");
+        exige((await guardar(conLotes(500))) === 200, "no se pudo preparar el tour con 500 lotes");
+        const a2 = await dibujarLote();
+        exige(/Máximo 500 lotes por esfera/.test(a2), "el lote 501 no avisó del tope (dijo: «" + a2 + "»)");
+        exige(cuantos(await leer()) === 500, "dejó pasar de 500 lotes: " + cuantos(await leer()));
+        exige(await a.evaluate(() => [...document.querySelectorAll("#lista li")].length > 0), "la lista de capas quedó vacía después del tope");
+      } finally {
+        await guardar(original); await a.goto(ESTUDIO + "/#t=" + tour); await a.reload(); await a.waitForTimeout(2500); await cerrarAnuncio(a); // el tour regresa a como estaba
+      }
+    }, a);
     await paso("Sin errores de JavaScript en el estudio", async () => { exige(!a.errs.length && !g.errs.length, (a.errs.concat(g.errs)).join(" | ").slice(0, 200)); });
     await navegador.close();
   } catch (e) {

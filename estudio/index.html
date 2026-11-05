@@ -1737,7 +1737,7 @@
   const MAX_HS = 4; // recomendación de ruta: más hotspots por escena dispersan al usuario
 
   let tToast;
-  function avisar(t) { const el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(tToast); tToast = setTimeout(() => (el.hidden = true), 2400); }
+  function avisar(t, ms) { const el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(tToast); tToast = setTimeout(() => (el.hidden = true), ms || 2400); }
 
   // =================== MODO ===================
   // "tour": el link público de un tour (solo el visor). "nube": el estudio en Cloudflare, guarda en R2.
@@ -2260,12 +2260,29 @@
   // Historial para deshacer (Cmd/Ctrl + Z) y rehacer (Cmd/Ctrl + Shift + Z).
   // Los cambios seguidos (arrastrar, mover un control) cuentan como un solo paso.
   let historial = [], rehechos = [], ultimoEstado = JSON.stringify(est), tHistorial = 0;
+  // Lotes por esfera (probado en un iPhone real, nov 2026): 1,100 aguanta y con 1,500 Safari cierra el tour.
+  // Un iPhone viejo tiene como la mitad de memoria, así que el tope es 500 por esfera, con aviso desde 300.
+  // Si un cambio pasa del tope, se regresa al estado anterior. Un tour viejo que ya pasaba se puede seguir editando.
+  const LOTES_AVISO = 300, LOTES_TOPE = 500;
+  const lotesPorEsfera = (e) => { const r = {}; Object.entries((e && e.capas) || {}).forEach(([k, l]) => { r[k] = (l || []).filter((c) => c && c.lote).length; }); return r; };
+  let cuentaUltima = { txt: ultimoEstado, r: lotesPorEsfera(est) };
+  const cuentaAnterior = () => { if (cuentaUltima.txt !== ultimoEstado) { let e = null; try { e = JSON.parse(ultimoEstado); } catch (x) { /* nada */ } cuentaUltima = { txt: ultimoEstado, r: lotesPorEsfera(e) }; } return cuentaUltima.r; };
   function guardar() {
     const ahora = JSON.stringify(est);
     if (ahora !== ultimoEstado) {
+      const nuevos = lotesPorEsfera(est), antes = Object.values(nuevos).some((n) => n >= LOTES_AVISO) ? cuentaAnterior() : {};
+      const pasa = Object.keys(nuevos).find((k) => nuevos[k] > LOTES_TOPE && nuevos[k] > (antes[k] || 0));
+      if (pasa) {
+        est = JSON.parse(ultimoEstado); trCache = {};
+        // después de lo que haga quien llamó (que suele repintar y avisar con su propio mensaje)
+        setTimeout(() => { repintarEstado(); avisar("Máximo " + LOTES_TOPE + " lotes por esfera: con más, los celulares no aguantan el tour. Pon el resto en otra esfera.", 8000); }, 0);
+        return;
+      }
+      const cruza = Object.keys(nuevos).find((k) => nuevos[k] >= LOTES_AVISO && (antes[k] || 0) < LOTES_AVISO);
+      if (cruza) setTimeout(() => avisar("Esta esfera ya tiene " + nuevos[cruza] + " lotes. En celulares viejos puede ir más lento. El máximo es " + LOTES_TOPE + ".", 8000), 0);
       const t = Date.now();
       if (t - tHistorial > 600) { historial.push(ultimoEstado); if (historial.length > 60) historial.shift(); }
-      rehechos = []; tHistorial = t; ultimoEstado = ahora;
+      rehechos = []; tHistorial = t; ultimoEstado = ahora; cuentaUltima = { txt: ahora, r: nuevos };
     }
     persistir(ahora);
     pintarResumen();
@@ -2312,7 +2329,11 @@
     est = JSON.parse(ultimoEstado);
     trCache = {}; tHistorial = 0;
     persistir(ultimoEstado);
-    // Repinta la ventana actual conservando la capa elegida si sigue existiendo
+    repintarEstado();
+    avisar(atras ? "Deshecho" : "Rehecho");
+  }
+  // Repinta la ventana actual conservando la capa elegida si sigue existiendo
+  function repintarEstado() {
     const clave = nav.sec + "/" + nav.sub;
     if (motorEd && motorEd.actual && (clave === "panoramas/capas" || clave === "panoramas/piloto")) {
       if (motorEd.elegida && !buscar(motorEd.elegida)) motorEd.elegida = null;
@@ -2321,7 +2342,6 @@
     } else if (clave === "panoramas/terreno") abrirTerreno();
     else ir(nav.sec, nav.sub);
     pintarResumen();
-    avisar(atras ? "Deshecho" : "Rehecho");
   }
   document.addEventListener("pointerdown", () => (tHistorial = 0), true); // cada gesto nuevo es un paso aparte
   document.addEventListener("keydown", (ev) => {
