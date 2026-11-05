@@ -575,6 +575,8 @@
   .ref-dibujo path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
   .ref-btn[aria-pressed="true"] { background: var(--mz-lima); color: var(--mz-tinta); border-color: var(--mz-lima); }
   .ref-vista.pluma, .ref-vista.lotes { cursor: crosshair; }
+  .ref-calidad { margin-left: 8px; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; background: none; font: 600 10px var(--mz-texto-ui); cursor: pointer; white-space: nowrap; }
+  .ref-calidad.bueno { color: #6FDC8C; } .ref-calidad.regular { color: #F5C542; } .ref-calidad.guia { color: #FF8A80; }
   .ref-lotes-barra { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding: 6px 10px; border-bottom: 1px solid var(--mz-linea-neutra); font-size: 11px; }
   #ref-lotes-info { flex: 1 1 100%; color: var(--mz-texto-2, #bbb); }
   .ref-lotes-barra label { display: flex; align-items: center; gap: 5px; }
@@ -1601,7 +1603,7 @@
         </div>
         <div class="banda" id="banda" hidden></div>
         <div class="ref-panel" id="ref-panel" hidden>
-          <header><b>Plano de referencia</b><span class="ref-acc"><button class="ref-btn" id="ref-izq" title="Girar a la izquierda (15°)">↺</button><button class="ref-btn ref-grados" id="ref-grados" title="Regresar a 0°">0°</button><button class="ref-btn" id="ref-der" title="Girar a la derecha (15°)">↻</button><label class="ref-btn" title="Subir otro plano">Cambiar<input type="file" id="ref-archivo" accept="application/pdf,image/png,image/jpeg,image/webp" hidden></label><button class="ref-btn" id="ref-ajustar" title="Ver el plano completo">Ajustar</button><button class="ref-btn" id="ref-lotes" aria-pressed="false" title="Lotes desde el PDF: arrastra un recuadro sobre una manzana" hidden>▭ Lotes</button><button class="ref-btn" id="ref-pluma" aria-pressed="false" title="Pluma: dibujar sobre el plano">✎</button><button class="ref-btn ref-x" id="ref-cerrar" aria-label="Cerrar">×</button></span></header>
+          <header><b>Plano de referencia</b><button class="ref-calidad" id="ref-calidad" hidden></button><span class="ref-acc"><button class="ref-btn" id="ref-izq" title="Girar a la izquierda (15°)">↺</button><button class="ref-btn ref-grados" id="ref-grados" title="Regresar a 0°">0°</button><button class="ref-btn" id="ref-der" title="Girar a la derecha (15°)">↻</button><label class="ref-btn" title="Subir otro plano">Cambiar<input type="file" id="ref-archivo" accept="application/pdf,image/png,image/jpeg,image/webp" hidden></label><button class="ref-btn" id="ref-ajustar" title="Ver el plano completo">Ajustar</button><button class="ref-btn" id="ref-lotes" aria-pressed="false" title="Lotes desde el PDF: arrastra un recuadro sobre una manzana" hidden>▭ Lotes</button><button class="ref-btn" id="ref-pluma" aria-pressed="false" title="Pluma: dibujar sobre el plano">✎</button><button class="ref-btn ref-x" id="ref-cerrar" aria-label="Cerrar">×</button></span></header>
           <div class="ref-pluma-barra" id="ref-pluma-barra" hidden><span class="ref-colores"><button class="ref-color" data-ref-color="#FF2D55" style="--c:#FF2D55" aria-label="Rojo"></button><button class="ref-color" data-ref-color="#22B573" style="--c:#22B573" aria-label="Verde"></button><button class="ref-color" data-ref-color="#2F6BFF" style="--c:#2F6BFF" aria-label="Azul"></button></span><button class="ref-btn" id="ref-deshacer">Deshacer</button><button class="ref-btn" id="ref-borrar">Borrar todo</button></div>
           <div class="ref-lotes-barra" id="ref-lotes-barra" hidden><span id="ref-lotes-info">Arrastra un recuadro sobre una manzana.</span><span class="ref-modo" role="group" aria-label="Crear como"><button class="ref-btn" data-ref-modo="manzana" aria-pressed="true" title="Una manzana con todos sus lotes: jalas una esquina y se mueve todo">Manzana</button><button class="ref-btn" data-ref-modo="lotes" aria-pressed="false" title="Cada lote por su cuenta">Lotes sueltos</button></span><label>Manzana <input id="ref-mz" class="ref-campo" size="4" placeholder="3"></label><label>Desde el lote <input id="ref-ini" class="ref-campo" size="3" value="1" inputmode="numeric"></label><button class="guia-ayuda" id="ref-lotes-ayuda" title="Ver cómo se usa">?</button><button class="ref-btn" id="ref-colocar" disabled>Colocar en la esfera</button></div>
           <div class="ref-vista" id="ref-vista"><div class="ref-lienzo" id="ref-lienzo"><div class="ref-hoja" id="ref-hoja"><img id="ref-img" alt="Plano de referencia" draggable="false"><svg class="ref-dibujo" id="ref-dibujo"></svg><svg class="ref-sel" id="ref-sel"></svg></div></div><div class="ref-vacio" id="ref-vacio"><p>Sube tu masterplan para tenerlo a la vista mientras trazas.</p><label class="btn-prim">Subir PDF o imagen<input type="file" id="ref-archivo2" accept="application/pdf,image/png,image/jpeg,image/webp" hidden></label><small>Solo lo ves tú al editar; tus clientes no lo ven en el tour.</small></div></div>
@@ -5854,6 +5856,14 @@ void main(){
     $("ref-panel").hidden = !lab || !REF.on;
     if (!lab || !REF.on) return;
     const r = P().referencia, img = $("ref-img");
+    // Calificación del plano (los que se subieron antes de esta función se revisan la primera vez que se abren)
+    const cal = r && r.img ? r.calidad || (r.pdf ? null : CALIDAD_IMAGEN) : null, cq = $("ref-calidad");
+    cq.hidden = !cal;
+    if (cal) { cq.className = "ref-calidad " + cal.nivel; cq.textContent = cal.nivel === "bueno" ? "✓ Plano bueno" : cal.nivel === "regular" ? "⚠ Plano regular" : "Solo guía"; cq.title = cal.titulo + ". " + cal.motivos.join(" "); }
+    if (r && r.pdf && !r.calidad && !REF.calificando) {
+      REF.calificando = true;
+      trazosRef().then((tr) => { REF.calificando = false; if (tr && P().referencia === r && !r.calidad) { r.calidad = calificarPDF(tr); guardar(); pintarRef(); } });
+    }
     $("ref-vacio").hidden = !!(r && r.img); img.hidden = !(r && r.img);
     if (r && r.img && img.dataset.src !== r.img) { img.dataset.src = r.img; REF.listo = false; img.onload = () => { REF.listo = true; pintarTrazos(); ajustarRef(); }; img.src = urlArchivo(r.img); }
     else if (r && r.img && REF.listo) moverRef();
@@ -5883,7 +5893,7 @@ void main(){
     if (!file) return;
     avisar("Preparando el plano…");
     try {
-      const cv = document.createElement("canvas"), MAX = 4000; let escPDF = 0;
+      const cv = document.createElement("canvas"), MAX = 4000; let escPDF = 0, analisis = null;
       if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
         const pdfjs = await import("/lib/pdf.min.mjs");
         pdfjs.GlobalWorkerOptions.workerSrc = "/lib/pdf.worker.min.mjs";
@@ -5893,6 +5903,8 @@ void main(){
         const x = cv.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, cv.width, cv.height);
         await pag.render({ canvasContext: x, viewport: vp }).promise;
         escPDF = esc;
+        // Se revisa el PDF mientras se sube: de aquí sale su calificación (y queda listo para armar lotes)
+        analisis = capasDelPDF(doc).then((capas) => trazosDelPDF(pdfjs, pag, vp, capas)).catch(() => null);
       } else {
         const bm = await createImageBitmap(file), e = Math.min(1, MAX / Math.max(bm.width, bm.height));
         cv.width = Math.round(bm.width * e); cv.height = Math.round(bm.height * e);
@@ -5903,9 +5915,18 @@ void main(){
       await subirArchivo(ruta, blob);
       P().referencia = { img: ruta, ancho: cv.width, alto: cv.height };
       // El PDF original también se guarda (privado): de sus líneas salen los lotes (Laboratorio)
-      if (escPDF) { const rp = "privado/referencia-" + sello + ".pdf"; await subirArchivo(rp, file); Object.assign(P().referencia, { pdf: rp, pdfEsc: escPDF }); }
-      REF.sel = null; REF.caja = null; SELH.atras = []; SELH.adelante = [];
-      cambio(); pintarRef(); avisar("Plano listo. Rueda para acercar, arrastra para moverte.");
+      if (escPDF) {
+        const rp = "privado/referencia-" + sello + ".pdf"; await subirArchivo(rp, file); Object.assign(P().referencia, { pdf: rp, pdfEsc: escPDF });
+        avisar("Revisando el plano…");
+        const tr = await analisis;
+        if (tr) { LPDF.clave = rp; LPDF.tr = Promise.resolve(tr); P().referencia.calidad = calificarPDF(tr); }
+      } else P().referencia.calidad = CALIDAD_IMAGEN;
+      // Plano nuevo: no se queda nada de la selección del plano anterior (números, esquinas ni el texto)
+      REF.sel = null; REF.caja = null; REF.orden = []; REF.esq = []; SELH.atras = []; SELH.adelante = [];
+      $("ref-colocar").disabled = true; infoLotes("Arrastra un recuadro sobre una manzana.");
+      cambio(); pintarRef();
+      const cal = P().referencia.calidad;
+      avisar(cal ? "Plano listo · " + cal.titulo + (cal.nivel === "bueno" ? "." : ". Toca la etiqueta de arriba para ver por qué.") : "Plano listo. Rueda para acercar, arrastra para moverte.", 7000);
     } catch (e) { avisar(e && e.limite ? e.message : "No se pudo leer ese archivo. Prueba con otro PDF o una imagen."); }
   }
   $("ref-boton").addEventListener("click", () => { REF.on = !REF.on; pintarRef(); if (REF.on) guiaRefUso(); });
@@ -5916,6 +5937,7 @@ void main(){
     b.disabled = false;
   });
   $("ref-cerrar").addEventListener("click", () => { REF.on = false; pintarRef(); });
+  $("ref-calidad").addEventListener("click", () => { const c = (P().referencia || {}).calidad || CALIDAD_IMAGEN; avisar(c.titulo + ". " + c.motivos.join(" "), 9000); });
   $("ref-ajustar").addEventListener("click", ajustarRef);
   // Pluma: trazos a mano sobre el plano, guardados en coordenadas de la imagen (giran y hacen zoom con ella)
   function pintarTrazos() {
@@ -5980,9 +6002,33 @@ void main(){
   // =================== LOTES DESDE EL PDF (Laboratorio) ===================
   // Lee las líneas del masterplan (PDF de AutoCAD/Illustrator, no escaneado) y arma los polígonos cerrados
   // de una zona. Todo en coordenadas de la imagen del plano de referencia (misma escala y giro de página).
-  async function trazosDelPDF(pdfjs, pag, vp) {
+  // Nombres de las capas del PDF (AutoCAD las exporta: «Acotaciones», «CVL_LOTIF», «Nombres Calles»…)
+  async function capasDelPDF(doc) {
+    try {
+      const cfg = await doc.getOptionalContentConfig(), g = cfg && cfg.getGroups ? cfg.getGroups() : null, r = {};
+      if (g) for (const [id, grp] of g instanceof Map ? g.entries() : Object.entries(g)) r[id] = (grp && grp.name) || "";
+      return r;
+    } catch (e) { return {}; }
+  }
+  async function trazosDelPDF(pdfjs, pag, vp, capas) {
     const O = pdfjs.OPS, ol = await pag.getOperatorList(), fn = ol.fnArray, ar = ol.argsArray;
     const segs = [], rellenos = [], pila = [];
+    // Para separar los lotes de los textos dibujados con líneas, cada segmento sabe de qué trazo viene (su tamaño)
+    // y de qué estilo es (capa de AutoCAD + color + grosor). Así «MZA XXX» o una cota no cortan un lote.
+    const segSub = [], subs = [], estilos = [], estiloId = new Map(), mc = [];
+    let color = "", ancho = 1, nTextos = 0, nImagenes = 0;
+    const capaActual = () => { for (let k = mc.length - 1; k >= 0; k--) if (mc[k]) return mc[k]; return ""; };
+    const estilo = () => {
+      const capa = capaActual(), key = capa + "|" + color + "|" + (+ancho || 0).toFixed(2);
+      if (!estiloId.has(key)) { estiloId.set(key, estilos.length); estilos.push({ capa, color, ancho }); }
+      return estiloId.get(key);
+    };
+    const nuevoSub = (pts, est) => {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const p of pts) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; }
+      subs.push({ est, ext: Math.hypot(x1 - x0, y1 - y0), n: pts.length }); return subs.length - 1;
+    };
+    const seg = (a, b, sid) => { segs.push(a[0], a[1], b[0], b[1]); segSub.push(sid); };
     const mul = (m, n) => [m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1], m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3], m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]];
     let M = vp.transform.slice(), sub = [], cur = null;
     const T = (x, y) => [M[0] * x + M[2] * y + M[4], M[1] * x + M[3] * y + M[5]];
@@ -5991,19 +6037,26 @@ void main(){
     let corrida = [];
     const angulo = (s) => { let g = Math.atan2(s[1][1] - s[0][1], s[1][0] - s[0][0]); if (g < 0) g += Math.PI; return g; };
     const enCorrida = (s) => {
-      const u = corrida[corrida.length - 1]; if (!u) return false;
+      const u = corrida[corrida.length - 1] && corrida[corrida.length - 1][0]; if (!u) return false;
       const d = Math.abs(angulo(s) - angulo(u)); if (Math.min(d, Math.PI - d) > 0.035) return false;
       const L = Math.hypot(u[1][0] - u[0][0], u[1][1] - u[0][1]) || 1, sep = Math.abs((u[1][0] - u[0][0]) * (u[0][1] - s[0][1]) - (u[0][0] - s[0][0]) * (u[1][1] - u[0][1])) / L;
-      if (sep > 12) return false; corrida.push(s); return true;
+      if (sep > 12) return false; corrida.push([s, estilo()]); return true;
     };
-    const soltarCorrida = () => { if (corrida.length < 8) for (const s of corrida) segs.push(s[0][0], s[0][1], s[1][0], s[1][1]); corrida = []; };
+    const soltarCorrida = () => { if (corrida.length < 8) for (const [s, e] of corrida) seg(s[0], s[1], nuevoSub(s, e)); corrida = []; };
     for (let i = 0; i < fn.length; i++) {
       const f = fn[i], a = ar[i];
-      if (f === O.save) pila.push(M);
-      else if (f === O.restore) { if (pila.length) M = pila.pop(); }
+      if (f === O.save) pila.push([M, color, ancho]);
+      else if (f === O.restore) { if (pila.length) [M, color, ancho] = pila.pop(); }
       else if (f === O.transform) M = mul(M, a);
-      else if (f === O.paintFormXObjectBegin) { pila.push(M); if (a && a[0]) M = mul(M, a[0]); }
-      else if (f === O.paintFormXObjectEnd) { if (pila.length) M = pila.pop(); }
+      else if (f === O.setStrokeRGBColor) color = a && a.length > 1 ? Array.from(a).join(",") : String(a && a[0] !== undefined ? a[0] : a);
+      else if (f === O.setLineWidth) ancho = +a[0] || 0;
+      else if (f === O.beginMarkedContentProps) mc.push(a && a[0] === "OC" && a[1] && a[1].id ? (capas && capas[a[1].id]) || String(a[1].id) : null);
+      else if (f === O.beginMarkedContent) mc.push(null);
+      else if (f === O.endMarkedContent) mc.pop();
+      else if (f === O.showText || f === O.showSpacedText || f === O.nextLineShowText || f === O.nextLineSetSpacingShowText) nTextos++;
+      else if (f === O.paintImageXObject || f === O.paintInlineImageXObject || f === O.paintImageMaskXObject) nImagenes++;
+      else if (f === O.paintFormXObjectBegin) { pila.push([M, color, ancho]); if (a && a[0]) M = mul(M, a[0]); }
+      else if (f === O.paintFormXObjectEnd) { if (pila.length) [M, color, ancho] = pila.pop(); }
       else if (f === O.constructPath) {
         const ops = a[0], c = a[1]; let j = 0;
         for (const op of ops) {
@@ -6021,15 +6074,18 @@ void main(){
         // Achurado: muchas rayitas paralelas y muy juntas (en un trazo o una tras otra) no son orillas de lotes
         const rayitas = sub.filter((s) => s.length === 2);
         if (raya && rayitas.length === sub.length && rayitas.length) {
-          for (const s of rayitas) if (!enCorrida(s)) { soltarCorrida(); corrida.push(s); }
+          for (const s of rayitas) if (!enCorrida(s)) { soltarCorrida(); corrida.push([s, estilo()]); }
           sub = []; cur = null; continue;
         }
         soltarCorrida();
+        const est = raya ? estilo() : -1;
         for (const s of sub) {
           if (s.length < 2) continue;
           if (raya) {
-            for (let k = 1; k < s.length; k++) segs.push(s[k - 1][0], s[k - 1][1], s[k][0], s[k][1]);
-            if (s.cerrado || f === O.closeStroke || f === O.closeFillStroke || f === O.closeEOFillStroke) segs.push(s[s.length - 1][0], s[s.length - 1][1], s[0][0], s[0][1]);
+            const cierra = s.cerrado || f === O.closeStroke;
+            const sid = nuevoSub(cierra ? s.concat([s[0]]) : s, est);
+            for (let k = 1; k < s.length; k++) seg(s[k - 1], s[k], sid);
+            if (cierra) seg(s[s.length - 1], s[0], sid);
           }
           if (relleno && !raya && s.length >= 3) rellenos.push(s);
         }
@@ -6037,7 +6093,69 @@ void main(){
       }
     }
     soltarCorrida();
-    return { segs: new Float64Array(segs), rellenos };
+    return { segs: new Float64Array(segs), segSub: Int32Array.from(segSub), subs, estilos, rellenos, nTextos, nImagenes, conCapas: !!(capas && Object.keys(capas).length), w: vp.width, h: vp.height };
+  }
+  // Textos y símbolos dibujados con líneas (AutoCAD exporta así muchas letras y cotas): no son orillas de lotes.
+  // Se reconocen por su capa (Acotaciones, textos, nombres de calles…) o por su tamaño comparado con un lote:
+  // un trazo chiquito, o un estilo cuyos trazos casi todos son chiquitos (las letras de «MZA XXX»).
+  const CAPA_TEXTO = /acot|cota|dim\b|dimen|text|txt|_tx\b|\btx\b|nombre|r[oó]tul|etiq|label|leyend|norte|marco|plantilla|cuadro|achur|hatch|\beje|simbol|tabla/i;
+  function sinTextos(tr, R, lado) {
+    const S = tr.segs, enZona = new Set();
+    for (let i = 0; i < S.length; i += 4) {
+      const a = S[i], b = S[i + 1], c = S[i + 2], d = S[i + 3];
+      if (Math.max(a, c) < R[0] || Math.min(a, c) > R[2] || Math.max(b, d) < R[1] || Math.min(b, d) > R[3]) continue;
+      enZona.add(tr.segSub[i / 4]);
+    }
+    const porEst = new Map(), largo = new Map(); let total = 0;
+    enZona.forEach((id) => { const s = tr.subs[id]; (porEst.get(s.est) || porEst.set(s.est, []).get(s.est)).push(s.ext); });
+    for (let i = 0; i < S.length; i += 4) { const id = tr.segSub[i / 4]; if (!enZona.has(id)) continue; const L = Math.hypot(S[i + 2] - S[i], S[i + 3] - S[i + 1]), e = tr.subs[id].est; largo.set(e, (largo.get(e) || 0) + L); total += L; }
+    const texto = new Set(), chico = new Set();
+    porEst.forEach((ex, e) => {
+      ex.sort((a, b) => a - b);
+      const med = ex[Math.floor(ex.length / 2)], capa = (tr.estilos[e] || {}).capa || "";
+      // Un estilo que lleva la mayor parte de las líneas nunca se descarta entero (puede ser el de los lotes)
+      const principal = (largo.get(e) || 0) > total * 0.3;
+      if ((CAPA_TEXTO.test(capa) && !principal) || (!principal && ex.length >= 4 && med < 0.3 * lado)) texto.add(e);
+      if (med < 0.3 * lado) chico.add(e);
+    });
+    // Los trazos cortos de un estilo de lotes se quedan: AutoCAD parte las curvas (una esquina redonda) en pedacitos
+    const quitar = new Set(); enZona.forEach((id) => { const s = tr.subs[id]; if (texto.has(s.est) || (chico.has(s.est) && s.ext < 0.12 * lado)) quitar.add(id); });
+    if (!quitar.size) return null;
+    const segs = [], segSub = [];
+    for (let i = 0; i < S.length; i += 4) { const id = tr.segSub[i / 4]; if (quitar.has(id)) continue; segs.push(S[i], S[i + 1], S[i + 2], S[i + 3]); segSub.push(id); }
+    return { tr: Object.assign({}, tr, { segs: new Float64Array(segs), segSub: Int32Array.from(segSub) }), quitados: quitar.size };
+  }
+  // Lotes de una zona, sin dejar que los textos dibujados con líneas los corten. Primero se arman con todo para
+  // saber el tamaño de un lote; luego se quitan los trazos de texto y se vuelven a armar.
+  function lotesDelPlano(tr, caja, tol) {
+    const r1 = lotesEnZona(tr, caja, tol);
+    if (r1.error || !tr.subs) return r1;
+    const el1 = r1.formas.filter((f) => f.elegida), areas = el1.map((f) => f.area).sort((a, b) => a - b);
+    const lado = areas.length ? Math.sqrt(areas[Math.floor(areas.length / 2)]) : Math.max(caja[2] - caja[0], caja[3] - caja[1]) / 8;
+    const [x0, y0, x1, y1] = caja, mx = Math.max(20, (x1 - x0) * 0.25), my = Math.max(20, (y1 - y0) * 0.25);
+    const limpio = sinTextos(tr, [x0 - mx, y0 - my, x1 + mx, y1 + my], lado);
+    if (!limpio) return Object.assign(r1, { textos: 0 });
+    const r2 = lotesEnZona(limpio.tr, caja, tol);
+    if (r2.error) return Object.assign(r1, { textos: 0 });
+    // Si sin los textos salen muchos menos lotes, algo de lo quitado sí era orilla: se queda lo de antes
+    const n1 = el1.length, n2 = r2.formas.filter((f) => f.elegida).length;
+    return n2 >= Math.ceil(n1 * 0.8) ? Object.assign(r2, { textos: limpio.quitados }) : Object.assign(r1, { textos: 0 });
+  }
+  // Calificación del plano: si sirve para armar lotes solo, con cuidado o solo como guía. Así el usuario sabe
+  // desde que lo sube si su PDF está bien hecho, en vez de pensar que la herramienta falla.
+  const CALIDAD_IMAGEN = { nivel: "guia", titulo: "Solo como guía", motivos: ["Es una imagen (escaneado o foto): Mozari no puede leer sus líneas.", "Úsalo de guía y dibuja las manzanas a mano, o sube el PDF que sale de AutoCAD."] };
+  function calificarPDF(tr) {
+    const lineas = tr.subs ? tr.subs.length : 0, rellenos = tr.rellenos.length;
+    // Escaneado o foto: casi no trae líneas (a veces solo el marco encima de la imagen)
+    if ((tr.nImagenes > 0 && lineas < 30) || (lineas < 10 && rellenos < 20)) return CALIDAD_IMAGEN;
+    const motivos = ["Es vectorial: trae las líneas del plano."];
+    let nivel = "bueno";
+    if (tr.conCapas) motivos.push("Trae capas de AutoCAD: Mozari separa lotes, cotas y textos.");
+    if (lineas < 10) { nivel = "regular"; motivos[0] = "Es vectorial, pero los lotes vienen solo como colores, sin líneas: algunos pueden salir juntos."; }
+    const diag = Math.hypot(tr.w || 1000, tr.h || 1000), chicos = tr.subs.filter((x) => x.ext < diag * 0.004).length;
+    if (lineas >= 40 && chicos > lineas * 0.5 && !tr.conCapas) { nivel = "regular"; motivos.push("Muchos textos vienen dibujados con líneas. Mozari los ignora, pero revisa los lotes que tienen letras encima."); }
+    else if (tr.nTextos) motivos.push("Los textos vienen como texto: no estorban.");
+    return { nivel, titulo: nivel === "bueno" ? "Bueno para armar lotes" : "Regular: revisa los lotes", motivos };
   }
   const areaPol = (P) => { let s = 0; for (let i = 0; i < P.length; i++) { const p = P[i], q = P[(i + 1) % P.length]; s += p[0] * q[1] - q[0] * p[1]; } return s / 2; };
   function centroPol(P) {
@@ -6285,7 +6403,7 @@ void main(){
       const pdfjs = await import("/lib/pdf.min.mjs"); pdfjs.GlobalWorkerOptions.workerSrc = "/lib/pdf.worker.min.mjs";
       const buf = await (await fetch(urlArchivo(r.pdf))).arrayBuffer();
       const doc = await pdfjs.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise, pag = await doc.getPage(1);
-      return trazosDelPDF(pdfjs, pag, pag.getViewport({ scale: +r.pdfEsc || 1 }));
+      return trazosDelPDF(pdfjs, pag, pag.getViewport({ scale: +r.pdfEsc || 1 }), await capasDelPDF(doc));
     })().catch(() => { LPDF.clave = null; return null; });
     return LPDF.tr;
   }
@@ -6342,11 +6460,12 @@ void main(){
       SELH.atras.push(antes); if (SELH.atras.length > 60) SELH.atras.shift(); SELH.adelante = [];
       infoLotes("Buscando los lotes…");
       const tr = await trazosRef();
-      if (!tr) { REF.sel = null; REF.caja = null; recalcularOrden(); pintarSel(); infoLotes(P().referencia && P().referencia.pdf ? "No se pudo leer el PDF." : "Este plano se subió antes de esta función: vuelve a subir el PDF (botón Cambiar) para leer sus lotes."); return; }
-      const r = lotesEnZona(tr, caja, Math.max(1.5, 1.6 * (+P().referencia.pdfEsc || 1)));
+      if (!tr) { REF.sel = null; REF.caja = null; recalcularOrden(); pintarSel(); infoLotes(P().referencia && P().referencia.pdf ? "No se pudo leer el PDF." : "Para armar los lotes solos, Mozari necesita el PDF que sale de AutoCAD (no una imagen). Súbelo con Cambiar o dibuja las manzanas a mano."); return; }
+      const r = lotesDelPlano(tr, caja, Math.max(1.5, 1.6 * (+P().referencia.pdfEsc || 1)));
       if (r.error) { infoLotes(r.error); return; }
       REF.sel = r.formas; recalcularOrden(); pintarSel();
-      if (!r.formas.length) infoLotes("No encontré lotes cerrados en esa zona. Prueba otro recuadro o dibújalos a mano.");
+      if (!r.formas.length) infoLotes((P().referencia.calidad || {}).nivel === "guia" ? "Este PDF es una imagen (escaneado): no trae líneas que leer. Dibuja las manzanas a mano." : "No encontré lotes cerrados en esa zona. Prueba otro recuadro o dibújalos a mano.");
+      else if (r.textos) infoLotes($("ref-lotes-info").textContent + " Ignoré los textos y las cotas que pasaban encima.");
     };
     v.addEventListener("pointermove", mover); v.addEventListener("pointerup", soltar); v.addEventListener("pointercancel", soltar);
   }

@@ -1089,6 +1089,61 @@ async function capasPesadas(p) {
     }, a);
 
     // 5. Los errores de JavaScript de todas las páginas
+    // Reporte de Amar (Las Alamedas, nov 2026): AutoCAD exporta letras como «MZA XXX» y las cotas dibujadas con
+    // líneas. Pasaban encima de los lotes y la herramienta los armaba «mordidos» con la forma de las letras.
+    // Además cada plano trae su calificación, para que el usuario sepa si su PDF sirve antes de culpar a Mozari.
+    await paso("Plano de referencia: las letras dibujadas con líneas no cortan los lotes y el PDF trae su calificación", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Letras en el plano");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800);
+      const L = (pts, c, w) => '<polyline fill="none" stroke="' + (c || "#000") + '" stroke-width="' + (w || 1.5) + '" points="' + pts.map((p) => p.join(",")).join(" ") + '"/>';
+      const P = (pts, c) => L(pts.concat([pts[0]]), c, 1);
+      // Manzana de 2 filas × 4 lotes (lotes de 150 × 150)
+      let svg = '<svg width="800" height="500" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="500" fill="#fff"/>' +
+        L([[100, 100], [700, 100], [700, 400], [100, 400], [100, 100]]) + L([[100, 250], [700, 250]]) + [250, 400, 550].map((x) => L([[x, 100], [x, 400]])).join("");
+      // «MZA» en letras de contorno (como el SHX de AutoCAD), en café, encima de la división entre el lote 2 y el 3 y de la del 3 y el 4
+      const letra = (x, y, f) => f.map((poly) => P(poly.map(([a, b]) => [x + a * 0.4, y + b * 0.4]), "#CD6928")).join(""); // letras de 24 px en lotes de 150
+      const M = [[[0, 60], [0, 0], [12, 0], [27, 30], [42, 0], [54, 0], [54, 60], [44, 60], [44, 20], [27, 50], [10, 20], [10, 60]]];
+      const Z = [[[0, 0], [50, 0], [50, 10], [14, 50], [50, 50], [50, 60], [0, 60], [0, 50], [36, 10], [0, 10]]];
+      const A = [[[0, 60], [22, 0], [34, 0], [56, 60], [44, 60], [39, 46], [17, 46], [12, 60]], [[20, 36], [36, 36], [28, 12]]];
+      svg += letra(390, 165, M) + letra(430, 165, Z) + letra(540, 165, A);
+      // Cotas en rojo: numeritos dibujados con rayitas junto a cada lote
+      for (let k = 0; k < 8; k++) { const x = 120 + (k % 4) * 150, y = k < 4 ? 112 : 388; svg += L([[x, y], [x + 6, y], [x + 6, y + 8], [x, y + 8], [x, y]], "#f00", 0.6) + L([[x + 10, y], [x + 16, y + 8]], "#f00", 0.6); }
+      svg += "</svg>";
+      const hoja = await navegador.newPage(); await hoja.setContent('<!doctype html><html><body style="margin:0">' + svg + "</body></html>");
+      const pdf = await hoja.pdf({ width: "800px", height: "500px", printBackground: true }); await hoja.close();
+      await n.click("#ref-boton"); await n.waitForTimeout(400);
+      await n.setInputFiles("#ref-archivo2", { name: "manzana-con-letras.pdf", mimeType: "application/pdf", buffer: pdf });
+      let ancho = 0; for (let i = 0; i < 25 && !ancho; i++) { await n.waitForTimeout(600); ancho = await n.$eval("#ref-img", (e) => (e.hidden ? 0 : e.naturalWidth)); }
+      exige(ancho > 500, "el PDF no se pudo ver");
+      await n.waitForTimeout(3000);
+      exige(/Plano bueno/.test(await n.textContent("#ref-calidad")) && (await n.isVisible("#ref-calidad")), "el plano vectorial no salió calificado como bueno");
+      await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "560px"; p.style.height = "420px"; });
+      await n.click("#ref-ajustar"); await n.click("#ref-lotes"); await n.waitForTimeout(500); await pasarGuias(n); await n.waitForTimeout(300);
+      const aPant = (x, y) => n.evaluate(([x, y]) => { const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(document.getElementById("ref-lienzo").style.transform), v = document.getElementById("ref-vista").getBoundingClientRect(); return [v.x + +m[1] + x * +m[3], v.y + +m[2] + y * +m[3]]; }, [x, y]);
+      const k = ancho / 800, [ax, ay] = await aPant(80 * k, 80 * k), [bx, by] = await aPant(720 * k, 420 * k);
+      await n.mouse.move(ax, ay); await n.mouse.down(); await n.mouse.move((ax + bx) / 2, (ay + by) / 2, { steps: 6 }); await n.mouse.move(bx, by, { steps: 6 }); await n.mouse.up();
+      let info = ""; for (let i = 0; i < 20 && !/elegid|No /.test(info); i++) { await n.waitForTimeout(400); info = await n.textContent("#ref-lotes-info"); }
+      exige(/^8 lotes elegidos/.test(info), "las letras encima cambiaron los lotes: se esperaban 8 (" + info + ")");
+      exige(/Ignoré los textos/.test(info), "no avisó que ignoró los textos dibujados con líneas (" + info + ")");
+      // Cada lote salió cuadrado (4 esquinas), no «mordido» con la forma de las letras
+      const esquinas = await n.$$eval("#ref-sel path.lf.si", (l) => l.map((e) => (e.getAttribute("d").match(/L/g) || []).length + 1));
+      exige(esquinas.length === 8 && esquinas.every((q) => q === 4), "algún lote salió mordido por las letras: " + JSON.stringify(esquinas));
+      const capt = (nom) => (process.env.CAPTURAS ? n.screenshot({ path: path.join(process.env.CAPTURAS, nom + ".png") }) : null);
+      await capt("plano-bueno");
+      // Un plano que es imagen (escaneado) se califica «Solo guía» y lo explica
+      // (la «foto» se hace pintando el mismo dibujo en un canvas: sin captura de pantalla, que falla en la revisión completa)
+      const png = await n.evaluate((svg) => new Promise((ok) => { const im = new Image(); im.onload = () => { const c = document.createElement("canvas"); c.width = 800; c.height = 500; const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, 800, 500); g.drawImage(im, 0, 0); ok(c.toDataURL("image/png")); }; im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg); }), svg);
+      const foto = await navegador.newPage(); await foto.setContent('<!doctype html><html><body style="margin:0"><img src="' + png + '" style="width:800px;height:500px;display:block"></body></html>');
+      const escaneado = await foto.pdf({ width: "800px", height: "500px", printBackground: true }); await foto.close();
+      await n.setInputFiles("#ref-archivo", { name: "escaneado.pdf", mimeType: "application/pdf", buffer: escaneado });
+      let cal = ""; for (let i = 0; i < 25 && !/guía/.test(cal); i++) { await n.waitForTimeout(600); cal = await n.textContent("#ref-calidad").catch(() => ""); }
+      exige(/Solo guía/.test(cal), "un PDF escaneado no salió como «Solo guía» (" + cal + ")");
+      // Al cambiar de plano no se queda la selección del anterior (ni números ni esquinas ni el texto)
+      exige(/^Arrastra un recuadro/.test(await n.textContent("#ref-lotes-info")) && !(await n.$$("#ref-sel text, #ref-sel path, #ref-sel g")).length, "al cambiar de plano se quedó la selección del plano anterior");
+      await n.waitForTimeout(800); await capt("plano-guia");
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+    });
     // Reporte de OBED (nov 2026): en un lote de la fila de atrás (su calle real es otra) la ficha ponía el frente de lado.
     // El botón «Frente» existía pero la ficha no le hacía caso en lotes de manzana, y al mover la manzana se borraba.
     await paso("El frente que elige el usuario manda en la ficha, también en lotes de manzana, y no se borra al mover la manzana", async () => {
