@@ -411,13 +411,18 @@ async function capasPesadas(p) {
       exige((await a.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), tour)) === 200, "no se pudo publicar el tour de prueba");
       const m = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
       await m.goto(link); await m.waitForTimeout(5000);
-      const marca = await m.evaluate((id) => JSON.parse(localStorage.getItem("mz-vivo:" + id) || "null"), tour);
+      const marca = await m.evaluate((id) => JSON.parse(sessionStorage.getItem("mz-vivo:" + id) || "null"), tour);
       exige(marca && marca.visible && marca.esfera, "el tour no deja su marca mientras está abierto: " + JSON.stringify(marca));
       // El navegador lo tumba (como Safari sin memoria): no alcanza a quitar su marca. Aquí se simula dejando la
       // marca tal cual estaba en pantalla y abriendo el tour otra vez en el mismo celular.
       await m.goto(TOURS + "/"); // salir normal: el tour quita su marca
-      exige((await m.evaluate((k) => localStorage.getItem(k), "mz-vivo:" + tour)) === null, "al salir normal del tour no se quitó su marca");
-      await m.evaluate(([k, v]) => localStorage.setItem(k, JSON.stringify(v)), ["mz-vivo:" + tour, marca]);
+      exige((await m.evaluate((k) => sessionStorage.getItem(k), "mz-vivo:" + tour)) === null, "al salir normal del tour no se quitó su marca");
+      // Falsa alarma de El Mirador (nov 2026): cerrar la pestaña y abrir el tour minutos después no es caída
+      await m.evaluate(([k, v]) => sessionStorage.setItem(k, JSON.stringify(Object.assign({}, v, { t: Date.now() - 10 * 60e3 }))), ["mz-vivo:" + tour, marca]);
+      await m.goto(link); await m.waitForTimeout(3000);
+      exige((await caidas()).length === antes, "una marca vieja (pestaña cerrada hace 10 minutos) mandó aviso de caída");
+      await m.goto(TOURS + "/");
+      await m.evaluate(([k, v]) => sessionStorage.setItem(k, JSON.stringify(Object.assign({}, v, { t: Date.now() - 4000 }))), ["mz-vivo:" + tour, marca]);
       const m2 = m; m2.errs = [];
       await m2.goto(link); await m2.waitForTimeout(4000);
       let lista = []; for (let i = 0; i < 10 && lista.length <= antes; i++) { await new Promise((r) => setTimeout(r, 500)); lista = await caidas(); }
@@ -1322,6 +1327,38 @@ async function capasPesadas(p) {
       exige(cp.n <= MAX_CAPAS_GRANDES, "demasiadas capas de pantalla completa para un iPhone: " + JSON.stringify(cp));
       exige(!m.errs.length, "errores en el iPhone: " + m.errs.join(" | ").slice(0, 160));
       await m.context().close();
+    });
+    // Pasó con Amar en El Mirador (nov 2026): se fue a otra app y la música del tour siguió sonando de fondo
+    await paso("La música del tour se pausa al irse a otra app y sigue al regresar (no se queda sonando)", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Tour con música");
+      await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(500);
+      await n.click('#subtabs button:has-text("Música")'); await n.waitForTimeout(500);
+      const sr = 8000, k = sr * 20, wav = Buffer.alloc(44 + k * 2); // 20 s de un tono suave
+      wav.write("RIFF", 0); wav.writeUInt32LE(36 + k * 2, 4); wav.write("WAVE", 8); wav.write("fmt ", 12); wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
+      wav.writeUInt32LE(sr, 24); wav.writeUInt32LE(sr * 2, 28); wav.writeUInt16LE(2, 32); wav.writeUInt16LE(16, 34); wav.write("data", 36); wav.writeUInt32LE(k * 2, 40);
+      for (let i = 0; i < k; i++) wav.writeInt16LE(Math.round(Math.sin(i / 8) * 1500), 44 + i * 2);
+      await n.setInputFiles("#m-archivo", { name: "fondo.wav", mimeType: "audio/wav", buffer: wav }); await n.waitForTimeout(3500);
+      const id = await idTour(n);
+      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
+      await n.context().close();
+      const t = await pagina(null);
+      await t.addInitScript(() => { window.__medios = []; const p = HTMLMediaElement.prototype.play; HTMLMediaElement.prototype.play = function () { if (!window.__medios.includes(this)) window.__medios.push(this); return p.apply(this, arguments); }; });
+      await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(4000);
+      await t.mouse.click(700, 450); await t.waitForTimeout(1500); // la música empieza con el primer toque
+      const sonando = () => t.evaluate(() => (window.__medios || []).some((m) => !m.paused));
+      exige(await sonando(), "la música no empezó al tocar el tour");
+      const ver = (e) => t.evaluate((e) => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => e }); document.dispatchEvent(new Event("visibilitychange")); }, e);
+      await ver("hidden"); await t.waitForTimeout(300);
+      exige(!(await sonando()), "al irse a otra app la música se quedó sonando de fondo");
+      await ver("visible"); await t.waitForTimeout(800);
+      exige(await sonando(), "al regresar al tour la música no siguió");
+      // Si el cliente la silenció con el botón, al irse y regresar se queda callada
+      await t.click('[data-sk="musica"]'); await t.waitForTimeout(400);
+      exige(!(await sonando()), "el botón de música no la silenció");
+      await ver("hidden"); await t.waitForTimeout(200); await ver("visible"); await t.waitForTimeout(800);
+      exige(!(await sonando()), "la música silenciada volvió a sonar al regresar al tour");
+      exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 200));
+      await t.context().close();
     });
     // Pedido de un usuario de Perú (nov 2026): allá se dice «Reservado», no «Apartado». Los nombres de los estados se editan.
     await paso("Estados de los lotes con el nombre de cada país: «Apartado» se cambia a «Reservado» y sale en el tour", async () => {

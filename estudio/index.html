@@ -9223,6 +9223,9 @@ void main(){
   // Si se va a otra app, la marca dice «en segundo plano» (ahí el celular puede cerrarlo sin que sea falla).
   // Si al abrirlo otra vez la marca dice que estaba EN PANTALLA, el navegador lo tumbó (casi siempre por
   // memoria): se manda un aviso al Panel de dueño con el celular, la esfera y cuántos lotes tenía.
+  // La marca vive en la PESTAÑA (sessionStorage) y vale 3 minutos: cuando el navegador tumba un tour, lo vuelve a
+  // abrir en la misma pestaña en segundos. Cerrar la pestaña o la app (Chrome en iPhone no siempre avisa al cerrar)
+  // y abrir el tour después ya no cuenta como caída. Pasó con Amar en El Mirador (nov 2026): falsa alarma.
   function modeloDe(ua) {
     const navg = /CriOS/.test(ua) ? "Chrome" : /FxiOS/.test(ua) ? "Firefox" : /Instagram/.test(ua) ? "Instagram" : /FBAN|FBAV|FB_IAB/.test(ua) ? "Facebook" : /WhatsApp/.test(ua) ? "WhatsApp" : /SamsungBrowser/.test(ua) ? "Samsung" : /EdgA?\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "otro";
     let m = /iPhone OS (\d+)[_.](\d+)/.exec(ua);
@@ -9234,15 +9237,15 @@ void main(){
   }
   const VIGIA = MODO === "tour" && !document.body.dataset.exportado && location.pathname.split("/").filter(Boolean)[0] ? (() => {
     const tourId = location.pathname.split("/").filter(Boolean)[0], clave = "mz-vivo:" + tourId;
-    let antes = null; try { antes = JSON.parse(localStorage.getItem(clave) || "null"); } catch (e) { antes = null; }
-    return { tourId, clave, inicio: Date.now(), esfera: null, cambios: 0, errores: [], veces: 0, anterior: antes && antes.visible && Date.now() - antes.t < 24 * 3600e3 ? antes : null };
+    let antes = null; try { antes = JSON.parse(sessionStorage.getItem(clave) || "null"); localStorage.removeItem(clave); } catch (e) { antes = null; } // (la versión anterior la guardaba en localStorage)
+    return { tourId, clave, inicio: Date.now(), esfera: null, cambios: 0, errores: [], veces: 0, anterior: antes && antes.visible && Date.now() - antes.t < 3 * 60e3 ? antes : null };
   })() : null;
   function vigiaGuardar() {
     if (!VIGIA || VIGIA.fuera) return; // ya se cerró bien (al cerrar, el navegador avisa «oculto» después de «pagehide»)
     const id = VIGIA.esfera, capas = (id && est.capas && est.capas[id]) || [];
     const d = { t: Date.now(), visible: document.visibilityState !== "hidden", inicio: VIGIA.inicio, esfera: id, esferaNombre: id && escena(id) ? escena(id).nombre : "",
       lotes: capas.filter((c) => c.lote).length, capas: capas.length, cambios: VIGIA.cambios, errores: VIGIA.errores.slice(-5), veces: VIGIA.veces };
-    try { localStorage.setItem(VIGIA.clave, JSON.stringify(d)); } catch (e) { /* modo privado o sin espacio: sin aviso */ }
+    try { sessionStorage.setItem(VIGIA.clave, JSON.stringify(d)); } catch (e) { /* modo privado o sin espacio: sin aviso */ }
   }
   function vigiaEsfera(id) { if (VIGIA) { VIGIA.esfera = id; VIGIA.cambios++; vigiaGuardar(); } }
   if (VIGIA) {
@@ -9258,7 +9261,7 @@ void main(){
     vigiaGuardar();
     setInterval(vigiaGuardar, 5000);
     document.addEventListener("visibilitychange", vigiaGuardar);
-    window.addEventListener("pagehide", () => { VIGIA.fuera = true; try { localStorage.removeItem(VIGIA.clave); } catch (e) { /* nada */ } });
+    window.addEventListener("pagehide", () => { VIGIA.fuera = true; try { sessionStorage.removeItem(VIGIA.clave); } catch (e) { /* nada */ } });
     window.addEventListener("pageshow", (e) => { if (e.persisted) { VIGIA.fuera = false; vigiaGuardar(); } }); // regresó con «atrás»
     window.addEventListener("error", (e) => { VIGIA.errores.push(String((e && e.message) || "error").slice(0, 200)); vigiaGuardar(); });
   }
@@ -9491,6 +9494,17 @@ void main(){
   // =================== VISTA PREVIA ===================
   let tourPv = null, orientPv = "h";
   const audioTour = new Audio();
+  // Si el cliente se va a otra app o pestaña, la música (y cualquier video) se pausa: no se queda sonando de fondo.
+  // Al regresar, la música sigue sola si estaba sonando. Pasó con Amar en El Mirador (nov 2026): tuvo que cerrar
+  // Chrome en el iPhone para callarla.
+  let musicaPausadaPorSalir = false;
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      if (!audioTour.paused) { audioTour.pause(); musicaPausadaPorSalir = true; }
+      document.querySelectorAll("video, audio").forEach((m) => { try { if (m !== audioTour && !m.paused) m.pause(); } catch (e) { /* nada */ } });
+    } else if (musicaPausadaPorSalir) { musicaPausadaPorSalir = false; if (!$("previa").hidden) audioTour.play().catch(() => {}); }
+  });
+  window.addEventListener("pagehide", () => { try { audioTour.pause(); } catch (e) { /* nada */ } });
   const orientacionPantalla = () => (window.innerWidth < window.innerHeight ? "v" : "h");
   // =================== MEDIA: FOTOS ===================
   // Biblioteca del tour: se suben una vez (reducidas a 2400 px) y se usan en cualquier capa.
@@ -9829,7 +9843,7 @@ void main(){
     orientPv = orientacionPantalla();
     tourPv = crearTour($("pv-stage"), $("pv-ui"), {
       orientacion: orientPv, cerrable: MODO !== "tour", alCerrar: cerrarPrevia, hayMusica: !!musicaUrl,
-      alMusica: () => { if (audioTour.paused) { audioTour.play().catch(() => {}); return true; } audioTour.pause(); return false; },
+      alMusica: () => { if (audioTour.paused) { musicaSilenciada = false; audioTour.play().catch(() => {}); return true; } musicaSilenciada = true; audioTour.pause(); return false; },
       alPantalla: () => {
         const el = $("previa");
         try { if (document.fullscreenElement) document.exitFullscreen(); else if (el.requestFullscreen) el.requestFullscreen().catch(() => {}); } catch (e) { /* no disponible */ }
@@ -9850,12 +9864,23 @@ void main(){
     const o = orientacionPantalla();
     if (o !== orientPv) { orientPv = o; tourPv.repintar(o); }
   });
+  let musicaSilenciada = false;
   function sonar() {
     if (!musicaUrl) return;
     audioTour.src = musicaUrl;
     audioTour.loop = !!P().musica.repetir;
     audioTour.volume = P().musica.volumen;
-    audioTour.play().catch(() => {});
+    musicaSilenciada = false;
+    audioTour.play().catch(() => {
+      // Los navegadores no dejan sonar música sin un toque: empieza con el primer toque del cliente (como dice el manual)
+      const EV = ["pointerup", "touchend", "click", "keydown"], quitar = () => EV.forEach((e) => document.removeEventListener(e, arrancar, true));
+      function arrancar(ev) {
+        quitar();
+        if (ev.target && ev.target.closest && ev.target.closest('[data-sk="musica"]')) return; // el botón de música hace lo suyo
+        if (!musicaSilenciada && audioTour.paused && !$("previa").hidden && document.visibilityState !== "hidden") audioTour.play().catch(() => {});
+      }
+      EV.forEach((e) => document.addEventListener(e, arrancar, true));
+    });
   }
   function cerrarPrevia() {
     audioTour.pause();

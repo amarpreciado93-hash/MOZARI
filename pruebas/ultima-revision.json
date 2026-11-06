@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-06T01:00:47.481Z",
- "bien": 52,
- "total": 52,
+ "fecha": "2026-11-06T01:52:39.675Z",
+ "bien": 53,
+ "total": 53,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -189,6 +189,10 @@
   },
   {
    "nombre": "Lotes del PDF colocados después de un punto en 3D: en el tour de iPhone van abajo y sin capas pesadas",
+   "ok": true
+  },
+  {
+   "nombre": "La música del tour se pausa al irse a otra app y sigue al regresar (no se queda sonando)",
    "ok": true
   },
   {
