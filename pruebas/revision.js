@@ -360,18 +360,34 @@ async function capasPesadas(p) {
       for (const [x, y] of [[905, 470], [620, 285], [900, 278], [615, 480]]) { await a.mouse.click(x, y); await a.waitForTimeout(180); }
       await a.waitForTimeout(900);
       exige(/^Edificio/.test(await a.textContent("#props-titulo")), "no se creó el edificio: " + (await a.textContent("#props-titulo")));
-      const deps = async () => (await capas(a)).filter((t) => / · M ?A$/.test(t));
+      const deps = async () => (await capas(a)).filter((t) => / · Torre A$/.test(t));
       let d = await deps();
       exige(d.length === 32, "debían salir 8 pisos × 4 = 32 departamentos y salieron " + d.length);
-      exige(d.some((t) => /^Lote 801 /.test(t)) && d.some((t) => /^Lote 104 /.test(t)), "no se numeran por piso (801… arriba, 101… abajo): " + d.slice(0, 6).join(", "));
+      exige(d.some((t) => /^Depto 801 /.test(t)) && d.some((t) => /^Depto 104 /.test(t)), "no se numeran por piso como «Depto 801… arriba, 101… abajo»: " + d.slice(0, 6).join(", "));
       const caja = await a.evaluate(() => { const l = [...document.querySelectorAll("#ed-stage path.cp-pol")].map((e) => e.getBoundingClientRect()).filter((r) => r.top > 260 && r.bottom < 500 && r.width > 4); return l.length; });
       exige(caja >= 32, "los departamentos no se dibujan en la fachada (" + caja + ")");
       await foto(a, "edificio");
+      // Nodos verdes: uno por punta de cada línea de piso y de cada división (7 pisos + 3 divisiones, en sus 2 puntas)
+      const nodos = await a.$$eval("#ed-stage .mz-asa.corte", (l) => l.map((e) => [+e.getAttribute("cx"), +e.getAttribute("cy")]));
+      exige(nodos.length === 20, "debían salir 20 nodos verdes y salieron " + nodos.length);
+      const r0 = await a.$eval("#ed-stage", (e) => { const r = e.getBoundingClientRect(); return [r.x, r.y]; });
+      const [nx, ny] = nodos[0];
+      await a.mouse.move(r0[0] + nx, r0[1] + ny); await a.mouse.down(); await a.mouse.move(r0[0] + nx, r0[1] + ny + 14, { steps: 6 }); await a.mouse.up(); await a.waitForTimeout(600);
+      exige(await a.$("[data-ed-parejo]"), "mover un nodo verde no cambió el piso");
+      await a.selectOption('[data-ed="unidad"]', "Loft"); await a.waitForTimeout(500);
+      exige((await deps()).every((t) => /^Loft /.test(t)), "no se cambió el nombre de los departamentos a Loft");
       await a.click('[data-ed-n="pisos"][data-d="1"]'); await a.waitForTimeout(500);
       d = await deps();
-      exige(d.length === 36 && d.some((t) => /^Lote 901 /.test(t)), "al agregar un piso no salió el 9.º: " + d.length);
+      exige(d.length === 36 && d.some((t) => /^Loft 901 /.test(t)), "al agregar un piso no salió el 9.º: " + d.length);
       await a.fill('[data-ed="prefijo"]', "A-"); await a.press('[data-ed="prefijo"]', "Tab"); await a.waitForTimeout(500);
-      exige((await deps()).some((t) => /^Lote A-901 /.test(t)), "el prefijo no se aplicó");
+      exige((await deps()).some((t) => /^Loft A-901 /.test(t)), "el prefijo no se aplicó");
+      // Un departamento con su propio color, sin cambiar los demás
+      await a.click('#lista li:has-text("Loft A-901 ")'); await a.waitForTimeout(500);
+      await a.$eval('[data-k="lote.colorPropio"][type="color"]', (e) => { e.value = "#3366ff"; e.dispatchEvent(new Event("input", { bubbles: true })); e.dispatchEvent(new Event("change", { bubbles: true })); }); await a.waitForTimeout(500);
+      const fills = await a.$$eval("#ed-stage path.cp-pol", (l) => l.map((e) => getComputedStyle(e).getPropertyValue("--f").trim()));
+      exige(fills.filter((f) => /#3366ff/i.test(f)).length === 1, "el color propio no quedó en un solo departamento: " + fills.filter((f) => /#3366ff/i.test(f)).length);
+      await a.click('[data-acc="ir-manzana"]'); await a.waitForTimeout(400);
+      exige(/^Edificio/.test(await a.textContent("#props-titulo")), "desde el departamento no se regresa al edificio");
       await a.click("#props-titulo"); await a.keyboard.press("Delete"); await a.waitForTimeout(600);
       exige(!(await deps()).length, "al borrar el edificio quedaron departamentos");
     }, a);

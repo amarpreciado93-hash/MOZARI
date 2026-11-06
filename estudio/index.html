@@ -689,6 +689,9 @@
   .cp-pol.cp-manzana:hover { fill: none; }
   .cp-borrador.previo { fill: none; stroke: #fff; stroke-dasharray: 2 4; }
   .mz-n { display: flex; align-items: center; gap: 8px; }
+  .color-propio { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .color-propio input[type="color"] { width: 36px; height: 28px; padding: 0; border: 1px solid var(--mz-linea-neutra); border-radius: 6px; background: none; }
+  .color-propio small { font-size: 11px; color: var(--mz-tenue); }
   .mz-n input { width: 64px; text-align: center; }
   .mz-n button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--mz-linea); background: none; color: var(--mz-texto); font-size: 18px; cursor: pointer; }
   .cp-pol.cp-camino.anim { animation: camino-anda 1.2s linear infinite; }
@@ -2078,9 +2081,9 @@
   // "M1" con una letra y número; "M B" o "Mz 1" en los demás casos; sin abreviatura se usa la palabra completa
   const mzCorta = (mz) => { const T = terminos(), k = T.corto || T.manzana; return k.length === 1 && /^\d/.test(String(mz)) ? k + mz : k + " " + mz; };
   function nombreLote(c) {
-    const l = loteDe(c), T = terminos();
-    if (!l.numero && !l.manzana) return T.lote + " sin número";
-    return T.lote + " " + (l.numero || "—") + (l.manzana ? " · " + mzCorta(l.manzana) : "");
+    const l = loteDe(c), T = terminos(), base = l.unidad || T.lote; // en un edificio cada uno dice Depto, Loft, Penthouse…
+    if (!l.numero && !l.manzana) return base + " sin número";
+    return base + " " + (l.numero || "—") + (l.manzana ? " · " + (l.unidad ? "Torre " + l.manzana : mzCorta(l.manzana)) : "");
   }
   // Un lote sin número ni manzana no es un lote a la venta (reserva ecológica, área verde…): en la esfera
   // no lleva rótulo, al tocarlo no abre ficha y no cuenta en la tabla de Lotes ni en el masterplan
@@ -4159,7 +4162,7 @@
       if (c.camino) return estiloCamino(path, c);
       if (c.lote) {
         // Lote: el color sale de su estado (Disponible, Apartado, Vendido)
-        const l = loteDe(c), col = estadoDe(c).color, g = c.trazo ? c.trazo.grosor : 1.5, s = path.style;
+        const l = loteDe(c), col = l.colorPropio || estadoDe(c).color, g = c.trazo ? c.trazo.grosor : 1.5, s = path.style;
         s.setProperty("--f", col); s.setProperty("--fo", l.opacidad);
         s.setProperty("--s", l.borde === "estado" ? col : "#FFFFFF"); s.setProperty("--so", 0.95); s.setProperty("--sw", g);
         const ro = l.rollover !== false;
@@ -5818,10 +5821,10 @@ void main(){
         alCambiar: () => cambio(),
         alSoltar: (c) => { if (c.edificio) { repartirEdificio(c); cambio(); return; } if (c.manzana) { repartirManzana(c); cambio(); return; } if (c.mzPlano) { soltarPlano(c); cambio(); return; } if (c.vinculo) propagar(c, motorEd.actual.id); },
         alArrastrar: (c) => { if (c.edificio) repartirEdificio(c); if (c.manzana) repartirManzana(c); if (c.mzPlano) arrastrarPlano(c); },
-        asasExtra: (c) => (c.manzana ? asasManzana(c) : c.mzPlano ? asasPlano(c) : c.camino && enLab("manzana-curvas") ? asasCamino(c) : null),
-        tomarAsaExtra: (c, h) => (c.camino ? h : c.mzPlano ? tomarAsaPlano(c, h) : tomarAsaManzana(c, h)),
-        moverAsaExtra: (c, h, k) => (c.camino ? moverAsaCamino(c, h, k) : c.mzPlano ? moverAsaPlano(c, h, k) : moverAsaManzana(c, h, k)),
-        quitarAsaExtra: (c, h) => (c.camino ? quitarAsaCamino(c, h) : c.mzPlano ? quitarAsaPlano(c, h) : quitarAsaManzana(c, h)),
+        asasExtra: (c) => (c.edificio ? asasEdificio(c) : c.manzana ? asasManzana(c) : c.mzPlano ? asasPlano(c) : c.camino && enLab("manzana-curvas") ? asasCamino(c) : null),
+        tomarAsaExtra: (c, h) => (c.edificio || c.camino ? h : c.mzPlano ? tomarAsaPlano(c, h) : tomarAsaManzana(c, h)),
+        moverAsaExtra: (c, h, k) => (c.edificio ? moverAsaEdificio(c, h, k) : c.camino ? moverAsaCamino(c, h, k) : c.mzPlano ? moverAsaPlano(c, h, k) : moverAsaManzana(c, h, k)),
+        quitarAsaExtra: (c, h) => (c.edificio ? null : c.camino ? quitarAsaCamino(c, h) : c.mzPlano ? quitarAsaPlano(c, h) : quitarAsaManzana(c, h)),
         alEntrar: (c, origen) => { abrirEditor(c.destino, nav.sub, vistaLlegada(c, origen)); avisar("Llegaste a " + nombreDe(c.destino) + (c.llegada === "frente" ? " viendo de frente" : "")); },
         alCerrarDibujo: () => terminarDibujo(true),
         alPuntoDibujo: (d) => { if (d.tipo === "edificio") { if (d.puntos.length >= 4) terminarDibujo(true); return; } puntoPDF(d); },
@@ -5929,7 +5932,7 @@ void main(){
     });
     capas.filter((c) => c.lote && !loteVacio(c)).forEach((c) => {
       const l = Object.assign({}, LOTE_DEF, c.lote), e = estadoDe(c), px = linea(c.puntos, true);
-      [-W, 0, W].forEach((dx) => { camino(px, dx, true); ox.fillStyle = hexA(e.color, l.opacidad ?? 0.35); ox.fill(); camino(px, dx, false); ox.lineJoin = "round"; ox.lineWidth = grosor * ((c.trazo && +c.trazo.grosor) || 1.5) / 1.5; ox.strokeStyle = l.borde === "estado" ? e.color : "#fff"; ox.stroke(); });
+      [-W, 0, W].forEach((dx) => { camino(px, dx, true); ox.fillStyle = hexA(l.colorPropio || e.color, l.opacidad ?? 0.35); ox.fill(); camino(px, dx, false); ox.lineJoin = "round"; ox.lineWidth = grosor * ((c.trazo && +c.trazo.grosor) || 1.5) / 1.5; ox.strokeStyle = l.borde === "estado" ? e.color : "#fff"; ox.stroke(); });
     });
     capas.filter((c) => c.manzana || c.mzPlano).forEach((c) => {
       const px = linea(c.manzana ? contornoManzana(c) : c.puntos, true);
@@ -7501,7 +7504,7 @@ void main(){
     const w = norma3([-c[0] * c[1], 1 - c[1] * c[1], -c[2] * c[1]]), u = [w[1] * c[2] - w[2] * c[1], w[2] * c[0] - w[0] * c[2], w[0] * c[1] - w[1] * c[0]];
     const a2 = (v) => { const k = punto3(v, c) || 1e-9; return [punto3(v, u) / k, punto3(v, w) / k]; };
     const de2 = ([a, b]) => yawPitchDe([c[0] + a * u[0] + b * w[0], c[1] + a * u[1] + b * w[1], c[2] + a * u[2] + b * w[2]]);
-    return { Q: V.map(a2), de2 };
+    return { Q: V.map(a2), de2, a2 };
   }
   // Esquinas en orden: arriba izquierda, arriba derecha, abajo derecha, abajo izquierda (se toquen en el orden que sea)
   function ordenarFachada(puntos) {
@@ -7514,33 +7517,61 @@ void main(){
     let g = 0, h = 0;
     if (Math.abs(dx3) > 1e-12 || Math.abs(dy3) > 1e-12) { const den = dx1 * dy2 - dx2 * dy1 || 1e-12; g = (dx3 * dy2 - dx2 * dy3) / den; h = (dx1 * dy3 - dx3 * dy1) / den; }
     const a = x1 - x0 + g * x1, b = x3 - x0 + h * x3, d = y1 - y0 + g * y1, e = y3 - y0 + h * y3;
-    return (s, t) => { const k = g * s + h * t + 1; return [(a * s + b * t + x0) / k, (d * s + e * t + y0) / k]; };
+    const H = (s, t) => { const k = g * s + h * t + 1; return [(a * s + b * t + x0) / k, (d * s + e * t + y0) / k]; };
+    // Inversa (de un punto de la fachada a su s, t): la matriz [[a b x0] [d e y0] [g h 1]] invertida
+    const det = a * (e - y0 * h) - b * (d - y0 * g) + x0 * (d * h - e * g) || 1e-12;
+    const I = [[e - y0 * h, x0 * h - b, b * y0 - x0 * e], [y0 * g - d, a - x0 * g, x0 * d - a * y0], [d * h - e * g, b * g - a * h, a * e - b * d]].map((r) => r.map((v) => v / det));
+    H.inv = ([x, y]) => { const S = I[0][0] * x + I[0][1] * y + I[0][2], T = I[1][0] * x + I[1][1] * y + I[1][2], W = I[2][0] * x + I[2][1] * y + I[2][2] || 1e-12; return [S / W, T / W]; };
+    return H;
   }
+  const UNIDADES_EDIFICIO = ["Depto", "Departamento", "Apartamento", "Loft", "Penthouse", "Oficina", "Local", "Unidad"];
+  const geoEdificio = new WeakMap();
+  // Cortes de pisos (t) o de departamentos (s): los que el usuario movió con los nodos verdes, o parejos
+  const cortesEdificio = (arr, n) => { const ok = Array.isArray(arr) && arr.length === n - 1 && arr.every((v, i) => v > (i ? arr[i - 1] : 0) && v < 1); return [0].concat(ok ? arr : Array.from({ length: n - 1 }, (_, i) => (i + 1) / n), [1]); };
   const numeroDepa = (E, piso, k) => String(E.prefijo || "") + piso + String((+E.inicial || 1) + k * (+E.paso || 1)).padStart(2, "0");
   function repartirEdificio(c) {
     const E = c.edificio, pisos = Math.max(1, Math.min(60, +E.pisos || 1)), por = Math.max(1, Math.min(40, +E.porPiso || 1));
     E.pisos = pisos; E.porPiso = por;
-    const { Q, de2 } = planoFachada(c.puntos), H = homografiaCuadro(Q), red = (p) => [+p[0].toFixed(5), +p[1].toFixed(5)];
-    const l = cs(), viejos = lotesDeManzana(c), primero = +E.primerPiso || 1;
+    const { Q, de2, a2 } = planoFachada(c.puntos), H = homografiaCuadro(Q), red = (p) => [+p[0].toFixed(5), +p[1].toFixed(5)];
+    const l = cs(), viejos = lotesDeManzana(c), primero = +E.primerPiso || 1, tf = cortesEdificio(E.filas, pisos), sf = cortesEdificio(E.cols, por);
+    const P = (s, t) => red(de2(H(s, t)));
+    geoEdificio.set(c, { H, a2, P, tf, sf });
     let k = 0;
     for (let j = 0; j < pisos; j++) for (let i = 0; i < por; i++, k++) {
-      const P = (s, t) => red(de2(H(s, t)));
-      const puntos = [P(i / por, j / pisos), P((i + 1) / por, j / pisos), P((i + 1) / por, (j + 1) / pisos), P(i / por, (j + 1) / pisos)];
+      const puntos = [P(sf[i], tf[j]), P(sf[i + 1], tf[j]), P(sf[i + 1], tf[j + 1]), P(sf[i], tf[j + 1])];
       const piso = primero + (pisos - 1 - j), fijo = E.numeros && E.numeros[k] != null && String(E.numeros[k]).trim() !== "" ? String(E.numeros[k]) : null;
       let x = viejos[k];
       if (!x) {
         x = { id: nuevoId(), tipo: "poligono", nombre: "Lote", visible: true, deManzana: c.id, iManzana: k, puntos,
           relleno: { color: LIMA, opacidad: 0.3 }, trazo: { color: LIMA, grosor: 1, opacidad: 0.9 },
           rollover: { activo: true, relleno: { color: LIMA, opacidad: 0.6 }, trazo: { color: BLANCO, grosor: 2, opacidad: 1 } },
-          lote: Object.assign({}, LOTE_DEF, { manzana: E.torre, rotulo: "frente", verArea: false, medidas: false, frente: 0 }) };
+          lote: Object.assign({}, LOTE_DEF, { manzana: E.torre, unidad: E.unidad || "Depto", rotulo: "frente", verArea: false, medidas: false, frente: 0 }) };
+        Object.entries(E.estiloLotes || {}).forEach(([ruta, v]) => { try { escribir(x, ruta, v); } catch (e) { /* ruta vieja */ } });
         const iz = l.indexOf(viejos[viejos.length - 1] || c);
         l.splice(iz + 1, 0, x); viejos.push(x);
       }
       x.puntos = puntos; x.iManzana = k; x.frenteN = 0;
       x.lote.manzana = E.torre; x.lote.numero = fijo || numeroDepa(E, piso, i);
+      if (!x.lote.unidad) x.lote.unidad = E.unidad || "Depto";
       x.lote.lados = puntos.map((_, q) => (x.lote.lados || [])[q] || "");
     }
     viejos.slice(k).forEach((x) => { const q = l.indexOf(x); if (q >= 0) l.splice(q, 1); });
+  }
+  function asasEdificio(c) {
+    if (!geoEdificio.get(c)) repartirEdificio(c);
+    const g = geoEdificio.get(c); if (!g) return null;
+    const lineas = [], asas = [];
+    for (let j = 1; j < g.tf.length - 1; j++) { lineas.push([g.P(0, g.tf[j]), g.P(1, g.tf[j])]); asas.push({ tipo: "corte", eje: "fila", j, pt: g.P(0, g.tf[j]) }, { tipo: "corte", eje: "fila", j, pt: g.P(1, g.tf[j]) }); }
+    for (let i = 1; i < g.sf.length - 1; i++) { lineas.push([g.P(g.sf[i], 0), g.P(g.sf[i], 1)]); asas.push({ tipo: "corte", eje: "col", j: i, pt: g.P(g.sf[i], 0) }, { tipo: "corte", eje: "col", j: i, pt: g.P(g.sf[i], 1) }); }
+    return { lineas, asas };
+  }
+  function moverAsaEdificio(c, h, k) {
+    const g = geoEdificio.get(c); if (!g || !k) return;
+    const [s, t] = g.H.inv(g.a2(dirDe(k.yaw, k.pitch))), fila = h.eje === "fila", L = (fila ? g.tf : g.sf).slice(), v = fila ? t : s;
+    if (!isFinite(v)) return;
+    L[h.j] = +Math.max(L[h.j - 1] + 0.02, Math.min(L[h.j + 1] - 0.02, v)).toFixed(4);
+    c.edificio[fila ? "filas" : "cols"] = L.slice(1, -1);
+    repartirEdificio(c);
   }
   function crearEdificio(esquinas) {
     const usadas = Object.values(est.capas).flat().filter((x) => x && x.edificio).map((x) => String(x.edificio.torre));
@@ -7548,7 +7579,7 @@ void main(){
     const c = {
       id: nuevoId(), tipo: "poligono", nombre: "Edificio " + torre, visible: true,
       puntos: ordenarFachada(esquinas).map((p) => [+p[0].toFixed(5), +p[1].toFixed(5)]),
-      edificio: { torre, pisos: 8, porPiso: 4, primerPiso: 1, prefijo: "", inicial: 1, paso: 1, numeros: {} },
+      edificio: { torre, unidad: "Depto", pisos: 8, porPiso: 4, primerPiso: 1, prefijo: "", inicial: 1, paso: 1, numeros: {} },
       relleno: { color: BLANCO, opacidad: 0 }, trazo: { color: BLANCO, grosor: 1.5, opacidad: 0.7 },
       rollover: { activo: false, relleno: { color: BLANCO, opacidad: 0 }, trazo: { color: BLANCO, grosor: 1.5, opacidad: 1 } },
     };
@@ -7876,14 +7907,20 @@ void main(){
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.edificio) return;
     const v = ev.target.value.trim(), E = c.edificio;
     if (k === "torre") { E.torre = v; c.nombre = "Edificio " + v; }
+    else if (k === "unidad") { E.unidad = v; lotesDeManzana(c).forEach((x) => { x.lote.unidad = v; }); }
     else if (k === "prefijo") { E.prefijo = v; E.numeros = {}; }
-    else { const n = parseInt(v, 10); if (isFinite(n) && n >= 0) { E[k] = n; if (k !== "pisos" && k !== "porPiso") E.numeros = {}; } }
+    else { const n = parseInt(v, 10); if (isFinite(n) && n >= 0) { E[k] = n; if (k !== "pisos" && k !== "porPiso") E.numeros = {}; if (k === "pisos") E.filas = null; if (k === "porPiso") E.cols = null; } }
     cambio();
+  });
+  $("props").addEventListener("click", (ev) => {
+    if (!ev.target.closest("[data-ed-parejo]")) return;
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.edificio) return;
+    c.edificio.filas = null; c.edificio.cols = null; cambio(); avisar("Pisos y divisiones parejos");
   });
   $("props").addEventListener("click", (ev) => {
     const b = ev.target.closest("[data-ed-n]"); if (!b) return;
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.edificio) return;
-    const k = b.dataset.edN; c.edificio[k] = Math.max(1, (+c.edificio[k] || 1) + +b.dataset.d); cambio();
+    const k = b.dataset.edN; c.edificio[k] = Math.max(1, (+c.edificio[k] || 1) + +b.dataset.d); c.edificio[k === "pisos" ? "filas" : "cols"] = null; cambio();
   });
   $("props").addEventListener("click", (ev) => {
     if (!ev.target.closest("[data-ruta-recta]")) return;
@@ -8085,7 +8122,8 @@ void main(){
     let h = (c.deManzana && !varios ? '<div class="orden" style="margin-bottom:10px"><button class="mini" data-acc="ir-manzana">' + (padreEd ? "Editar el edificio completo" : "Editar la " + esc(terminos().manzana.toLowerCase()) + " completa") + "</button></div>" : "") +
       '<div class="grupo"><b>Datos del lote</b><div class="lote-datos">' +
       (varios ? '<label>Numerar desde<input type="text" inputmode="numeric" data-numerar placeholder="1" title="Les pone números seguidos en su orden actual"></label>'
-        : '<label>' + esc(terminos().lote) + '<input type="text" data-k="lote.numero" value="' + val("numero") + '" placeholder="12"></label>') +
+        : '<label>' + esc(l.unidad || terminos().lote) + '<input type="text" data-k="lote.numero" value="' + val("numero") + '" placeholder="12"></label>') +
+      (padreEd ? '<label>Se llama<select data-k="lote.unidad">' + UNIDADES_EDIFICIO.map((u) => "<option" + ((l.unidad || "Depto") === u ? " selected" : "") + ">" + u + "</option>").join("") + "</select></label>" : "") +
       '<label>' + esc(terminos().manzana) + '<input type="text" data-k="lote.manzana" value="' + val("manzana") + '" placeholder="3"></label>' +
       '<label>Superficie (m²)<input type="text" inputmode="decimal" data-k="lote.area" value="' + val("area") + '" placeholder="1250"></label>' +
       '<label>Precio (' + monedaTour() + ')<input type="text" inputmode="decimal" data-k="lote.precio" value="' + val("precio") + '" placeholder="$"></label>' +
@@ -8101,6 +8139,8 @@ void main(){
       '<p class="nota">Al escribir, el lado se marca en la esfera. El círculo marca cuál es el frente.</p></div>';
     h += grupoRotulo("lote.", l);
     h += '<div class="grupo"><b>Estilo</b>' + campo("Color", campoRango("lote.opacidad", l.opacidad ?? 0.35, 0, 1, 0.05, pct)) + campo("Borde", campoRango("trazo.grosor", c.trazo.grosor, 0, 8, 0.5, px)) +
+      // Color propio: solo este (o los elegidos con Shift); si no, el color de su estado
+      campo("Color propio", '<span class="color-propio"><input type="color" data-k="lote.colorPropio" value="' + esc(l.colorPropio || estadoDe(c).color) + '">' + (l.colorPropio ? '<button class="mini" data-k="lote.colorPropio" data-v="">Usar el del estado</button>' : '<small>Si no lo cambias, usa el color de su estado</small>') + "</span>") +
       campo("Borde de", '<select data-k="lote.borde"><option value="blanco"' + (l.borde !== "estado" ? " selected" : "") + '>Blanco</option><option value="estado"' + (l.borde === "estado" ? " selected" : "") + ">Color del estado</option></select>") +
       interruptor("Rollover (se ilumina al pasar el mouse)", "lote.rollover", l.rollover !== false) +
       '<p class="nota">Arrastra el lote para moverlo y sus esquinas para ajustarlo. Doble clic en una esquina la quita.</p></div>';
@@ -8173,13 +8213,22 @@ void main(){
     else if (c.edificio) {
       const E = c.edificio, n = lotesDeManzana(c).length, mas = (k, v) => '<div class="mz-n"><button data-ed-n="' + k + '" data-d="-1" aria-label="Uno menos">−</button><input type="text" inputmode="numeric" data-ed="' + k + '" value="' + esc(v) + '"><button data-ed-n="' + k + '" data-d="1" aria-label="Uno más">+</button></div>';
       h += '<div class="grupo"><b>Departamentos del edificio ' + CHIP_LAB + "</b>" +
-        campo(terminos().manzana, '<input type="text" data-ed="torre" maxlength="12" value="' + esc(E.torre) + '" placeholder="A">') +
+        campo("Cada uno se llama", '<select data-ed="unidad">' + UNIDADES_EDIFICIO.map((u) => '<option' + ((E.unidad || "Depto") === u ? " selected" : "") + ">" + u + "</option>").join("") + "</select>") +
+        campo("Torre", '<input type="text" data-ed="torre" maxlength="12" value="' + esc(E.torre) + '" placeholder="A">') +
         campo("Pisos", mas("pisos", E.pisos)) + campo("Departamentos por piso", mas("porPiso", E.porPiso)) +
         campo("Número del primer piso", '<input type="text" inputmode="numeric" data-ed="primerPiso" value="' + esc(E.primerPiso) + '">') +
         campo("Prefijo (opcional)", '<input type="text" data-ed="prefijo" maxlength="8" value="' + esc(E.prefijo || "") + '" placeholder="A-">') +
         campo("Primer número de cada piso", '<input type="text" inputmode="numeric" data-ed="inicial" value="' + esc(E.inicial) + '">') +
         campo("Numerar", '<select data-ed="paso"><option value="1"' + (+E.paso === 2 ? "" : " selected") + '>Seguidos (1, 2, 3…)</option><option value="2"' + (+E.paso === 2 ? " selected" : "") + ">De 2 en 2 (1, 3, 5…)</option></select>") +
-        '<p class="nota">Así se numeran: ' + esc(numeroDepa(E, (+E.primerPiso || 1) + E.pisos - 1, 0)) + ", " + esc(numeroDepa(E, (+E.primerPiso || 1) + E.pisos - 1, 1)) + "… en el piso de arriba. Arrastra las 4 esquinas para ajustarlo a la fachada: los " + n + " departamentos la siguen. Para su ficha, elige la ficha «Técnica» en Panoramas → Lotes.</p></div>";
+        '<p class="nota">Así se numeran: ' + esc(numeroDepa(E, (+E.primerPiso || 1) + E.pisos - 1, 0)) + ", " + esc(numeroDepa(E, (+E.primerPiso || 1) + E.pisos - 1, 1)) + "… en el piso de arriba. Arrastra las 4 esquinas para ajustarlo a la fachada: los " + n + " departamentos la siguen. Los <b style=\"color:var(--mz-lima)\">nodos verdes</b> mueven cada piso y cada división, como en la manzana. Para su ficha, elige la ficha «Técnica» en Panoramas → Lotes.</p>" +
+        (E.filas || E.cols ? '<div class="orden"><button class="mini" data-ed-parejo>Pisos y divisiones parejos</button></div>' : "") + "</div>";
+      const lotesEd = lotesDeManzana(c), l0 = Object.assign({}, LOTE_DEF, (lotesEd[0] && lotesEd[0].lote) || {}), g0 = lotesEd[0] && lotesEd[0].trazo ? lotesEd[0].trazo.grosor : 1;
+      h += '<p class="nota mz-aviso">Lo de abajo cambia los ' + lotesEd.length + " departamentos del edificio. Cada uno se puede cambiar aparte tocándolo.</p>";
+      h += grupoRotulo("_lotes.lote.", l0);
+      h += '<div class="grupo"><b>Estilo de los departamentos</b>' + campo("Color", campoRango("_lotes.lote.opacidad", l0.opacidad ?? 0.35, 0, 1, 0.05, pct)) + campo("Borde", campoRango("_lotes.trazo.grosor", g0, 0, 8, 0.5, px)) +
+        campo("Borde de", '<select data-k="_lotes.lote.borde"><option value="blanco"' + (l0.borde !== "estado" ? " selected" : "") + '>Blanco</option><option value="estado"' + (l0.borde === "estado" ? " selected" : "") + ">Color del estado</option></select>") +
+        campo("Color propio", '<span class="color-propio"><input type="color" data-k="_lotes.lote.colorPropio" value="' + esc(l0.colorPropio || "#D5FF40") + '"><button class="mini" data-k="_lotes.lote.colorPropio" data-v="">Usar el del estado</button></span>') +
+        interruptor("Rollover (se ilumina al pasar el mouse)", "_lotes.lote.rollover", l0.rollover !== false) + "</div>";
     }
     else if (c.manzana) {
       const m = c.manzana, lotes = lotesDeManzana(c);
@@ -8305,8 +8354,8 @@ void main(){
     if (el.type === "range" || el.dataset.k === "peso" || /pesoRotulo$/.test(el.dataset.k)) v = +v;
     if (v === "true" || v === "false") v = v === "true"; // botones de sí/no (por ejemplo: fijo en 3D)
     // Manzana: el cambio va a todos sus lotes y se guarda para los que se agreguen después
-    if (el.dataset.k.startsWith("_lotes.") && (c.manzana || c.mzPlano)) {
-      const ruta = el.dataset.k.slice(7), M = c.manzana || c.mzPlano;
+    if (el.dataset.k.startsWith("_lotes.") && (c.manzana || c.mzPlano || c.edificio)) {
+      const ruta = el.dataset.k.slice(7), M = c.manzana || c.mzPlano || c.edificio;
       M.estiloLotes = Object.assign({}, M.estiloLotes, { [ruta]: v });
       lotesDeManzana(c).forEach((x) => { try { escribir(x, ruta, v); } catch (e) { return; } if (x.vinculo) propagar(x, motorEd.actual.id); });
       const etqM = document.querySelector('[data-v-de="' + el.dataset.k + '"]');

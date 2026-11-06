@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-06T21:28:38.266Z",
- "bien": 58,
- "total": 58,
+ "fecha": "2026-11-06T21:52:03.589Z",
+ "bien": 59,
+ "total": 59,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -117,6 +117,10 @@
   },
   {
    "nombre": "Descargar el tour (.zip) para otro hosting",
+   "ok": true
+  },
+  {
+   "nombre": "El tour descargado (.zip) funciona subido a otro hosting, sin Mozari",
    "ok": true
   },
   {
