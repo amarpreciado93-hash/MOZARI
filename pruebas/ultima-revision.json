@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-06T18:41:16.794Z",
- "bien": 55,
- "total": 55,
+ "fecha": "2026-11-06T19:05:06.190Z",
+ "bien": 57,
+ "total": 57,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -57,6 +57,14 @@
   },
   {
    "nombre": "Laboratorio · ficha diseñada del lote",
+   "ok": true
+  },
+  {
+   "nombre": "Laboratorio · interiorismo: ficha técnica con plano, datos y planes de pago que recalculan el precio",
+   "ok": true
+  },
+  {
+   "nombre": "Laboratorio · interiorismo: skin Interior con menú por espacios y la ficha técnica en el tour",
    "ok": true
   },
   {

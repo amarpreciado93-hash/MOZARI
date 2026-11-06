@@ -284,6 +284,74 @@ async function capasPesadas(p) {
       await a.click('[data-fe-plantilla="ubicacion"]'); await a.waitForTimeout(400); await a.click('[data-fe-plantilla="banda"]'); await a.waitForTimeout(400);
       exige(await a.$("#fe-lienzo .fd-pie .fd-logo2"), "la banda de color perdió el segundo logo");
     }, a);
+    await paso("Laboratorio · interiorismo: ficha técnica con plano, datos y planes de pago que recalculan el precio", async () => {
+      const foto = (p, n) => (process.env.CAPTURAS ? p.screenshot({ path: path.join(process.env.CAPTURAS, n + ".png") }) : null);
+      const png = await a.evaluate(() => { const c = document.createElement("canvas"); c.width = 300; c.height = 420; const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, 300, 420); g.lineWidth = 8; g.strokeRect(20, 20, 260, 380); g.lineWidth = 4; g.beginPath(); g.moveTo(20, 220); g.lineTo(180, 220); g.lineTo(180, 400); g.stroke(); return c.toDataURL("image/png").split(",")[1]; });
+      const fila = await a.$eval("#lotes-tabla tr[data-k]", (tr) => tr.dataset.k);
+      await a.click('#lotes-tabla tr[data-k="' + fila + '"] [data-estado="disponible"]'); await a.waitForTimeout(400);
+      await a.fill('#lotes-tabla tr[data-k="' + fila + '"] [data-campo="precio"]', "610456"); await a.waitForTimeout(400);
+      exige(await a.$('[data-fe-plantilla="tecnica"]'), "no está el diseño Técnica en el Laboratorio");
+      await a.click('[data-fe-plantilla="tecnica"]'); await a.waitForTimeout(500);
+      await a.selectOption("#fe-muestra", fila); await a.waitForTimeout(500);
+      await a.click("[data-ft-mas-tipo]"); await a.waitForTimeout(500);
+      const T = '[data-ft-tipo="0"] ';
+      await a.fill(T + '[data-ft-t="nombre"]', "A"); await a.fill(T + '[data-ft-t="int"]', "68.58"); await a.fill(T + '[data-ft-t="ext"]', "10.70");
+      for (const [i, v] of [[0, "1"], [1, "2.0"], [2, "1"], [3, "Closet"]]) await a.fill(T + '[data-ft-dv="' + i + '"]', v);
+      await a.setInputFiles(T + "[data-ft-plano]", { name: "plano-a.png", mimeType: "image/png", buffer: Buffer.from(png, "base64") }); await a.waitForTimeout(2000);
+      await a.selectOption(T + '[data-ft-t="esfera"]', { index: 1 }); await a.waitForTimeout(400);
+      await a.click("[data-ft-mas-plan]"); await a.waitForTimeout(300); await a.click("[data-ft-mas-plan]"); await a.waitForTimeout(300);
+      await a.fill('[data-ft-pt="0"]', "40% de enganche, 30% a 18 meses y 30% a la entrega"); await a.fill('[data-ft-pd="0"]', "20");
+      await a.fill('[data-ft-pt="1"]', "30% de enganche y 70% a la entrega"); await a.fill('[data-ft-pd="1"]', "8");
+      await a.fill('[data-fe="extraT"]', "Paquete llave en mano"); await a.fill('[data-fe="extraM"]', "39000"); await a.fill('[data-fe="notas"]', "Reserva con $10,000");
+      await a.selectOption("#ft-tipo-muestra", { index: 1 }); await a.waitForTimeout(500);
+      await a.fill("#ft-vista-muestra", "Laguna"); await a.waitForTimeout(600);
+      const f = "#fe-lienzo .fd-tecnica";
+      exige(await a.$(f + " .ft-plano img"), "la ficha no muestra el plano del tipo");
+      const tabla = (await a.textContent(f + " .ft-tabla")).replace(/\s+/g, " ");
+      exige(/Tipo ?A/.test(tabla) && /Recámaras ?1/.test(tabla) && /Vista ?Laguna/.test(tabla), "faltan datos en la tabla: " + tabla);
+      exige(/79\.28 m²/.test(await a.textContent(f + " .ft-sup")), "no suma la superficie total");
+      const fin = () => a.textContent(f + ' [data-ft-v="final"]');
+      exige(/527,365/.test(await fin()), "precio final con el primer plan: " + (await fin()));
+      await a.click(f + ' [data-ft-plan="1"]'); await a.waitForTimeout(200);
+      exige(/600,620/.test(await fin()), "al elegir otro plan no se recalculó: " + (await fin()));
+      exige(await a.$(f + " .ft-360"), "falta el botón Recorrido 360");
+      await a.$eval("#fe-lienzo", (e) => e.scrollIntoView({ block: "start" })); await a.waitForTimeout(300); await foto(a, "interior-ficha-editor");
+    }, a);
+    await paso("Laboratorio · interiorismo: skin Interior con menú por espacios y la ficha técnica en el tour", async () => {
+      const foto = (p, n) => (process.env.CAPTURAS ? p.screenshot({ path: path.join(process.env.CAPTURAS, n + ".png") }) : null);
+      try {
+        await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(1200); await pasarGuias(a);
+        exige(await a.$('[data-sk-k="plantilla"][data-v="interior"]'), "no está la plantilla Interior");
+        await a.click('[data-sk-k="plantilla"][data-v="interior"]'); await a.waitForTimeout(900);
+        exige(await a.$("#sk-ui.t-interior .i-espacio"), "no se dibuja la skin Interior");
+        exige((await a.textContent("#sk-ui .i-espacio b")).trim().length > 0, "no dice el nombre del espacio");
+        await a.click('#sk-ui [data-sk="cajon"]'); await a.waitForTimeout(300);
+        exige(await a.isVisible("#sk-ui .i-menu"), "no abre el menú de espacios");
+        await foto(a, "interior-skin"); await a.click('#sk-ui [data-sk="cajon"]'); await a.waitForTimeout(200);
+        await a.click('#subtabs button:has-text("9:16")'); await a.waitForTimeout(1000); await foto(a, "interior-skin-v");
+        await a.click('#subtabs button:has-text("16:9")'); await a.waitForTimeout(600);
+        // Vista previa: tocar la unidad A abre la ficha técnica y «Recorrido 360» lleva a su esfera
+        await a.click('button:has-text("Vista previa")'); await a.waitForTimeout(3500);
+        const centros = await a.$$eval("#previa path.cp-pol.con-accion", (l) => l.map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2, r.width * r.height]; }).filter((x) => x[2] > 80 && x[0] > 0 && x[1] > 0 && x[0] < 1400 && x[1] < 900).sort((p, q) => q[2] - p[2]));
+        let abierta = false;
+        for (const [x, y] of centros) {
+          await a.mouse.click(x, y); await a.waitForTimeout(600);
+          if (await a.$("#previa .pop .fd-tecnica .ft-360")) { abierta = true; break; }
+          if (await a.$("#previa .pop .pop-x")) { await a.click("#previa .pop .pop-x"); await a.waitForTimeout(300); }
+        }
+        exige(abierta, "en la vista previa la unidad A no abrió la ficha técnica (" + centros.length + " lotes tocados)");
+        await foto(a, "interior-ficha-tour");
+        await a.click("#previa .pop .ft-360"); await a.waitForTimeout(1200);
+        exige(!(await a.isVisible("#previa .pop .pop-caja")), "Recorrido 360 no cerró la ficha");
+        await a.keyboard.press("Escape"); await a.waitForTimeout(600);
+      } finally {
+        if (await a.isVisible("#previa")) { await a.keyboard.press("Escape"); await a.waitForTimeout(400); await a.keyboard.press("Escape"); await a.waitForTimeout(400); }
+        await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(800);
+        await a.click('[data-sk-k="plantilla"][data-v="cine"]'); await a.waitForTimeout(500);
+        await a.click('#nav button:has-text("Panoramas")'); await a.waitForTimeout(800); await a.click('#subtabs button:has-text("Lotes")'); await a.waitForTimeout(1000);
+        await a.click('[data-fe-plantilla="banda"]'); await a.waitForTimeout(500);
+      }
+    }, a);
     let link = null;
     await paso("Publicar y abrir el tour público en computadora", async () => {
       await a.click('#nav button:has-text("Publicar")'); await a.waitForTimeout(800);

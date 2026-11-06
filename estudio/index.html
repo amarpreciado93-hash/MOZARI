@@ -1328,6 +1328,109 @@
   .t-brujula.sk--v .b-cta-wrap { position: static; }
   .t-brujula.sk--v .b-pil { top: 96px; }
 
+  /* Ficha técnica (Laboratorio: interiorismo): plano de la unidad a la izquierda; datos, precio y planes de pago a la derecha */
+  .pop-caja.ficha-d.fd-tecnica { width: min(1120px, 100%); container-type: inline-size; }
+  .fd-tecnica .ft-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .fd-tecnica .ft-grid.sin-plano { grid-template-columns: minmax(0, 1fr); max-width: 620px; margin: 0 auto; }
+  .fd-tecnica .ft-plano { display: grid; place-items: center; padding: 28px; border-right: 2px solid var(--fd-texto); min-height: 320px; }
+  .fd-tecnica .ft-plano img { display: block; max-width: 100%; max-height: min(78vh, 780px); object-fit: contain; }
+  .fd-tecnica .ft-plano .fd-plano { width: 100%; height: auto; }
+  .fd-tecnica .ft-sinplano { margin: 0; max-width: 260px; font-size: 13px; text-align: center; opacity: 0.6; }
+  .fd-tecnica .ft-info { padding: 30px 30px 26px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+  .fd-tecnica .ft-num { margin: 0; padding-right: 36px; font-size: 58px; font-size: clamp(40px, 7cqi, 78px); font-weight: 500; line-height: 0.95; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+  .fd-tecnica .ft-mz { margin: -6px 0 0; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.7; }
+  .fd-tecnica .ft-tabla { display: grid; grid-template-columns: 1fr 1fr; border-top: 2px solid var(--fd-texto); border-bottom: 2px solid var(--fd-texto); }
+  .fd-tecnica .ft-tabla.una { grid-template-columns: 1fr; }
+  .fd-tecnica .ft-tabla dl { margin: 0; min-width: 0; }
+  .fd-tecnica .ft-tabla dl:first-child { padding-right: 12px; }
+  .fd-tecnica .ft-tabla dl + dl { padding-left: 12px; border-left: 2px solid var(--fd-texto); }
+  .fd-tecnica .ft-tabla dl div { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid color-mix(in srgb, var(--fd-texto) 40%, transparent); font-size: 14px; }
+  .fd-tecnica .ft-tabla dl div:last-child { border-bottom: 0; }
+  .fd-tecnica .ft-tabla dt { text-transform: uppercase; opacity: 0.85; }
+  .fd-tecnica .ft-tabla dd { margin: 0; text-align: right; font-weight: 500; }
+  .fd-tecnica .ft-sup { display: grid; justify-items: center; gap: 2px; padding-bottom: 12px; border-bottom: 2px solid var(--fd-texto); font-size: 14px; text-align: center; }
+  .fd-tecnica .ft-sup b { font-weight: 600; }
+  .fd-tecnica .ft-precio { display: grid; gap: 3px; }
+  .fd-tecnica .ft-renglon { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 12px; font-size: 13px; text-transform: uppercase; }
+  .fd-tecnica .ft-renglon b { font-weight: 500; text-transform: none; font-variant-numeric: tabular-nums; text-align: right; }
+  .fd-tecnica .ft-renglon.chico { font-size: 11px; }
+  .fd-tecnica .ft-renglon.chico b { font-size: 14px; }
+  .fd-tecnica .ft-renglon.final { margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--fd-texto); font-size: 16px; font-weight: 600; }
+  .fd-tecnica .ft-renglon.final b { font-size: 26px; font-size: clamp(22px, 3.4cqi, 32px); font-weight: 600; }
+  .fd-tecnica .ft-cab { display: flex; justify-content: space-between; padding-bottom: 4px; border-bottom: 2px solid var(--fd-texto); font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+  .fd-tecnica .ft-planes { display: grid; }
+  .fd-tecnica .ft-plan { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 7px 0; background: none; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--fd-texto) 40%, transparent); color: inherit; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+  .fd-tecnica .ft-plan b { min-width: 74px; padding: 4px 10px; border: 1.5px solid var(--fd-texto); border-radius: 999px; text-align: center; font-weight: 500; font-variant-numeric: tabular-nums; transition: background 0.15s, color 0.15s; }
+  .fd-tecnica .ft-plan:hover b { border-color: var(--fd-acento); }
+  .fd-tecnica .ft-plan[aria-pressed="true"] b { background: var(--fd-acento); border-color: var(--fd-acento); color: var(--fd-sobre); }
+  .fd-tecnica .ft-notas { display: grid; gap: 2px; font-size: 12.5px; }
+  .fd-tecnica .ft-notas .ft-cab { margin-bottom: 4px; }
+  .fd-tecnica .ft-notas p { margin: 0; }
+  .fd-tecnica .ft-botones { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 14px; border-top: 2px solid var(--fd-texto); }
+  .fd-tecnica .ft-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 22px; border-radius: 999px; border: 0; font: inherit; font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none; cursor: pointer; box-sizing: border-box; }
+  .fd-tecnica .ft-360 { background: var(--fd-acento); color: var(--fd-sobre); }
+  .fd-tecnica .ft-estado { flex: 1 1 180px; background: var(--c); color: var(--cs); }
+  @container (max-width: 760px) {
+    .fd-tecnica .ft-grid { grid-template-columns: minmax(0, 1fr); }
+    .fd-tecnica .ft-plano { border-right: 0; border-bottom: 2px solid var(--fd-texto); min-height: 0; padding: 18px; }
+    .fd-tecnica .ft-plano img { max-height: 40vh; }
+    .fd-tecnica .ft-info { padding: 20px 18px 18px; }
+  }
+  @media (max-width: 760px) {
+    .fd-tecnica .ft-grid { grid-template-columns: minmax(0, 1fr); }
+    .fd-tecnica .ft-plano { border-right: 0; border-bottom: 2px solid var(--fd-texto); min-height: 0; padding: 18px; }
+    .fd-tecnica .ft-plano img { max-height: 40vh; }
+    .fd-tecnica .ft-info { padding: 20px 18px 18px; }
+  }
+  /* Controles de la ficha técnica en el editor */
+  .ft-tipo { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--mz-linea-neutra); border-radius: 10px; background: var(--mz-negro); }
+  .ft-tipo-cab { display: flex; gap: 8px; align-items: center; }
+  .ft-tipo-cab .entrada { flex: 1; min-width: 0; font-weight: 600; }
+  .ft-tipo-plano { display: flex; align-items: center; gap: 10px; }
+  .ft-tipo-plano img { width: 64px; height: 64px; object-fit: contain; background: #fff; border-radius: 6px; }
+  .ft-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ft-datos { display: grid; gap: 6px; justify-items: start; }
+  .ft-dato { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; width: 100%; }
+  .ft-dato.plan { grid-template-columns: 1fr 64px auto; }
+  .ft-dato.sin-x { grid-template-columns: 1fr 110px; }
+  .ft-dato .entrada { min-width: 0; }
+  .ft-muestra { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .fe-lienzo .pop-caja.ficha-d.fd-tecnica { width: 100%; }
+  /* Interior (Laboratorio): botones redondos arriba a la izquierda, logo arriba a la derecha, menú por espacios y el nombre del espacio abajo */
+  .t-interior .i-redondo { width: 42px; height: 42px; border-radius: 50%; }
+  .t-interior .i-arriba { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 18px); left: max(18px, env(safe-area-inset-left, 0px)); display: flex; gap: 8px; pointer-events: auto; }
+  .t-interior [data-sk="cajon"][aria-expanded="true"] { background: var(--sk-acento); color: var(--sk-sobre); border-color: var(--sk-acento); }
+  .t-interior .i-marca { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 18px); right: max(22px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; gap: 10px; max-width: 45%; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.5); }
+  .t-interior .i-marca .sk-logo img { height: 42px; max-width: 190px; filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.35)); }
+  .t-interior .i-marca b { font-size: 12px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t-interior .i-menu { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 70px); left: max(18px, env(safe-area-inset-left, 0px)); width: min(270px, calc(100% - 36px)); max-height: calc(100% - 180px); overflow-y: auto; padding: 6px 0; pointer-events: auto; }
+  .t-interior .i-grupo summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 16px; font-size: 14px; cursor: pointer; }
+  .t-interior .i-grupo summary::-webkit-details-marker { display: none; }
+  .t-interior .i-grupo summary svg { width: 15px; height: 15px; flex: none; transition: transform 0.2s; }
+  .t-interior .i-grupo[open] summary svg { transform: rotate(90deg); }
+  .t-interior .i-grupo:has([aria-current="true"]) > summary { color: var(--sk-acento); }
+  .t-interior .i-sub { display: grid; padding-bottom: 6px; }
+  .t-interior .i-item { text-align: left; background: none; border: 0; color: rgba(255, 255, 255, 0.82); font-size: 13px; padding: 8px 16px 8px 28px; cursor: pointer; }
+  .t-interior .i-item.suelto { padding-left: 16px; font-size: 14px; }
+  .t-interior .i-item:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+  .t-interior .i-item[aria-current="true"] { color: var(--sk-acento); font-weight: 600; }
+  .t-interior .i-abajo { position: absolute; left: max(18px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 22px); display: flex; align-items: center; gap: 8px; pointer-events: auto; }
+  .t-interior .i-cta { padding: 11px 18px; }
+  .t-interior .i-flechas { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 22px); display: flex; gap: 10px; pointer-events: auto; }
+  .t-interior .i-espacio { position: absolute; right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); width: min(300px, 32%); box-sizing: border-box; padding: 15px 18px; display: grid; gap: 3px; pointer-events: auto; }
+  .t-interior .i-espacio b { font-size: 17px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t-interior .i-espacio small { font-size: 11px; opacity: 0.7; }
+  .t-interior .i-espacio .sk-pil { justify-self: start; }
+  .t-interior .sk-leyenda { top: calc(env(safe-area-inset-top, 0px) + 76px); right: max(18px, env(safe-area-inset-right, 0px)); }
+  .t-interior.sk--v .i-marca .sk-logo img { height: 30px; max-width: 130px; }
+  .t-interior.sk--v .i-marca b { display: none; }
+  .t-interior.sk--v .i-abajo { bottom: calc(env(safe-area-inset-bottom, 0px) + 88px); flex-wrap: wrap; max-width: calc(100% - 36px); }
+  .t-interior.sk--v .i-redondo { width: 38px; height: 38px; }
+  .t-interior.sk--v .i-espacio { left: 14px; right: 14px; width: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); padding: 12px 108px 12px 16px; min-height: 62px; align-content: center; }
+  .t-interior.sk--v .i-flechas { left: auto; right: 24px; transform: none; bottom: calc(env(safe-area-inset-bottom, 0px) + 26px); z-index: 1; }
+  .t-interior.sk--v .i-flechas .i-redondo { width: 36px; height: 36px; }
+  .t-interior.sk--v .sk-leyenda { top: calc(env(safe-area-inset-top, 0px) + 66px); right: 12px; }
+
   /* Selector de plantillas en el editor de skin */
   .plantillas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .plantilla { border: 1px solid var(--mz-linea-neutra); background: var(--mz-negro); border-radius: 12px; padding: 8px; display: grid; gap: 6px; text-align: left; color: var(--mz-texto); cursor: pointer; }
@@ -1951,6 +2054,8 @@
   // Cómo se dice en cada país: lote, solar, predio, sitio…; manzana, bloque…; y su abreviatura (por defecto "M")
   const TERMINOS_DEF = { lote: "Lote", manzana: "Manzana", corto: "M" };
   const TERMINOS_PRESETS = [["Lote", "Manzana", "M", "México"], ["Lote", "Manzana", "Mz", ""], ["Solar", "Manzana", "Mz", ""], ["Predio", "Bloque", "B", ""], ["Sitio", "Manzana", "Mz", ""], ["Terreno", "Sección", "S", ""], ["Parcela", "Bloque", "B", ""]];
+  // Interiorismo (Laboratorio): también para departamentos
+  const presetsTerminos = () => TERMINOS_PRESETS.concat(enLab("interiorismo") ? [["Departamento", "Torre", "T", "departamentos"], ["Unidad", "Nivel", "N", "departamentos"]] : []);
   const terminos = () => { let t = {}; try { t = (est && est.proyecto && est.proyecto.terminos) || {}; } catch (e) { t = {}; } return { lote: t.lote || TERMINOS_DEF.lote, manzana: t.manzana || TERMINOS_DEF.manzana, corto: t.corto !== undefined ? t.corto : TERMINOS_DEF.corto }; };
   const plural = (w) => (/[aeiouáéíóú]$/i.test(w) ? w + "s" : /z$/i.test(w) ? w.slice(0, -1) + "ces" : w + "es");
   // "M1" con una letra y número; "M B" o "Mz 1" en los demás casos; sin abreviatura se usa la palabra completa
@@ -1973,7 +2078,7 @@
   }
   // Estado, área y precio son del lote, no de la esfera: se copian a todas sus apariciones
   function sincronizarLote(c) {
-    copiasLote(c).forEach(({ c: x }) => { if (x === c) return; ["estado", "area", "precio"].forEach((k) => (x.lote[k] = c.lote[k])); });
+    copiasLote(c).forEach(({ c: x }) => { if (x === c) return; ["estado", "area", "precio", "tipo", "vista"].forEach((k) => { if (c.lote[k] !== undefined) x.lote[k] = c.lote[k]; }); });
   }
   const original = JSON.stringify({ proyecto: base.proyecto, escenas: base.escenas, capas: base.capas, terreno: base.terreno || null, lotesEstados: base.lotesEstados || ESTADOS_DEF });
   let est = MODO === "demo" ? JSON.parse(original) : JSON.parse(JSON.stringify(base));
@@ -7864,7 +7969,9 @@ void main(){
         : '<label>' + esc(terminos().lote) + '<input type="text" data-k="lote.numero" value="' + val("numero") + '" placeholder="12"></label>') +
       '<label>' + esc(terminos().manzana) + '<input type="text" data-k="lote.manzana" value="' + val("manzana") + '" placeholder="3"></label>' +
       '<label>Superficie (m²)<input type="text" inputmode="decimal" data-k="lote.area" value="' + val("area") + '" placeholder="1250"></label>' +
-      '<label>Precio (' + monedaTour() + ')<input type="text" inputmode="decimal" data-k="lote.precio" value="' + val("precio") + '" placeholder="$"></label></div>' +
+      '<label>Precio (' + monedaTour() + ')<input type="text" inputmode="decimal" data-k="lote.precio" value="' + val("precio") + '" placeholder="$"></label>' +
+      (enLab("interiorismo") && tiposUni().length ? '<label>Tipo de unidad<select data-k="lote.tipo"><option value="">Sin tipo</option>' + tiposUni().map((t) => '<option value="' + esc(t.id) + '"' + (l.tipo === t.id ? " selected" : "") + ">" + esc(t.nombre || "Tipo") + "</option>").join("") + "</select></label>" +
+        '<label>Vista<input type="text" data-k="lote.vista" value="' + val("vista") + '" placeholder="Laguna"></label>' : "") + "</div>" +
       '<p class="nota">Sin número ni ' + esc(terminos().manzana.toLowerCase()) + ', el área no lleva rótulo ni ficha y no cuenta como ' + esc(terminos().lote.toLowerCase()) + ' (para reservas o áreas verdes).</p></div>';
     h += '<div class="grupo"><b>Estado</b><div class="estados">' + estadosLote().map((e) =>
       '<button data-estado="' + e.id + '" aria-pressed="' + (estadoDe(c).id === e.id) + '" style="--c:' + e.color + '"><i></i>' + esc(e.nombre) + "</button>").join("") + "</div>" +
@@ -8396,10 +8503,11 @@ void main(){
     const si = (k, n) => '<label class="fe-si"><input type="checkbox" data-fe="' + k + '"' + (f[k] ? " checked" : "") + "> " + n + "</label>";
     const color = (k, n) => '<label class="fe-color"><input type="color" data-fe="' + k + '" value="' + esc(f[k]) + '"> ' + n + "</label>";
     const logoSkin = sk.logo && sk.logo.tipo === "propio" && sk.logo.img;
+    const tecnica = f.plantilla === "tecnica", lm = c ? loteDe(c) : null;
     caja.innerHTML = '<div class="fe-cab"><div><h2>Ficha de los lotes ' + CHIP_LAB + '</h2><p class="nota">Lo que ve tu cliente al tocar un lote, con la marca del desarrollo.</p></div>' +
       '<label class="fe-activa"><input type="checkbox" data-fe="activa"' + (f.activa ? " checked" : "") + "> Usar esta ficha en el tour</label></div>" +
       '<div class="fe-cuerpo"><div class="fe-controles">' +
-      '<div class="fe-grupo"><b>Diseño</b><div class="estados">' + FICHA_PLANTILLAS.map(([v, n]) => '<button data-fe-plantilla="' + v + '" aria-pressed="' + (f.plantilla === v) + '">' + n + "</button>").join("") + "</div></div>" +
+      '<div class="fe-grupo"><b>Diseño</b><div class="estados">' + FICHA_PLANTILLAS.filter(([v]) => v !== "tecnica" || enLab("interiorismo") || f.plantilla === v).map(([v, n]) => '<button data-fe-plantilla="' + v + '" aria-pressed="' + (f.plantilla === v) + '">' + n + "</button>").join("") + "</div></div>" +
       '<div class="fe-grupo"><b>Marca</b><div class="estados">' + [["skin", "Logo del Skin"], ["propio", "Otro logo"], ["texto", "Solo nombre"]].map(([v, n]) => '<button data-fe-logo="' + v + '" aria-pressed="' + (f.logo === v) + '">' + n + "</button>").join("") + "</div>" +
         (f.logo === "skin" && !logoSkin ? '<span class="nota">Tu Skin todavía no tiene logo. Súbelo aquí:</span>' : "") +
         (f.logo === "propio" || (f.logo === "skin" && !logoSkin) ? '<label class="btn-sec fe-subir">' + (f.logo === "propio" && f.logoImg ? "Cambiar logo" : "Subir logo del desarrollo (PNG o SVG)") + '<input type="file" id="fe-logo" accept="image/png,image/svg+xml,image/jpeg,image/webp" hidden></label>' : "") +
@@ -8409,29 +8517,94 @@ void main(){
         '<label class="fe-campo">Nombre del desarrollo<input class="entrada" data-fe="titulo" maxlength="60" value="' + esc(f.titulo) + '" placeholder="' + esc(P().nombre || "") + '"></label></div>' +
       '<div class="fe-grupo"><b>Colores y letra</b><div class="fe-colores">' + color("fondo", "Fondo") + color("texto", "Texto") + color("acento", "Acento") + "</div>" +
         '<label class="fe-campo">Tipografía<select class="entrada" data-fe="fuente">' + FUENTES_LOTE.map(([v, n]) => '<option value="' + esc(v) + '"' + (f.fuente === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select></label></div>" +
-      '<div class="fe-grupo"><b>Qué muestra</b><div class="fe-sis">' + si("plano", "Plano del lote") + si("medidas", "Medidas por lado") + si("superficie", "Superficie") + si("precio", "Precio") + (f.plantilla === "ubicacion" ? si("ubicacion", "Ubicación en el desarrollo") : "") + si("boton", "Botón de contacto") + "</div></div>" +
+      (tecnica ? '<div class="fe-grupo"><b>Qué muestra</b><div class="fe-sis">' + si("plano", "Dibujo del lote si el tipo no tiene plano") + si("superficie", "Superficies") + si("precio", "Precio y planes de pago") + si("boton", "Botón de contacto") + "</div></div>" + editorTecnica(f)
+        : '<div class="fe-grupo"><b>Qué muestra</b><div class="fe-sis">' + si("plano", "Plano del lote") + si("medidas", "Medidas por lado") + si("superficie", "Superficie") + si("precio", "Precio") + (f.plantilla === "ubicacion" ? si("ubicacion", "Ubicación en el desarrollo") : "") + si("boton", "Botón de contacto") + "</div></div>" +
       '<div class="fe-grupo"><b>Textos</b><label class="fe-campo">Título 1 (opcional)<input class="entrada" data-fe="tituloA" maxlength="40" value="' + esc(f.tituloA) + '" placeholder="Potencial del terreno"></label>' +
         '<label class="fe-campo">Texto 1 (un párrafo por renglón)<textarea class="entrada" rows="3" data-fe="textoA" maxlength="600">' + esc(f.textoA) + "</textarea></label>" +
         '<label class="fe-campo">Título 2 (opcional)<input class="entrada" data-fe="tituloB" maxlength="40" value="' + esc(f.tituloB) + '" placeholder="' + (f.plantilla === "ubicacion" ? "Ubicación" : "") + '"></label>' +
-        '<label class="fe-campo">Texto 2<textarea class="entrada" rows="3" data-fe="textoB" maxlength="600">' + esc(f.textoB) + "</textarea></label></div>" +
+        '<label class="fe-campo">Texto 2<textarea class="entrada" rows="3" data-fe="textoB" maxlength="600">' + esc(f.textoB) + "</textarea></label></div>") +
       '</div><div class="fe-vista">' +
       (todos.length ? '<label class="fe-campo">Ver con<select class="entrada" id="fe-muestra">' + todos.map((y) => '<option value="' + esc(y.k) + '"' + (y.k === fichaMuestra ? " selected" : "") + ">" + esc(nombreLote(y.m[0].c)) + "</option>").join("") + "</select></label>" : "") +
+      (tecnica && lm ? '<div class="ft-muestra"><label class="fe-campo">Tipo de esta unidad<select class="entrada" id="ft-tipo-muestra"><option value="">Sin tipo</option>' + tiposUni().map((t) => '<option value="' + esc(t.id) + '"' + (lm.tipo === t.id ? " selected" : "") + ">" + esc(t.nombre || "Tipo") + "</option>").join("") + "</select></label>" +
+        '<label class="fe-campo">Vista<input class="entrada" id="ft-vista-muestra" maxlength="40" value="' + esc(lm.vista || "") + '" placeholder="Laguna"></label></div>' : "") +
       '<div class="fe-lienzo" id="fe-lienzo">' + (c ? fichaDisenada(c, f) : '<p class="nota">Dibuja un lote para ver su ficha aquí.</p>') + "</div></div></div>";
   }
+  // Controles de la ficha técnica: tipos de unidad (plano, superficies, datos, recorrido 360), planes de pago, extra y notas
+  function editorTecnica(f) {
+    const tipos = tiposUni();
+    return '<div class="fe-grupo"><b>Tipos de unidad</b><span class="fe-sub">Cada tipo (A, B, Loft…) con su plano y sus datos. Luego eliges el tipo de cada unidad: aquí a la derecha o en Capas (con Shift eliges varias).</span>' +
+      tipos.map((t, i) => '<div class="ft-tipo" data-ft-tipo="' + i + '">' +
+        '<div class="ft-tipo-cab"><input class="entrada" data-ft-t="nombre" maxlength="30" value="' + esc(t.nombre || "") + '" placeholder="Tipo A" aria-label="Nombre del tipo"><button class="mini" data-ft-quitar-tipo>Quitar</button></div>' +
+        '<div class="ft-tipo-plano">' + (t.plano ? '<img src="' + esc(urlArchivo(t.plano)) + '" alt="Plano">' : "") + '<label class="btn-sec fe-subir">' + (t.plano ? "Cambiar plano" : "Subir plano (PNG o JPG)") + '<input type="file" data-ft-plano accept="image/png,image/jpeg,image/webp" hidden></label></div>' +
+        '<div class="ft-dos"><label class="fe-campo">Sup. interior (m²)<input class="entrada" data-ft-t="int" inputmode="decimal" value="' + esc(t.int || "") + '" placeholder="68.58"></label><label class="fe-campo">Sup. exterior (m²)<input class="entrada" data-ft-t="ext" inputmode="decimal" value="' + esc(t.ext || "") + '" placeholder="10.70"></label></div>' +
+        '<div class="ft-datos">' + (t.datos || []).map(([k, v], j) => '<div class="ft-dato"><input class="entrada" data-ft-dk="' + j + '" maxlength="24" value="' + esc(k) + '" placeholder="Dato" aria-label="Dato"><input class="entrada" data-ft-dv="' + j + '" maxlength="30" value="' + esc(v) + '" placeholder="Valor" aria-label="Valor"><button class="mini" data-ft-quitar-dato="' + j + '" aria-label="Quitar dato">×</button></div>').join("") +
+        '<button class="mini" data-ft-mas-dato>+ Agregar dato</button></div>' +
+        '<label class="fe-campo">Recorrido 360 (botón en la ficha)<select class="entrada" data-ft-t="esfera"><option value="">Sin botón</option>' + est.escenas.map((x) => '<option value="' + esc(x.id) + '"' + (t.esfera === x.id ? " selected" : "") + ">" + esc(x.nombre) + "</option>").join("") + "</select></label></div>").join("") +
+      '<button class="btn-sec" data-ft-mas-tipo>+ Agregar tipo</button></div>' +
+      '<div class="fe-grupo"><b>Planes de pago</b><span class="fe-sub">Cada plan con su descuento. Tu cliente toca uno y el precio se recalcula.</span>' +
+      (f.planes || []).map((x, i) => '<div class="ft-dato plan"><input class="entrada" data-ft-pt="' + i + '" maxlength="120" value="' + esc(x.t || "") + '" placeholder="30% de enganche y 70% a la entrega" aria-label="Plan de pago"><input class="entrada" data-ft-pd="' + i + '" inputmode="decimal" value="' + esc(x.d ?? "") + '" placeholder="%" aria-label="Descuento en %"><button class="mini" data-ft-quitar-plan="' + i + '" aria-label="Quitar plan">×</button></div>').join("") +
+      '<button class="mini" data-ft-mas-plan>+ Agregar plan</button></div>' +
+      '<div class="fe-grupo"><b>Extra al precio (opcional)</b><span class="fe-sub">Se suma al final; por ejemplo, un paquete de acabados.</span><div class="ft-dato plan sin-x"><input class="entrada" data-fe="extraT" maxlength="60" value="' + esc(f.extraT) + '" placeholder="Paquete llave en mano" aria-label="Qué es"><input class="entrada" data-fe="extraM" inputmode="decimal" value="' + esc(f.extraM) + '" placeholder="Monto" aria-label="Monto"></div></div>' +
+      '<div class="fe-grupo"><b>Notas</b><label class="fe-campo">Una por renglón<textarea class="entrada" rows="4" data-fe="notas" maxlength="900" placeholder="Reserva con $10,000">' + esc(f.notas) + "</textarea></label></div>";
+  }
+  const tipoEditado = (el) => { const w = el.closest("[data-ft-tipo]"); return w ? tiposUni()[+w.dataset.ftTipo] : null; };
   const setFicha = (k, v) => { P().ficha = Object.assign(fichaConf(), { [k]: v }); guardar(); };
   const repintarFicha = () => { const f = fichaConf(), x = lotesUnicos().find((y) => y.k === fichaMuestra), l = $("fe-lienzo"); if (l && x) l.innerHTML = fichaDisenada(x.m[0].c, f); };
   $("ficha-editor").addEventListener("click", (ev) => {
     const pl = ev.target.closest("[data-fe-plantilla]"); if (pl) { setFicha("plantilla", pl.dataset.fePlantilla); pintarFichaEditor(); return; }
     const lg = ev.target.closest("[data-fe-logo]"); if (lg) { setFicha("logo", lg.dataset.feLogo); pintarFichaEditor(); return; }
     if (ev.target.closest("[data-fe-quitar2]")) { setFicha("logo2", ""); pintarFichaEditor(); return; }
+    if (ev.target.closest("[data-ft-mas-tipo]")) {
+      const n = tiposUni().length, letra = String.fromCharCode(65 + (n % 26));
+      tiposUni().push({ id: "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), nombre: letra, plano: "", int: "", ext: "", datos: DATOS_TIPO.map((k) => [k, ""]), esfera: "" });
+      guardar(); pintarFichaEditor(); return;
+    }
+    const tq = ev.target.closest("[data-ft-quitar-tipo]");
+    if (tq) { const t = tipoEditado(tq); P().tipos = tiposUni().filter((x) => x !== t); guardar(); pintarFichaEditor(); return; }
+    if (ev.target.closest("[data-ft-mas-dato]")) { const t = tipoEditado(ev.target); if (t) { t.datos = (t.datos || []).concat([["", ""]]); guardar(); pintarFichaEditor(); } return; }
+    const dq = ev.target.closest("[data-ft-quitar-dato]");
+    if (dq) { const t = tipoEditado(dq); if (t) { t.datos.splice(+dq.dataset.ftQuitarDato, 1); guardar(); pintarFichaEditor(); } return; }
+    if (ev.target.closest("[data-ft-mas-plan]")) { setFicha("planes", (fichaConf().planes || []).concat([{ t: "", d: "" }])); pintarFichaEditor(); return; }
+    const pq = ev.target.closest("[data-ft-quitar-plan]");
+    if (pq) { setFicha("planes", (fichaConf().planes || []).filter((x, i) => i !== +pq.dataset.ftQuitarPlan)); pintarFichaEditor(); return; }
     if (ev.target.closest(".fe-lienzo a, .fe-lienzo .pop-x")) ev.preventDefault();
   });
   $("ficha-editor").addEventListener("input", (ev) => {
+    const d = ev.target.dataset || {};
+    if (d.ftT !== undefined || d.ftDk !== undefined || d.ftDv !== undefined) {
+      const t = tipoEditado(ev.target); if (!t) return;
+      if (d.ftT !== undefined) t[d.ftT] = ev.target.value;
+      else (t.datos[+(d.ftDk ?? d.ftDv)] || [])[d.ftDk !== undefined ? 0 : 1] = ev.target.value;
+      guardar(); repintarFicha(); return;
+    }
+    if (d.ftPt !== undefined || d.ftPd !== undefined) {
+      const ps = (fichaConf().planes || []).map((x) => Object.assign({}, x)), i = +(d.ftPt ?? d.ftPd);
+      if (!ps[i]) return;
+      if (d.ftPt !== undefined) ps[i].t = ev.target.value; else ps[i].d = ev.target.value.replace(/[^\d.]/g, "");
+      setFicha("planes", ps); repintarFicha(); return;
+    }
+    if (ev.target.id === "ft-vista-muestra") { const x = lotesUnicos().find((y) => y.k === fichaMuestra); if (x) { x.m.forEach(({ c }) => (c.lote.vista = ev.target.value)); guardar(); repintarFicha(); } return; }
     const k = ev.target.dataset && ev.target.dataset.fe; if (!k || ev.target.type === "checkbox" || ev.target.tagName === "SELECT") return;
     setFicha(k, ev.target.value); repintarFicha();
   });
   $("ficha-editor").addEventListener("change", async (ev) => {
-    if (ev.target.id === "fe-muestra") { fichaMuestra = ev.target.value; repintarFicha(); return; }
+    if (ev.target.id === "fe-muestra") { fichaMuestra = ev.target.value; pintarFichaEditor(); return; }
+    if (ev.target.id === "ft-tipo-muestra") { const x = lotesUnicos().find((y) => y.k === fichaMuestra); if (x) { x.m.forEach(({ c }) => (c.lote.tipo = ev.target.value)); guardar(); repintarFicha(); } return; }
+    if (ev.target.dataset && ev.target.dataset.ftPlano !== undefined) {
+      const t = tipoEditado(ev.target), file = ev.target.files && ev.target.files[0]; if (!t || !file) return;
+      const img = new Image();
+      img.onload = async () => {
+        const k = Math.min(1, 1800 / Math.max(img.naturalWidth || 1800, img.naturalHeight || 1800, 1)), cv = document.createElement("canvas");
+        cv.width = Math.round((img.naturalWidth || 1200) * k); cv.height = Math.round((img.naturalHeight || 1200) * k);
+        const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(img.src);
+        try { t.plano = await medio(cv, "image/jpeg", 0.9, "plano-tipo"); } catch (err) { avisar(err.message); return; }
+        guardar(); pintarFichaEditor(); avisar("Plano del tipo " + (t.nombre || "") + " listo");
+      };
+      img.onerror = () => avisar("No se pudo leer ese archivo");
+      img.src = URL.createObjectURL(file);
+      return;
+    }
+    if (ev.target.dataset && ev.target.dataset.ftT === "esfera") { const t = tipoEditado(ev.target); if (t) { t.esfera = ev.target.value; guardar(); repintarFicha(); } return; }
     if (ev.target.id === "fe-logo" || ev.target.id === "fe-logo2") {
       const segundo = ev.target.id === "fe-logo2";
       const file = ev.target.files && ev.target.files[0]; if (!file) return;
@@ -8458,7 +8631,7 @@ void main(){
   function pintarLotes() {
     const todos = lotesUnicos(), E = estadosLote();
     const T = terminos();
-    $("lt-preset").innerHTML = '<option value="">Elegir…</option>' + TERMINOS_PRESETS.map((p, i) => '<option value="' + i + '"' + (p[0] === T.lote && p[1] === T.manzana && p[2] === T.corto ? " selected" : "") + ">" + p.slice(0, 3).join(" · ") + (p[3] ? " (" + p[3] + ")" : "") + "</option>").join("");
+    $("lt-preset").innerHTML = '<option value="">Elegir…</option>' + presetsTerminos().map((p, i) => '<option value="' + i + '"' + (p[0] === T.lote && p[1] === T.manzana && p[2] === T.corto ? " selected" : "") + ">" + p.slice(0, 3).join(" · ") + (p[3] ? " (" + p[3] + ")" : "") + "</option>").join("");
     if (document.activeElement !== $("lt-lote")) $("lt-lote").value = T.lote;
     if (document.activeElement !== $("lt-mz")) $("lt-mz").value = T.manzana;
     if (document.activeElement !== $("lt-corto")) $("lt-corto").value = T.corto;
@@ -8518,7 +8691,7 @@ void main(){
     Object.keys(est.capas).forEach((id) => (est.capas[id] || []).forEach((c) => { if (c.manzana) c.nombre = P().terminos.manzana + " " + c.manzana.mz; }));
     guardar(); pintarLotes(); if (motorEd) motorEd.construir(); pintarCapas();
   }
-  $("lt-preset").addEventListener("change", (ev) => { const p = TERMINOS_PRESETS[+ev.target.value]; if (!p) return; ponerTerminos({ lote: p[0], manzana: p[1], corto: p[2] }); avisar("Ahora dice: " + nombreLote({ lote: { numero: "12", manzana: "3" } }) + ". Vuelve a Publicar para verlo en el tour."); });
+  $("lt-preset").addEventListener("change", (ev) => { const p = presetsTerminos()[+ev.target.value]; if (!p) return; ponerTerminos({ lote: p[0], manzana: p[1], corto: p[2] }); avisar("Ahora dice: " + nombreLote({ lote: { numero: "12", manzana: "3" } }) + ". Vuelve a Publicar para verlo en el tour."); });
   ["lt-lote", "lt-mz", "lt-corto"].forEach((id) => $(id).addEventListener("input", (ev) => ponerTerminos({ [{ "lt-lote": "lote", "lt-mz": "manzana", "lt-corto": "corto" }[id]]: ev.target.value })));
   $("lx-moneda").addEventListener("change", (ev) => { P().moneda = ev.target.value; guardar(); pintarLotes(); if (motorEd) motorEd.construir(); avisar("Precios en " + ev.target.value + ". Vuelve a Publicar para que se vea en el tour."); });
   $("lx-plantilla").addEventListener("click", () => {
@@ -8992,6 +9165,10 @@ void main(){
     chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.6-5.2A8.4 8.4 0 1 1 21 11.5z"/></svg>',
     limpiar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
     mostrar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.6A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a16 16 0 0 1-2.6 3.4M6.6 6.6C3.9 8.3 2.5 12 2.5 12s3.5 6.5 9.5 6.5c1.8 0 3.3-.5 4.6-1.2"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18"/></svg>',
+    menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+    casa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg>',
+    atras: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',
+    adelante: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   };
   const BRUJULA = '<svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="37" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1"/>' +
     [0, 45, 90, 135, 180, 225, 270, 315].map((a) => '<line x1="40" y1="5" x2="40" y2="' + (a % 90 ? 9 : 12) + '" stroke="rgba(255,255,255,.5)" stroke-width="1.5" transform="rotate(' + a + ' 40 40)"/>').join("") +
@@ -9038,7 +9215,36 @@ void main(){
         '<div class="b-nav sk-panel"><button class="sk-btn" data-sk="prev" aria-label="Panorama anterior">' + ICO_SK.prev + '</button><div class="info"><small data-txt="indice-largo"></small><b data-txt="nombre"></b></div><button class="sk-btn" data-sk="next" aria-label="Panorama siguiente">' + ICO_SK.next + "</button></div>" +
         (c.vertical ? c.cta("") : "") + "</div>" + (c.vertical ? "" : '<div class="b-cta-wrap">' + c.cta("") + "</div>"),
     },
+    // Interior (Laboratorio: interiorismo): botones redondos, menú por espacios agrupados y el nombre del espacio abajo
+    interior: {
+      nombre: "Interior", lab: "interiorismo", desc: "Botones redondos, menú por espacios y el nombre del espacio abajo. Para departamentos e interiorismo.",
+      html: (c) => {
+        const item = (x, cls) => '<button class="i-item' + cls + '" data-ir="' + x.id + '">' + esc(x.etq) + "</button>";
+        const lista = gruposEspacios(c.escenas).map((g) => (g.nombre
+          ? '<details class="i-grupo"><summary><span>' + esc(g.nombre) + "</span>" + ICO_SK.next + '</summary><div class="i-sub">' + g.items.map((x) => item(x, "")).join("") + "</div></details>"
+          : g.items.map((x) => item(x, " suelto")).join(""))).join("");
+        return '<div class="i-arriba"><button class="sk-btn sk-panel i-redondo" data-sk="cajon" aria-expanded="false" aria-label="Espacios">' + ICO_SK.menu + "</button>" +
+          '<button class="sk-btn sk-panel i-redondo" data-sk="inicio" aria-label="Volver al inicio">' + ICO_SK.casa + "</button>" + c.cerrar("sk-panel i-redondo") + "</div>" +
+          '<div class="i-marca">' + c.logo + (c.sk.nombre ? "<b>" + esc(P().nombre) + "</b>" : "") + "</div>" +
+          '<nav class="i-menu sk-panel" data-cajon hidden aria-label="Espacios">' + lista + "</nav>" +
+          '<div class="i-abajo">' + c.botones("sk-panel i-redondo") + c.cta("i-cta") + "</div>" +
+          '<div class="i-flechas"><button class="sk-btn sk-panel i-redondo" data-sk="prev" aria-label="Espacio anterior">' + ICO_SK.atras + '</button><button class="sk-btn sk-panel i-redondo" data-sk="next" aria-label="Espacio siguiente">' + ICO_SK.adelante + "</button></div>" +
+          '<div class="i-espacio sk-panel">' + (c.sk.botones.piloto ? '<span class="sk-pil" data-piloto hidden><i></i>Piloto automático</span>' : "") + '<b data-txt="nombre"></b>' + (c.sk.extra.numero ? '<small data-txt="indice"></small>' : "") + "</div>";
+      },
+    },
   };
+  // Espacios agrupados por su nombre: «Depto A - Sala» y «Depto A - Cocina» van juntos en «Depto A».
+  // Si los nombres no traen grupo (o cada grupo tendría una sola esfera), es una lista simple.
+  function gruposEspacios(escenas) {
+    const g = [], por = {};
+    escenas.forEach((e) => {
+      const nom = String(e.nombre || ""), m = nom.match(/^(.+?)\s+[-–—·|]\s+(.+)$/), k = m ? m[1].trim() : "";
+      if (!por[k]) { por[k] = { nombre: k, items: [] }; g.push(por[k]); }
+      por[k].items.push({ id: e.id, etq: m ? m[2].trim() : nom });
+    });
+    if (g.length > 1 && g.every((x) => x.items.length === 1)) return [{ nombre: "", items: escenas.map((e) => ({ id: e.id, etq: e.nombre })) }];
+    return g;
+  }
 
   // Dibuja el skin elegido sobre una esfera. o: { orientacion, motor, cerrable, alCerrar, hayMusica, alMusica, alPantalla }
   function renderSkin(ui, o) {
@@ -9089,7 +9295,7 @@ void main(){
     const irRel = (d) => { if (!actualId || !o.motor()) return; const i = ids.indexOf(actualId); o.motor().mostrar(ids[(i + d + ids.length) % ids.length]); };
     ui.onclick = (ev) => {
       const it = ev.target.closest("[data-ir]");
-      if (it && o.motor()) { o.motor().mostrar(it.dataset.ir); const caj = ui.querySelector("[data-cajon]"); if (caj) caj.hidden = true; ui.classList.remove("abierto"); return; }
+      if (it && o.motor()) { o.motor().mostrar(it.dataset.ir); const caj = ui.querySelector("[data-cajon]"); if (caj) caj.hidden = true; ui.querySelectorAll('[data-sk="cajon"]').forEach((b) => b.setAttribute("aria-expanded", "false")); ui.classList.remove("abierto"); return; }
       const bt = ev.target.closest("[data-sk]");
       if (!bt) return;
       const k = bt.dataset.sk, v = o.motor() && o.motor().view();
@@ -9097,7 +9303,8 @@ void main(){
       if (k === "menos" && v) v.setFov(v.fov() * 1.33);
       if (k === "prev") irRel(-1);
       if (k === "next") irRel(1);
-      if (k === "cajon") { const caj = ui.querySelector("[data-cajon]"); caj.hidden = !caj.hidden; }
+      if (k === "cajon") { const caj = ui.querySelector("[data-cajon]"); caj.hidden = !caj.hidden; ui.querySelectorAll('[data-sk="cajon"]').forEach((b) => b.setAttribute("aria-expanded", !caj.hidden)); }
+      if (k === "inicio" && o.motor()) { const ini = P().escenaInicial; o.motor().mostrar(ids.includes(ini) ? ini : ids[0]); }
       if (k === "lateral") ui.classList.toggle("oculto");
       if (k === "hoja") ui.classList.toggle("abierto");
       if (k === "cta") avisar("Agrega el enlace de contacto en Skin → Contacto");
@@ -9112,6 +9319,7 @@ void main(){
         actualId = id;
         const i = ids.indexOf(id);
         ui.querySelectorAll("[data-ir]").forEach((el) => { const j = ids.indexOf(el.dataset.ir); el.setAttribute("aria-current", j === i ? "true" : "false"); el.classList.toggle("hecho", j < i); });
+        ui.querySelectorAll("details.i-grupo").forEach((d) => { if (d.querySelector('[aria-current="true"]')) d.open = true; });
         ui.querySelectorAll('[data-txt="nombre"]').forEach((el) => (el.textContent = nombreDe(id)));
         ui.querySelectorAll('[data-txt="indice"]').forEach((el) => (el.textContent = String(i + 1).padStart(2, "0") + " / " + String(ids.length).padStart(2, "0")));
         ui.querySelectorAll('[data-txt="indice-largo"]').forEach((el) => (el.textContent = "Panorama " + (i + 1) + " de " + ids.length));
@@ -9142,8 +9350,13 @@ void main(){
   // Una ficha con la marca del cliente: su logo, colores y tipografía, el dibujo del lote con sus medidas,
   // superficie, manzana, precio, textos y (en un diseño) la ubicación del lote en el desarrollo.
   const FICHA_DEF = { activa: false, plantilla: "clasica", logo: "skin", logoImg: "", logo2: "", titulo: "", fondo: "#ECEAE6", texto: "#2B2B2B", acento: "#8A5A3C", fuente: "",
-    plano: true, medidas: true, superficie: true, precio: true, ubicacion: true, boton: true, textoA: "", textoB: "", tituloA: "", tituloB: "" };
-  const FICHA_PLANTILLAS = [["clasica", "Clásica"], ["ubicacion", "Con ubicación"], ["banda", "Banda de color"]];
+    plano: true, medidas: true, superficie: true, precio: true, ubicacion: true, boton: true, textoA: "", textoB: "", tituloA: "", tituloB: "",
+    planes: [], extraT: "", extraM: "", notas: "" };
+  const FICHA_PLANTILLAS = [["clasica", "Clásica"], ["ubicacion", "Con ubicación"], ["banda", "Banda de color"], ["tecnica", "Técnica (departamentos)"]];
+  // Tipos de unidad (Laboratorio: interiorismo): A, B, Loft… con su plano, superficies, datos y su recorrido 360
+  const tiposUni = () => (Array.isArray(P().tipos) ? P().tipos : (P().tipos = []));
+  const tipoUni = (l) => (l && l.tipo ? tiposUni().find((t) => t.id === l.tipo) || null : null);
+  const DATOS_TIPO = ["Recámaras", "Baños", "Cajones", "Lavado"];
   const fichaConf = () => Object.assign({}, FICHA_DEF, P().ficha);
   // El lote visto desde arriba, con su frente abajo, sus medidas por lado y su superficie al centro
   function dibujoLote(c, f, ancho, alto) {
@@ -9185,7 +9398,52 @@ void main(){
     const ox = (ancho - w * k) / 2 - Math.min(...xs) * k, oy = (alto - h * k) / 2 - Math.min(...ys) * k;
     return '<svg class="fd-ubic" viewBox="0 0 ' + ancho + " " + alto + '" role="img" aria-label="Ubicación del lote">' + lotes.map((o) => '<polygon class="' + (o.x === c ? "este" : "") + '" points="' + o.Q.map(([x, y]) => (x * k + ox).toFixed(1) + "," + (-y * k + oy).toFixed(1)).join(" ") + '"/>').join("") + "</svg>";
   }
+  // Ficha técnica: el plano de la unidad a la izquierda; a la derecha su número grande, los datos de su tipo,
+  // superficies, el precio con planes de pago (al tocar uno se recalcula), notas, su recorrido 360 y su estado
+  function fichaTecnica(c, f) {
+    const l = loteDe(c), e = estadoDe(c), T = terminos(), tp = tipoUni(l), sk = est.skin || {};
+    const filas = [];
+    if (tp && String(tp.nombre || "").trim()) filas.push(["Tipo", tp.nombre]);
+    (tp && Array.isArray(tp.datos) ? tp.datos : []).forEach(([k, v]) => { if (String(k || "").trim() && String(v || "").trim()) filas.push([k, v]); });
+    if (String(l.vista || "").trim()) filas.push(["Vista", l.vista]);
+    const mitad = Math.ceil(filas.length / 2), col = (xs) => "<dl>" + xs.map(([k, v]) => "<div><dt>" + esc(k) + "</dt><dd>" + esc(v) + "</dd></div>").join("") + "</dl>";
+    const tabla = filas.length ? '<div class="ft-tabla' + (filas.length < 2 ? " una" : "") + '">' + col(filas.slice(0, mitad)) + (filas.length > 1 ? col(filas.slice(mitad)) : "") + "</div>" : "";
+    const n = (v) => numES(String(v ?? "").replace(/^[$€]|^S\/|^Q|^₡/, "").trim()) || 0;
+    const si = n(tp && tp.int), se = n(tp && tp.ext), st = si + se || n(l.area);
+    const sup = f.superficie && st ? '<div class="ft-sup">' + (si || se ? "<span>" + [si ? "Sup. interior: <b>" + esc(fmtArea(si)) + "</b>" : "", se ? "Sup. exterior: <b>" + esc(fmtArea(se)) + "</b>" : ""].filter(Boolean).join(", ") + "</span>" : "") + "<b>Superficie total: " + esc(fmtArea(st)) + "</b></div>" : "";
+    const vendido = e.id === "vendido", base = n(l.precio), extra = n(f.extraM), planes = (f.planes || []).filter((x) => String(x.t || "").trim());
+    let precio = "";
+    if (f.precio && base && !vendido) {
+      const d0 = planes.length ? +planes[0].d || 0 : 0, conDesglose = planes.length || extra;
+      precio = '<div class="ft-precio" data-ft-base="' + base + '" data-ft-extra="' + extra + '">' +
+        (conDesglose ? '<div class="ft-renglon"><span>Precio de lista</span><b>' + esc(fmtPrecio(base)) + "</b></div>" : "") +
+        (planes.length ? '<div class="ft-renglon chico"><span>Menos</span><b data-ft-v="desc">- ' + d0 + '% de descuento</b></div><div class="ft-renglon chico"><span>Subtotal</span><b data-ft-v="sub">' + esc(fmtPrecio(base * (1 - d0 / 100))) + "</b></div>" : "") +
+        (extra ? '<div class="ft-renglon chico"><span>Más ' + esc(f.extraT || "extra") + "</span><b>+ " + esc(fmtPrecio(extra)) + "</b></div>" : "") +
+        '<div class="ft-renglon final"><span>' + (conDesglose ? "Precio final" : "Precio") + '</span><b data-ft-v="final">' + esc(fmtPrecio(base * (1 - d0 / 100) + extra)) + "</b></div></div>" +
+        (planes.length ? '<div class="ft-planes"><div class="ft-cab"><span>Planes de pago</span><span>Descuento</span></div>' + planes.map((x, i) => '<button type="button" class="ft-plan" data-ft-plan="' + i + '" data-ft-d="' + (+x.d || 0) + '" aria-pressed="' + (i === 0) + '"><span>' + esc(x.t) + "</span><b>" + (+x.d || 0) + "%</b></button>").join("") + "</div>" : "");
+    }
+    const notas = String(f.notas || "").trim() ? '<div class="ft-notas"><div class="ft-cab"><span>Notas</span></div>' + esc(f.notas).split(/\n+/).filter((x) => x.trim()).map((x) => "<p>" + x + "</p>").join("") + "</div>" : "";
+    const cta = sk.cta || {}, enlace = urlSegura(cta.enlace), c360 = tp && tp.esfera && est.escenas.some((x) => x.id === tp.esfera) ? tp.esfera : "";
+    const colorE = "--c:" + e.color + ";--cs:" + textoSobre(e.color);
+    const botones = '<div class="ft-botones">' + (c360 ? '<button type="button" class="ft-btn ft-360" data-ft-ir="' + esc(c360) + '">Recorrido 360</button>' : "") +
+      (f.boton && enlace && !vendido && cta.mostrar !== false ? '<a class="ft-btn ft-estado" style="' + colorE + '" href="' + esc(enlace) + '" target="_blank" rel="noopener">' + esc(e.nombre) + " · " + esc(cta.texto || "Me interesa") + "</a>" : '<span class="ft-btn ft-estado" style="' + colorE + '">' + esc(e.nombre) + "</span>") + "</div>";
+    const dib = tp && tp.plano ? '<img src="' + esc(urlArchivo(tp.plano)) + '" alt="Plano ' + esc(tp.nombre || "") + '">' : f.plano ? dibujoLote(c, f, 420, 300) : "";
+    const izq = dib ? '<div class="ft-plano">' + dib + "</div>" : MODO === "tour" ? "" : '<div class="ft-plano"><p class="ft-sinplano">' + (tp ? "Sube el plano del tipo «" + esc(tp.nombre || "") + "» aquí a la izquierda." : "Elige el tipo de esta unidad para ver su plano.") + "</p></div>";
+    return '<div class="pop-caja ficha-d fd-tecnica" role="dialog" aria-label="' + esc(nombreLote(c)) + '" style="--fd-fondo:' + f.fondo + ";--fd-texto:" + f.texto + ";--fd-acento:" + f.acento + ";--fd-sobre:" + textoSobre(f.acento) + (f.fuente ? ";--fd-fuente:'" + f.fuente + "'" : "") + '"><button class="pop-x" aria-label="Cerrar">×</button>' +
+      '<div class="ft-grid' + (izq ? "" : " sin-plano") + '">' + izq + '<div class="ft-info"><h3 class="ft-num">' + esc(l.numero || "—") + "</h3>" + (l.manzana ? '<p class="ft-mz">' + esc(T.manzana) + " " + esc(l.manzana) + "</p>" : "") +
+      tabla + sup + precio + notas + botones + "</div></div></div>";
+  }
+  // Al tocar un plan de pago se recalcula el precio (en el tour y en la vista del editor)
+  document.addEventListener("click", (ev) => {
+    const b = ev.target.closest && ev.target.closest("[data-ft-plan]"), caja = b && b.closest(".fd-tecnica"), pr = caja && caja.querySelector("[data-ft-base]");
+    if (!pr) return;
+    const base = +pr.dataset.ftBase, extra = +pr.dataset.ftExtra || 0, d = +b.dataset.ftD || 0;
+    caja.querySelectorAll("[data-ft-plan]").forEach((x) => x.setAttribute("aria-pressed", x === b));
+    const pon = (k, t) => { const el = caja.querySelector('[data-ft-v="' + k + '"]'); if (el) el.textContent = t; };
+    pon("desc", "- " + d + "% de descuento"); pon("sub", fmtPrecio(base * (1 - d / 100))); pon("final", fmtPrecio(base * (1 - d / 100) + extra));
+  });
   function fichaDisenada(c, f) {
+    if (f.plantilla === "tecnica") return fichaTecnica(c, f);
     const l = loteDe(c), e = estadoDe(c), T = terminos(), sk = est.skin || {};
     const num = String(l.numero || "—").padStart(String(l.numero || "").length === 1 ? 2 : 0, "0");
     const logoSrc = f.logo === "propio" ? f.logoImg : f.logo === "skin" && sk.logo && sk.logo.tipo === "propio" ? sk.logo.img : "";
@@ -9337,7 +9595,11 @@ void main(){
     pop.className = "pop"; pop.hidden = true;
     stage.parentNode.appendChild(pop);
     const cerrarPop = () => { if (pop.hidden) return false; pop.hidden = true; pop.innerHTML = ""; return true; };
-    pop.addEventListener("click", (ev) => { if (ev.target === pop || ev.target.closest(".pop-x")) cerrarPop(); });
+    pop.addEventListener("click", (ev) => {
+      const ir360 = ev.target.closest("[data-ft-ir]");
+      if (ir360 && motor) { const id = ir360.dataset.ftIr; cerrarPop(); motor.mostrar(id); return; }
+      if (ev.target === pop || ev.target.closest(".pop-x")) cerrarPop();
+    });
     function accion(c) {
       const a = accionDe(c), url = urlSegura(c.url);
       if (piloto) piloto.interrumpir(true);
@@ -9451,6 +9713,10 @@ void main(){
         '<line x1="44" y1="62" x2="116" y2="62" stroke="#fff" stroke-opacity=".5"/>' + [44, 68, 92, 116].map((x, i) => '<circle cx="' + x + '" cy="62" r="3" fill="' + (i === 1 ? a : "#fff") + '"/>').join("") +
         '<rect x="34" y="70" width="92" height="18" rx="6" fill="' + p + '"/><rect x="62" y="76" width="36" height="5" rx="2" fill="#fff"/>',
     };
+    dib.interior = '<circle cx="13" cy="12" r="6" fill="' + p + '"/><circle cx="28" cy="12" r="6" fill="' + p + '"/><rect x="122" y="8" width="32" height="7" rx="2" fill="#fff" fill-opacity=".85"/>' +
+      '<rect x="7" y="22" width="44" height="34" rx="3" fill="' + p + '"/><rect x="11" y="27" width="24" height="3" rx="1.5" fill="' + a + '"/><rect x="11" y="35" width="32" height="3" rx="1.5" fill="#fff" fill-opacity=".7"/><rect x="11" y="43" width="26" height="3" rx="1.5" fill="#fff" fill-opacity=".7"/>' +
+      [13, 28, 43].map((x) => '<circle cx="' + x + '" cy="84" r="6" fill="' + p + '"/>').join("") + '<circle cx="72" cy="84" r="6" fill="' + p + '"/><circle cx="88" cy="84" r="6" fill="' + p + '"/>' +
+      '<rect x="104" y="74" width="50" height="17" rx="4" fill="' + p + '"/><rect x="110" y="80.5" width="28" height="4" rx="2" fill="#fff"/>';
     return '<svg viewBox="0 0 160 96" aria-hidden="true">' + defs + fondo + dib[id] + "</svg>";
   }
 
@@ -9462,7 +9728,7 @@ void main(){
     const logoMuestra = sk.logo.tipo === "propio" && sk.logo.img ? '<img src="' + esc(urlArchivo(sk.logo.img)) + '" alt="Logo del cliente">' : sk.logo.tipo === "mozari" ? '<svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg>' : '<span style="font-size:11px;color:var(--mz-tenue)">—</span>';
     $("sk-panel").innerHTML =
       '<div class="grupo"><b>Plantilla base</b><div class="plantillas">' +
-      Object.entries(PLANTILLAS).map(([id, p]) => '<button class="plantilla" data-sk-k="plantilla" data-v="' + id + '" aria-pressed="' + (id === T) + '">' + miniPlantilla(id, sk.acento) + "<b>" + p.nombre + "</b><span>" + p.desc + "</span></button>").join("") +
+      Object.entries(PLANTILLAS).filter(([id, p]) => !p.lab || enLab(p.lab) || id === T).map(([id, p]) => '<button class="plantilla" data-sk-k="plantilla" data-v="' + id + '" aria-pressed="' + (id === T) + '">' + miniPlantilla(id, sk.acento) + "<b>" + p.nombre + "</b><span>" + p.desc + "</span></button>").join("") +
       "</div></div>" +
       '<div class="grupo"><b>Marca</b>' +
       '<div class="logo-fila"><span class="muestra-logo">' + logoMuestra + "</span>" + seg("logo.tipo", sk.logo.tipo, [["ninguno", "Sin logo"], ["propio", "Del cliente"], ["mozari", "Mozari"]]) + "</div>" +
@@ -9506,7 +9772,7 @@ void main(){
     setSk(k, v);
     if (k === "opacidad") $("sk-op-v").textContent = Math.round(v * 100) + "%";
     if (k === "radio") $("sk-radio-v").textContent = v + " px";
-    if (k === "acento") document.querySelectorAll(".plantilla svg").forEach((s, i) => (s.outerHTML = miniPlantilla(Object.keys(PLANTILLAS)[i], v)));
+    if (k === "acento") document.querySelectorAll(".plantilla[data-v]").forEach((b) => { const s = b.querySelector("svg"); if (s) s.outerHTML = miniPlantilla(b.dataset.v, v); });
     repintarSk();
   });
   $("sk-panel").addEventListener("change", (ev) => {

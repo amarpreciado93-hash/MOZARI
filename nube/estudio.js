@@ -153,6 +153,7 @@ export const LABORATORIO = {
   "manual": { nombre: "Manual", texto: "Botón del librito, arriba a la derecha: los temas del manual de Mozari con sus pasos, un buscador y, primero, los temas de la sección donde estás. Si no se resuelve, lleva a Reportar un error." },
   "mano": { nombre: "Manita con la barra espaciadora", texto: "En las esferas del editor: mantén la barra espaciadora y sale la manita. Arrastras para girar la esfera aunque estés sobre un lote o dibujando, sin mover nada ni poner puntos." },
   "privado": { nombre: "Modo privado", texto: "En Publicar → Web: oculta un tour publicado sin borrarlo (por ejemplo, mientras el cliente termina de pagar). Quien abra el link ve «Este tour no está disponible por ahora». Al mostrarlo vuelve igual, con el mismo link." },
+  "interiorismo": { nombre: "Interiorismo y departamentos", texto: "Skin «Interior» (botones redondos, menú por espacios y el nombre del espacio abajo) y ficha «Técnica»: plano de cada tipo de unidad, tabla de datos, superficies, planes de pago que recalculan el precio, notas y botón al recorrido 360. También «Departamento · Torre» en los nombres." },
   "lotes-pdf": { nombre: "Lotes desde el PDF", texto: "En el plano de referencia: arrastras un recuadro sobre una manzana del PDF, Mozari arma sus lotes y los colocas en la esfera tocando 4 esquinas. Necesita también «Plano de referencia»." },
 };
 // "pago": las cuentas Pro y Desarrollos (con su plan vigente); "todos" incluye también Gratis
