@@ -274,7 +274,7 @@ async function capasPesadas(p) {
       exige((await lotes(a)).length === antes + 7, "la fila de atrás no tomó 7 lotes (" + (await lotes(a)).length + ")");
     }, a);
     await paso("Laboratorio · ficha diseñada del lote", async () => {
-      await a.click('#subtabs button:has-text("Lotes")'); await a.waitForTimeout(1200); await pasarGuias(a);
+      await a.click('#subtabs button:has-text("Fichas técnicas")'); await a.waitForTimeout(1200); await pasarGuias(a);
       exige(await a.isVisible("#ficha-editor"), "no aparece el creador de fichas");
       await a.check('[data-fe="activa"]'); await a.waitForTimeout(500);
       exige(await a.$("#fe-lienzo .ficha-d"), "no se dibuja la ficha");
@@ -320,7 +320,7 @@ async function capasPesadas(p) {
     await paso("Laboratorio · interiorismo: skin Interior con menú por espacios y la ficha técnica en el tour", async () => {
       const foto = (p, n) => (process.env.CAPTURAS ? p.screenshot({ path: path.join(process.env.CAPTURAS, n + ".png") }) : null);
       try {
-        await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(1200); await pasarGuias(a);
+        await a.click('#nav button:has-text("Interfaz")'); await a.waitForTimeout(1200); await pasarGuias(a);
         exige(await a.$('[data-sk-k="plantilla"][data-v="interior"]'), "no está la plantilla Interior");
         await a.click('[data-sk-k="plantilla"][data-v="interior"]'); await a.waitForTimeout(900);
         exige(await a.$("#sk-ui.t-interior .i-espacio"), "no se dibuja la skin Interior");
@@ -346,9 +346,9 @@ async function capasPesadas(p) {
         await a.keyboard.press("Escape"); await a.waitForTimeout(600);
       } finally {
         if (await a.isVisible("#previa")) { await a.keyboard.press("Escape"); await a.waitForTimeout(400); await a.keyboard.press("Escape"); await a.waitForTimeout(400); }
-        await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(800);
+        await a.click('#nav button:has-text("Interfaz")'); await a.waitForTimeout(800);
         await a.click('[data-sk-k="plantilla"][data-v="cine"]'); await a.waitForTimeout(500);
-        await a.click('#nav button:has-text("Panoramas")'); await a.waitForTimeout(800); await a.click('#subtabs button:has-text("Lotes")'); await a.waitForTimeout(1000);
+        await a.click('#nav button:has-text("Panoramas")'); await a.waitForTimeout(800); await a.click('#subtabs button:has-text("Fichas técnicas")'); await a.waitForTimeout(1000);
         await a.click('[data-fe-plantilla="banda"]'); await a.waitForTimeout(500);
       }
     }, a);
@@ -722,7 +722,7 @@ async function capasPesadas(p) {
     // Pedido de un cliente (OBED, nov 2026): leyenda de colores de los lotes con cuántos hay de cada estado
     await paso("Leyenda de lotes en el tour: el color de cada estado y cuántos hay", async () => {
       const foto = (p, n) => (process.env.CAPTURAS ? p.screenshot({ path: path.join(process.env.CAPTURAS, n + ".png") }) : null);
-      await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(1200);
+      await a.click('#nav button:has-text("Interfaz")'); await a.waitForTimeout(1200);
       exige(!(await a.$("#sk-ui .sk-leyenda")), "la leyenda sale sin prenderla");
       await a.check('[data-sk-k="extra.leyenda"]'); await a.waitForTimeout(900);
       const ley = await a.$$eval("#sk-ui .sk-leyenda .ley-it", (l) => l.map((x) => x.textContent.trim()));
@@ -748,12 +748,12 @@ async function capasPesadas(p) {
       exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
       await t.context().close();
       // Se apaga para no cambiar las demás pruebas
-      await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(1000); await a.uncheck('[data-sk-k="extra.leyenda"]'); await a.waitForTimeout(600);
+      await a.click('#nav button:has-text("Interfaz")'); await a.waitForTimeout(1000); await a.uncheck('[data-sk-k="extra.leyenda"]'); await a.waitForTimeout(600);
     }, a);
     // Pedido de un cliente (OBED, nov 2026): su propio crédito abajo del tour («Desarrollado por…»)
     await paso("Crédito propio abajo del tour («Desarrollado por…») con su enlace", async () => {
       const foto = (p, n) => (process.env.CAPTURAS ? p.screenshot({ path: path.join(process.env.CAPTURAS, n + ".png") }) : null);
-      await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(1000);
+      await a.click('#nav button:has-text("Interfaz")'); await a.waitForTimeout(1000);
       exige(!(await a.$("#sk-ui .sk-credito")), "sale un crédito sin escribirlo");
       await a.fill('[data-sk-k="credito.texto"]', "Desarrollado por R360"); await a.fill('[data-sk-k="credito.enlace"]', "r360.mx"); await a.waitForTimeout(900);
       const c = await a.$eval("#sk-ui .sk-credito", (e) => [e.textContent, e.getAttribute("href"), e.getAttribute("target")]).catch(() => null);
@@ -768,7 +768,7 @@ async function capasPesadas(p) {
       exige(await t.$eval(".sk-credito", (e) => e.textContent + " " + e.getAttribute("href")).catch(() => "") === "Desarrollado por R360 https://r360.mx", "el tour publicado no trae el crédito");
       await foto(t, "credito-publicado");
       await t.context().close();
-      await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(1000);
+      await a.click('#nav button:has-text("Interfaz")'); await a.waitForTimeout(1000);
       await a.fill('[data-sk-k="credito.texto"]', ""); await a.fill('[data-sk-k="credito.enlace"]', ""); await a.waitForTimeout(600);
       exige(!(await a.$("#sk-ui .sk-credito")), "al borrar el texto el crédito no se quita");
     }, a);
@@ -784,7 +784,7 @@ async function capasPesadas(p) {
       exige(!/MOZARI|Created by|R360/.test(splash(h)), "la pantalla de carga todavía muestra a Mozari: " + splash(h).slice(0, 160));
       exige(h.includes('class="splash-nombre">Revision</b>'), "sin logo: no sale el nombre del proyecto");
       // Con el logo del cliente en el Skin y paneles blancos: sale el logo, con letras oscuras que se leen
-      await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(1200);
+      await a.click('#nav button:has-text("Interfaz")'); await a.waitForTimeout(1200);
       await a.click('button[data-sk-k="logo.tipo"][data-v="propio"]'); await a.waitForTimeout(500);
       await a.evaluate(async () => {
         const cv = document.createElement("canvas"); cv.width = 480; cv.height = 200; const x = cv.getContext("2d");
@@ -828,7 +828,7 @@ async function capasPesadas(p) {
       const d = await a.evaluate((id) => fetch("api/tours/" + id + "/descargar").then((r) => r.json()), tour);
       exige(/<div class="splash propia" id="splash"/.test(d.html || "") && (d.html || "").includes('src="' + src + '"'), "el tour descargado no trae la carga con el logo");
       // Se regresa el Skin como estaba para las demás pruebas
-      await a.click('#nav button:has-text("Skin")'); await a.waitForTimeout(800);
+      await a.click('#nav button:has-text("Interfaz")'); await a.waitForTimeout(800);
       await a.click('button[data-sk-k="logo.tipo"][data-v="ninguno"]'); await a.click('button[data-sk-k="panel"][data-v="#111111"]'); await a.waitForTimeout(600);
       await publicar();
     }, a);
@@ -954,7 +954,7 @@ async function capasPesadas(p) {
       await pr.waitForSelector(".guia-tarjeta", { timeout: 6000 }).catch(() => {});
       exige(/sube tu plano/i.test(await pr.textContent(".guia-tarjeta").catch(() => "")), "al abrir el plano de referencia no explica cómo usarlo");
       await pr.keyboard.press("Escape"); await pr.click("#ref-boton"); await pr.waitForTimeout(300);
-      await pr.click('#nav button:has-text("Skin")'); await pr.waitForTimeout(400);
+      await pr.click('#nav button:has-text("Interfaz")'); await pr.waitForTimeout(400);
       await pr.waitForSelector(".guia-tarjeta", { timeout: 6000 }).catch(() => {});
       exige(/logo al cargar/i.test(await pr.textContent(".guia-tarjeta").catch(() => "")), "en Skin no salió el tutorial del logo en la carga");
       await pr.waitForTimeout(2500); await foto("tuto-skin");
@@ -1008,7 +1008,7 @@ async function capasPesadas(p) {
       await t.keyboard.press("Enter"); await t.waitForTimeout(1600);
       exige(await t.isVisible(".guia-tarjeta"), "no salió el tutorial de cómo editar la manzana");
       await t.click('.guia-tarjeta [data-guia="seguir"]'); await t.waitForTimeout(300); await t.click('.guia-tarjeta [data-guia="seguir"]'); await t.waitForTimeout(300);
-      await t.click('#subtabs button:has-text("Lotes")'); await t.waitForTimeout(1500);
+      await t.click('#subtabs button:has-text("Fichas técnicas")'); await t.waitForTimeout(1500);
       exige(await t.isVisible(".guia-tarjeta"), "no salió el tutorial de la vista Lotes (Excel)");
       await pasarGuias(t);
       await irCapas(t); await t.click("#add-lote"); await t.waitForTimeout(500);
@@ -1020,7 +1020,7 @@ async function capasPesadas(p) {
       await t.keyboard.press("Escape"); await t.click("#add-lote"); await t.waitForTimeout(600);
       exige(!(await t.isVisible(".guia-tarjeta")), "el tutorial de lote salió otra vez");
       await t.keyboard.press("Escape");
-      await t.click('#subtabs button:has-text("Lotes")'); await t.waitForTimeout(1500);
+      await t.click('#subtabs button:has-text("Fichas técnicas")'); await t.waitForTimeout(1500);
       exige(!(await t.isVisible(".guia-tarjeta")), "el tutorial de Lotes salió otra vez");
       exige(!t.errs.length, "errores: " + t.errs.join(" | ").slice(0, 160));
       await t.context().close();
@@ -1549,7 +1549,7 @@ async function capasPesadas(p) {
     // Pedido de un usuario de Perú (nov 2026): allá se dice «Reservado», no «Apartado». Los nombres de los estados se editan.
     await paso("Estados de los lotes con el nombre de cada país: «Apartado» se cambia a «Reservado» y sale en el tour", async () => {
       const n = await pagina(DUENO); await nuevoTour(n, "Estados por país");
-      await n.click('#subtabs button:has-text("Lotes")'); await n.waitForTimeout(1200); await pasarGuias(n);
+      await n.click('#subtabs button:has-text("Fichas técnicas")'); await n.waitForTimeout(1200); await pasarGuias(n);
       const campo = '#lt-estados [data-nombre-estado="apartado"]';
       exige(await n.isVisible(campo) && (await n.inputValue(campo)) === "Apartado", "no está el campo para cambiar el nombre de «Apartado»");
       await n.fill(campo, "Reservado"); await n.waitForTimeout(1500);
@@ -1616,7 +1616,7 @@ async function capasPesadas(p) {
       exige(+porNum["3-A"].area === 1200 && +porNum["7"].area === 1499.99, "los lotes no salieron con la superficie del plano: " + ls.map((c) => c.lote.numero + "=" + c.lote.area).join(", "));
       // Excel de otra manzana (superficies que no van): avisa y, si dices que no, no cambia nada
       await n.keyboard.press("Escape"); await n.waitForTimeout(300);
-      await n.click('#subtabs button:has-text("Lotes")'); await n.waitForTimeout(1200); await pasarGuias(n);
+      await n.click('#subtabs button:has-text("Fichas técnicas")'); await n.waitForTimeout(1200); await pasarGuias(n);
       await n.evaluate(() => { window.__conf = []; window.confirm = (m) => { window.__conf.push(m); return window.__si === true; }; });
       const csv = (filas) => ({ name: "lotes.csv", mimeType: "text/csv", buffer: Buffer.from("Manzana,Lote,Superficie m2,Precio\n" + filas.map((f) => f.join(",")).join("\n")) });
       const otra = [[30, 1, 1757.75, 500000], [30, 2, 1428.38, 500000], [30, "3-A", 1050.21, 500000], [30, 4, 999.91, 500000], [30, 5, 2205.1, 500000], [30, 6, 1683.02, 500000], [30, 7, 1000.51, 500000], [30, 8, 6189.57, 500000]];
@@ -1639,7 +1639,7 @@ async function capasPesadas(p) {
       const d = await leer(); Object.values(d.capas).flat().forEach((c) => { if (c.lote && c.lote.manzana === "30") { c.lote.area = ""; c.lote.precio = ""; } });
       exige((await n.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [id, d])) === 200, "no se pudieron quitar las superficies");
       await n.goto(ESTUDIO + "/#t=" + id); await n.reload(); await n.waitForTimeout(2500); await cerrarAnuncio(n);
-      await n.click('#nav button:has-text("Panoramas")'); await n.waitForTimeout(400); await n.click('#subtabs button:has-text("Lotes")'); await n.waitForTimeout(1200); await pasarGuias(n);
+      await n.click('#nav button:has-text("Panoramas")'); await n.waitForTimeout(400); await n.click('#subtabs button:has-text("Fichas técnicas")'); await n.waitForTimeout(1200); await pasarGuias(n);
       await n.evaluate(() => { window.__conf = []; window.confirm = (m) => { window.__conf.push(m); return false; }; });
       await n.setInputFiles("#lx-archivo", csv(otra)); await n.waitForTimeout(1200);
       const conf3 = await n.evaluate(() => window.__conf.slice());
@@ -1676,7 +1676,7 @@ async function capasPesadas(p) {
         await elegirLote();
         exige(await a.isChecked('[data-frente="1"]'), "al mover la manzana se borró el frente que eligió el usuario");
         // La ficha dibuja ese lado abajo
-        await a.click('#subtabs button:has-text("Lotes")'); await a.waitForTimeout(1200); await pasarGuias(a);
+        await a.click('#subtabs button:has-text("Fichas técnicas")'); await a.waitForTimeout(1200); await pasarGuias(a);
         await a.check('[data-fe="activa"]'); await a.waitForTimeout(400);
         const op = await a.evaluate((nom) => { const o = [...document.querySelectorAll("#fe-muestra option")].find((e) => e.textContent.trim() === nom); return o && o.value; }, nombre);
         exige(op, "el lote no está en «Ver con» de la ficha");
