@@ -378,7 +378,10 @@ async function capasPesadas(p) {
     let link = null;
     await paso("Publicar y abrir el tour público en computadora", async () => {
       await a.click('#nav button:has-text("Publicar")'); await a.waitForTimeout(800);
+      // La descarga (.zip) se ve antes de publicar, apagada y con la razón (antes no aparecía y no se encontraba)
+      exige(await a.$('#proximo .pub-hosting button[disabled]:has-text("Descargar tour (.zip)")'), "antes de publicar no se ve dónde descargar el tour");
       await a.click("#pub-publicar"); await a.waitForTimeout(3500);
+      exige(await a.$("#pub-descargar:not([disabled])"), "después de publicar no se puede descargar el tour");
       link = TOURS + "/" + tour + "/";
       const t = await pagina(null); await t.goto(link); await t.waitForTimeout(4500);
       exige(await t.$("canvas"), "el tour no dibujó la esfera");
@@ -633,6 +636,35 @@ async function capasPesadas(p) {
       exige(nombres.some((n) => n.endsWith("/lib/marzipano.js")) && nombres.some((n) => n.endsWith("/lib/d3.min.js")), "el zip no trae las librerías del visor");
       const ix = new TextDecoder().decode(zip[nombres.find((n) => n.endsWith("/index.html"))]);
       exige(ix.includes('src="lib/marzipano.js"') && !/cdn\.jsdelivr|unpkg\.com|cdnjs/.test(ix), "el index.html del zip todavía pide librerías a otro servidor");
+    }, a);
+    // El .zip subido a otro hosting: se descomprime en una carpeta, la sirve un servidor aparte (como el cPanel del
+    // cliente) y el tour tiene que abrir completo sin pedirle nada a Mozari
+    await paso("El tour descargado (.zip) funciona subido a otro hosting, sin Mozari", async () => {
+      const zip = require(LIB.fflate).unzipSync(new Uint8Array(fs.readFileSync(path.join(DATOS, "tour.zip"))));
+      const raiz = path.join(DATOS, "hosting");
+      for (const [n, datos] of Object.entries(zip)) { if (n.endsWith("/")) continue; const f = path.join(raiz, n); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, Buffer.from(datos)); }
+      const carpeta = Object.keys(zip).find((n) => n.endsWith("/index.html")).replace(/index\.html$/, "");
+      const TIPOS = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".json": "application/json", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".svg": "image/svg+xml", ".mp3": "audio/mpeg", ".mp4": "video/mp4", ".css": "text/css", ".woff2": "font/woff2" };
+      const srv = require("http").createServer((req, res) => {
+        let ruta = decodeURIComponent(new URL(req.url, "http://x").pathname); if (ruta.endsWith("/")) ruta += "index.html";
+        const f = path.join(raiz, ruta);
+        if (!f.startsWith(raiz) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); res.end("no"); return; }
+        res.writeHead(200, { "content-type": TIPOS[path.extname(f).toLowerCase()] || "application/octet-stream" }); fs.createReadStream(f).pipe(res);
+      });
+      await new Promise((ok) => srv.listen(8795, ok));
+      try {
+        const h = await pagina(null), aMozari = [];
+        h.on("request", (r) => { if (/localhost:87(87|88)|mozari\.app/.test(r.url())) aMozari.push(r.url()); });
+        await h.goto("http://localhost:8795/" + carpeta); await h.waitForTimeout(5000);
+        exige(await h.$("canvas"), "en el otro hosting el tour no dibujó la esfera");
+        exige(!h.errs.length, "errores en el otro hosting: " + h.errs.join(" | ").slice(0, 200));
+        const lote = await h.$$eval("path.cp-pol.con-accion", (l) => l.map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2, r.width * r.height]; }).filter((x) => x[2] > 300 && x[0] > 0 && x[1] > 0 && x[0] < 1400 && x[1] < 900).sort((p, q) => q[2] - p[2])[0]);
+        exige(lote, "en el otro hosting no salen los lotes");
+        await h.mouse.click(lote[0], lote[1]); await h.waitForTimeout(700);
+        exige(await h.isVisible(".pop .pop-caja"), "en el otro hosting el lote no abre su ficha");
+        exige(!aMozari.length, "el tour del otro hosting le pidió cosas a Mozari: " + aMozari.slice(0, 3).join(" , "));
+        await h.context().close();
+      } finally { srv.close(); }
     }, a);
     await paso("Modo privado: el tour se oculta sin borrarlo y vuelve igual", async () => {
       exige(await a.$("#pub-privado"), "no está el botón de modo privado");

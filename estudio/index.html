@@ -2636,14 +2636,15 @@
       '<div class="pub-acc"><button class="btn-prim" id="pub-publicar"' + (est.escenas.length ? "" : " disabled") + ">" + (pub ? "Publicar cambios" : "Publicar tour") + "</button>" +
       (pub ? '<a class="btn-sec" href="' + esc(linkTour()) + '" target="_blank" rel="noopener">Abrir tour ↗</a>' : "") + "</div>" +
       '<p class="nota" id="pub-estado">' + (pub ? (oculto ? "Oculto: nadie lo puede ver. " : "") + "Última publicación: " + pub : est.escenas.length ? "Aún no está publicado." : "Sube al menos una esfera para publicar.") + "</p>" +
+      // Descargar para otro hosting: solo con licencia comprada (Pro o Desarrollos), no en Gratis. Va arriba (antes se perdía
+      // hasta abajo) y se ve aunque el tour no esté publicado, con el botón apagado y la razón.
+      (PLAN && !PLAN.marca ? '<div class="pub-hosting"><div><b>Súbelo a tu propio hosting</b><span>' + (pub ? "Descarga una carpeta con todo el tour. Súbela a tu sitio por cPanel o FTP y ábrela con tu dominio. Si cambias algo, publica y descarga de nuevo." : "Primero publica el tour; luego aquí descargas la carpeta para subirla al dominio de tu cliente.") + "</span></div>" +
+        (pub ? '<button class="btn-sec" id="pub-descargar">Descargar tour (.zip)</button>' : '<button class="btn-sec" disabled title="Publica el tour primero">Descargar tour (.zip)</button>') + "</div>" : "") +
       cajaRevision() +
       // Modo privado (Laboratorio): esconde el tour sin borrarlo, por ejemplo mientras el cliente termina de pagar
       (pub && enLab("privado") ? '<div class="pub-hosting pub-privado' + (oculto ? " oculto" : "") + '"><div><b>' + (oculto ? "Tour oculto" : "Modo privado") + "</b><span>" +
         (oculto ? "Quien abra el link ve «Este tour no está disponible por ahora». Nada se borró: al mostrarlo vuelve igual, con el mismo link." : "Esconde el tour sin borrarlo, por ejemplo mientras tu cliente termina de pagar. El link y tus cambios se quedan igual.") +
         '</span></div><button class="' + (oculto ? "btn-prim" : "btn-sec") + '" id="pub-privado">' + (oculto ? "Mostrar tour" : "Ocultar tour") + "</button></div>" : "") +
-      // Descargar para otro hosting: solo con licencia comprada (Pro o Desarrollos), no en Gratis
-      (pub && PLAN && !PLAN.marca ? '<div class="pub-hosting"><div><b>Súbelo a tu propio hosting</b><span>Descarga una carpeta con todo el tour. Súbela a tu sitio por cPanel o FTP y ábrela con tu dominio. Si cambias algo, publica y descarga de nuevo.</span></div>' +
-        '<button class="btn-sec" id="pub-descargar">Descargar tour (.zip)</button></div>' : "") +
       (conMarcaPrueba() ? '<div class="pub-revision"><span><b>Se publica con marca de agua.</b> ' + (PLAN.marca ? "Tu plan Gratis es para probar todo; tus clientes verán el tour con la marca de agua «Creado por Mozari»." : "Este tour tiene lotes y la lotificación es del plan Desarrollos.") + '</span><div><button class="btn-prim" data-comprar="' + (tieneLotes() ? "desarrollos" : "pro") + '">' + (tieneLotes() ? "Obtener Desarrollos" : "Quitar la marca") + "</button></div></div>" : "");
     $("v-proximo").hidden = false;
     if (!toursNube) cargarToursNube().then(() => nav.sec === "publicar" && pintarPublicar());
