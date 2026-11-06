@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-06T20:08:17.730Z",
- "bien": 57,
- "total": 57,
+ "fecha": "2026-11-06T20:54:39.187Z",
+ "bien": 58,
+ "total": 58,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -65,6 +65,10 @@
   },
   {
    "nombre": "Laboratorio · interiorismo: skin Interior con menú por espacios y la ficha técnica en el tour",
+   "ok": true
+  },
+  {
+   "nombre": "Laboratorio · Edificio: la fachada se parte en pisos y departamentos numerados por piso",
    "ok": true
   },
   {

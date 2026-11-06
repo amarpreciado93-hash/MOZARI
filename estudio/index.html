@@ -759,6 +759,22 @@
   .cuentas-conteo { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 16px 2px; }
   .cuentas-conteo span { padding: 8px 12px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 12px; color: var(--mz-tenue); }
   .cuentas-conteo b { display: block; font-size: 20px; font-weight: 600; color: var(--mz-texto); }
+  /* Panel de dueño con colores: cada dato tiene el suyo para ubicarlo de un vistazo */
+  .cuentas-conteo span[style*="--c"] { border-color: color-mix(in srgb, var(--c) 45%, transparent); background: color-mix(in srgb, var(--c) 9%, var(--mz-superficie)); box-shadow: inset 3px 0 0 var(--c); }
+  .cuentas-conteo span[style*="--c"] b { color: var(--c); }
+  .rep-tabs .tab-punto { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 7px; vertical-align: 1px; }
+  .lotes-tabla select.plan-gratis { color: #B8BEAE; border-color: rgba(184, 190, 174, 0.45); }
+  .lotes-tabla select.plan-pro { color: #6DB4FF; border-color: rgba(109, 180, 255, 0.6); background: rgba(109, 180, 255, 0.08); }
+  .lotes-tabla select.plan-desarrollos { color: #F5BE4E; border-color: rgba(245, 190, 78, 0.6); background: rgba(245, 190, 78, 0.08); }
+  .cuentas tbody tr.plan-pro td:first-child { box-shadow: inset 3px 0 0 #6DB4FF; }
+  .cuentas tbody tr.plan-desarrollos td:first-child { box-shadow: inset 3px 0 0 #F5BE4E; }
+  .cuentas tbody tr.dueno td:first-child { box-shadow: inset 3px 0 0 var(--mz-lima); }
+  .cuentas tbody tr.nueva td:nth-child(2) b::after { content: "NUEVA"; margin-left: 8px; padding: 1px 6px; border-radius: 99px; font-size: 9px; letter-spacing: 0.08em; color: var(--mz-tinta); background: var(--mz-lima); vertical-align: 2px; }
+  .plan-dueno { color: var(--mz-lima); font-weight: 600; }
+  .pago-monto b, .pago-monto > span:first-child { color: #3DDC84; }
+  .cupo-fila:not(.lleno) { border-color: rgba(61, 220, 132, 0.45); box-shadow: inset 3px 0 0 #3DDC84; }
+  .cupo-fila.casi { border-color: rgba(242, 169, 0, 0.6); box-shadow: inset 3px 0 0 #F2A900; }
+  .cupo-fila.lleno { box-shadow: inset 3px 0 0 var(--mz-aviso); }
   .cupo-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 10px 16px 0; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); font-size: 13px; }
   .cupo-fila.lleno { border-color: var(--mz-aviso); }
   .cupo-fila b { font-weight: 600; }
@@ -1715,6 +1731,7 @@
           <h3>Capas</h3>
           <div class="agregar">
             <button id="add-lote" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 7.5 12 4l8.5 3.5v9L12 20l-8.5-3.5z"/><path d="M12 4v16M3.5 7.5 12 11l8.5-3.5"/></svg>Lote</button>
+            <button id="add-edificio" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 21V4h14v17"/><path d="M3 21h18M9 8h2M13 8h2M9 12h2M13 12h2M9 16h2M13 16h2" stroke-linecap="round"/></svg>Edificio</button>
             <button id="add-manzana" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6h18v12H3z"/><path d="M7.5 6v12M12 6v12M16.5 6v12" stroke-opacity=".6"/></svg>Manzana</button>
             <button id="add-pol" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 7l9-3 7 8-5 8-10-3z"/></svg>Polígono</button>
             <button id="add-camino" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2.2 3"><path d="M4 19c4 0 3-6 8-7s4-6 8-7"/></svg>Ruta</button>
@@ -3263,7 +3280,9 @@
   }
   // Panel del dueño: todas las cuentas y su plan (para dar acceso a tus alumnos)
   let vistaDueno = "cuentas";
-  const TABS_DUENO = (n) => '<div class="rep-tabs"><button class="mini' + (vistaDueno === "cuentas" ? " primario" : "") + '" data-dueno="cuentas">Cuentas</button><button class="mini' + (vistaDueno === "links" ? " primario" : "") + '" data-dueno="links">Links de regalo y descuento</button><button class="mini' + (vistaDueno === "reportes" ? " primario" : "") + '" data-dueno="reportes">Reportes' + (n ? " (" + n + " nuevos)" : "") + '</button><button class="mini' + (vistaDueno === "laboratorio" ? " primario" : "") + '" data-dueno="laboratorio">Laboratorio</button><button class="mini' + (vistaDueno === "novedades" ? " primario" : "") + '" data-dueno="novedades">Actualizaciones</button><button class="mini' + (vistaDueno === "respaldos" ? " primario" : "") + '" data-dueno="respaldos">Respaldos</button></div>';
+  const TAB_DUENO = (k, txt, color) => '<button class="mini' + (vistaDueno === k ? " primario" : "") + '" data-dueno="' + k + '"><i class="tab-punto" style="--c:' + color + '"></i>' + txt + "</button>";
+  const TABS_DUENO = (n) => '<div class="rep-tabs">' + TAB_DUENO("cuentas", "Cuentas", "#3DDC84") + TAB_DUENO("links", "Links de regalo y descuento", "#F5BE4E") + TAB_DUENO("reportes", "Reportes" + (n ? " (" + n + " nuevos)" : ""), n ? "#FF5A5F" : "#FF9A9E") +
+    TAB_DUENO("laboratorio", "Laboratorio", "#B48CFF") + TAB_DUENO("novedades", "Actualizaciones", "#6DB4FF") + TAB_DUENO("respaldos", "Respaldos", "#8FA6AD") + "</div>";
   // Links de un solo uso: cada alumno recibe el suyo (licencia de regalo o descuento)
   const TIPOS_LINK = { "pro-100": ["Pro de regalo", 100, ["pro"]], "des-100": ["Desarrollos de regalo", 100, ["desarrollos"]], "des-50": ["Desarrollos con 50% de descuento", 50, ["desarrollos"]], "todo-30": ["30% en Pro y Desarrollos", 30, ["pro", "desarrollos"]] };
   const linkDe = (codigo) => location.origin + "/entrar?cupon=" + codigo;
@@ -3560,16 +3579,17 @@
     const cuentas = porAlta.slice().reverse();
     const hoy = new Date().toDateString(), semana = new Date(Date.now() - 7 * 864e5).toISOString(); // "hoy" en la hora de tu compu
     const usuarios = todas.filter((c) => !c.admin), cuantos = (f) => usuarios.filter(f).length;
-    const resumen = '<div class="cuentas-conteo"><span><b>' + usuarios.length + "</b> usuarios</span>" +
-      "<span><b>" + cuantos((c) => !!c.creado && new Date(c.creado).toDateString() === hoy) + "</b> nuevos hoy</span>" +
-      "<span><b>" + cuantos((c) => String(c.creado || "") >= semana) + "</b> esta semana</span>" +
-      "<span><b>" + cuantos((c) => (c.plan || "gratis") === "gratis") + "</b> Gratis</span>" +
-      "<span><b>" + cuantos((c) => c.plan === "pro") + "</b> Pro</span>" +
-      "<span><b>" + cuantos((c) => c.plan === "desarrollos") + "</b> Desarrollos</span></div>" +
+    const dato = (n, txt, color) => '<span style="--c:' + color + '"><b>' + n + "</b> " + txt + "</span>";
+    const resumen = '<div class="cuentas-conteo">' + dato(usuarios.length, "usuarios", "#F2F5EC") +
+      dato(cuantos((c) => !!c.creado && new Date(c.creado).toDateString() === hoy), "nuevos hoy", "#D5FF40") +
+      dato(cuantos((c) => String(c.creado || "") >= semana), "esta semana", "#3DDC84") +
+      dato(cuantos((c) => (c.plan || "gratis") === "gratis"), "Gratis", "#B8BEAE") +
+      dato(cuantos((c) => c.plan === "pro"), "Pro", "#6DB4FF") +
+      dato(cuantos((c) => c.plan === "desarrollos"), "Desarrollos", "#F5BE4E") + "</div>" +
       // Tours hechos con Mozari: los publicados (con link para sus clientes), cuántos son de usuarios y cuántos se han creado
-      (tt ? '<div class="cuentas-conteo tours-conteo"><span><b>' + tt.publicados + "</b> tours publicados</span><span><b>" + tt.publicadosClientes + "</b> de usuarios</span><span><b>" + (tt.publicados - tt.publicadosClientes) + "</b> tuyos</span><span><b>" + tt.creados + "</b> creados en total</span></div>" : "") +
+      (tt ? '<div class="cuentas-conteo tours-conteo">' + dato(tt.publicados, "tours publicados", "#3FD5E0") + dato(tt.publicadosClientes, "de usuarios", "#7FE7EE") + dato(tt.publicados - tt.publicadosClientes, "tuyos", "#B48CFF") + dato(tt.creados, "creados en total", "#8FA6AD") + "</div>" : "") +
       // Cupo: cuántas cuentas caben por ahora. Quien compra o llega con un link de regalo entra aunque esté lleno.
-      (cupo ? '<div class="cupo-fila' + (cupo.cuentas >= cupo.cupo ? " lleno" : "") + '"><span><b>' + cupo.cuentas + " de " + cupo.cupo + "</b> cuentas" + (cupo.cuentas >= cupo.cupo ? " · cupo lleno" : " · quedan " + (cupo.cupo - cupo.cuentas)) + "</span>" +
+      (cupo ? '<div class="cupo-fila' + (cupo.cuentas >= cupo.cupo ? " lleno" : cupo.cuentas >= cupo.cupo * 0.8 ? " casi" : "") + '"><span><b>' + cupo.cuentas + " de " + cupo.cupo + "</b> cuentas" + (cupo.cuentas >= cupo.cupo ? " · cupo lleno" : " · quedan " + (cupo.cupo - cupo.cuentas)) + "</span>" +
         '<label>Cupo <input id="cupo-num" type="number" min="0" step="10" value="' + cupo.cupo + '"></label><button class="mini" id="cupo-guardar">Guardar</button>' +
         (cupo.enEspera ? '<button class="mini" id="cupo-espera">Lista de espera (' + cupo.enEspera + ")</button>" : '<small>Nadie en lista de espera</small>') + "</div>" +
         '<div class="cupo-lista" id="cupo-lista" hidden>' + (cupo.espera || []).map((x) => "<span>" + esc(x.nombre || "") + " <small>" + esc(x.email) + " · " + new Date(x.fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) + (x.veces > 1 ? " · intentó " + x.veces + " veces" : "") + "</small></span>").join("") +
@@ -3577,7 +3597,7 @@
     let caja = $("cuentas");
     if (!caja) { caja = document.createElement("div"); caja.id = "cuentas"; caja.className = "cuentas"; $("mi-plan").after(caja); }
     caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p>' + TABS_DUENO(0) + resumen + '<p class="cuentas-total">' + totalPagos(cuentas) + '</p><table class="lotes-tabla"><thead><tr><th>#</th><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Pagó</th><th>Última entrada</th><th></th></tr></thead><tbody>' + cuentas.map((c) =>
-      '<tr' + (c.pausada ? ' class="pausada"' : "") + '><td class="cuenta-n">' + c.n + "</td><td><b>" + esc(c.nombre || "") + "</b>" + (c.creado ? '<small class="cuenta-alta">desde ' + new Date(c.creado).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) + "</small>" : "") + "</td><td>" + esc(c.email) + "</td><td>" + (c.admin ? "Dueño" : '<select data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
+      '<tr class="' + (c.admin ? "dueno" : "plan-" + (c.plan || "gratis")) + (c.pausada ? " pausada" : "") + (c.creado && new Date(c.creado).toDateString() === hoy ? " nueva" : "") + '"><td class="cuenta-n">' + c.n + "</td><td><b>" + esc(c.nombre || "") + "</b>" + (c.creado ? '<small class="cuenta-alta">desde ' + new Date(c.creado).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) + "</small>" : "") + "</td><td>" + esc(c.email) + "</td><td>" + (c.admin ? '<span class="plan-dueno">Dueño</span>' : '<select class="plan-' + esc(c.plan || "gratis") + '" data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
       "</td><td>" + (c.admin ? "" : pagoDe(c)) + "</td><td>" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td><td>" + (c.admin ? "" : '<button class="mini' + (c.pausada ? " primario" : "") + '" data-pausar="' + esc(c.uid) + '" data-v="' + (c.pausada ? "0" : "1") + '">' + (c.pausada ? "Reactivar" : "Pausar") + "</button>") + "</td></tr>").join("") + "</tbody></table>";
   }
   document.addEventListener("click", async (ev) => {
@@ -4903,13 +4923,13 @@
       if (dib) {
         const k = coordsEn(ev);
         if (!k) return;
-        if (dib.puntos.length >= 3 && dib.tipo !== "camino" && dib.tipo !== "manzana" && dib.tipo !== "pdf") {
+        if (dib.puntos.length >= 3 && dib.tipo !== "camino" && dib.tipo !== "manzana" && dib.tipo !== "pdf" && dib.tipo !== "edificio") {
           const cam = camara(), p0 = aCamara(cam, dib.puntos[0][0], dib.puntos[0][1]), r = stage.getBoundingClientRect();
           if (p0.z > CERCA) { const s = aPantalla(cam, p0); if (Math.hypot(s.x - (ev.clientX - r.left), s.y - (ev.clientY - r.top)) < 12) { opciones.alCerrarDibujo(); return; } }
         }
         dib.puntos.push([k.yaw, k.pitch]);
         programar();
-        if (dib.tipo === "pdf" && opciones.alPuntoDibujo) opciones.alPuntoDibujo(dib);
+        if ((dib.tipo === "pdf" || dib.tipo === "edificio") && opciones.alPuntoDibujo) opciones.alPuntoDibujo(dib);
       } else if (motor.elegida) opciones.alSeleccionar(null);
     });
 
@@ -5795,15 +5815,15 @@ void main(){
         alSeleccionar: (cid, modo) => seleccionar(cid, modo),
         enSeleccion: (cid) => seleccion.size > 1 && seleccion.has(cid),
         alCambiar: () => cambio(),
-        alSoltar: (c) => { if (c.manzana) { repartirManzana(c); cambio(); return; } if (c.mzPlano) { soltarPlano(c); cambio(); return; } if (c.vinculo) propagar(c, motorEd.actual.id); },
-        alArrastrar: (c) => { if (c.manzana) repartirManzana(c); if (c.mzPlano) arrastrarPlano(c); },
+        alSoltar: (c) => { if (c.edificio) { repartirEdificio(c); cambio(); return; } if (c.manzana) { repartirManzana(c); cambio(); return; } if (c.mzPlano) { soltarPlano(c); cambio(); return; } if (c.vinculo) propagar(c, motorEd.actual.id); },
+        alArrastrar: (c) => { if (c.edificio) repartirEdificio(c); if (c.manzana) repartirManzana(c); if (c.mzPlano) arrastrarPlano(c); },
         asasExtra: (c) => (c.manzana ? asasManzana(c) : c.mzPlano ? asasPlano(c) : c.camino && enLab("manzana-curvas") ? asasCamino(c) : null),
         tomarAsaExtra: (c, h) => (c.camino ? h : c.mzPlano ? tomarAsaPlano(c, h) : tomarAsaManzana(c, h)),
         moverAsaExtra: (c, h, k) => (c.camino ? moverAsaCamino(c, h, k) : c.mzPlano ? moverAsaPlano(c, h, k) : moverAsaManzana(c, h, k)),
         quitarAsaExtra: (c, h) => (c.camino ? quitarAsaCamino(c, h) : c.mzPlano ? quitarAsaPlano(c, h) : quitarAsaManzana(c, h)),
         alEntrar: (c, origen) => { abrirEditor(c.destino, nav.sub, vistaLlegada(c, origen)); avisar("Llegaste a " + nombreDe(c.destino) + (c.llegada === "frente" ? " viendo de frente" : "")); },
         alCerrarDibujo: () => terminarDibujo(true),
-        alPuntoDibujo: (d) => puntoPDF(d),
+        alPuntoDibujo: (d) => { if (d.tipo === "edificio") { if (d.puntos.length >= 4) terminarDibujo(true); return; } puntoPDF(d); },
         alInteractuar: () => { if (pilotoEd) detenerPilotoEd(); },
         alMoverVista: () => { if (motorEd && motorEd.modo === "piloto") marcarPuntoActual(); },
       });
@@ -7404,7 +7424,11 @@ void main(){
     motorEd.dibujo = { puntos: [], cursor: null, tipo: tipo || "poligono" };
     seleccionar(null);
     document.body.classList.add("dibujando");
-    $(tipo === "lote" ? "add-lote" : tipo === "camino" ? "add-camino" : tipo === "manzana" ? "add-manzana" : "add-pol").setAttribute("aria-pressed", "true");
+    $(tipo === "lote" ? "add-lote" : tipo === "camino" ? "add-camino" : tipo === "manzana" ? "add-manzana" : tipo === "edificio" ? "add-edificio" : "add-pol").setAttribute("aria-pressed", "true");
+    if (tipo === "edificio") {
+      banda('<span><b>Edificio.</b> Toca las 4 esquinas de la fachada (las de afuera). Con la cuarta se arman los departamentos.</span><button class="mini" data-a="deshacer">Quitar punto</button><button class="mini" data-a="cancelar">Cancelar</button>');
+      return;
+    }
     if (tipo === "manzana") {
       banda('<span><b>Manzana · paso 1 de 2.</b> Dibuja el <b>frente</b> (el lado de la calle): clic en cada esquina, Enter para seguir.</span><button class="mini" data-a="deshacer">Quitar punto</button><button class="mini" data-a="cancelar">Cancelar</button><button class="mini primario" data-a="cerrar">Siguiente</button>');
       return;
@@ -7464,6 +7488,73 @@ void main(){
     for (let k = 0; k < tb.length; k++) tb[k] = Math.max(tb[k], (k ? tb[k - 1] : 0) + g);
     for (let k = tb.length - 1; k >= 0; k--) tb[k] = Math.min(tb[k], (k < tb.length - 1 ? tb[k + 1] : 1) - g);
     return tf.map((t, k) => ({ f: t, b: tb[k] }));
+  }
+  // ---------- Edificio: una fachada (4 esquinas) en pisos × departamentos ----------
+  // La fachada es plana: sus esquinas se pasan a un plano tangente (proyección gnomónica, donde las rectas siguen
+  // rectas) y una homografía reparte la cuadrícula con perspectiva, así los pisos de arriba salen más chicos.
+  const dirDe = (y, p) => [Math.cos(p) * Math.sin(y), -Math.sin(p), Math.cos(p) * Math.cos(y)];
+  const yawPitchDe = (v) => { const n = Math.hypot(v[0], v[1], v[2]) || 1; return [Math.atan2(v[0], v[2]), -Math.asin(Math.max(-1, Math.min(1, v[1] / n)))]; };
+  const punto3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], norma3 = (v) => { const n = Math.hypot(v[0], v[1], v[2]) || 1; return v.map((x) => x / n); };
+  function planoFachada(puntos) {
+    const V = puntos.map(([y, p]) => dirDe(y, p)), c = norma3(V.reduce((t, v) => [t[0] + v[0], t[1] + v[1], t[2] + v[2]], [0, 0, 0]));
+    const w = norma3([-c[0] * c[1], 1 - c[1] * c[1], -c[2] * c[1]]), u = [w[1] * c[2] - w[2] * c[1], w[2] * c[0] - w[0] * c[2], w[0] * c[1] - w[1] * c[0]];
+    const a2 = (v) => { const k = punto3(v, c) || 1e-9; return [punto3(v, u) / k, punto3(v, w) / k]; };
+    const de2 = ([a, b]) => yawPitchDe([c[0] + a * u[0] + b * w[0], c[1] + a * u[1] + b * w[1], c[2] + a * u[2] + b * w[2]]);
+    return { Q: V.map(a2), de2 };
+  }
+  // Esquinas en orden: arriba izquierda, arriba derecha, abajo derecha, abajo izquierda (se toquen en el orden que sea)
+  function ordenarFachada(puntos) {
+    const { Q } = planoFachada(puntos), idx = [0, 1, 2, 3].sort((i, j) => Q[j][1] - Q[i][1]);
+    const [a, b] = idx.slice(0, 2).sort((i, j) => Q[i][0] - Q[j][0]), [d, e] = idx.slice(2).sort((i, j) => Q[i][0] - Q[j][0]);
+    return [a, b, e, d].map((i) => puntos[i]);
+  }
+  function homografiaCuadro(q) { // cuadro unitario (s a la derecha, t hacia abajo) → las 4 esquinas
+    const [[x0, y0], [x1, y1], [x2, y2], [x3, y3]] = q, dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3, dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
+    let g = 0, h = 0;
+    if (Math.abs(dx3) > 1e-12 || Math.abs(dy3) > 1e-12) { const den = dx1 * dy2 - dx2 * dy1 || 1e-12; g = (dx3 * dy2 - dx2 * dy3) / den; h = (dx1 * dy3 - dx3 * dy1) / den; }
+    const a = x1 - x0 + g * x1, b = x3 - x0 + h * x3, d = y1 - y0 + g * y1, e = y3 - y0 + h * y3;
+    return (s, t) => { const k = g * s + h * t + 1; return [(a * s + b * t + x0) / k, (d * s + e * t + y0) / k]; };
+  }
+  const numeroDepa = (E, piso, k) => String(E.prefijo || "") + piso + String((+E.inicial || 1) + k * (+E.paso || 1)).padStart(2, "0");
+  function repartirEdificio(c) {
+    const E = c.edificio, pisos = Math.max(1, Math.min(60, +E.pisos || 1)), por = Math.max(1, Math.min(40, +E.porPiso || 1));
+    E.pisos = pisos; E.porPiso = por;
+    const { Q, de2 } = planoFachada(c.puntos), H = homografiaCuadro(Q), red = (p) => [+p[0].toFixed(5), +p[1].toFixed(5)];
+    const l = cs(), viejos = lotesDeManzana(c), primero = +E.primerPiso || 1;
+    let k = 0;
+    for (let j = 0; j < pisos; j++) for (let i = 0; i < por; i++, k++) {
+      const P = (s, t) => red(de2(H(s, t)));
+      const puntos = [P(i / por, j / pisos), P((i + 1) / por, j / pisos), P((i + 1) / por, (j + 1) / pisos), P(i / por, (j + 1) / pisos)];
+      const piso = primero + (pisos - 1 - j), fijo = E.numeros && E.numeros[k] != null && String(E.numeros[k]).trim() !== "" ? String(E.numeros[k]) : null;
+      let x = viejos[k];
+      if (!x) {
+        x = { id: nuevoId(), tipo: "poligono", nombre: "Lote", visible: true, deManzana: c.id, iManzana: k, puntos,
+          relleno: { color: LIMA, opacidad: 0.3 }, trazo: { color: LIMA, grosor: 1, opacidad: 0.9 },
+          rollover: { activo: true, relleno: { color: LIMA, opacidad: 0.6 }, trazo: { color: BLANCO, grosor: 2, opacidad: 1 } },
+          lote: Object.assign({}, LOTE_DEF, { manzana: E.torre, rotulo: "frente", verArea: false, medidas: false, frente: 0 }) };
+        const iz = l.indexOf(viejos[viejos.length - 1] || c);
+        l.splice(iz + 1, 0, x); viejos.push(x);
+      }
+      x.puntos = puntos; x.iManzana = k; x.frenteN = 0;
+      x.lote.manzana = E.torre; x.lote.numero = fijo || numeroDepa(E, piso, i);
+      x.lote.lados = puntos.map((_, q) => (x.lote.lados || [])[q] || "");
+    }
+    viejos.slice(k).forEach((x) => { const q = l.indexOf(x); if (q >= 0) l.splice(q, 1); });
+  }
+  function crearEdificio(esquinas) {
+    const usadas = Object.values(est.capas).flat().filter((x) => x && x.edificio).map((x) => String(x.edificio.torre));
+    let torre = "A"; for (let i = 0; i < 26 && usadas.includes(torre); i++) torre = String.fromCharCode(66 + i);
+    const c = {
+      id: nuevoId(), tipo: "poligono", nombre: "Edificio " + torre, visible: true,
+      puntos: ordenarFachada(esquinas).map((p) => [+p[0].toFixed(5), +p[1].toFixed(5)]),
+      edificio: { torre, pisos: 8, porPiso: 4, primerPiso: 1, prefijo: "", inicial: 1, paso: 1, numeros: {} },
+      relleno: { color: BLANCO, opacidad: 0 }, trazo: { color: BLANCO, grosor: 1.5, opacidad: 0.7 },
+      rollover: { activo: false, relleno: { color: BLANCO, opacidad: 0 }, trazo: { color: BLANCO, grosor: 1.5, opacidad: 1 } },
+    };
+    cs().push(c);
+    repartirEdificio(c);
+    motorEd.elegida = c.id;
+    avisar("Edificio con " + c.edificio.pisos * c.edificio.porPiso + " departamentos. Cambia pisos y departamentos a la derecha.");
   }
   function repartirManzana(c, parejo) {
     const m = c.manzana, F = m.nFrente, n = Math.max(1, Math.min(60, +m.n || 1));
@@ -7778,6 +7869,21 @@ void main(){
     if (k === "mz") { c.manzana.mz = v; c.nombre = terminos().manzana + " " + v; }
     cambio();
   });
+  // Edificio: pisos, departamentos por piso y numeración
+  $("props").addEventListener("change", (ev) => {
+    const k = ev.target.dataset && ev.target.dataset.ed; if (!k) return;
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.edificio) return;
+    const v = ev.target.value.trim(), E = c.edificio;
+    if (k === "torre") { E.torre = v; c.nombre = "Edificio " + v; }
+    else if (k === "prefijo") { E.prefijo = v; E.numeros = {}; }
+    else { const n = parseInt(v, 10); if (isFinite(n) && n >= 0) { E[k] = n; if (k !== "pisos" && k !== "porPiso") E.numeros = {}; } }
+    cambio();
+  });
+  $("props").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-ed-n]"); if (!b) return;
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.edificio) return;
+    const k = b.dataset.edN; c.edificio[k] = Math.max(1, (+c.edificio[k] || 1) + +b.dataset.d); cambio();
+  });
   $("props").addEventListener("click", (ev) => {
     if (!ev.target.closest("[data-ruta-recta]")) return;
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.camino) return;
@@ -7808,6 +7914,9 @@ void main(){
     if (guardarlo && dib && dib.tipo === "pdf") {
       if (dib.puntos.length < 4) { avisar("Faltan esquinas: toca las 4, en el orden del plano"); return; }
       if (!crearLotesPDF(dib.puntos)) { dib.puntos = []; motorEd.render(); pintarSel(); bandaPDF(); return; }
+    } else if (guardarlo && dib && dib.tipo === "edificio") {
+      if (dib.puntos.length < 4) { avisar("Faltan esquinas: toca las 4 de la fachada"); return; }
+      crearEdificio(dib.puntos.slice(0, 4));
     } else if (guardarlo && dib && dib.tipo === "manzana") {
       if (dib.puntos.length < 2) { avisar(dib.frente ? "El fondo necesita al menos 2 puntos" : "El frente necesita al menos 2 puntos"); return; }
       if (!dib.frente) {
@@ -7848,7 +7957,7 @@ void main(){
     if (motorEd) { motorEd.dibujo = null; motorEd.sinPrecision(); }
     if (dib && dib.tipo === "pdf") pintarSel();
     document.body.classList.remove("dibujando");
-    $("add-pol").setAttribute("aria-pressed", "false"); $("add-lote").setAttribute("aria-pressed", "false"); $("add-camino").setAttribute("aria-pressed", "false"); $("add-manzana").setAttribute("aria-pressed", "false");
+    $("add-pol").setAttribute("aria-pressed", "false"); $("add-lote").setAttribute("aria-pressed", "false"); $("add-camino").setAttribute("aria-pressed", "false"); $("add-manzana").setAttribute("aria-pressed", "false"); $("add-edificio").setAttribute("aria-pressed", "false");
     banda(null);
     if (motorEd) cambio();
   }
@@ -7870,6 +7979,12 @@ void main(){
     // La primera vez: el mini tutorial y luego a dibujar
     if (!guiasVistas.has("manzana") && MODO === "nube") { guiaManzanaInicio(false, () => empezarDibujo("manzana")); return; }
     empezarDibujo("manzana");
+  });
+  // Edificio (Laboratorio: interiorismo): la fachada se parte en pisos y departamentos, como una manzana pero de pie
+  if (enLab("interiorismo")) $("add-edificio").hidden = false;
+  $("add-edificio").addEventListener("click", () => {
+    const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false);
+    if (era !== "edificio") empezarDibujo("edificio");
   });
   $("add-camino").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "camino") guiaCapa("camino", () => empezarDibujo("camino")); });
   $("add-txt").addEventListener("click", () => {
@@ -7965,7 +8080,8 @@ void main(){
     l.lados = c.puntos.map((_, i) => (l.lados || [])[i] || "");
     const val = (k) => esc(l[k] === undefined ? "" : l[k]);
     const varios = seleccionadas().filter((x) => x.lote).length > 1;
-    let h = (c.deManzana && !varios ? '<div class="orden" style="margin-bottom:10px"><button class="mini" data-acc="ir-manzana">Editar la ' + esc(terminos().manzana.toLowerCase()) + " completa</button></div>" : "") +
+    const padreEd = c.deManzana && (buscar(c.deManzana) || {}).edificio;
+    let h = (c.deManzana && !varios ? '<div class="orden" style="margin-bottom:10px"><button class="mini" data-acc="ir-manzana">' + (padreEd ? "Editar el edificio completo" : "Editar la " + esc(terminos().manzana.toLowerCase()) + " completa") + "</button></div>" : "") +
       '<div class="grupo"><b>Datos del lote</b><div class="lote-datos">' +
       (varios ? '<label>Numerar desde<input type="text" inputmode="numeric" data-numerar placeholder="1" title="Les pone números seguidos en su orden actual"></label>'
         : '<label>' + esc(terminos().lote) + '<input type="text" data-k="lote.numero" value="' + val("numero") + '" placeholder="12"></label>') +
@@ -8047,12 +8163,23 @@ void main(){
     const cont = $("props");
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
     if (!c) { $("props-titulo").textContent = "Propiedades"; cont.innerHTML = '<p class="vacio">Selecciona una capa en la lista o sobre la esfera para editarla.</p>'; return; }
-    $("props-titulo").textContent = c.lote ? nombreLote(c) : c.manzana || c.mzPlano ? terminos().manzana + " " + ((c.manzana || c.mzPlano).mz || "") : c.camino ? "Ruta" : c.tipo === "interes" ? "Punto de interés" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
+    $("props-titulo").textContent = c.lote ? nombreLote(c) : c.edificio ? "Edificio " + (c.edificio.torre || "") : c.manzana || c.mzPlano ? terminos().manzana + " " + ((c.manzana || c.mzPlano).mz || "") : c.camino ? "Ruta" : c.tipo === "interes" ? "Punto de interés" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
     const multi = seleccionadas().length > 1 ? seleccionadas() : null;
     if (multi) $("props-titulo").textContent = multi.length + (c.lote ? " lotes" : " capas") + " seleccionados";
     let h = (multi ? '<div class="sel-multi"><b>' + multi.length + ' seleccionados.</b> Lo que cambies aquí se aplica a todos' + (c.lote ? ": manzana, estado, precio, superficie y estilo. Para los números usa «Numerar desde»." : ".") + ' <button class="mini" data-acc="sel-una">Solo este</button></div>' : "") +
       (c.lote || multi ? "" : '<div class="grupo">' + campo("Nombre", '<input type="text" data-k="nombre" value="' + esc(c.nombre) + '">') + "</div>");
     if (c.lote) h += propsLote(c);
+    else if (c.edificio) {
+      const E = c.edificio, n = lotesDeManzana(c).length, mas = (k, v) => '<div class="mz-n"><button data-ed-n="' + k + '" data-d="-1" aria-label="Uno menos">−</button><input type="text" inputmode="numeric" data-ed="' + k + '" value="' + esc(v) + '"><button data-ed-n="' + k + '" data-d="1" aria-label="Uno más">+</button></div>';
+      h += '<div class="grupo"><b>Departamentos del edificio ' + CHIP_LAB + "</b>" +
+        campo(terminos().manzana, '<input type="text" data-ed="torre" maxlength="12" value="' + esc(E.torre) + '" placeholder="A">') +
+        campo("Pisos", mas("pisos", E.pisos)) + campo("Departamentos por piso", mas("porPiso", E.porPiso)) +
+        campo("Número del primer piso", '<input type="text" inputmode="numeric" data-ed="primerPiso" value="' + esc(E.primerPiso) + '">') +
+        campo("Prefijo (opcional)", '<input type="text" data-ed="prefijo" maxlength="8" value="' + esc(E.prefijo || "") + '" placeholder="A-">') +
+        campo("Primer número de cada piso", '<input type="text" inputmode="numeric" data-ed="inicial" value="' + esc(E.inicial) + '">') +
+        campo("Numerar", '<select data-ed="paso"><option value="1"' + (+E.paso === 2 ? "" : " selected") + '>Seguidos (1, 2, 3…)</option><option value="2"' + (+E.paso === 2 ? " selected" : "") + ">De 2 en 2 (1, 3, 5…)</option></select>") +
+        '<p class="nota">Así se numeran: ' + esc(numeroDepa(E, (+E.primerPiso || 1) + E.pisos - 1, 0)) + ", " + esc(numeroDepa(E, (+E.primerPiso || 1) + E.pisos - 1, 1)) + "… en el piso de arriba. Arrastra las 4 esquinas para ajustarlo a la fachada: los " + n + " departamentos la siguen. Para su ficha, elige la ficha «Técnica» en Panoramas → Lotes.</p></div>";
+    }
     else if (c.manzana) {
       const m = c.manzana, lotes = lotesDeManzana(c);
       const gemela = cs().some((x) => x !== c && x.manzana && String(x.manzana.mz).trim().toLowerCase() === String(m.mz).trim().toLowerCase());
@@ -8154,8 +8281,8 @@ void main(){
         '<button class="hs-estilo' + (id !== "clasico" ? " hs-" + id : "") + '" data-k="estilo" data-v="' + id + '" aria-pressed="' + ((c.estilo || "clasico") === id) + '"><span class="hs-nucleo">' + (e.ico || ICO_ACCION[accionDe(c)] || ICO_ACCION.panorama) + "</span>" + e.nombre + "</button>").join("") + "</div></div>";
       h += grupo3d(c);
     }
-    h += grupoAccion(c);
-    if (c.tipo === "poligono" || c.tipo === "texto") {
+    if (!c.edificio) h += grupoAccion(c); // el edificio solo enmarca sus departamentos: no se clona ni tiene acción
+    if ((c.tipo === "poligono" || c.tipo === "texto") && !c.edificio) {
       const aqui = motorEd.actual.id, listas = trIds().filter(trLista);
       h += '<div class="grupo"><b>Terreno</b>';
       if (trLista(aqui) && listas.length > 1) {
@@ -8202,13 +8329,13 @@ void main(){
     // Lotes que salen de una manzana: su manzana manda (si no, al repartirla se regresaría el número viejo)
     if (el.dataset.k === "lote.manzana") {
       const padres = new Set([c].concat(otras).filter((x) => x.deManzana).map((x) => x.deManzana));
-      padres.forEach((pid) => { const m = buscar(pid); if (m && m.mzPlano) { m.mzPlano.mz = v; m.nombre = terminos().manzana + " " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); return; } if (!m || !m.manzana) return; m.manzana.mz = v; m.nombre = terminos().manzana + " " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); });
+      padres.forEach((pid) => { const m = buscar(pid); if (m && m.edificio) { m.edificio.torre = v; m.nombre = "Edificio " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); return; } if (m && m.mzPlano) { m.mzPlano.mz = v; m.nombre = terminos().manzana + " " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); return; } if (!m || !m.manzana) return; m.manzana.mz = v; m.nombre = terminos().manzana + " " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); });
       if (otras.length) pintarCapas();
     }
     // Número escrito a mano en un lote de manzana: la manzana lo recuerda (si no, al ajustarla se perdía)
     if (el.dataset.k === "lote.numero") [c].concat(otras).forEach((x) => {
       if (!x.deManzana) return;
-      const m = buscar(x.deManzana), M = m && (m.manzana || m.mzPlano); if (!M) return;
+      const m = buscar(x.deManzana), M = m && (m.manzana || m.mzPlano || m.edificio); if (!M) return;
       M.numeros = Object.assign({}, M.numeros, { [x.iManzana]: x.lote.numero });
     });
     const etq = document.querySelector('[data-v-de="' + el.dataset.k + '"]');
@@ -8239,6 +8366,7 @@ void main(){
     new Set(deMz.map((x) => x.deManzana)).forEach((pid) => {
       const m = buscar(pid), todosMz = m ? lotesDeManzana(m) : [];
       if (!m) return;
+      if (m.edificio) { m.edificio.numeros = Object.assign({}, m.edificio.numeros); todosMz.filter((x) => lotes.includes(x)).forEach((x) => { x.lote.numero = String(desde + lotes.indexOf(x)); m.edificio.numeros[x.iManzana] = x.lote.numero; }); return; }
       if (m.mzPlano) { m.mzPlano.numeros = Object.assign({}, m.mzPlano.numeros); todosMz.filter((x) => lotes.includes(x)).forEach((x) => { x.lote.numero = String(desde + lotes.indexOf(x)); m.mzPlano.numeros[x.iManzana] = x.lote.numero; }); return; }
       if (todosMz.every((x) => lotes.includes(x))) { m.manzana.inicio = desde + Math.min(...todosMz.map((x) => lotes.indexOf(x))); m.manzana.numeros = {}; repartirManzana(m); }
       else { // solo algunos lotes de la manzana: llevan su número y la manzana lo recuerda
@@ -8365,7 +8493,7 @@ void main(){
   function duplicar() {
     const c = motorEd.elegida && buscar(motorEd.elegida);
     if (!c) return;
-    if (c.manzana || c.mzPlano || c.deManzana) { avisar("Las manzanas no se duplican; dibuja otra"); return; }
+    if (c.manzana || c.mzPlano || c.deManzana || c.edificio) { avisar(c.edificio ? "Los edificios no se duplican; dibuja otro" : "Las manzanas no se duplican; dibuja otra"); return; }
     const copia = JSON.parse(JSON.stringify(c));
     copia.id = nuevoId(); copia.nombre = c.nombre + " copia"; delete copia.vinculo;
     if (copia.lote) { const mz = String(c.lote.manzana).trim().toLowerCase(); let max = 0; Object.values(est.capas).flat().forEach((x) => { if (x.lote && String(x.lote.manzana).trim().toLowerCase() === mz) max = Math.max(max, parseInt(x.lote.numero, 10) || 0); }); copia.lote.numero = String(max + 1); copia.lote.estado = "disponible"; }
@@ -8387,6 +8515,7 @@ void main(){
     if (i < 0) return;
     const v = l[i].vinculo;
     if (l[i].deManzana) { avisar("Este lote es parte de una manzana. Quita lotes desde la manzana."); return; }
+    if (l[i].edificio) { const id = l[i].id; est.capas[motorEd.actual.id] = l.filter((x) => x.id !== id && x.deManzana !== id); motorEd.elegida = null; cambio(); avisar("Edificio y sus departamentos eliminados"); return; }
     if (l[i].manzana || l[i].mzPlano) { const id = l[i].id; est.capas[motorEd.actual.id] = l.filter((x) => x.id !== id && x.deManzana !== id); motorEd.elegida = null; cambio(); avisar("Manzana y sus lotes eliminados"); return; }
     l.splice(i, 1); motorEd.elegida = null;
     let n = 0;
@@ -8419,6 +8548,7 @@ void main(){
   function cambio() {
     const c = motorEd.elegida && buscar(motorEd.elegida);
     if (c && c.manzana) repartirManzana(c);
+    if (c && c.edificio) repartirEdificio(c);
     if (c && c.mzPlano) repartirPlano(c);
     if (c && c.vinculo) propagar(c, motorEd.actual.id);
     guardar(); motorEd.construir(); pintarCapas(); pintarProps(); pintarTira();

@@ -352,6 +352,29 @@ async function capasPesadas(p) {
         await a.click('[data-fe-plantilla="banda"]'); await a.waitForTimeout(500);
       }
     }, a);
+    await paso("Laboratorio · Edificio: la fachada se parte en pisos y departamentos numerados por piso", async () => {
+      const foto = (p, n) => (process.env.CAPTURAS ? p.screenshot({ path: path.join(process.env.CAPTURAS, n + ".png") }) : null);
+      await irCapas(a); await a.keyboard.press("Escape"); await a.waitForTimeout(300);
+      exige(await a.isVisible("#add-edificio"), "no está el botón Edificio");
+      await a.click("#add-edificio"); await a.waitForTimeout(400); await pasarGuias(a);
+      for (const [x, y] of [[905, 470], [620, 285], [900, 278], [615, 480]]) { await a.mouse.click(x, y); await a.waitForTimeout(180); }
+      await a.waitForTimeout(900);
+      exige(/^Edificio/.test(await a.textContent("#props-titulo")), "no se creó el edificio: " + (await a.textContent("#props-titulo")));
+      const deps = async () => (await capas(a)).filter((t) => / · M ?A$/.test(t));
+      let d = await deps();
+      exige(d.length === 32, "debían salir 8 pisos × 4 = 32 departamentos y salieron " + d.length);
+      exige(d.some((t) => /^Lote 801 /.test(t)) && d.some((t) => /^Lote 104 /.test(t)), "no se numeran por piso (801… arriba, 101… abajo): " + d.slice(0, 6).join(", "));
+      const caja = await a.evaluate(() => { const l = [...document.querySelectorAll("#ed-stage path.cp-pol")].map((e) => e.getBoundingClientRect()).filter((r) => r.top > 260 && r.bottom < 500 && r.width > 4); return l.length; });
+      exige(caja >= 32, "los departamentos no se dibujan en la fachada (" + caja + ")");
+      await foto(a, "edificio");
+      await a.click('[data-ed-n="pisos"][data-d="1"]'); await a.waitForTimeout(500);
+      d = await deps();
+      exige(d.length === 36 && d.some((t) => /^Lote 901 /.test(t)), "al agregar un piso no salió el 9.º: " + d.length);
+      await a.fill('[data-ed="prefijo"]', "A-"); await a.press('[data-ed="prefijo"]', "Tab"); await a.waitForTimeout(500);
+      exige((await deps()).some((t) => /^Lote A-901 /.test(t)), "el prefijo no se aplicó");
+      await a.click("#props-titulo"); await a.keyboard.press("Delete"); await a.waitForTimeout(600);
+      exige(!(await deps()).length, "al borrar el edificio quedaron departamentos");
+    }, a);
     let link = null;
     await paso("Publicar y abrir el tour público en computadora", async () => {
       await a.click('#nav button:has-text("Publicar")'); await a.waitForTimeout(800);
