@@ -762,9 +762,12 @@ async function capasPesadas(p) {
       await publicar();
     }, a);
     await paso("Panel de dueño: cuentas, links, reportes, laboratorio y actualizaciones", async () => {
-      await a.click('#nav button:has-text("Mis Tours")'); await a.waitForTimeout(800);
+      await a.click('#nav button:has-text("Mis Tours")'); await a.waitForTimeout(800); await pasarGuias(a);
       await a.click("#ver-cuentas"); await a.waitForTimeout(1200);
       exige(await a.isVisible(".cuentas-conteo"), "no se ve el conteo de usuarios");
+      if (process.env.CAPTURAS) await a.screenshot({ path: path.join(process.env.CAPTURAS, "panel-tours.png") });
+      const tt = await a.textContent(".tours-conteo").catch(() => "");
+      exige(/[1-9]\d* tours publicados/.test(tt) && /creados en total/.test(tt), "no se ve cuántos tours se han publicado: " + tt);
       for (const t of ["links", "reportes", "laboratorio", "novedades"]) { await a.click('[data-dueno="' + t + '"]'); await a.waitForTimeout(900); }
     }, a);
 

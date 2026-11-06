@@ -448,15 +448,22 @@ async function admin(request, env, partes) {
   }
   if (partes[2] !== "cuentas") return error(404, "Ruta desconocida");
   if (partes.length === 3 && m === "GET") {
-    const cuentas = [];
+    const cuentas = [], tours = [];
     let cur;
     do {
-      const l = await env.R2.list({ prefix: "cuentas/", cursor: cur, limit: 1000 });
-      for (const o of l.objects) if (o.key.endsWith("/perfil.json")) { const p = await (await env.R2.get(o.key)).json(); cuentas.push(p); }
+      const l = await env.R2.list({ prefix: "cuentas/", cursor: cur, limit: 1000, include: ["customMetadata"] });
+      for (const o of l.objects) {
+        if (o.key.endsWith("/perfil.json")) { const p = await (await env.R2.get(o.key)).json(); cuentas.push(p); continue; }
+        // Índice de tours de cada cuenta: cuentas/<uid>/tours/<id> (su "publicado" dice si ya se publicó)
+        const t = o.key.match(/^cuentas\/([^/]+)\/tours\/([^/]+)$/);
+        if (t) tours.push({ uid: t[1], publicado: !!(o.customMetadata && o.customMetadata.publicado) });
+      }
       cur = l.truncated ? l.cursor : undefined;
     } while (cur);
+    const dueno = new Set(cuentas.filter((p) => p.admin).map((p) => p.uid)), pub = tours.filter((t) => t.publicado);
+    const resumenTours = { creados: tours.length, publicados: pub.length, publicadosClientes: pub.filter((t) => !dueno.has(t.uid)).length };
     cuentas.sort((a, b) => String(b.ultimaEntrada).localeCompare(String(a.ultimaEntrada)));
-    return json({ cuentas: cuentas.map((p) => ({ uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada,
+    return json({ tours: resumenTours, cuentas: cuentas.map((p) => ({ uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada,
       // Lo que pagó y por dónde (los pagos de antes del historial salen de su último pago, que fue por Mercado Pago)
       pausada: !!p.bloqueado, cortesia: !!p.cortesia,
       pagos: Array.isArray(p.pagos) ? p.pagos : p.ultimoPago ? [Object.assign({ moneda: "MXN", metodo: "mercadopago" }, p.ultimoPago)] : [] })) });

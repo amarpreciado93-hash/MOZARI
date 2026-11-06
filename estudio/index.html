@@ -3552,7 +3552,7 @@
     if (vistaDueno === "respaldos") return pintarRespaldos();
     const [r, rc] = await Promise.all([fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null), fetch("api/admin/cupo", { cache: "no-store" }).catch(() => null)]);
     if (!r || !r.ok) { avisar("No se pudieron leer las cuentas"); return; }
-    const { cuentas: todas } = await r.json();
+    const { cuentas: todas, tours: tt } = await r.json();
     const cupo = rc && rc.ok ? await rc.json().catch(() => null) : null;
     // Número de usuario = orden en que se registraron (el primero es #1). Se muestran del más nuevo al más viejo.
     const porAlta = todas.slice().sort((a, b) => String(a.creado || "").localeCompare(String(b.creado || "")));
@@ -3566,6 +3566,8 @@
       "<span><b>" + cuantos((c) => (c.plan || "gratis") === "gratis") + "</b> Gratis</span>" +
       "<span><b>" + cuantos((c) => c.plan === "pro") + "</b> Pro</span>" +
       "<span><b>" + cuantos((c) => c.plan === "desarrollos") + "</b> Desarrollos</span></div>" +
+      // Tours hechos con Mozari: los publicados (con link para sus clientes), cuántos son de usuarios y cuántos se han creado
+      (tt ? '<div class="cuentas-conteo tours-conteo"><span><b>' + tt.publicados + "</b> tours publicados</span><span><b>" + tt.publicadosClientes + "</b> de usuarios</span><span><b>" + (tt.publicados - tt.publicadosClientes) + "</b> tuyos</span><span><b>" + tt.creados + "</b> creados en total</span></div>" : "") +
       // Cupo: cuántas cuentas caben por ahora. Quien compra o llega con un link de regalo entra aunque esté lleno.
       (cupo ? '<div class="cupo-fila' + (cupo.cuentas >= cupo.cupo ? " lleno" : "") + '"><span><b>' + cupo.cuentas + " de " + cupo.cupo + "</b> cuentas" + (cupo.cuentas >= cupo.cupo ? " · cupo lleno" : " · quedan " + (cupo.cupo - cupo.cuentas)) + "</span>" +
         '<label>Cupo <input id="cupo-num" type="number" min="0" step="10" value="' + cupo.cupo + '"></label><button class="mini" id="cupo-guardar">Guardar</button>' +
