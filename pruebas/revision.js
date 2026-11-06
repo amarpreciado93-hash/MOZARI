@@ -1323,6 +1323,28 @@ async function capasPesadas(p) {
       exige(!m.errs.length, "errores en el iPhone: " + m.errs.join(" | ").slice(0, 160));
       await m.context().close();
     });
+    // Pedido de un usuario de Perú (nov 2026): allá se dice «Reservado», no «Apartado». Los nombres de los estados se editan.
+    await paso("Estados de los lotes con el nombre de cada país: «Apartado» se cambia a «Reservado» y sale en el tour", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Estados por país");
+      await n.click('#subtabs button:has-text("Lotes")'); await n.waitForTimeout(1200); await pasarGuias(n);
+      const campo = '#lt-estados [data-nombre-estado="apartado"]';
+      exige(await n.isVisible(campo) && (await n.inputValue(campo)) === "Apartado", "no está el campo para cambiar el nombre de «Apartado»");
+      await n.fill(campo, "Reservado"); await n.waitForTimeout(1500);
+      const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      const est = (d) => Object.fromEntries((d.lotesEstados || []).map((e) => [e.id, e.nombre]));
+      exige(est(await leer()).apartado === "Reservado", "el nombre nuevo no se guardó: " + JSON.stringify(est(await leer())));
+      exige(/Reservado/.test(await n.textContent("#lotes-resumen")) && !/Apartado/.test(await n.textContent("#lotes-resumen")), "el resumen de lotes sigue diciendo «Apartado»");
+      // Un nombre vacío regresa al de siempre (no se queda un estado sin nombre)
+      await n.fill('#lt-estados [data-nombre-estado="vendido"]', ""); await n.waitForTimeout(1200);
+      exige(est(await leer()).vendido === "Vendido", "un nombre vacío dejó el estado sin nombre");
+      if (process.env.CAPTURAS) { await n.$eval("#lt-estados-fila", (e) => e.scrollIntoView({ block: "center" })); await n.screenshot({ path: path.join(process.env.CAPTURAS, "estados-nombres.png") }); }
+      // Publicado: el tour del cliente trae «Reservado»
+      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
+      const pub = await n.evaluate((u) => fetch(u).then((r) => r.json()), TOURS + "/" + id + "/proyecto.json").catch(() => null);
+      exige(pub && est(pub).apartado === "Reservado", "el tour publicado no trae «Reservado»: " + JSON.stringify(pub && pub.lotesEstados));
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+    });
     // Pasó con Las Alamedas (nov 2026): la manzana del tour quedó como «1» (la de siempre) y en el inventario era la 30,
     // con un lote 15-A. El plano sí traía escrito, como texto, el número y la superficie de cada lote. Ahora Mozari los lee,
     // y al importar el Excel avisa antes de cambiar nada si las superficies no van con los lotes dibujados.

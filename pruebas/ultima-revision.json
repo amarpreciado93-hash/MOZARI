@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-05T23:45:32.993Z",
- "bien": 51,
- "total": 51,
+ "fecha": "2026-11-06T01:00:47.481Z",
+ "bien": 52,
+ "total": 52,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -189,6 +189,10 @@
   },
   {
    "nombre": "Lotes del PDF colocados después de un punto en 3D: en el tour de iPhone van abajo y sin capas pesadas",
+   "ok": true
+  },
+  {
+   "nombre": "Estados de los lotes con el nombre de cada país: «Apartado» se cambia a «Reservado» y sale en el tour",
    "ok": true
   },
   {
