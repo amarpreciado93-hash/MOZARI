@@ -151,6 +151,8 @@ export const LABORATORIO = {
   "foto360": { nombre: "Foto 360 con lotes", texto: "En Capas: descarga la esfera como foto 360 (JPG 2:1) con los lotes dibujados, lista para Facebook, Google Fotos u otros visores 360." },
   "carga-logo": { nombre: "Pantalla de carga con tu logo", texto: "El tour publicado carga con el logo y el nombre del proyecto (del Skin), en sus colores, en lugar de Mozari. Se aplica al volver a publicar. En el plan Gratis sigue la de Mozari." },
   "manual": { nombre: "Manual", texto: "Botón del librito, arriba a la derecha: los temas del manual de Mozari con sus pasos, un buscador y, primero, los temas de la sección donde estás. Si no se resuelve, lleva a Reportar un error." },
+  "mano": { nombre: "Manita con la barra espaciadora", texto: "En las esferas del editor: mantén la barra espaciadora y sale la manita. Arrastras para girar la esfera aunque estés sobre un lote o dibujando, sin mover nada ni poner puntos." },
+  "privado": { nombre: "Modo privado", texto: "En Publicar → Web: oculta un tour publicado sin borrarlo (por ejemplo, mientras el cliente termina de pagar). Quien abra el link ve «Este tour no está disponible por ahora». Al mostrarlo vuelve igual, con el mismo link." },
   "lotes-pdf": { nombre: "Lotes desde el PDF", texto: "En el plano de referencia: arrastras un recuadro sobre una manzana del PDF, Mozari arma sus lotes y los colocas en la esfera tocando 4 esquinas. Necesita también «Plano de referencia»." },
 };
 // "pago": las cuentas Pro y Desarrollos (con su plan vigente); "todos" incluye también Gratis
@@ -547,7 +549,7 @@ async function api(request, env, partes, yo) {
     }
     if (m === "DELETE") {
       const n = await borrarPrefijo(env, base) + await borrarPrefijo(env, "publicado/" + id + "/");
-      await env.R2.delete(indiceDe(uid, id));
+      await env.R2.delete([indiceDe(uid, id), "privados/" + id]);
       await usoDe(env, uid, true);
       return json({ ok: true, borrados: n });
     }
@@ -601,6 +603,15 @@ async function api(request, env, partes, yo) {
   if (partes[3] === "estadisticas" && partes.length === 4 && m === "GET") {
     if (!(await labDe(env, yo)).includes("estadisticas")) return error(403, "Función del Laboratorio");
     return json(await resumenVisitas(env, id, Math.max(1, Math.min(90, +new URL(request.url).searchParams.get("dias") || 30))));
+  }
+
+  // Modo privado (Laboratorio): el tour publicado se esconde sin borrar nada; el Worker de tours lo revisa al abrirlo
+  if (partes[3] === "privado" && partes.length === 4 && m === "PUT") {
+    if (!(await labDe(env, yo)).includes("privado")) return error(403, "Función del Laboratorio");
+    const si = !!(await request.json().catch(() => ({}))).privado;
+    if (si) await env.R2.put("privados/" + id, uid); else await env.R2.delete("privados/" + id);
+    await guardarIndice(env, uid, id, { privado: si ? "1" : "" });
+    return json({ ok: true, privado: si });
   }
 
   if (partes[3] === "publicar" && partes.length === 4 && m === "POST") {

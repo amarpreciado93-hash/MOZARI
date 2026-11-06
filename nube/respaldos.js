@@ -12,7 +12,7 @@
 // termina, la siguiente revisión (cada hora) sigue donde se quedó.
 
 const ESTADO = "respaldos/estado.json", GUARDAR = 30, POR_VUELTA = 250, A_LA_VEZ = 10;
-const PREFIJOS = ["cuentas/", "config/", "cupones/", "pagos/", "pausados/", "novedades/"];
+const PREFIJOS = ["cuentas/", "config/", "cupones/", "pagos/", "pausados/", "privados/", "novedades/"];
 const json = (env, k, v) => env.R2.put(k, JSON.stringify(v), { httpMetadata: { contentType: "application/json" } });
 
 async function leerEstado(env) {

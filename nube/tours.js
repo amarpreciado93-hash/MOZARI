@@ -31,8 +31,11 @@ export default {
     if (segs.length === 1) return Response.redirect(url.origin + "/" + id + "/" + url.search, 301);
 
     const ruta = segs.slice(1).join("/");
-    // Cuenta en pausa (lo decide el dueño de Mozari): sus tours no se muestran
-    if ((ruta === "" || ruta === "index.html" || ruta === "proyecto.json") && (await env.R2.head("pausados/" + id))) return ruta === "proyecto.json" ? error(404, "No disponible") : html(EN_PAUSA, 403);
+    // Cuenta en pausa (lo decide el dueño de Mozari) o tour en modo privado (lo decide su dueño): no se muestra
+    if (ruta === "" || ruta === "index.html" || ruta === "proyecto.json") {
+      const [pausa, privado] = await Promise.all([env.R2.head("pausados/" + id), env.R2.head("privados/" + id)]);
+      if (pausa || privado) return ruta === "proyecto.json" ? error(404, "No disponible") : html(EN_PAUSA, 403);
+    }
     // Página del visor (la misma para todos los tours; ella lee proyecto.json de su carpeta)
     if (ruta === "" || ruta === "index.html") {
       const pub = await env.R2.get("publicado/" + id + "/proyecto.json");

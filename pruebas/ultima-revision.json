@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-06T01:52:39.675Z",
- "bien": 53,
- "total": 53,
+ "fecha": "2026-11-06T18:41:16.794Z",
+ "bien": 55,
+ "total": 55,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -37,6 +37,10 @@
   },
   {
    "nombre": "La rueda del mouse acerca la vista aunque el cursor esté sobre un lote",
+   "ok": true
+  },
+  {
+   "nombre": "Barra espaciadora: sale la manita y arrastrar gira la esfera sin mover ni seleccionar lotes",
    "ok": true
   },
   {
@@ -101,6 +105,10 @@
   },
   {
    "nombre": "Descargar el tour (.zip) para otro hosting",
+   "ok": true
+  },
+  {
+   "nombre": "Modo privado: el tour se oculta sin borrarlo y vuelve igual",
    "ok": true
   },
   {

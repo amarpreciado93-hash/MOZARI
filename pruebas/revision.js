@@ -221,6 +221,29 @@ async function capasPesadas(p) {
       exige(!antes.equals(await a.screenshot({ clip: zona })), "la vista no cambió");
       await a.mouse.wheel(0, 400); await a.waitForTimeout(400);
     }, a);
+    await paso("Barra espaciadora: sale la manita y arrastrar gira la esfera sin mover ni seleccionar lotes", async () => {
+      await a.keyboard.press("Escape"); await a.waitForTimeout(300);
+      const lote = await a.$$eval(".cp-pol", (ps) => { const r = ps.map((p) => p.getBoundingClientRect()).find((r) => r.width > 20 && r.height > 8 && r.x > 400 && r.y > 150 && r.y < 850); return r && [r.x + r.width / 2, r.y + r.height / 2]; });
+      exige(lote, "no encontré un lote en la esfera");
+      await a.mouse.click(lote[0], lote[1]); await a.waitForTimeout(400);
+      exige((await a.textContent("#props-titulo")) !== "Propiedades", "sin la manita, el clic debería tomar el lote");
+      await a.keyboard.press("Escape"); await a.waitForTimeout(300);
+      await a.keyboard.down("Space"); await a.waitForTimeout(150);
+      exige(await a.evaluate(() => document.body.classList.contains("mano")), "no se activó la manita");
+      exige((await a.$eval("#ed-stage", (e) => getComputedStyle(e).cursor)) === "grab", "el cursor no es la manita");
+      const zona = { x: 385, y: 110, width: 715, height: 780 };
+      const antes = await a.screenshot({ clip: zona });
+      await a.mouse.down(); await a.mouse.move(lote[0] + 160, lote[1] + 20, { steps: 8 });
+      exige((await a.$eval("#ed-stage", (e) => getComputedStyle(e).cursor)) === "grabbing", "al arrastrar no cierra la manita");
+      await a.mouse.up(); await a.waitForTimeout(500);
+      exige(!antes.equals(await a.screenshot({ clip: zona })), "la esfera no giró");
+      exige((await a.textContent("#props-titulo")) === "Propiedades", "se tomó un lote: " + (await a.textContent("#props-titulo")));
+      await a.mouse.click(lote[0], lote[1]); await a.waitForTimeout(400);
+      exige((await a.textContent("#props-titulo")) === "Propiedades", "un clic con la manita seleccionó algo");
+      await a.keyboard.up("Space"); await a.waitForTimeout(150);
+      exige(!(await a.evaluate(() => document.body.classList.contains("mano"))), "la manita no se quitó al soltar la barra");
+      await a.mouse.move(lote[0] - 160, lote[1] - 20); await a.mouse.down(); await a.mouse.move(lote[0], lote[1], { steps: 8 }); await a.mouse.up(); await a.waitForTimeout(300);
+    }, a);
     await paso("Punto de interés: sigue a la cámara o fijo en el entorno 3D", async () => {
       await a.keyboard.press("Escape"); await a.click("#add-pi"); await a.waitForTimeout(600); await pasarGuias(a);
       exige(await a.$(".cp-interes"), "no apareció el punto de interés");
@@ -519,6 +542,27 @@ async function capasPesadas(p) {
       exige(nombres.some((n) => n.endsWith("/lib/marzipano.js")) && nombres.some((n) => n.endsWith("/lib/d3.min.js")), "el zip no trae las librerías del visor");
       const ix = new TextDecoder().decode(zip[nombres.find((n) => n.endsWith("/index.html"))]);
       exige(ix.includes('src="lib/marzipano.js"') && !/cdn\.jsdelivr|unpkg\.com|cdnjs/.test(ix), "el index.html del zip todavía pide librerías a otro servidor");
+    }, a);
+    await paso("Modo privado: el tour se oculta sin borrarlo y vuelve igual", async () => {
+      exige(await a.$("#pub-privado"), "no está el botón de modo privado");
+      await a.click("#pub-privado"); await a.waitForTimeout(1500);
+      exige(/Mostrar/.test(await a.textContent("#pub-privado")), "el botón no cambió a Mostrar tour");
+      if (process.env.CAPTURAS) { await a.$eval("#pub-privado", (e) => e.scrollIntoView({ block: "center" })); await a.screenshot({ path: path.join(process.env.CAPTURAS, "privado-oculto.png") }); }
+      const t = await pagina(null), r = await t.goto(TOURS + "/" + tour + "/"); await t.waitForTimeout(500);
+      exige(r.status() === 403 && /no está disponible/.test(await t.textContent("body")), "el tour oculto todavía se ve (" + r.status() + ")");
+      if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "privado-link.png") });
+      exige((await fetch(TOURS + "/" + tour + "/proyecto.json")).status === 404, "los datos del tour oculto siguen a la vista");
+      const priv = await a.evaluate((id) => fetch("api/tours").then((x) => x.json()).then((l) => (l.tours.find((x) => x.id === id) || {}).privado), tour);
+      exige(priv === "1", "Mis Tours no sabe que está oculto");
+      if (process.env.CAPTURAS) {
+        const m = await pagina(DUENO); await m.waitForTimeout(1500);
+        await m.screenshot({ path: path.join(process.env.CAPTURAS, "privado-mis-tours.png") }); await m.context().close();
+      }
+      await a.click("#pub-privado"); await a.waitForTimeout(1500);
+      exige(/Ocultar/.test(await a.textContent("#pub-privado")), "el botón no regresó a Ocultar tour");
+      await t.goto(TOURS + "/" + tour + "/"); await t.waitForTimeout(4000);
+      exige(await t.$("canvas"), "al mostrarlo, el tour no volvió");
+      await t.context().close();
     }, a);
     await paso("Compartir: link, código para insertar y QR que se lee", async () => {
       await a.click('#subtabs button:has-text("Compartir")'); await a.waitForTimeout(1500);

@@ -387,6 +387,8 @@
   .sub-item u { display: block; height: 100%; width: 0; background: var(--mz-lima); transition: width 0.3s; }
   .sub-item.error .nota { color: var(--mz-error); }
   .sub-item.error u { background: var(--mz-error); width: 100% !important; }
+  .card .badge.oculto { background: var(--mz-negro); color: var(--mz-tenue); border: 1px dashed var(--mz-linea); }
+  .pub-privado.oculto { border-color: #F2A900; }
   .card .badge.pub { background: var(--mz-negro); color: var(--mz-texto); border: 1px solid var(--mz-linea); }
   .card .badge.pub::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--mz-lima); margin-right: 6px; vertical-align: 1px; }
   .card .badge { position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: var(--mz-pastilla); background: var(--mz-lima); color: var(--mz-tinta); font-size: 10px; font-weight: 600; letter-spacing: 0.06em; }
@@ -1069,6 +1071,11 @@
   .asa-alto { cursor: ns-resize; }
   /* Precisión al dibujar: mira visible y lupa ×3 */
   .stage.precisando, .stage.precisando * { cursor: none !important; }
+  /* Manita (Laboratorio): con la barra espaciadora, arrastrar solo gira la esfera, aunque estés sobre un lote */
+  body.mano .stage, body.mano .stage * { cursor: grab !important; }
+  body.mano.agarrando .stage, body.mano.agarrando .stage * { cursor: grabbing !important; }
+  body.mano .stage .capas, body.mano .stage .capas *, body.mano .stage .cp-svg, body.mano .stage .cp-svg * { pointer-events: none !important; }
+  body.mano .stage .mira-cursor, body.mano .stage .lupa { display: none !important; }
   .mira-cursor { position: absolute; left: 0; top: 0; z-index: 7; width: 0; height: 0; pointer-events: none; filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000); }
   .mira-cursor::before, .mira-cursor::after { content: ""; position: absolute; background: linear-gradient(var(--d, 90deg), #fff 0 40%, transparent 40% 60%, #fff 60%); }
   .mira-cursor::before { left: -16px; top: -0.75px; width: 32px; height: 1.5px; }
@@ -2500,13 +2507,18 @@
   function pintarPublicar() {
     const t = (toursNube || []).find((x) => x.id === TOUR) || {};
     const pub = t.publicado ? new Date(t.publicado).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+    const oculto = t.privado === "1";
     $("proximo").innerHTML = '<div class="icono">' + ICO.web + '</div><span class="etiq">Publicar</span><h1>Tu tour en la web</h1>' +
       '<p>Publicar congela una copia para tu cliente. Puedes seguir editando y publicar de nuevo cuando quieras; el link no cambia.</p>' +
       '<div class="pub-caja"><code id="pub-link">' + esc(linkTour()) + '</code><button class="btn-sec" id="pub-copiar">Copiar link</button></div>' +
       '<div class="pub-acc"><button class="btn-prim" id="pub-publicar"' + (est.escenas.length ? "" : " disabled") + ">" + (pub ? "Publicar cambios" : "Publicar tour") + "</button>" +
       (pub ? '<a class="btn-sec" href="' + esc(linkTour()) + '" target="_blank" rel="noopener">Abrir tour ↗</a>' : "") + "</div>" +
-      '<p class="nota" id="pub-estado">' + (pub ? "Última publicación: " + pub : est.escenas.length ? "Aún no está publicado." : "Sube al menos una esfera para publicar.") + "</p>" +
+      '<p class="nota" id="pub-estado">' + (pub ? (oculto ? "Oculto: nadie lo puede ver. " : "") + "Última publicación: " + pub : est.escenas.length ? "Aún no está publicado." : "Sube al menos una esfera para publicar.") + "</p>" +
       cajaRevision() +
+      // Modo privado (Laboratorio): esconde el tour sin borrarlo, por ejemplo mientras el cliente termina de pagar
+      (pub && enLab("privado") ? '<div class="pub-hosting pub-privado' + (oculto ? " oculto" : "") + '"><div><b>' + (oculto ? "Tour oculto" : "Modo privado") + "</b><span>" +
+        (oculto ? "Quien abra el link ve «Este tour no está disponible por ahora». Nada se borró: al mostrarlo vuelve igual, con el mismo link." : "Esconde el tour sin borrarlo, por ejemplo mientras tu cliente termina de pagar. El link y tus cambios se quedan igual.") +
+        '</span></div><button class="' + (oculto ? "btn-prim" : "btn-sec") + '" id="pub-privado">' + (oculto ? "Mostrar tour" : "Ocultar tour") + "</button></div>" : "") +
       // Descargar para otro hosting: solo con licencia comprada (Pro o Desarrollos), no en Gratis
       (pub && PLAN && !PLAN.marca ? '<div class="pub-hosting"><div><b>Súbelo a tu propio hosting</b><span>Descarga una carpeta con todo el tour. Súbela a tu sitio por cPanel o FTP y ábrela con tu dominio. Si cambias algo, publica y descarga de nuevo.</span></div>' +
         '<button class="btn-sec" id="pub-descargar">Descargar tour (.zip)</button></div>' : "") +
@@ -2517,6 +2529,15 @@
   $("proximo").addEventListener("click", async (ev) => {
     if (ev.target.id === "pub-ir-lotes") { ir("panoramas", "lotes"); return; }
     if (ev.target.id === "pub-descargar") { descargarTour(ev.target); return; }
+    if (ev.target.id === "pub-privado") {
+      const b = ev.target, t = (toursNube || []).find((x) => x.id === TOUR) || {}, ocultar = t.privado !== "1";
+      b.disabled = true; b.textContent = ocultar ? "Ocultando…" : "Mostrando…";
+      const r = await fetch("api/tours/" + TOUR + "/privado", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ privado: ocultar }) }).catch(() => null);
+      if (!r || !r.ok) { const e = r ? await r.json().catch(() => ({})) : {}; avisar(e.error || "No se pudo cambiar"); pintarPublicar(); return; }
+      toursNube = null; await cargarToursNube(); pintarPublicar();
+      avisar(ocultar ? "Tour oculto. Nadie lo puede ver hasta que lo muestres." : "Tour visible otra vez");
+      return;
+    }
     if (ev.target.id === "pub-copiar") {
       try { await navigator.clipboard.writeText(linkTour()); avisar("Link copiado"); } catch (e) { avisar("Copia el link manualmente"); }
     }
@@ -2953,7 +2974,7 @@
       d = await r.json().catch(() => ({}));
       if (!r.ok) {
         fin();
-        if (d.plan) { const c = $("proximo").querySelector(".pub-hosting"); if (c && !c.querySelector("[data-comprar]")) c.insertAdjacentHTML("beforeend", '<p class="pub-hosting-aviso">' + esc(d.error) + ' <button class="btn-prim" data-comprar="' + d.plan + '">' + (d.plan === "desarrollos" ? "Obtener Desarrollos" : "Obtener Pro") + "</button></p>"); }
+        if (d.plan) { const c = $("proximo").querySelector(".pub-hosting:not(.pub-privado)"); if (c && !c.querySelector("[data-comprar]")) c.insertAdjacentHTML("beforeend", '<p class="pub-hosting-aviso">' + esc(d.error) + ' <button class="btn-prim" data-comprar="' + d.plan + '">' + (d.plan === "desarrollos" ? "Obtener Desarrollos" : "Obtener Pro") + "</button></p>"); }
         else avisar(d.error || "No se pudo preparar la descarga");
         return;
       }
@@ -3068,7 +3089,7 @@
         const foto = t.portada ? "t/" + t.id + "/" + t.portada : t.inicial ? "t/" + t.id + "/escenas/" + t.inicial + "/1/f/0/0.jpg" : VACIA_IMG;
         const conf = borrandoTour === t.id ? '<div class="card-confirma" role="alertdialog"><b>¿Borrar ' + esc(t.nombre) + "?</b><span>Se borran sus esferas y su link público. Esto no se puede deshacer.</span><div><button class=\"mini peligro-lleno\" data-si-borrar-tour=\"" + t.id + '">Borrar</button><button class="mini" data-no-borrar-tour>Cancelar</button></div></div>' : "";
         return '<div class="card" role="button" tabindex="0" data-tour="' + t.id + '"><div class="foto"><img src="' + foto + '" alt="" loading="lazy" onerror="this.style.opacity=0">' +
-          (t.id === TOUR ? '<span class="badge">ABIERTO</span>' : t.publicado ? '<span class="badge pub">PUBLICADO</span>' : "") +
+          (t.id === TOUR ? '<span class="badge">ABIERTO</span>' : t.privado === "1" ? '<span class="badge oculto">OCULTO</span>' : t.publicado ? '<span class="badge pub">PUBLICADO</span>' : "") +
           '<button class="card-borrar" data-borrar-tour="' + t.id + '" aria-label="Borrar ' + esc(t.nombre) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>' + conf + "</div>" +
           '<div class="cuerpo"><span class="nombre">' + esc(t.nombre || "Tour") + '</span><div class="chips"><span class="chip-dato">' + (+t.escenas || 0) + " panoramas</span><span class=\"chip-dato\">" + fecha(t.actualizado) + "</span></div></div></div>";
       }).join("") +
@@ -3890,6 +3911,8 @@
   const CALIDADES = { maxima: [Infinity, 2048, 2048], equilibrada: [2048, 2048, 1024], ligera: [1024, 1024, 1024] };
   const calidadDe = () => (CALIDADES[P().calidad] ? P().calidad : "equilibrada");
   const topeCara = () => CALIDADES[calidadDe()][CEL ? 2 : MOVIL ? 1 : 0];
+  // Manita con la barra espaciadora (Laboratorio). Mientras está activa, un clic en la esfera no pone puntos ni selecciona.
+  const MANO = { activa: false };
   // =================== MOTOR (esfera + capas) ===================
   function crearMotor(stage, opciones) {
     const editable = !!opciones.editable;
@@ -4710,7 +4733,7 @@
     function alMover(ev) {
       if (!actual) return;
       if (asa) { moverAsa(ev); return; }
-      if (motor.dibujo) { const k = coordsEn(ev); if (k) { motor.dibujo.cursor = k; programar(); } precision(ev); }
+      if (motor.dibujo) { if (MANO.activa) precision(null); else { const k = coordsEn(ev); if (k) { motor.dibujo.cursor = k; programar(); } precision(ev); } }
       if (!arrastre) return;
       if (!arrastre.movido && Math.hypot(ev.clientX - arrastre.x, ev.clientY - arrastre.y) < 3) return;
       arrastre.movido = true;
@@ -4765,6 +4788,7 @@
     stage.addEventListener("wheel", () => { if (opciones.alInteractuar) opciones.alInteractuar(); }, { passive: true });
     stage.addEventListener("pointerup", (ev) => {
       if (!toque || !editable || motor.modo !== "capas") return;
+      if (MANO.activa) { toque = null; return; }
       const mov = Math.hypot(ev.clientX - toque.x, ev.clientY - toque.y);
       toque = null;
       if (mov > 6 || !actual) return;
@@ -8317,6 +8341,29 @@ void main(){
     if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "d" && motorEd.elegida) { ev.preventDefault(); duplicar(); }
     if (ev.key === "Escape") seleccionar(null);
   });
+  // Barra espaciadora = manita (Laboratorio), como en Photoshop: mientras la mantienes, arrastrar gira la esfera
+  // aunque el cursor esté sobre un lote o estés dibujando, y soltar no pone puntos. Al soltar la barra, todo sigue igual.
+  if (enLab("mano")) {
+    const escribiendo = () => { const el = document.activeElement; return !!el && (/INPUT|SELECT|TEXTAREA/.test(el.tagName) || el.isContentEditable); };
+    const esferaALaVista = () => $("previa").hidden && [$("ed-stage"), $("tr-stage-a")].some((st) => st && st.offsetParent !== null);
+    const mano = (si) => {
+      if (MANO.activa === si) return;
+      MANO.activa = si;
+      document.body.classList.toggle("mano", si);
+      if (!si) document.body.classList.remove("agarrando");
+      [motorEd, tr.ma, tr.mb].forEach((m) => { if (m && m.sinPrecision) m.sinPrecision(); });
+    };
+    document.addEventListener("keydown", (ev) => {
+      if (ev.code !== "Space" || ev.metaKey || ev.ctrlKey || ev.altKey || escribiendo() || !esferaALaVista()) return;
+      ev.preventDefault(); // que la barra no baje la página ni apriete el botón que quedó seleccionado
+      if (document.activeElement && document.activeElement.tagName === "BUTTON") document.activeElement.blur();
+      mano(true);
+    }, true);
+    document.addEventListener("keyup", (ev) => { if (ev.code === "Space" && MANO.activa) { ev.preventDefault(); mano(false); } }, true);
+    window.addEventListener("blur", () => mano(false));
+    window.addEventListener("pointerdown", (ev) => { if (MANO.activa && ev.target.closest && ev.target.closest(".stage")) document.body.classList.add("agarrando"); }, true);
+    window.addEventListener("pointerup", () => document.body.classList.remove("agarrando"), true);
+  }
 
   // =================== PANORAMAS: LOTES ===================
   let filtroLotes = "todos";
@@ -8820,11 +8867,12 @@ void main(){
     st.addEventListener("pointermove", (ev) => {
       const m = motorDe(lado);
       if (!m || tr.arr) return;
-      if (ev.buttons || trIds().length < 2 || !tr.b) m.sinPrecision(); else m.lupa(ev);
+      if (MANO.activa || ev.buttons || trIds().length < 2 || !tr.b) m.sinPrecision(); else m.lupa(ev);
     });
     st.addEventListener("pointerleave", () => { const m = motorDe(lado); if (m && !tr.arr) m.sinPrecision(); });
     st.addEventListener("pointerup", (ev) => {
       if (!t0 || trIds().length < 2 || !tr.b) return;
+      if (MANO.activa) { t0 = null; return; }
       const mov = Math.hypot(ev.clientX - t0.x, ev.clientY - t0.y);
       t0 = null;
       if (mov > 5) return;
