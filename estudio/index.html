@@ -4588,6 +4588,13 @@
         } else {
           const pc = aCamara(cam, c.yaw, c.pitch);
           if (pc.z <= 0.05) { n.el.style.visibility = "hidden"; return; }
+          // Fijo en la esfera y casi de lado (a más de ~78° del centro, o miles de píxeles fuera de pantalla): la
+          // perspectiva lo estira muchísimo, no se ve y en el iPhone cada uno es una capa enorme que se repinta con su
+          // latido. Pasó en MAMAP (nov 2026): el piloto miraba al suelo y los puntos del horizonte cerraban el tour.
+          const s3 = es3d(c) && aPantalla(cam, pc), lim3 = 2 * Math.max(cam.W, cam.H);
+          const lejos = !!s3 && (pc.z < 0.2 || Math.abs(s3.x - cam.W / 2) > lim3 || Math.abs(s3.y - cam.H / 2) > lim3);
+          n.el.style.display = lejos ? "none" : "";
+          if (lejos) return;
           n.el.style.visibility = "";
           if (es3d(c)) {
             // Pegado a la esfera: perspectiva real, crece al acercarse y se puede inclinar
@@ -4630,7 +4637,7 @@
       }
       // Asas del texto u hotspot elegido: mover, rotar, escalar y estirar
       const ne = editable && motor.modo === "capas" && !motor.dibujo && motor.elegida && nodos.get(motor.elegida);
-      if (ne && ne.c.tipo !== "poligono" && ne.c.tipo !== "interes" && ne.el.style.visibility !== "hidden" && !ne.el.hidden) {
+      if (ne && ne.c.tipo !== "poligono" && ne.c.tipo !== "interes" && ne.el.style.visibility !== "hidden" && ne.el.style.display !== "none" && !ne.el.hidden) {
         const q = esquinas(ne.el), C = q.centro;
         const g = document.createElementNS(SVGNS, "g");
         g.setAttribute("class", "asas");
@@ -9711,9 +9718,10 @@ void main(){
   // Si se va a otra app, la marca dice «en segundo plano» (ahí el celular puede cerrarlo sin que sea falla).
   // Si al abrirlo otra vez la marca dice que estaba EN PANTALLA, el navegador lo tumbó (casi siempre por
   // memoria): se manda un aviso al Panel de dueño con el celular, la esfera y cuántos lotes tenía.
-  // La marca vive en la PESTAÑA (sessionStorage) y vale 3 minutos: cuando el navegador tumba un tour, lo vuelve a
-  // abrir en la misma pestaña en segundos. Cerrar la pestaña o la app (Chrome en iPhone no siempre avisa al cerrar)
-  // y abrir el tour después ya no cuenta como caída. Pasó con Amar en El Mirador (nov 2026): falsa alarma.
+  // La marca vive en la PESTAÑA (sessionStorage) y vale 30 segundos: cuando el navegador tumba un tour, lo vuelve a
+  // abrir en la misma pestaña en segundos. Cerrar Safari desde el multitarea (no avisa al cerrar) y abrirlo otra vez
+  // recupera la pestaña: eso ya no cuenta si pasaron más de 30 s o si el tour no estaba al frente. Con 3 minutos
+  // daba falsas alarmas (El Mirador y MAMAP, nov 2026). El aviso dice cuántos segundos tardó en reabrirse.
   function modeloDe(ua) {
     const navg = /CriOS/.test(ua) ? "Chrome" : /FxiOS/.test(ua) ? "Firefox" : /Instagram/.test(ua) ? "Instagram" : /FBAN|FBAV|FB_IAB/.test(ua) ? "Facebook" : /WhatsApp/.test(ua) ? "WhatsApp" : /SamsungBrowser/.test(ua) ? "Samsung" : /EdgA?\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "otro";
     let m = /iPhone OS (\d+)[_.](\d+)/.exec(ua);
@@ -9726,12 +9734,13 @@ void main(){
   const VIGIA = MODO === "tour" && !document.body.dataset.exportado && location.pathname.split("/").filter(Boolean)[0] ? (() => {
     const tourId = location.pathname.split("/").filter(Boolean)[0], clave = "mz-vivo:" + tourId;
     let antes = null; try { antes = JSON.parse(sessionStorage.getItem(clave) || "null"); localStorage.removeItem(clave); } catch (e) { antes = null; } // (la versión anterior la guardaba en localStorage)
-    return { tourId, clave, inicio: Date.now(), esfera: null, cambios: 0, errores: [], veces: 0, anterior: antes && antes.visible && Date.now() - antes.t < 3 * 60e3 ? antes : null };
+    const reciente = antes && antes.visible && antes.foco !== false && Date.now() - antes.t >= 0 && Date.now() - antes.t < 30e3;
+    return { tourId, clave, inicio: Date.now(), esfera: null, cambios: 0, errores: [], veces: 0, foco: true, anterior: reciente ? antes : null };
   })() : null;
   function vigiaGuardar() {
     if (!VIGIA || VIGIA.fuera) return; // ya se cerró bien (al cerrar, el navegador avisa «oculto» después de «pagehide»)
     const id = VIGIA.esfera, capas = (id && est.capas && est.capas[id]) || [];
-    const d = { t: Date.now(), visible: document.visibilityState !== "hidden", inicio: VIGIA.inicio, esfera: id, esferaNombre: id && escena(id) ? escena(id).nombre : "",
+    const d = { t: Date.now(), visible: document.visibilityState !== "hidden", foco: VIGIA.foco, inicio: VIGIA.inicio, esfera: id, esferaNombre: id && escena(id) ? escena(id).nombre : "",
       lotes: capas.filter((c) => c.lote).length, capas: capas.length, cambios: VIGIA.cambios, errores: VIGIA.errores.slice(-5), veces: VIGIA.veces };
     try { sessionStorage.setItem(VIGIA.clave, JSON.stringify(d)); } catch (e) { /* modo privado o sin espacio: sin aviso */ }
   }
@@ -9741,7 +9750,9 @@ void main(){
     if (a) {
       VIGIA.veces = (+a.veces || 0) + 1; // si vuelve a caerse seguido, el aviso dice cuántas veces van
       const ua = navigator.userAgent, disp = /iPad|Tablet/i.test(ua) || (matchMedia("(pointer: coarse)").matches && Math.min(screen.width, screen.height) >= 700) ? "tablet" : MOVIL ? "celular" : "compu";
+      let nav = ""; try { nav = (performance.getEntriesByType("navigation")[0] || {}).type || ""; } catch (e) { /* viejo */ }
       const d = { esfera: a.esfera, esferaNombre: a.esferaNombre, lotes: a.lotes, capas: a.capas, dur: Math.max(0, (a.t - a.inicio) / 1000), veces: VIGIA.veces, cambios: a.cambios, errores: a.errores,
+        hueco: Math.max(0, (Date.now() - a.t) / 1000), nav,
         disp, modelo: modeloDe(ua), ua, pantalla: screen.width + "×" + screen.height + " @" + (devicePixelRatio || 1), memoria: navigator.deviceMemory || 0 };
       const host = location.host.replace(/^tours\./, "").replace(/^mozari-tours\./, "mozari-estudio.").replace(/^(localhost|127\.0\.0\.1):8788$/, "$1:8787");
       try { navigator.sendBeacon(location.protocol + "//" + host + "/c/" + VIGIA.tourId, new Blob([JSON.stringify(d)], { type: "text/plain" })); } catch (e) { /* sin red */ }
@@ -9749,6 +9760,9 @@ void main(){
     vigiaGuardar();
     setInterval(vigiaGuardar, 5000);
     document.addEventListener("visibilitychange", vigiaGuardar);
+    // Al ir al multitarea la página pierde el foco: si ahí cierran Safari, no es caída
+    window.addEventListener("blur", () => { VIGIA.foco = false; vigiaGuardar(); });
+    window.addEventListener("focus", () => { VIGIA.foco = true; vigiaGuardar(); });
     window.addEventListener("pagehide", () => { VIGIA.fuera = true; try { sessionStorage.removeItem(VIGIA.clave); } catch (e) { /* nada */ } });
     window.addEventListener("pageshow", (e) => { if (e.persisted) { VIGIA.fuera = false; vigiaGuardar(); } }); // regresó con «atrás»
     window.addEventListener("error", (e) => { VIGIA.errores.push(String((e && e.message) || "error").slice(0, 200)); vigiaGuardar(); });

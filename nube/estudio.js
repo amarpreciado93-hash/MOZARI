@@ -255,6 +255,10 @@ async function registrarCaida(request, env, id) {
   if (!txt || txt.length > 8000) return ok;
   let d; try { d = JSON.parse(txt); } catch (e) { return ok; }
   if (!d || typeof d !== "object") return ok;
+  // Una caída de verdad se reabre sola en segundos. Más de 30 s (o una versión vieja del tour, que no lo dice)
+  // casi siempre es cerrar Safari desde el multitarea y abrirlo otra vez: falsa alarma (MAMAP, nov 2026)
+  const hueco = Number(d.hueco);
+  if (!(hueco >= 0 && hueco <= 30)) return ok;
   const pub = await env.R2.get("publicado/" + id + "/proyecto.json");
   if (!pub) return ok;
   const p = await pub.json().catch(() => null);
@@ -272,10 +276,10 @@ async function registrarCaida(request, env, id) {
   const rep = {
     id: rid, fecha: new Date().toISOString(), estado: "nuevo", tipo: "caida", uid: "", email: env.ADMIN || "", nombre: "Se cerró un tour solo", plan: "aviso automático",
     texto: "El tour «" + nombreTour + "» se cerró solo en un " + disp + " (" + corto(d.modelo || "", 60) + ") en la esfera «" + esfera + "», con " + lotes + (lotes === 1 ? " lote" : " lotes") +
-      " y " + num(d.capas, 5000) + " capas en total. " + (dur < 10 ? "Se cerró en los primeros segundos" : "Llevaba " + tiempo + " abierto") + (veces > 1 ? " y ya es la vez " + veces + " seguida en ese celular" : "") + "." + (cf.country ? " País: " + corto(cf.country, 2) + "." : ""),
+      " y " + num(d.capas, 5000) + " capas en total. " + (dur < 10 ? "Se cerró en los primeros segundos" : "Llevaba " + tiempo + " abierto") + (veces > 1 ? " y ya es la vez " + veces + " seguida en ese celular" : "") + ". Se volvió a abrir a los " + Math.round(hueco) + " s." + (cf.country ? " País: " + corto(cf.country, 2) + "." : ""),
     contexto: { tour: id, seccion: "tour publicado · " + esfera, navegador: corto(d.ua, 300), pantalla: corto(d.pantalla, 40), errores: (Array.isArray(d.errores) ? d.errores : []).slice(-5).map((e) => corto(e, 300)) },
     imagen: false,
-    caida: { esfera: corto(d.esfera, 80), lotes, capas: num(d.capas, 5000), dur, veces, memoria: num(d.memoria, 64), calidad: corto(d.calidad, 20), cambios: num(d.cambios, 10000) },
+    caida: { esfera: corto(d.esfera, 80), lotes, capas: num(d.capas, 5000), dur, veces, memoria: num(d.memoria, 64), calidad: corto(d.calidad, 20), cambios: num(d.cambios, 10000), hueco: Math.round(hueco), nav: corto(d.nav, 20) },
   };
   await env.R2.put("reportes/" + rid + ".json", JSON.stringify(rep), { httpMetadata: { contentType: "application/json" } });
   await avisarPorCorreo(env, rep, new URL(request.url));

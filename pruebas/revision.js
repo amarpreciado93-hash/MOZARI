@@ -554,6 +554,20 @@ async function capasPesadas(p) {
       await m.evaluate(([k, v]) => sessionStorage.setItem(k, JSON.stringify(Object.assign({}, v, { t: Date.now() - 10 * 60e3 }))), ["mz-vivo:" + tour, marca]);
       await m.goto(link); await m.waitForTimeout(3000);
       exige((await caidas()).length === antes, "una marca vieja (pestaña cerrada hace 10 minutos) mandó aviso de caída");
+      // Falsa alarma de MAMAP (nov 2026): cerrar Safari desde el multitarea y abrirlo 45 s después tampoco
+      await m.goto(TOURS + "/");
+      await m.evaluate(([k, v]) => sessionStorage.setItem(k, JSON.stringify(Object.assign({}, v, { t: Date.now() - 45e3 }))), ["mz-vivo:" + tour, marca]);
+      await m.goto(link); await m.waitForTimeout(3000);
+      exige((await caidas()).length === antes, "reabrir Safari 45 s después mandó aviso de caída");
+      // Ni si el tour ya no estaba al frente (en el multitarea pierde el foco) aunque se abra luego luego
+      await m.goto(TOURS + "/");
+      await m.evaluate(([k, v]) => sessionStorage.setItem(k, JSON.stringify(Object.assign({}, v, { t: Date.now() - 4000, foco: false }))), ["mz-vivo:" + tour, marca]);
+      await m.goto(link); await m.waitForTimeout(3000);
+      exige((await caidas()).length === antes, "un tour que estaba en el multitarea mandó aviso de caída");
+      // Una versión vieja del tour (no dice en cuántos segundos se reabrió) no manda aviso
+      exige((await a.evaluate((id) => fetch("/c/" + id, { method: "POST", body: JSON.stringify({ esfera: "x", lotes: 1, dur: 60, veces: 1 }) }).then((r) => r.status).catch(() => 0), tour)) === 204, "el servidor no aceptó (sin guardar) el aviso viejo");
+      await m.waitForTimeout(800);
+      exige((await caidas()).length === antes, "un aviso sin segundos de reapertura (versión vieja) llegó como caída");
       await m.goto(TOURS + "/");
       await m.evaluate(([k, v]) => sessionStorage.setItem(k, JSON.stringify(Object.assign({}, v, { t: Date.now() - 4000 }))), ["mz-vivo:" + tour, marca]);
       const m2 = m; m2.errs = [];
@@ -562,7 +576,7 @@ async function capasPesadas(p) {
       exige(lista.length === antes + 1, "no llegó el aviso de que el tour se cerró solo (" + lista.length + " vs " + antes + ")");
       const rep = lista[0];
       console.log("    aviso: " + rep.texto);
-      exige(rep.contexto.tour === tour && /iPhone/.test(rep.texto) && /esfera «/.test(rep.texto) && rep.caida && rep.caida.lotes === marca.lotes, "el aviso no dice el tour, el celular, la esfera o los lotes: " + rep.texto);
+      exige(rep.contexto.tour === tour && /iPhone/.test(rep.texto) && /esfera «/.test(rep.texto) && /abrir a los \d+ s/.test(rep.texto) && rep.caida && rep.caida.lotes === marca.lotes, "el aviso no dice el tour, el celular, la esfera o los lotes: " + rep.texto);
       // Cerrarlo normal (irse a otra página) no es falla: al volver a abrirlo no llega otro aviso
       await m2.goto("about:blank"); await m2.waitForTimeout(500);
       await m2.goto(link); await m2.waitForTimeout(4000);
@@ -641,6 +655,46 @@ async function capasPesadas(p) {
       exige(r.ultimoPol < r.etq && r.etq < r.primerPunto, "un polígono quedó encima de un punto: " + JSON.stringify(r));
       exige(!m.errs.length, "errores en celular: " + m.errs.join(" | ").slice(0, 160));
       await m.context().close();
+    });
+    // Reporte (MAMAP, nov 2026): el piloto miraba al suelo y los puntos de interés en 3D del horizonte quedaban
+    // estirados miles de píxeles fuera de pantalla, cada uno una capa enorme con su latido en el iPhone
+    await paso("Un punto en 3D casi de lado (mirando al suelo) se oculta y vuelve al mirarlo (iPhone sin memoria)", async () => {
+      link = link || TOURS + "/" + tour + "/";
+      const leer = () => a.evaluate((id) => fetch("api/tours/" + id).then((r) => r.json()), tour);
+      const guardar = (d) => a.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [tour, d]);
+      const publicar = () => a.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), tour);
+      const original = await leer();
+      const esc = original.proyecto.escenaInicial || (original.escenas[0] || {}).id;
+      const yaw = ((original.escenas.find((e) => e.id === esc) || {}).vista || {}).yaw || 0;
+      const pi = (id, nombre, pitch) => ({ id, tipo: "interes", nombre, visible: true, en3d: true, yaw, pitch, t3d: { inclinar: -7, girar: 16, rotar: 0, ancho: 1, alto: 1 },
+        pi: { dato: "TERMINAL", nombre, detalle: "a 2 cuadras", color: "#0B0B0B", grosor: 1.5, linea: "continua", punto: "doble", lado: "der", alto: 20, angulo: 63, horiz: 9, tam: 0.6, contraste: "caja-clara", animar: true, latido: true } });
+      const probar = async (pitchVista) => {
+        const d = JSON.parse(JSON.stringify(original)), e = d.escenas.find((x) => x.id === esc);
+        e.vista = Object.assign({}, e.vista, { yaw, pitch: pitchVista, fov: 1.4 }); delete e.piloto;
+        d.proyecto.presentacion = { activa: false };
+        d.capas[esc] = (d.capas[esc] || []).concat([pi("pi-horizonte", "HORIZONTE", 0.05), pi("pi-abajo", "ABAJO", 1.2)]);
+        exige((await guardar(d)) === 200 && (await publicar()) === 200, "no se pudo preparar el tour de prueba");
+        const m = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
+        await m.goto(link); await m.waitForTimeout(5000);
+        const r = await m.evaluate(() => {
+          const de = (txt) => { const el = [...document.querySelectorAll(".cp-interes")].find((x) => x.textContent.includes(txt)); if (!el) return null; const b = el.querySelector(".pi-etq").getBoundingClientRect(); return { display: getComputedStyle(el).display, w: Math.round(b.width), h: Math.round(b.height) }; };
+          let grande = 0; document.querySelectorAll(".cp-interes *").forEach((x) => { const b = x.getBoundingClientRect(), s = getComputedStyle(x.closest(".cp-interes")); if (s.display !== "none" && s.visibility !== "hidden") grande = Math.max(grande, b.width, b.height); });
+          return { horizonte: de("HORIZONTE"), abajo: de("ABAJO"), grande: Math.round(grande), alto: innerHeight };
+        });
+        const cp = await capasPesadas(m);
+        exige(!m.errs.length, "errores en celular: " + m.errs.join(" | ").slice(0, 160));
+        await m.context().close();
+        return Object.assign(r, { capas: cp.n });
+      };
+      let suelo, frente;
+      try { suelo = await probar(1.5); frente = await probar(0.05); }
+      finally { await guardar(original); await publicar(); } // el tour regresa a como estaba
+      console.log("    mirando al suelo: " + JSON.stringify(suelo) + " · al frente: " + JSON.stringify(frente));
+      exige(suelo.horizonte && suelo.horizonte.display === "none", "mirando al suelo, el punto del horizonte sigue dibujado fuera de pantalla: " + JSON.stringify(suelo));
+      exige(suelo.abajo && suelo.abajo.display !== "none" && suelo.abajo.w > 20, "mirando al suelo, el punto que sí se ve desapareció: " + JSON.stringify(suelo));
+      exige(suelo.grande < 3 * suelo.alto, "mirando al suelo, un punto en 3D quedó enorme: " + JSON.stringify(suelo));
+      exige(frente.horizonte && frente.horizonte.display !== "none" && frente.horizonte.w > 20, "al mirarlo de frente, el punto del horizonte no regresó: " + JSON.stringify(frente));
+      exige(suelo.capas <= MAX_CAPAS_GRANDES && frente.capas <= MAX_CAPAS_GRANDES, "demasiadas capas grandes para un iPhone: " + suelo.capas + " / " + frente.capas);
     });
     await paso("Descargar el tour (.zip) para otro hosting", async () => {
       const [dl] = await Promise.all([a.waitForEvent("download", { timeout: 60000 }), a.click("#pub-descargar")]);
