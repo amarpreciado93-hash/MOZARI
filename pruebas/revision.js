@@ -1622,6 +1622,59 @@ async function capasPesadas(p) {
       exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
       await n.context().close();
     });
+    // Pedido de Icaro (nov 2026): además de cambiarles el nombre, agregar más estados. Nace en el Laboratorio.
+    await paso("Más estados de lote: «+ Estado» agrega uno propio, se usa en un lote, sale en el tour y se quita sin perder lotes", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Más estados");
+      const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      // Dos lotes de prueba (manzana A) a la vista de la esfera
+      const d = await leer(), esc = d.proyecto.escenaInicial || d.escenas[0].id, v = d.escenas.find((e) => e.id === esc).vista || {}, y = v.yaw || 0, p = (v.pitch || 0) + 0.25;
+      const lote = (num, dy) => ({ id: "lote-" + num, tipo: "poligono", nombre: "Lote", visible: true, puntos: [[y - 0.1 + dy, p], [y + dy, p], [y + dy, p + 0.08], [y - 0.1 + dy, p + 0.08]],
+        relleno: { color: "#D5FF40", opacidad: 0.35 }, trazo: { color: "#D5FF40", grosor: 1.5, opacidad: 1 }, lote: { numero: num, manzana: "A", area: "100", precio: "250000", lados: [], frente: 0, estado: "disponible" } });
+      d.capas[esc] = (d.capas[esc] || []).concat([lote("1", 0), lote("2", 0.12)]);
+      exige((await n.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [id, d])) === 200, "no se pudieron poner los lotes de prueba");
+      await n.goto(ESTUDIO + "/#t=" + id); await n.reload(); await n.waitForTimeout(2500); await cerrarAnuncio(n); await cerrarGuia(n);
+      await n.click('#nav button:has-text("Panoramas")'); await n.waitForTimeout(500);
+      await n.click('#subtabs button:has-text("Fichas técnicas")'); await n.waitForTimeout(1200); await pasarGuias(n);
+      exige(!(await n.$("#lt-estados .lt-quitar")), "los 3 estados de siempre se pueden quitar (no deben)");
+      await n.click("#lt-estados [data-mas-estado]"); await n.waitForTimeout(1500);
+      const propios = async () => ((await leer()).lotesEstados || []).filter((e) => /^e-/.test(e.id));
+      let nuevos = await propios();
+      exige(nuevos.length === 1 && nuevos[0].nombre === "En negociación" && /^#/.test(nuevos[0].color), "«+ Estado» no agregó «En negociación»: " + JSON.stringify(nuevos));
+      const eid = nuevos[0].id, campo = '#lt-estados [data-nombre-estado="' + eid + '"]';
+      exige(await n.evaluate((c) => document.activeElement === document.querySelector(c), campo), "el estado nuevo no quedó listo para escribirle el nombre");
+      await n.fill(campo, "Negociando"); await n.waitForTimeout(1500);
+      exige((await propios())[0].nombre === "Negociando", "el nombre del estado nuevo no se guardó");
+      // Se usa en un lote desde la tabla
+      const boton = '#lotes-tabla tr[data-k]:has(td:nth-child(2) b:text-is("1")) [data-estado="' + eid + '"]';
+      exige(await n.isVisible(boton), "el estado nuevo no sale para elegirlo en los lotes");
+      await n.click(boton); await n.waitForTimeout(1500);
+      const estDe = (dd, num) => (Object.values(dd.capas).flat().find((c) => c.lote && c.lote.numero === num) || {}).lote.estado;
+      exige(estDe(await leer(), "1") === eid, "el lote 1 no quedó «Negociando»");
+      exige(/1\s*Negociando/.test(await n.textContent("#lotes-resumen")), "el resumen no cuenta el lote «Negociando»: " + (await n.textContent("#lotes-resumen")));
+      if (process.env.CAPTURAS) { await n.$eval("#lt-estados-fila", (e) => e.scrollIntoView({ block: "center" })); await n.screenshot({ path: path.join(process.env.CAPTURAS, "estados-mas.png") }); }
+      // Publicado: el tour trae el estado con su color y la leyenda lo cuenta
+      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
+      const pub = await n.evaluate((u) => fetch(u).then((r) => r.json()), TOURS + "/" + id + "/proyecto.json").catch(() => null);
+      exige(pub && (pub.lotesEstados || []).some((e) => e.id === eid && e.nombre === "Negociando") && estDe(pub, "1") === eid, "el tour publicado no trae el estado nuevo");
+      // Hasta 8: luego ya no sale el botón
+      for (let i = 0; i < 6 && (await n.$("#lt-estados [data-mas-estado]")); i++) { await n.click("#lt-estados [data-mas-estado]"); await n.waitForTimeout(500); }
+      await n.waitForTimeout(1200);
+      exige(((await leer()).lotesEstados || []).length === 8 && !(await n.$("#lt-estados [data-mas-estado]")), "el límite de 8 estados no funciona");
+      // Quitarlo: el lote regresa a Disponible, nada se pierde
+      await n.click('#lt-estados [data-quitar-estado="' + eid + '"]'); await n.waitForTimeout(1500);
+      const fin = await leer();
+      exige(!(fin.lotesEstados || []).some((e) => e.id === eid) && fin.lotesEstados.length === 7, "el estado no se quitó");
+      exige(estDe(fin, "1") === "disponible" && estDe(fin, "2") === "disponible", "al quitar el estado, el lote no regresó a Disponible: " + estDe(fin, "1"));
+      exige(/regres/.test(await n.textContent("#toast")), "no avisó que el lote regresó a Disponible");
+      exige(await n.isVisible("#lt-estados [data-mas-estado]"), "con 7 estados no regresó el botón «+ Estado»");
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+      // Es del Laboratorio («Solo yo» al nacer): una cuenta normal todavía no lo ve
+      const u = await pagina("estados-" + Date.now() + "@prueba.mx"); await nuevoTour(u, "Sin lab");
+      await u.click('#subtabs button:has-text("Fichas técnicas")'); await u.waitForTimeout(1000); await pasarGuias(u);
+      exige(await u.isVisible('#lt-estados [data-nombre-estado="apartado"]') && !(await u.$("#lt-estados [data-mas-estado]")), "una cuenta normal ya ve «+ Estado» (debe nacer en el Laboratorio)");
+      await u.context().close();
+    });
     // Pasó con Las Alamedas (nov 2026): la manzana del tour quedó como «1» (la de siempre) y en el inventario era la 30,
     // con un lote 15-A. El plano sí traía escrito, como texto, el número y la superficie de cada lote. Ahora Mozari los lee,
     // y al importar el Excel avisa antes de cambiar nada si las superficies no van con los lotes dibujados.

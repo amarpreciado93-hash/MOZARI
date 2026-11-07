@@ -913,6 +913,11 @@
   .lt-estados { display: flex; flex-wrap: wrap; gap: 10px; }
   .lt-estados label { display: flex; align-items: center; gap: 6px; }
   .lt-estados i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+  .lt-estado { display: inline-flex; align-items: center; gap: 2px; }
+  .lt-quitar { all: unset; cursor: pointer; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; color: var(--mz-tenue); font-size: 17px; line-height: 1; }
+  .lt-quitar:hover, .lt-quitar:focus-visible { color: #fff; background: rgba(255, 255, 255, 0.1); }
+  .lt-mas { align-self: center; border: 1px dashed var(--mz-linea-neutra); background: transparent; color: var(--mz-texto); border-radius: var(--mz-pastilla); padding: 8px 14px; font: 500 13px var(--mz-texto-ui); cursor: pointer; }
+  .lt-mas:hover, .lt-mas:focus-visible { border-color: var(--mz-lima); color: var(--mz-lima); }
   .lotes-terminos #lt-corto { width: 70px; }
   .lotes-terminos .nota { align-self: center; margin: 0; }
   .lotes-terminos .nota b { color: var(--mz-texto); }
@@ -2031,6 +2036,10 @@
     { id: "vendido", nombre: "Vendido", color: "#E5484D" },
   ];
   const estadosLote = () => est.lotesEstados || ESTADOS_DEF;
+  // Más estados (Laboratorio, pedido de Icaro): los propios llevan id «e-…» y se pueden quitar; los 3 de siempre no
+  const MAX_ESTADOS = 8;
+  const ESTADOS_SUGERIDOS = [["En negociación", "#3B82F6"], ["Bloqueado", "#6B7280"], ["Escriturado", "#8B5CF6"], ["Próximamente", "#14B8A6"], ["Promoción", "#EC4899"]];
+  const estadoPropio = (e) => !ESTADOS_DEF.some((d) => d.id === e.id);
   const estadoDe = (c) => estadosLote().find((e) => e.id === (c.lote && c.lote.estado)) || estadosLote()[0];
   const LOTE_DEF = { numero: "", manzana: "", area: "", precio: "", lados: [], frente: 0, estado: "disponible", etiqueta: true, verArea: true, medidas: true, opacidad: 0.35, borde: "blanco", rollover: true, rotulo: "plano", tamRotulo: 0.6, giroRotulo: 0, fuente: "", pesoRotulo: 600, colorRotulo: "#FFFFFF", sombra: "suave" };
   // Tipografías para los rótulos de los lotes (se cargan solo si alguien las usa)
@@ -8448,6 +8457,41 @@ void main(){
     clearTimeout(tNombreEstado); tNombreEstado = setTimeout(() => { if (motorEd) { motorEd.construir(); pintarCapas(); } }, 400);
   }
   $("lt-estados").addEventListener("input", (ev) => { const id = ev.target.dataset && ev.target.dataset.nombreEstado; if (id) nombreEstado(id, ev.target.value); });
+  function pintarNombresEstados(forzar) {
+    const caja = $("lt-estados"), E = estadosLote(), lab = enLab("estados");
+    if (!forzar && caja.contains(document.activeElement)) return; // no se le borra lo que está escribiendo
+    caja.innerHTML = E.map((e) => '<span class="lt-estado"><label style="--c:' + e.color + '"><i></i><input class="entrada" data-nombre-estado="' + e.id + '" maxlength="16" value="' + esc(e.nombre) + '" aria-label="Nombre del estado ' + esc(e.nombre) + '"></label>' +
+      (lab && estadoPropio(e) ? '<button type="button" class="lt-quitar" data-quitar-estado="' + e.id + '" title="Quitar este estado" aria-label="Quitar el estado ' + esc(e.nombre) + '">×</button>' : "") + "</span>").join("") +
+      (lab && E.length < MAX_ESTADOS ? '<button type="button" class="lt-mas" data-mas-estado title="Hasta ' + MAX_ESTADOS + ' estados">+ Estado</button>' : "");
+  }
+  $("lt-estados").addEventListener("click", (ev) => {
+    if (ev.target.closest("[data-mas-estado]")) { agregarEstado(); return; }
+    const q = ev.target.closest("[data-quitar-estado]");
+    if (q) quitarEstado(q.dataset.quitarEstado);
+  });
+  function agregarEstado() {
+    const E = estadosLote();
+    if (!enLab("estados") || E.length >= MAX_ESTADOS) return;
+    const tiene = (n) => E.some((e) => e.nombre.toLowerCase() === n.toLowerCase());
+    const [nombre, color] = ESTADOS_SUGERIDOS.find(([n]) => !tiene(n)) || ["Estado " + (E.length + 1), "#6B7280"];
+    const id = "e-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    est.lotesEstados = E.map((e) => Object.assign({}, e)).concat([{ id, nombre, color }]);
+    guardar(); pintarLotes(); pintarNombresEstados(true);
+    const inp = $("lt-estados").querySelector('[data-nombre-estado="' + id + '"]');
+    if (inp) { inp.focus(); inp.select(); }
+    avisar("Nuevo estado «" + nombre + "». Cámbiale el nombre si quieres; ya lo puedes elegir en cada lote.", 3600);
+  }
+  function quitarEstado(id) {
+    const E = estadosLote(), e = E.find((x) => x.id === id);
+    if (!e || !estadoPropio(e)) return; // los 3 de siempre no se quitan
+    const destino = E.find((x) => x.id !== id), usan = lotesUnicos().filter((x) => estadoDe(x.c).id === id).length;
+    Object.values(est.capas).forEach((l) => (l || []).forEach((c) => { if (c.lote && c.lote.estado === id) c.lote.estado = destino.id; }));
+    est.lotesEstados = E.filter((x) => x.id !== id);
+    if (filtroLotes === id) filtroLotes = "todos";
+    guardar(); pintarLotes(); pintarNombresEstados(true);
+    if (motorEd) { motorEd.construir(); pintarCapas(); }
+    avisar("Quitaste «" + e.nombre + "»" + (usan ? ": " + usan + (usan === 1 ? " lote regresó" : " lotes regresaron") + " a " + destino.nombre : "") + ".", 3600);
+  }
   // Color de un estado: vale para todos los lotes del proyecto
   function colorEstado(id, color) {
     est.lotesEstados = estadosLote().map((e) => (e.id === id ? Object.assign({}, e, { color }) : e));
@@ -8825,7 +8869,7 @@ void main(){
     if (document.activeElement !== $("lt-mz")) $("lt-mz").value = T.manzana;
     if (document.activeElement !== $("lt-corto")) $("lt-corto").value = T.corto;
     $("lt-ejemplo").innerHTML = "Así se ve: <b>" + esc(T.lote + " 12 · " + mzCorta("3")) + "</b>";
-    if (!$("lt-estados").contains(document.activeElement)) $("lt-estados").innerHTML = E.map((e) => '<label style="--c:' + e.color + '"><i></i><input class="entrada" data-nombre-estado="' + e.id + '" maxlength="16" value="' + esc(e.nombre) + '" aria-label="Nombre del estado ' + esc(e.nombre) + '"></label>').join("");
+    pintarNombresEstados(false);
     pintarFichaEditor();
     $("lx-moneda").innerHTML = MONEDAS.map(([v, n]) => '<option value="' + v + '"' + (monedaTour() === v ? " selected" : "") + ">" + n + "</option>").join("");
     const cuenta = (id) => todos.filter((x) => estadoDe(x.c).id === id).length;

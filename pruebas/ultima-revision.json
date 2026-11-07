@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-07T02:08:58.170Z",
- "bien": 60,
- "total": 60,
+ "fecha": "2026-11-07T02:44:24.613Z",
+ "bien": 61,
+ "total": 61,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -225,6 +225,10 @@
   },
   {
    "nombre": "Estados de los lotes con el nombre de cada país: «Apartado» se cambia a «Reservado» y sale en el tour",
+   "ok": true
+  },
+  {
+   "nombre": "Más estados de lote: «+ Estado» agrega uno propio, se usa en un lote, sale en el tour y se quita sin perder lotes",
    "ok": true
   },
   {
