@@ -123,8 +123,11 @@ function dispositivoDe(request) {
   const so = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? (tipo === "celular" ? "Celular Android" : "Tablet Android") : /Macintosh|Mac OS X/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : /CrOS/.test(ua) ? "Chromebook" : /Linux/.test(ua) ? "Linux" : "Dispositivo";
   const nav = /Edg\//.test(ua) ? "Edge" : /OPR\/|Opera/.test(ua) ? "Opera" : /Firefox|FxiOS/.test(ua) ? "Firefox" : /Chrome|CriOS/.test(ua) ? "Chrome" : /Safari/.test(ua) ? "Safari" : "";
   const cf = request.cf || {};
-  return { nombre: so + (nav ? " · " + nav : ""), tipo, ciudad: String(cf.city || "").slice(0, 40) };
+  return { nombre: so + (nav ? " · " + nav : ""), tipo, ciudad: String(cf.city || "").slice(0, 40), pais: paisDe(request) };
 }
+
+// País de la petición (lo da Cloudflare): 2 letras, sin los códigos de «desconocido» (XX) ni de Tor (T1)
+export const paisDe = (request) => { const c = String((request.cf && request.cf.country) || "").toUpperCase(); return /^[A-Z]{2}$/.test(c) && c !== "XX" && c !== "T1" ? c : ""; };
 
 // Devuelve la cuenta de quien hace la petición, o null
 export async function cuentaDe(request, env) {
@@ -132,6 +135,9 @@ export async function cuentaDe(request, env) {
   if (!s || s.pend) return null;
   const [p, ses] = await Promise.all([perfil(env, s.uid), s.sid ? leerSesiones(env, s.uid) : null]);
   if (!p || p.bloqueado) return null;
+  // País de la cuenta para el Panel de dueño: se guarda una sola vez, la primera vez que se sabe
+  const pais = paisDe(request);
+  if (pais && !p.pais) { p.pais = pais; await env.R2.put(perfilClave(s.uid), JSON.stringify(p), { httpMetadata: { contentType: "application/json" } }); }
   if (s.sid) {
     // Si cerraron este dispositivo desde otro, la sesión ya no vale
     const yo = ses.find((x) => x.id === s.sid);

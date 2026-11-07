@@ -453,24 +453,30 @@ async function admin(request, env, partes) {
   }
   if (partes[2] !== "cuentas") return error(404, "Ruta desconocida");
   if (partes.length === 3 && m === "GET") {
-    const cuentas = [], tours = [];
+    const cuentas = [], tours = [], lecturas = [], sesiones = {};
+    // Los perfiles y las sesiones se leen todos a la vez (uno por uno tardaba 7 s con 75 cuentas)
+    const leerJson = (k) => env.R2.get(k).then((r) => (r ? r.json() : null)).catch(() => null);
     let cur;
     do {
       const l = await env.R2.list({ prefix: "cuentas/", cursor: cur, limit: 1000, include: ["customMetadata"] });
       for (const o of l.objects) {
-        if (o.key.endsWith("/perfil.json")) { const p = await (await env.R2.get(o.key)).json(); cuentas.push(p); continue; }
+        if (o.key.endsWith("/perfil.json")) { lecturas.push(leerJson(o.key).then((p) => p && cuentas.push(p))); continue; }
+        // Sesiones abiertas: de ahí sale la ciudad (y el país de quien entró antes de que se guardara en su perfil)
+        if (o.key.endsWith("/sesiones.json")) { const uid = o.key.split("/")[1]; lecturas.push(leerJson(o.key).then((l) => { if (Array.isArray(l)) sesiones[uid] = l; })); continue; }
         // Índice de tours de cada cuenta: cuentas/<uid>/tours/<id> (su "publicado" dice si ya se publicó)
         const t = o.key.match(/^cuentas\/([^/]+)\/tours\/([^/]+)$/);
         if (t) tours.push({ uid: t[1], publicado: !!(o.customMetadata && o.customMetadata.publicado) });
       }
       cur = l.truncated ? l.cursor : undefined;
     } while (cur);
+    await Promise.all(lecturas);
+    const ultimaSesion = (uid) => (sesiones[uid] || []).filter((x) => x && (x.ciudad || x.pais)).sort((a, b) => String(b.ultima || b.creada).localeCompare(String(a.ultima || a.creada)))[0] || {};
     const dueno = new Set(cuentas.filter((p) => p.admin).map((p) => p.uid)), pub = tours.filter((t) => t.publicado);
     const resumenTours = { creados: tours.length, publicados: pub.length, publicadosClientes: pub.filter((t) => !dueno.has(t.uid)).length };
     cuentas.sort((a, b) => String(b.ultimaEntrada).localeCompare(String(a.ultimaEntrada)));
     return json({ tours: resumenTours, cuentas: cuentas.map((p) => ({ uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada,
       // Lo que pagó y por dónde (los pagos de antes del historial salen de su último pago, que fue por Mercado Pago)
-      pausada: !!p.bloqueado, cortesia: !!p.cortesia,
+      pausada: !!p.bloqueado, cortesia: !!p.cortesia, pais: p.pais || ultimaSesion(p.uid).pais || "", ciudad: ultimaSesion(p.uid).ciudad || "",
       pagos: Array.isArray(p.pagos) ? p.pagos : p.ultimoPago ? [Object.assign({ moneda: "MXN", metodo: "mercadopago" }, p.ultimoPago)] : [] })) });
   }
   if (partes.length === 4 && m === "PUT") {

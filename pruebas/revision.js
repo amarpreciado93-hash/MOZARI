@@ -887,12 +887,20 @@ async function capasPesadas(p) {
       await publicar();
     }, a);
     await paso("Panel de dueño: cuentas, links, reportes, laboratorio y actualizaciones", async () => {
+      const u = await pagina("pais-" + Date.now() + "@prueba.mx"); await u.waitForTimeout(1500); await u.context().close(); // un usuario que entra (su país se guarda)
       await a.click('#nav button:has-text("Mis Tours")'); await a.waitForTimeout(800); await pasarGuias(a);
       await a.click("#ver-cuentas"); await a.waitForTimeout(1200);
       exige(await a.isVisible(".cuentas-conteo"), "no se ve el conteo de usuarios");
       if (process.env.CAPTURAS) await a.screenshot({ path: path.join(process.env.CAPTURAS, "panel-tours.png") });
       const tt = await a.textContent(".tours-conteo").catch(() => "");
       exige(/[1-9]\d* tours publicados/.test(tt) && /creados en total/.test(tt), "no se ve cuántos tours se han publicado: " + tt);
+      // De qué países son los usuarios, con bandera (aquí Cloudflare dice Estados Unidos)
+      const pz = await a.textContent(".paises-conteo").catch(() => "");
+      exige(/🇺🇸\s*[1-9]\d*\s*Estados Unidos/.test(pz), "no se ven los países de los usuarios con su bandera: " + pz);
+      exige(/🇺🇸/.test(await a.textContent(".cuenta-pais").catch(() => "")), "las cuentas no traen su bandera");
+      const cs = await a.evaluate(() => fetch("api/admin/cuentas").then((r) => r.json()));
+      exige(cs.cuentas.filter((c) => !c.admin && c.pais === "US").length >= 1, "el país no se guarda en las cuentas: " + JSON.stringify(cs.cuentas.slice(0, 3).map((c) => c.pais)));
+      if (process.env.CAPTURAS) { await a.$eval(".paises-conteo", (e) => e.scrollIntoView({ block: "center" })); await a.screenshot({ path: path.join(process.env.CAPTURAS, "panel-paises.png") }); }
       for (const t of ["links", "reportes", "laboratorio", "novedades"]) { await a.click('[data-dueno="' + t + '"]'); await a.waitForTimeout(900); }
     }, a);
 

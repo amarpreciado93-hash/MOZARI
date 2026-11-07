@@ -788,6 +788,12 @@
   .cupo-lista .mini { align-self: flex-start; margin-top: 6px; }
   .cuenta-n { color: var(--mz-tenue); font-variant-numeric: tabular-nums; }
   .cuenta-alta { display: block; font-size: 11px; color: var(--mz-tenue); font-weight: 400; }
+  .cuenta-pais { display: block; font-size: 11px; color: var(--mz-texto); font-weight: 400; margin-top: 2px; }
+  .cuenta-pais .bandera { font-size: 14px; margin-right: 4px; }
+  .paises-conteo span { display: inline-flex; align-items: center; gap: 8px; }
+  .paises-conteo span b { display: inline; font-size: 18px; }
+  .paises-conteo .bandera { font-size: 22px; line-height: 1; }
+  .paises-conteo .sin-pais { opacity: 0.75; }
   .cuentas-total { margin: 4px 16px 10px; font-size: 13px; color: var(--mz-tenue); }
   .cuentas-total b { color: var(--mz-texto); }
   .pago-monto { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; cursor: help; }
@@ -3576,6 +3582,18 @@
     const t = sumaPorMoneda(cuentas.flatMap((c) => (c.pagos || []).filter((x) => +x.monto > 0))), n = cuentas.filter((c) => (c.pagos || []).some((x) => +x.monto > 0)).length;
     return n ? "Has cobrado <b>" + Object.entries(t).map(([m, x]) => dinero(x, m)).join(" + ") + "</b> de " + n + (n === 1 ? " cuenta" : " cuentas") + "." : "Todavía no hay pagos.";
   }
+  // Bandera con las letras del país (MX → 🇲🇽) y su nombre en español
+  const bandera = (cc) => (/^[A-Z]{2}$/.test(cc || "") ? String.fromCodePoint(...[...cc].map((l) => 0x1f1e6 + l.charCodeAt(0) - 65)) : "");
+  let nombresPais = null;
+  const nombrePais = (cc) => { if (!cc) return ""; try { nombresPais = nombresPais || new Intl.DisplayNames(["es"], { type: "region" }); return nombresPais.of(cc) || cc; } catch (e) { return cc; } };
+  function paisesConteo(usuarios) {
+    const n = {}; let sin = 0;
+    usuarios.forEach((c) => { if (c.pais) n[c.pais] = (n[c.pais] || 0) + 1; else sin++; });
+    const l = Object.entries(n).sort((a, b) => b[1] - a[1] || nombrePais(a[0]).localeCompare(nombrePais(b[0])));
+    if (!l.length && !sin) return "";
+    return '<div class="cuentas-conteo paises-conteo">' + l.map(([cc, k]) => '<span title="' + esc(nombrePais(cc)) + '"><i class="bandera">' + bandera(cc) + "</i><b>" + k + "</b> " + esc(nombrePais(cc)) + "</span>").join("") +
+      (sin ? '<span class="sin-pais" title="Cuentas que no han entrado desde que Mozari guarda el país"><b>' + sin + "</b> sin dato aún</span>" : "") + "</div>";
+  }
   async function pintarCuentas() {
     if (vistaDueno === "reportes") return pintarReportes();
     if (vistaDueno === "links") return pintarLinks();
@@ -3601,6 +3619,8 @@
       dato(cuantos((c) => c.plan === "desarrollos"), "Desarrollos", "#F5BE4E") + "</div>" +
       // Tours hechos con Mozari: los publicados (con link para sus clientes), cuántos son de usuarios y cuántos se han creado
       (tt ? '<div class="cuentas-conteo tours-conteo">' + dato(tt.publicados, "tours publicados", "#3FD5E0") + dato(tt.publicadosClientes, "de usuarios", "#7FE7EE") + dato(tt.publicados - tt.publicadosClientes, "tuyos", "#B48CFF") + dato(tt.creados, "creados en total", "#8FA6AD") + "</div>" : "") +
+      // De qué países son (lo da Cloudflare al usar Mozari; los que no han vuelto desde que se guarda, «sin dato»)
+      paisesConteo(usuarios) +
       // Cupo: cuántas cuentas caben por ahora. Quien compra o llega con un link de regalo entra aunque esté lleno.
       (cupo ? '<div class="cupo-fila' + (cupo.cuentas >= cupo.cupo ? " lleno" : cupo.cuentas >= cupo.cupo * 0.8 ? " casi" : "") + '"><span><b>' + cupo.cuentas + " de " + cupo.cupo + "</b> cuentas" + (cupo.cuentas >= cupo.cupo ? " · cupo lleno" : " · quedan " + (cupo.cupo - cupo.cuentas)) + "</span>" +
         '<label>Cupo <input id="cupo-num" type="number" min="0" step="10" value="' + cupo.cupo + '"></label><button class="mini" id="cupo-guardar">Guardar</button>' +
@@ -3610,7 +3630,8 @@
     let caja = $("cuentas");
     if (!caja) { caja = document.createElement("div"); caja.id = "cuentas"; caja.className = "cuentas"; $("mi-plan").after(caja); }
     caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p>' + TABS_DUENO(0) + resumen + '<p class="cuentas-total">' + totalPagos(cuentas) + '</p><table class="lotes-tabla"><thead><tr><th>#</th><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Pagó</th><th>Última entrada</th><th></th></tr></thead><tbody>' + cuentas.map((c) =>
-      '<tr class="' + (c.admin ? "dueno" : "plan-" + (c.plan || "gratis")) + (c.pausada ? " pausada" : "") + (c.creado && new Date(c.creado).toDateString() === hoy ? " nueva" : "") + '"><td class="cuenta-n">' + c.n + "</td><td><b>" + esc(c.nombre || "") + "</b>" + (c.creado ? '<small class="cuenta-alta">desde ' + new Date(c.creado).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) + "</small>" : "") + "</td><td>" + esc(c.email) + "</td><td>" + (c.admin ? '<span class="plan-dueno">Dueño</span>' : '<select class="plan-' + esc(c.plan || "gratis") + '" data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
+      '<tr class="' + (c.admin ? "dueno" : "plan-" + (c.plan || "gratis")) + (c.pausada ? " pausada" : "") + (c.creado && new Date(c.creado).toDateString() === hoy ? " nueva" : "") + '"><td class="cuenta-n">' + c.n + "</td><td><b>" + esc(c.nombre || "") + "</b>" + (c.creado ? '<small class="cuenta-alta">desde ' + new Date(c.creado).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) + "</small>" : "") +
+        (c.pais || c.ciudad ? '<small class="cuenta-pais" title="' + esc(nombrePais(c.pais)) + '">' + (c.pais ? '<span class="bandera">' + bandera(c.pais) + "</span>" : "") + esc([c.ciudad, c.pais ? nombrePais(c.pais) : ""].filter(Boolean).join(", ")) + "</small>" : "") + "</td><td>" + esc(c.email) + "</td><td>" + (c.admin ? '<span class="plan-dueno">Dueño</span>' : '<select class="plan-' + esc(c.plan || "gratis") + '" data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
       "</td><td>" + (c.admin ? "" : pagoDe(c)) + "</td><td>" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td><td>" + (c.admin ? "" : '<button class="mini' + (c.pausada ? " primario" : "") + '" data-pausar="' + esc(c.uid) + '" data-v="' + (c.pausada ? "0" : "1") + '">' + (c.pausada ? "Reactivar" : "Pausar") + "</button>") + "</td></tr>").join("") + "</tbody></table>";
   }
   document.addEventListener("click", async (ev) => {
