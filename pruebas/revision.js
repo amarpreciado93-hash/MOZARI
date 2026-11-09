@@ -1784,6 +1784,86 @@ async function capasPesadas(p) {
     // Pasó con Las Alamedas (nov 2026): la manzana del tour quedó como «1» (la de siempre) y en el inventario era la 30,
     // con un lote 15-A. El plano sí traía escrito, como texto, el número y la superficie de cada lote. Ahora Mozari los lee,
     // y al importar el Excel avisa antes de cambiar nada si las superficies no van con los lotes dibujados.
+    // Pedido de Amar (nov 2026): los desarrollos suelen tener sus lotes en Google Earth (KMZ). Nace en el Laboratorio.
+    await paso("Lotes desde un KMZ: dibuja el plano, lee número, manzana y superficie, y los coloca con 4 esquinas con su medida real", async () => {
+      // Un KMZ de prueba como el de Google Earth: 2 manzanas de 6 lotes de 10 × 20 m, una calle, y el perímetro
+      const lat0 = 21.1235, lon0 = -101.6801, mLat = 1 / 111195, mLon = 1 / (111195 * Math.cos((lat0 * Math.PI) / 180));
+      const ll = (x, y) => (lon0 + x * mLon).toFixed(8) + "," + (lat0 + y * mLat).toFixed(8) + ",0";
+      const rect = (x, y, w, h) => [ll(x, y), ll(x + w, y), ll(x + w, y + h), ll(x, y + h), ll(x, y)].join(" ");
+      const pol = (nombre, coords, datos) => "<Placemark><name>" + nombre + "</name>" + (datos ? "<ExtendedData>" + Object.entries(datos).map(([k, v]) => '<Data name="' + k + '"><value>' + v + "</value></Data>").join("") + "</ExtendedData>" : "") +
+        "<Polygon><outerBoundaryIs><LinearRing><coordinates>" + coords + "</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>";
+      let m7 = "", m8 = "";
+      for (let k = 0; k < 6; k++) { const x = (k % 3) * 10, y = k < 3 ? 0 : 20; m7 += pol("Lote " + (k + 1), rect(x, y, 10, 20)); }
+      const nums8 = ["10", "11", "12A", "13", "14", "15"];
+      for (let k = 0; k < 6; k++) { const x = 60 + (k % 3) * 10, y = k < 3 ? 0 : 20; m8 += pol("Polígono " + k, rect(x, y, 10, 20), Object.assign({ LOTE: nums8[k], MANZANA: "8" }, k === 1 ? { SUPERFICIE: "205.5" } : {})); }
+      const kml = '<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Desarrollo</name>' +
+        pol("Perímetro", rect(-15, -15, 120, 70)) + "<Folder><name>Manzana 7</name>" + m7 + "</Folder>" + m8 +
+        "<Placemark><name>Calle</name><LineString><coordinates>" + ll(45, -10) + " " + ll(45, 50) + "</coordinates></LineString></Placemark></Document></kml>";
+      // KMZ = ZIP con doc.kml comprimido (deflate), como lo exporta Google Earth
+      const zlib = require("zlib"), crc32 = (b) => { let c = ~0; for (const x of b) { c ^= x; for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xEDB88320 & -(c & 1)); } return ~c >>> 0; };
+      const datos = Buffer.from(kml, "utf8"), comp = zlib.deflateRawSync(datos), nombre = Buffer.from("doc.kml");
+      const loc = Buffer.alloc(30); loc.writeUInt32LE(0x04034b50, 0); loc.writeUInt16LE(20, 4); loc.writeUInt16LE(8, 8); loc.writeUInt32LE(crc32(datos), 14); loc.writeUInt32LE(comp.length, 18); loc.writeUInt32LE(datos.length, 22); loc.writeUInt16LE(nombre.length, 26);
+      const cen = Buffer.alloc(46); cen.writeUInt32LE(0x02014b50, 0); cen.writeUInt16LE(20, 4); cen.writeUInt16LE(20, 6); cen.writeUInt16LE(8, 10); cen.writeUInt32LE(crc32(datos), 16); cen.writeUInt32LE(comp.length, 20); cen.writeUInt32LE(datos.length, 24); cen.writeUInt16LE(nombre.length, 28);
+      const fin = Buffer.alloc(22), dirIni = 30 + nombre.length + comp.length; fin.writeUInt32LE(0x06054b50, 0); fin.writeUInt16LE(1, 8); fin.writeUInt16LE(1, 10); fin.writeUInt32LE(46 + nombre.length, 12); fin.writeUInt32LE(dirIni, 16);
+      const kmz = Buffer.concat([loc, nombre, comp, cen, nombre, fin]);
+      const n = await pagina(DUENO); await nuevoTour(n, "Desde KMZ");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800);
+      const st = await n.evaluate(() => { const e = [...document.querySelectorAll(".capas")].find((x) => x.getClientRects().length && x.getBoundingClientRect().width > 300); const b = e.getBoundingClientRect(); return [b.x, b.y, b.width, b.height]; });
+      const [cx, cy] = [st[0] + st[2] / 2, st[1] + st[3] / 2];
+      for (let i = 0; i < 4; i++) { await n.mouse.move(cx, cy + 250); await n.mouse.down(); for (let k = 1; k <= 10; k++) await n.mouse.move(cx, cy + 250 - k * 50); await n.mouse.up(); await n.waitForTimeout(300); }
+      await n.click("#ref-boton"); await n.waitForTimeout(400);
+      exige(/\.kmz/.test(await n.getAttribute("#ref-archivo2", "accept")) && /KMZ/.test(await n.textContent("#ref-subir-txt")), "el plano de referencia no acepta KMZ");
+      await n.setInputFiles("#ref-archivo2", { name: "desarrollo.kmz", mimeType: "application/vnd.google-earth.kmz", buffer: kmz });
+      let ancho = 0; for (let i = 0; i < 25 && !ancho; i++) { await n.waitForTimeout(600); ancho = await n.$eval("#ref-img", (e) => (e.hidden ? 0 : e.naturalWidth)); }
+      exige(ancho > 1000, "el KMZ no se pudo ver como plano: " + (await n.textContent("#toast").catch(() => "")) + " · " + n.errs.join(" | ").slice(0, 300)); await n.waitForTimeout(800);
+      exige(/Plano bueno/.test(await n.textContent("#ref-calidad")), "el KMZ no salió como plano bueno: " + (await n.textContent("#ref-calidad")));
+      const alto = await n.$eval("#ref-img", (e) => e.naturalHeight);
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "kmz-plano.png") });
+      await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "560px"; p.style.height = "420px"; });
+      await pasarGuias(n); await n.click("#ref-ajustar"); await n.click("#ref-lotes"); await n.waitForTimeout(500); await pasarGuias(n); await n.waitForTimeout(300);
+      const aPant = (x, y) => n.evaluate(([x, y]) => { const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(document.getElementById("ref-lienzo").style.transform), v = document.getElementById("ref-vista").getBoundingClientRect(); return [v.x + +m[1] + x * +m[3], v.y + +m[2] + y * +m[3]]; }, [x, y]);
+      // El terreno mide 120 m: la manzana 7 va de 15 a 45 m (de izquierda a derecha) y la 8 de 75 a 105 m
+      const recuadro = async (a, b) => {
+        const [ax, ay] = await aPant((a / 120) * ancho, alto * 0.05), [bx, by] = await aPant((b / 120) * ancho, alto * 0.95);
+        await n.mouse.move(ax, ay); await n.mouse.down(); await n.mouse.move((ax + bx) / 2, (ay + by) / 2, { steps: 6 }); await n.mouse.move(bx, by, { steps: 6 }); await n.mouse.up();
+        let info = ""; for (let i = 0; i < 20 && !/elegid|No /.test(info); i++) { await n.waitForTimeout(400); info = await n.textContent("#ref-lotes-info"); }
+        return info;
+      };
+      const colocar = async () => {
+        await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "300px"; p.style.height = "230px"; });
+        await n.click("#ref-colocar"); await n.waitForTimeout(300);
+        for (const [x, y] of [[0.4, 0.5], [0.9, 0.5], [0.9, 0.9], [0.4, 0.9]]) { await n.mouse.click(st[0] + st[2] * x, st[1] + st[3] * y); await n.waitForTimeout(250); }
+        await n.waitForTimeout(2500);
+      };
+      let info = await recuadro(8, 52);
+      exige(/^6 lotes elegidos/.test(info), "no salieron los 6 lotes de la manzana 7 (" + info + ")");
+      exige(/Manzana 7, leída del plano/.test(info) && /números y las superficies salen del plano/.test(info), "no leyó la manzana (de la carpeta), los números o la superficie del KMZ: " + info);
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "kmz-manzana.png") });
+      await colocar();
+      const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      const deMz = async (mz) => Object.values((await leer()).capas).flat().filter((c) => c.lote && c.lote.manzana === mz);
+      const l7 = await deMz("7");
+      exige(l7.length === 6 && ["1", "2", "3", "4", "5", "6"].every((x) => l7.some((c) => c.lote.numero === x)), "los lotes de la manzana 7 no salieron con sus números del KMZ: " + l7.map((c) => c.lote.numero).join(","));
+      exige(l7.every((c) => Math.abs(+c.lote.area - 200) < 1), "la superficie no salió de la medida real (200 m²): " + l7.map((c) => c.lote.area).join(","));
+      exige(l7.every((c) => c.lote.lados.length === 4 && c.lote.lados.map(Number).sort((a, b) => a - b).every((v, i) => Math.abs(v - [10, 10, 20, 20][i]) < 0.2)), "las medidas de los lados no salieron reales (10 × 20 m): " + JSON.stringify(l7.map((c) => c.lote.lados)));
+      // Manzana 8: los datos vienen en columnas (LOTE, MANZANA, SUPERFICIE), con un «12A»
+      await n.keyboard.press("Escape"); await n.waitForTimeout(300);
+      await n.evaluate(() => { const p = document.getElementById("ref-panel"); p.style.width = "560px"; p.style.height = "420px"; });
+      await n.click("#ref-ajustar"); await n.waitForTimeout(300);
+      info = await recuadro(68, 112);
+      exige(/^6 lotes elegidos/.test(info) && /Manzana 8, leída del plano/.test(info), "la manzana 8 no salió con sus 6 lotes y su nombre: " + info);
+      await colocar();
+      const l8 = await deMz("8");
+      exige(l8.length === 6 && l8.some((c) => c.lote.numero === "12-A") && l8.some((c) => c.lote.numero === "10"), "los lotes de la manzana 8 no salieron con los números de sus datos: " + l8.map((c) => c.lote.numero).join(","));
+      exige(+l8.find((c) => c.lote.numero === "11").lote.area === 205.5, "la superficie escrita en el KMZ (205.5) no se respetó");
+      exige(!Object.values((await leer()).capas).flat().some((c) => c.lote && Math.abs(+c.lote.area - 8400) < 50), "el perímetro del terreno salió como lote");
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+      // Es del Laboratorio («Solo yo» al nacer): una cuenta normal no puede subir KMZ
+      const u = await pagina("kmz-" + Date.now() + "@prueba.mx");
+      exige(!/kmz/.test((await u.getAttribute("#ref-archivo2", "accept")) || ""), "una cuenta normal ya puede subir KMZ (debe nacer en el Laboratorio)");
+      await u.context().close();
+    });
     await paso("Plano con textos: lee número, superficie y manzana; y el Excel de otra manzana avisa antes de importar", async () => {
       const n = await pagina(DUENO); await nuevoTour(n, "Plano con textos");
       await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800);

@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-09T05:41:05.513Z",
- "bien": 64,
- "total": 64,
+ "fecha": "2026-11-09T21:31:55.698Z",
+ "bien": 65,
+ "total": 65,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -241,6 +241,10 @@
   },
   {
    "nombre": "Más estados de lote: «+ Estado» agrega uno propio, se usa en un lote, sale en el tour y se quita sin perder lotes",
+   "ok": true
+  },
+  {
+   "nombre": "Lotes desde un KMZ: dibuja el plano, lee número, manzana y superficie, y los coloca con 4 esquinas con su medida real",
    "ok": true
   },
   {

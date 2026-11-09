@@ -235,3 +235,4 @@
 - 2026-11-08: Esfera en Firefox: si el WebGL entrega la imagen en negro, se lee pixel por pixel (caso Alexis); prueba que imita ese navegador.
 - 2026-11-08: Panel de dueño en el celular: el dueño ve su panel completo en mozari.app desde el teléfono (tablas como tarjetas).
 - 2026-11-09: El aviso de cierre solo cuenta si la página se recargó sola (así hace Safari al caerse). Abrirla otra vez con su link no es caída (Senderos del Rejón: 2 falsas alarmas con «navigate» a los 4 s).
+- 2026-11-09: Lotes desde un KMZ (Laboratorio «kmz»): el plano de referencia acepta KMZ/KML de Google Earth; se dibuja con su medida real (norte arriba), se lee número, manzana (o carpeta) y superficie, y entra al flujo de 4 esquinas; los lotes salen con superficie y medidas de lados reales. El KML se guarda dentro de un JSON privado (no se sirve como XML).

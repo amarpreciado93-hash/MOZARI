@@ -1814,7 +1814,7 @@
           <header><b>Plano de referencia</b><button class="ref-calidad" id="ref-calidad" hidden></button><span class="ref-acc"><button class="ref-btn" id="ref-izq" title="Girar a la izquierda (15°)">↺</button><button class="ref-btn ref-grados" id="ref-grados" title="Regresar a 0°">0°</button><button class="ref-btn" id="ref-der" title="Girar a la derecha (15°)">↻</button><label class="ref-btn" title="Subir otro plano">Cambiar<input type="file" id="ref-archivo" accept="application/pdf,image/png,image/jpeg,image/webp" hidden></label><button class="ref-btn" id="ref-ajustar" title="Ver el plano completo">Ajustar</button><button class="ref-btn" id="ref-lotes" aria-pressed="false" title="Lotes desde el PDF: arrastra un recuadro sobre una manzana" hidden>▭ Lotes</button><button class="ref-btn" id="ref-pluma" aria-pressed="false" title="Pluma: dibujar sobre el plano">✎</button><button class="ref-btn ref-x" id="ref-cerrar" aria-label="Cerrar">×</button></span></header>
           <div class="ref-pluma-barra" id="ref-pluma-barra" hidden><span class="ref-colores"><button class="ref-color" data-ref-color="#FF2D55" style="--c:#FF2D55" aria-label="Rojo"></button><button class="ref-color" data-ref-color="#22B573" style="--c:#22B573" aria-label="Verde"></button><button class="ref-color" data-ref-color="#2F6BFF" style="--c:#2F6BFF" aria-label="Azul"></button></span><button class="ref-btn" id="ref-deshacer">Deshacer</button><button class="ref-btn" id="ref-borrar">Borrar todo</button></div>
           <div class="ref-lotes-barra" id="ref-lotes-barra" hidden><span id="ref-lotes-info">Arrastra un recuadro sobre una manzana.</span><span class="ref-modo" role="group" aria-label="Crear como"><button class="ref-btn" data-ref-modo="manzana" aria-pressed="true" title="Una manzana con todos sus lotes: jalas una esquina y se mueve todo">Manzana</button><button class="ref-btn" data-ref-modo="lotes" aria-pressed="false" title="Cada lote por su cuenta">Lotes sueltos</button></span><label>Manzana <input id="ref-mz" class="ref-campo" size="4" placeholder="3"></label><label>Desde el lote <input id="ref-ini" class="ref-campo" size="3" value="1" inputmode="numeric"></label><button class="guia-ayuda" id="ref-lotes-ayuda" title="Ver cómo se usa">?</button><button class="ref-btn" id="ref-colocar" disabled>Colocar en la esfera</button></div>
-          <div class="ref-vista" id="ref-vista"><div class="ref-lienzo" id="ref-lienzo"><div class="ref-hoja" id="ref-hoja"><img id="ref-img" alt="Plano de referencia" draggable="false"><svg class="ref-dibujo" id="ref-dibujo"></svg><svg class="ref-sel" id="ref-sel"></svg></div></div><div class="ref-vacio" id="ref-vacio"><p>Sube tu masterplan para tenerlo a la vista mientras trazas.</p><label class="btn-prim">Subir PDF o imagen<input type="file" id="ref-archivo2" accept="application/pdf,image/png,image/jpeg,image/webp" hidden></label><small>Solo lo ves tú al editar; tus clientes no lo ven en el tour.</small></div></div>
+          <div class="ref-vista" id="ref-vista"><div class="ref-lienzo" id="ref-lienzo"><div class="ref-hoja" id="ref-hoja"><img id="ref-img" alt="Plano de referencia" draggable="false"><svg class="ref-dibujo" id="ref-dibujo"></svg><svg class="ref-sel" id="ref-sel"></svg></div></div><div class="ref-vacio" id="ref-vacio"><p>Sube tu masterplan para tenerlo a la vista mientras trazas.</p><label class="btn-prim"><span id="ref-subir-txt">Subir PDF o imagen</span><input type="file" id="ref-archivo2" accept="application/pdf,image/png,image/jpeg,image/webp" hidden></label><small>Solo lo ves tú al editar; tus clientes no lo ven en el tour.</small></div></div>
         </div>
       </div>
 
@@ -6218,6 +6218,10 @@ void main(){
     const tit = $("ref-panel").querySelector("header b"); if (CHIP_LAB && !tit.querySelector(".chip-lab")) tit.insertAdjacentHTML("beforeend", " " + CHIP_LAB);
     $("ref-boton").hidden = !lab; $("ref-boton").setAttribute("aria-pressed", REF.on);
     $("ref-lotes").hidden = !enLab("lotes-pdf");
+    // KMZ / KML de Google Earth (Laboratorio)
+    const acepta = "application/pdf,image/png,image/jpeg,image/webp" + (enLab("kmz") ? ",.kmz,.kml,application/vnd.google-earth.kmz,application/vnd.google-earth.kml+xml" : "");
+    ["ref-archivo", "ref-archivo2"].forEach((id) => { if ($(id).accept !== acepta) $(id).accept = acepta; });
+    $("ref-subir-txt").textContent = enLab("kmz") ? "Subir PDF, imagen o KMZ" : "Subir PDF o imagen";
     $("foto360-boton").hidden = !(MODO === "nube" && enLab("foto360") && nav.sub === "capas");
     if (CHIP_LAB && !$("foto360-boton").querySelector(".chip-lab")) $("foto360-boton").insertAdjacentHTML("beforeend", " " + CHIP_LAB);
     $("ref-panel").hidden = !lab || !REF.on;
@@ -6261,6 +6265,24 @@ void main(){
     avisar("Preparando el plano…");
     try {
       const cv = document.createElement("canvas"), MAX = 4000; let escPDF = 0, analisis = null;
+      if (esKML(file)) {
+        if (!enLab("kmz")) { avisar("Sube un PDF o una imagen."); return; }
+        const texto = await textoKMZ(file), k = kmlATrazos(texto);
+        dibujarKML(cv, k.tr, k.lineasPx);
+        const blob = await new Promise((ok) => cv.toBlob(ok, "image/jpeg", 0.9));
+        const sello = Date.now().toString(36), ruta = "privado/referencia-" + sello + ".jpg", rk = "privado/referencia-" + sello + ".kml.json";
+        await subirArchivo(ruta, blob);
+        // El KML se guarda dentro de un JSON (privado): de ahí se vuelven a leer los lotes otro día
+        await subirArchivo(rk, new Blob([JSON.stringify({ kml: texto })], { type: "application/json" }));
+        P().referencia = { img: ruta, ancho: cv.width, alto: cv.height, kml: rk, kmlMpp: +k.tr.mpp.toFixed(6), calidad: CALIDAD_KML };
+        LPDF.clave = rk; LPDF.tr = Promise.resolve(k.tr);
+        REF.sel = null; REF.caja = null; REF.orden = []; REF.esq = []; SELH.atras = []; SELH.adelante = [];
+        $("ref-colocar").disabled = true; infoLotes("Arrastra un recuadro sobre una manzana.");
+        cambio(); pintarRef();
+        const nN = k.tr.poligonos.filter((x) => x.num).length;
+        avisar("KMZ listo: " + k.tr.poligonos.length + " polígonos" + (nN ? ", " + nN + " con número de lote" : "") + ". Prende «Lotes» y arrastra un recuadro sobre una manzana.", 7000);
+        return;
+      }
       if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
         const pdfjs = await import("/lib/pdf.min.mjs");
         pdfjs.GlobalWorkerOptions.workerSrc = "/lib/pdf.worker.min.mjs";
@@ -6294,7 +6316,7 @@ void main(){
       cambio(); pintarRef();
       const cal = P().referencia.calidad;
       avisar(cal ? "Plano listo · " + cal.titulo + (cal.nivel === "bueno" ? "." : ". Toca la etiqueta de arriba para ver por qué.") : "Plano listo. Rueda para acercar, arrastra para moverte.", 7000);
-    } catch (e) { avisar(e && e.limite ? e.message : "No se pudo leer ese archivo. Prueba con otro PDF o una imagen."); }
+    } catch (e) { avisar(e && e.limite ? e.message : e && e.kml ? e.message : "No se pudo leer ese archivo. Prueba con otro PDF o una imagen."); }
   }
   $("ref-boton").addEventListener("click", () => { REF.on = !REF.on; pintarRef(); if (REF.on) guiaRefUso(); });
   $("foto360-boton").addEventListener("click", async () => {
@@ -6474,6 +6496,139 @@ void main(){
     } catch (e) { /* sin textos: los lotes se numeran en orden */ }
     return { segs: new Float64Array(segs), segSub: Int32Array.from(segSub), subs, estilos, rellenos, nTextos, nImagenes, textos, conCapas: !!(capas && Object.keys(capas).length), w: vp.width, h: vp.height };
   }
+  // ---------- KMZ / KML de Google Earth (Laboratorio «kmz») ----------
+  // Cada lote ya viene como polígono con su forma real (latitud y longitud). Se pasa a un plano en metros
+  // (el norte arriba), se dibuja como la imagen del plano y entra al mismo flujo de «Lotes desde el PDF»:
+  // recuadro sobre la manzana → 4 esquinas en la esfera. El número, la manzana y la superficie salen del KMZ.
+  const CALIDAD_KML = { nivel: "bueno", titulo: "KMZ de Google Earth: listo para armar lotes", motivos: ["Trae cada lote como polígono con su medida real.", "El número, la manzana y la superficie salen del KMZ."] };
+  const esKML = (f) => /\.km[lz]$/i.test((f && f.name) || "") || /google-earth/.test((f && f.type) || "");
+  const errKML = (m) => Object.assign(new Error(m), { kml: true });
+  async function textoKMZ(file) {
+    const buf = new Uint8Array(await file.arrayBuffer());
+    if (!(buf[0] === 0x50 && buf[1] === 0x4b)) return new TextDecoder().decode(buf); // KML suelto
+    // KMZ = ZIP: se busca el KML en el directorio del final (doc.kml, o el primero que haya)
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    let e = buf.length - 22; while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+    if (e < 0) throw errKML("Ese KMZ está dañado. Vuelve a exportarlo de Google Earth.");
+    const n = dv.getUint16(e + 10, true); let q = dv.getUint32(e + 16, true), kml = null;
+    for (let i = 0; i < n && dv.getUint32(q, true) === 0x02014b50; i++) {
+      const nl = dv.getUint16(q + 28, true), nombre = new TextDecoder().decode(buf.subarray(q + 46, q + 46 + nl));
+      if (/\.kml$/i.test(nombre) && (!kml || /(^|\/)doc\.kml$/i.test(nombre))) kml = { metodo: dv.getUint16(q + 10, true), comp: dv.getUint32(q + 20, true), loc: dv.getUint32(q + 42, true) };
+      q += 46 + nl + dv.getUint16(q + 30, true) + dv.getUint16(q + 32, true);
+    }
+    if (!kml) throw errKML("Ese KMZ no trae los polígonos (no tiene KML adentro).");
+    const ini = kml.loc + 30 + dv.getUint16(kml.loc + 26, true) + dv.getUint16(kml.loc + 28, true), datos = buf.subarray(ini, ini + kml.comp);
+    if (kml.metodo === 0) return new TextDecoder().decode(datos);
+    if (kml.metodo !== 8) throw errKML("Ese KMZ viene comprimido de una forma que Mozari no lee. Expórtalo como KML.");
+    return new TextDecoder().decode(await new Response(new Blob([datos]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer());
+  }
+  function leerKML(texto) {
+    const doc = new DOMParser().parseFromString(texto, "application/xml");
+    if (doc.getElementsByTagName("parsererror").length) throw errKML("No se pudo leer ese KML.");
+    const de = (el, tag) => [...el.getElementsByTagNameNS("*", tag)], txt = (el, tag) => ((de(el, tag)[0] || {}).textContent || "").trim();
+    const coords = (el) => (el ? el.textContent.trim().split(/\s+/).map((t) => t.split(",").map(Number)).filter((c) => c.length >= 2 && isFinite(c[0]) && isFinite(c[1])).map((c) => [c[0], c[1]]) : []);
+    const polis = [], lineas = [];
+    de(doc, "Placemark").forEach((pm) => {
+      const datos = {};
+      de(pm, "Data").forEach((d) => { const k = d.getAttribute("name"); if (k) datos[k.trim().toLowerCase()] = txt(d, "value"); });
+      de(pm, "SimpleData").forEach((d) => { const k = d.getAttribute("name"); if (k) datos[k.trim().toLowerCase()] = d.textContent.trim(); });
+      let carpeta = ""; for (let a = pm.parentElement; a; a = a.parentElement) if (a.localName === "Folder") { carpeta = txt(a, "name"); break; }
+      const base = { nombre: txt(pm, "name"), datos, carpeta };
+      de(pm, "Polygon").forEach((pg) => { const ob = de(pg, "outerBoundaryIs")[0], c = coords(ob && de(ob, "coordinates")[0]); if (c.length >= 3) polis.push(Object.assign({ c }, base)); });
+      de(pm, "LineString").forEach((ls) => { const c = coords(de(ls, "coordinates")[0]); if (c.length >= 2) lineas.push(c); });
+    });
+    return { polis, lineas };
+  }
+  // Número de lote, manzana y superficie: de sus datos (columnas «Lote», «Manzana», «Superficie»…) o de su nombre
+  // («Lote 12», «L-12A», «MZ 3 LT 12», «M3-L12», «12»); la manzana también puede ser la carpeta («Manzana 3»)
+  function datosLoteKML(p) {
+    const d = p.datos, campo = (re) => { const k = Object.keys(d).find((x) => re.test(x)); return k ? String(d[k]).trim() : ""; }, t = p.nombre;
+    let num = campo(/^(lote|lot|no\.?\s*(de\s*)?lote|num(ero)?|n[uú]mero|id_?lote|clave)$/i), mz = campo(/^(manzana|mza?|block|bloque)$/i);
+    const supTxt = campo(/^(superficie|sup|area|área|m2|metros)$/i);
+    if (!num) { const m = /(?:^|[^A-Z])(?:L|LT|LOTE|LOT)\s*[.:#-]?\s*(\d{1,4}\s*-?\s*[A-Z]?)(?![A-Z0-9])/i.exec(t) || /^\s*(\d{1,4}(?:\s*-?\s*[A-Z])?)\s*$/i.exec(t); if (m) num = m[1]; }
+    if (!mz) { const m = /(?:MZA?|MANZANA|BLOQUE)\s*[.:#-]?\s*(\d{1,4}|[IVXLCDM]{1,8})(?![A-Z0-9])/i.exec(t) || /(?:^|[^A-Z])M\s*[-.]?\s*(\d{1,3})(?!\d)/i.exec(t) || /(?:MZA?|MANZANA|BLOQUE)?\s*[.:#-]?\s*(\d{1,4}|[IVXLCDM]{1,8})\s*$/i.exec(p.carpeta); if (m) mz = m[1]; }
+    const sup = parseFloat(String(supTxt).replace(/,/g, "").replace(/[^0-9.]/g, ""));
+    return { num: num ? num.replace(/\s+/g, "").toUpperCase() : "", mz: mz ? mz.trim().toUpperCase() : "", sup: isFinite(sup) && sup > 0 ? sup : 0 };
+  }
+  // Un punto que sí cae dentro del polígono (en un lote en «L» el centro puede caer fuera)
+  function puntoDentro(Q) {
+    const c = centroPol(Q); if (dentroPol(Q, c[0], c[1])) return c;
+    const xs = [];
+    for (let i = 0; i < Q.length; i++) { const a = Q[i], b = Q[(i + 1) % Q.length]; if ((a[1] > c[1]) !== (b[1] > c[1])) xs.push(a[0] + ((c[1] - a[1]) * (b[0] - a[0])) / (b[1] - a[1])); }
+    xs.sort((a, b) => a - b);
+    return xs.length >= 2 ? [(xs[0] + xs[1]) / 2, c[1]] : c;
+  }
+  function kmlATrazos(texto) {
+    const { polis, lineas } = leerKML(texto);
+    if (!polis.length) throw errKML("Ese KMZ no trae polígonos de lotes (solo puntos o líneas).");
+    let lat0 = 0, lon0 = 0, n = 0; polis.forEach((p) => p.c.forEach((c) => { lon0 += c[0]; lat0 += c[1]; n++; })); lon0 /= n; lat0 /= n;
+    const R = 6371008.8, kx = (Math.PI / 180) * R * Math.cos((lat0 * Math.PI) / 180), ky = (Math.PI / 180) * R;
+    const aM = (c) => [(c[0] - lon0) * kx, -(c[1] - lat0) * ky]; // metros; el norte arriba
+    const M = polis.map((p) => p.c.map(aM)), L = lineas.map((l) => l.map(aM));
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    M.concat(L).forEach((P) => P.forEach(([x, y]) => { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }));
+    const MAX = 4000, margen = 80, esc = (MAX - 2 * margen) / Math.max(x1 - x0, y1 - y0, 1); // px por metro
+    const aPx = (p) => [margen + (p[0] - x0) * esc, margen + (p[1] - y0) * esc];
+    const poligonos = M.map((P, i) => {
+      let Q = P.map(aPx);
+      if (Q.length > 3 && Math.hypot(Q[0][0] - Q[Q.length - 1][0], Q[0][1] - Q[Q.length - 1][1]) < 1e-6) Q = Q.slice(0, -1);
+      Q = simplificarPol(Q, 0.05 * esc); // quita puntos repetidos o en línea recta (menos de 5 cm)
+      if (areaPol(Q) < 0) Q.reverse();
+      const info = datosLoteKML(polis[i]), m2 = areaPol(Q) / (esc * esc);
+      return Object.assign({ puntos: Q, area: areaPol(Q), centro: centroPol(Q), dentro: puntoDentro(Q), m2 }, info);
+    }).filter((p) => p.puntos.length >= 3 && p.area > 0);
+    const segs = [], segSub = [], subs = [], textos = [];
+    const linea = (Q, cerrar) => {
+      const sid = subs.length, xs = Q.map((q) => q[0]), ys = Q.map((q) => q[1]);
+      subs.push({ est: 0, ext: Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)), n: Q.length });
+      for (let k = 1; k < Q.length; k++) { segs.push(Q[k - 1][0], Q[k - 1][1], Q[k][0], Q[k][1]); segSub.push(sid); }
+      if (cerrar) { segs.push(Q[Q.length - 1][0], Q[Q.length - 1][1], Q[0][0], Q[0][1]); segSub.push(sid); }
+    };
+    poligonos.forEach((p) => linea(p.puntos, true));
+    const lineasPx = L.map((l) => l.map(aPx)); lineasPx.forEach((l) => linea(l, false));
+    // Lo que «trae escrito» cada lote, en el mismo formato que lee el PDF
+    poligonos.forEach((p) => {
+      const [x, y] = p.dentro;
+      if (p.num) textos.push({ t: "L-" + p.num, x, y });
+      textos.push({ t: "S=" + (p.sup || p.m2).toFixed(2) + "m2", x, y });
+      if (/^(\d{1,4}|[IVXLCDM]{1,8})$/.test(p.mz)) textos.push({ t: "MZA " + p.mz, x, y });
+    });
+    const tr = { segs: new Float64Array(segs), segSub: Int32Array.from(segSub), subs, estilos: [{ capa: "", color: "#000", ancho: 1 }], rellenos: [], nTextos: textos.length, nImagenes: 0, textos,
+      conCapas: false, w: Math.round((x1 - x0) * esc + 2 * margen), h: Math.round((y1 - y0) * esc + 2 * margen), poligonos, mpp: 1 / esc };
+    return { tr, lineasPx };
+  }
+  function dibujarKML(cv, tr, lineasPx) {
+    cv.width = tr.w; cv.height = tr.h;
+    const x = cv.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, cv.width, cv.height); x.lineJoin = "round";
+    x.strokeStyle = "#9AA0A6"; x.lineWidth = 3;
+    lineasPx.forEach((l) => { x.beginPath(); l.forEach((p, i) => (i ? x.lineTo(p[0], p[1]) : x.moveTo(p[0], p[1]))); x.stroke(); });
+    tr.poligonos.forEach((p) => {
+      x.beginPath(); p.puntos.forEach((q, i) => (i ? x.lineTo(q[0], q[1]) : x.moveTo(q[0], q[1]))); x.closePath();
+      x.fillStyle = "rgba(213, 255, 64, 0.16)"; x.fill(); x.strokeStyle = "#1B1D1A"; x.lineWidth = 2.5; x.stroke();
+    });
+    x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = "#1B1D1A";
+    tr.poligonos.forEach((p) => {
+      const t = p.num || "", fs = Math.max(10, Math.min(64, Math.sqrt(p.area) * 0.28));
+      if (!t) return;
+      x.font = "600 " + fs.toFixed(0) + "px Arial, sans-serif"; x.fillText(t, p.dentro[0], p.dentro[1]);
+    });
+  }
+  // KMZ: los lotes de la zona del recuadro, tal cual vienen (sin buscar líneas)
+  function lotesDelKML(tr, caja) {
+    const [x0, y0, x1, y1] = caja, mx = (x1 - x0) * 0.25, my = (y1 - y0) * 0.25, en = (c) => c[0] >= x0 && c[0] <= x1 && c[1] >= y0 && c[1] <= y1;
+    if (!tr.soloLotes) { // un polígono que envuelve a otros dos (el perímetro, la manzana completa) no es lote
+      const P = tr.poligonos;
+      tr.soloLotes = P.filter((f) => P.filter((g) => g !== f && g.area < f.area && dentroPol(f.puntos, g.centro[0], g.centro[1])).length < 2);
+    }
+    const cerca = tr.soloLotes.filter((p) => p.centro[0] > x0 - mx && p.centro[0] < x1 + mx && p.centro[1] > y0 - my && p.centro[1] < y1 + my);
+    return { formas: cerca.map((p) => ({ puntos: p.puntos.map((q) => q.slice()), area: p.area, centro: p.centro.slice(), elegida: en(p.centro) })), textos: 0 };
+  }
+  // Medidas reales de cada lado (solo con KMZ, que trae la escala): en metros con 2 decimales
+  function ladosReales(Q) {
+    const mpp = +((P().referencia || {}).kmlMpp) || 0; if (!mpp || !Q || Q.length < 3) return null;
+    return Q.map((p, k) => { const q = Q[(k + 1) % Q.length]; return String(Math.round(Math.hypot(q[0] - p[0], q[1] - p[1]) * mpp * 100) / 100); });
+  }
+
   // Lo que el plano trae escrito: número y superficie dentro de cada lote, y el nombre de la manzana cerca
   const ROMANO = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
   const deRomano = (r) => { let n = 0; for (let i = 0; i < r.length; i++) { const v = ROMANO[r[i]], w = ROMANO[r[i + 1]] || 0; n += v < w ? -v : v; } return n; };
@@ -6540,6 +6695,7 @@ void main(){
   // Lotes de una zona, sin dejar que los textos dibujados con líneas los corten. Primero se arman con todo para
   // saber el tamaño de un lote; luego se quitan los trazos de texto y se vuelven a armar.
   function lotesDelPlano(tr, caja, tol) {
+    if (tr.poligonos) return lotesDelKML(tr, caja); // KMZ: cada lote ya viene como polígono
     const r1 = lotesEnZona(tr, caja, tol);
     if (r1.error || !tr.subs) return r1;
     const el1 = r1.formas.filter((f) => f.elegida), areas = el1.map((f) => f.area).sort((a, b) => a - b);
@@ -6809,7 +6965,14 @@ void main(){
   // La ventana del plano en modo «Lotes»: recuadro sobre la manzana → sus lotes iluminados → colocar en la esfera
   const LPDF = { clave: null, tr: null };
   function trazosRef() {
-    const r = P().referencia; if (!r || !r.pdf) return Promise.resolve(null);
+    const r = P().referencia;
+    if (r && r.kml) {
+      if (LPDF.clave === r.kml) return LPDF.tr;
+      LPDF.clave = r.kml;
+      LPDF.tr = fetch(urlArchivo(r.kml)).then((x) => x.json()).then((j) => kmlATrazos(j.kml).tr).catch(() => { LPDF.clave = null; return null; });
+      return LPDF.tr;
+    }
+    if (!r || !r.pdf) return Promise.resolve(null);
     if (LPDF.clave === r.pdf) return LPDF.tr;
     LPDF.clave = r.pdf;
     LPDF.tr = (async () => {
@@ -7240,7 +7403,10 @@ void main(){
         relleno: { color: BLANCO, opacidad: 0 }, trazo: { color: BLANCO, grosor: 2, opacidad: 0.9 },
         rollover: { activo: false, relleno: { color: BLANCO, opacidad: 0 }, trazo: { color: BLANCO, grosor: 2, opacidad: 1 } } };
       cs().push(c); repartirPlano(c);
-      lotesDeManzana(c).forEach((x) => { const f = lotes[x.iManzana]; if (f && f.sup && !String(x.lote.area || "").trim()) x.lote.area = f.sup; });
+      lotesDeManzana(c).forEach((x) => {
+        const f = lotes[x.iManzana]; if (f && f.sup && !String(x.lote.area || "").trim()) x.lote.area = f.sup;
+        const L = f && ladosReales(f.puntos); if (L && x.puntos.length === L.length && !x.lote.lados.some((v) => String(v).trim())) x.lote.lados = L; // medidas reales del KMZ
+      });
       est.ultimoLote = { manzana: mz, numero: REF.etq ? String(parseInt(lotes[lotes.length - 1].etiqueta, 10) || lotes.length) : String(ini + lotes.length - 1) };
       motorEd.elegida = c.id;
       avisar(terminos().manzana + " " + mz + " con " + lotes.length + " lotes" + (REF.etq ? ", con sus números del plano" : "") + ". Jala sus esquinas verdes y todos los lotes la siguen.");
@@ -7253,7 +7419,7 @@ void main(){
         id: nuevoId(), tipo: "poligono", nombre: "Lote", visible: true, puntos,
         relleno: { color: LIMA, opacidad: 0.35 }, trazo: { color: LIMA, grosor: 1.5, opacidad: 1 },
         rollover: { activo: true, relleno: { color: LIMA, opacidad: 0.6 }, trazo: { color: BLANCO, grosor: 3, opacidad: 1 } },
-        lote: Object.assign({}, LOTE_DEF, { manzana: mz, numero: REF.etq ? lotes[i].etiqueta : String(ini + i), area: lotes[i].sup || "", frente, lados: puntos.map(() => "") }),
+        lote: Object.assign({}, LOTE_DEF, { manzana: mz, numero: REF.etq ? lotes[i].etiqueta : String(ini + i), area: lotes[i].sup || "", frente, lados: ladosReales(lotes[i].puntos) || puntos.map(() => "") }),
       });
     });
     est.ultimoLote = { manzana: mz, numero: REF.etq ? String(parseInt(lotes[lotes.length - 1].etiqueta, 10) || lotes.length) : String(ini + lotes.length - 1) };
