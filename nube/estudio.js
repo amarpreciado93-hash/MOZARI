@@ -260,6 +260,8 @@ async function registrarCaida(request, env, id) {
   // casi siempre es cerrar Safari desde el multitarea y abrirlo otra vez: falsa alarma (MAMAP, nov 2026)
   const hueco = Number(d.hueco);
   if (!(hueco >= 0 && hueco <= 30)) return ok;
+  // Y la página se recargó sola (así hace Safari al caerse). Abierta otra vez con su link no es caída (Senderos del Rejón)
+  if (d.nav !== "reload") return ok;
   const pub = await env.R2.get("publicado/" + id + "/proyecto.json");
   if (!pub) return ok;
   const p = await pub.json().catch(() => null);

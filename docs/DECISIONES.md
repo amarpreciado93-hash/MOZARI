@@ -234,3 +234,4 @@
 - 2026-11-08: Pago con un tour con lotes: abre con Desarrollos elegido y avisa que con Pro sigue la marca; Pro dice «sin marca en tours sin lotes» (caso Diego).
 - 2026-11-08: Esfera en Firefox: si el WebGL entrega la imagen en negro, se lee pixel por pixel (caso Alexis); prueba que imita ese navegador.
 - 2026-11-08: Panel de dueño en el celular: el dueño ve su panel completo en mozari.app desde el teléfono (tablas como tarjetas).
+- 2026-11-09: El aviso de cierre solo cuenta si la página se recargó sola (así hace Safari al caerse). Abrirla otra vez con su link no es caída (Senderos del Rejón: 2 falsas alarmas con «navigate» a los 4 s).

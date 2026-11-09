@@ -9855,6 +9855,8 @@ void main(){
   // abrir en la misma pestaña en segundos. Cerrar Safari desde el multitarea (no avisa al cerrar) y abrirlo otra vez
   // recupera la pestaña: eso ya no cuenta si pasaron más de 30 s o si el tour no estaba al frente. Con 3 minutos
   // daba falsas alarmas (El Mirador y MAMAP, nov 2026). El aviso dice cuántos segundos tardó en reabrirse.
+  // Y solo cuenta si la página se RECARGÓ (es lo que hace Safari cuando se cae). Abrirla otra vez con el link no cuenta:
+  // en Senderos del Rejón la cerraron dentro de otra app y la volvieron a abrir a los 4 s (falsa alarma, nov 2026).
   function modeloDe(ua) {
     const navg = /CriOS/.test(ua) ? "Chrome" : /FxiOS/.test(ua) ? "Firefox" : /Instagram/.test(ua) ? "Instagram" : /FBAN|FBAV|FB_IAB/.test(ua) ? "Facebook" : /WhatsApp/.test(ua) ? "WhatsApp" : /SamsungBrowser/.test(ua) ? "Samsung" : /EdgA?\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "otro";
     let m = /iPhone OS (\d+)[_.](\d+)/.exec(ua);
@@ -9867,7 +9869,8 @@ void main(){
   const VIGIA = MODO === "tour" && !document.body.dataset.exportado && location.pathname.split("/").filter(Boolean)[0] ? (() => {
     const tourId = location.pathname.split("/").filter(Boolean)[0], clave = "mz-vivo:" + tourId;
     let antes = null; try { antes = JSON.parse(sessionStorage.getItem(clave) || "null"); localStorage.removeItem(clave); } catch (e) { antes = null; } // (la versión anterior la guardaba en localStorage)
-    const reciente = antes && antes.visible && antes.foco !== false && Date.now() - antes.t >= 0 && Date.now() - antes.t < 30e3;
+    let nav = ""; try { nav = (performance.getEntriesByType("navigation")[0] || {}).type || ""; } catch (e) { /* viejo */ }
+    const reciente = antes && antes.visible && antes.foco !== false && Date.now() - antes.t >= 0 && Date.now() - antes.t < 30e3 && (nav === "reload" || !nav);
     return { tourId, clave, inicio: Date.now(), esfera: null, cambios: 0, errores: [], veces: 0, foco: true, anterior: reciente ? antes : null };
   })() : null;
   function vigiaGuardar() {

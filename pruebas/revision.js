@@ -568,10 +568,21 @@ async function capasPesadas(p) {
       exige((await a.evaluate((id) => fetch("/c/" + id, { method: "POST", body: JSON.stringify({ esfera: "x", lotes: 1, dur: 60, veces: 1 }) }).then((r) => r.status).catch(() => 0), tour)) === 204, "el servidor no aceptó (sin guardar) el aviso viejo");
       await m.waitForTimeout(800);
       exige((await caidas()).length === antes, "un aviso sin segundos de reapertura (versión vieja) llegó como caída");
+      // Falsa alarma de Senderos del Rejón (nov 2026): lo cerraron (el navegador de una app no avisa) y lo volvieron a abrir
+      // con el link a los 4 s. Abrir con el link («navigate») no es caída: cuando Safari se cae, él mismo RECARGA la página.
       await m.goto(TOURS + "/");
       await m.evaluate(([k, v]) => sessionStorage.setItem(k, JSON.stringify(Object.assign({}, v, { t: Date.now() - 4000 }))), ["mz-vivo:" + tour, marca]);
+      await m.goto(link); await m.waitForTimeout(3000);
+      exige((await caidas()).length === antes, "volver a abrir el tour con su link a los 4 s mandó aviso de caída");
+      exige((await a.evaluate((id) => fetch("/c/" + id, { method: "POST", body: JSON.stringify({ esfera: "x", lotes: 1, dur: 60, veces: 1, hueco: 4, nav: "navigate" }) }).then((r) => r.status).catch(() => 0), tour)) === 204, "el servidor no aceptó (sin guardar) el aviso de un tour abierto con su link");
+      await m.waitForTimeout(800);
+      exige((await caidas()).length === antes, "el servidor guardó como caída un tour abierto con su link");
+      // Caída de verdad: el navegador tumba la página (aquí se truena a propósito) y la recarga solo
+      await m.goto(link); await m.waitForTimeout(5000);
+      // (se simula: al salir, la marca se queda como estaba en pantalla, como cuando el navegador no alcanza a quitarla)
+      await m.evaluate((k) => { window.addEventListener("pagehide", () => { const v = JSON.parse(sessionStorage.getItem(k) || "null") || window.__marca; sessionStorage.setItem(k, JSON.stringify(Object.assign({}, v, { t: Date.now() }))); }); window.__marca = JSON.parse(sessionStorage.getItem(k)); }, "mz-vivo:" + tour);
       const m2 = m; m2.errs = [];
-      await m2.goto(link); await m2.waitForTimeout(4000);
+      await m2.reload(); await m2.waitForTimeout(4000);
       let lista = []; for (let i = 0; i < 10 && lista.length <= antes; i++) { await new Promise((r) => setTimeout(r, 500)); lista = await caidas(); }
       exige(lista.length === antes + 1, "no llegó el aviso de que el tour se cerró solo (" + lista.length + " vs " + antes + ")");
       const rep = lista[0];
