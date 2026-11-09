@@ -231,3 +231,6 @@
 - 2026-11-06: Aviso de cierre calibrado: solo cuenta si el tour se reabre en menos de 30 s y estaba al frente (cerrar Safari desde el multitarea daba falsas alarmas, MAMAP/El Mirador); el correo dice en cuántos segundos se reabrió. Puntos en 3D casi de lado (piloto mirando al suelo) se ocultan: medían 4,084×8,516 px fuera de pantalla.
 - 2026-11-06: Más estados de lote (Laboratorio «estados», pedido de Icaro): «+ Estado» agrega estados propios (id e-…) con color, hasta 8; los propios se quitan con × y sus lotes regresan a Disponible. Los 3 de siempre no se quitan.
 - 2026-11-06: País de cada cuenta (Cloudflare) se guarda una vez en su perfil al usar Mozari; Panel de dueño muestra banderas con cuántos usuarios por país y bandera + ciudad en cada cuenta. El listado de cuentas lee perfiles y sesiones en paralelo.
+- 2026-11-08: Pago con un tour con lotes: abre con Desarrollos elegido y avisa que con Pro sigue la marca; Pro dice «sin marca en tours sin lotes» (caso Diego).
+- 2026-11-08: Esfera en Firefox: si el WebGL entrega la imagen en negro, se lee pixel por pixel (caso Alexis); prueba que imita ese navegador.
+- 2026-11-08: Panel de dueño en el celular: el dueño ve su panel completo en mozari.app desde el teléfono (tablas como tarjetas).

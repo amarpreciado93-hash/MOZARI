@@ -904,6 +904,36 @@ async function capasPesadas(p) {
       for (const t of ["links", "reportes", "laboratorio", "novedades"]) { await a.click('[data-dueno="' + t + '"]'); await a.waitForTimeout(900); }
     }, a);
 
+    // Amar sin su compu (nov 2026): el Panel de dueño se usa desde el celular
+    await paso("Panel de dueño en el celular: se lee sin salirse de la pantalla", async () => {
+      const u0 = await pagina("alguien-" + Date.now() + "@prueba.mx"); await u0.waitForTimeout(800); await u0.context().close(); // una cuenta más en la lista
+      const m = await pagina(DUENO, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
+      await m.waitForTimeout(1500); await pasarGuias(m);
+      const ver = async (nombre) => { if (process.env.CAPTURAS) await m.screenshot({ path: path.join(process.env.CAPTURAS, "movil-" + nombre + ".png"), fullPage: true }); };
+      // Nada se sale de la pantalla a lo ancho (se lee sin mover de lado)
+      const ancho = () => m.evaluate(() => { const mv = document.querySelector(".movil"), W = innerWidth; let peor = null;
+        mv.querySelectorAll("*").forEach((e) => { const r = e.getBoundingClientRect(); if (r.width && r.right > W + 2 && !e.closest(".rep-tabs") && (!peor || r.right > peor.r)) peor = { r: Math.round(r.right), e: e.tagName + "." + String(e.className).slice(0, 30) }; });
+        return { W, peor, scroll: mv.scrollWidth > mv.clientWidth + 2 }; });
+      await m.waitForTimeout(2500);
+      exige(await m.isVisible(".movil #cuentas .cuentas-conteo"), "en el celular no sale el Panel de dueño");
+      exige(!(await m.isVisible("#mv-compu")), "al dueño le sale «Mozari se usa en computadora» en lugar de su panel");
+      exige(/usuarios/.test(await m.textContent(".movil .cuentas-conteo")) && (await m.$$(".movil #cuentas tbody tr")).length >= 2, "el panel del celular no trae las cuentas");
+      await ver("cuentas");
+      if (process.env.CAPTURAS) { await m.$eval(".movil #cuentas table", (e) => e.scrollIntoView({ block: "start" })); await m.waitForTimeout(300); await m.screenshot({ path: path.join(process.env.CAPTURAS, "movil-cuentas-lista.png") }); }
+      let a0 = await ancho(); exige(!a0.peor && !a0.scroll, "en el celular algo de las cuentas se sale de la pantalla: " + JSON.stringify(a0));
+      for (const t of ["reportes", "links", "laboratorio", "novedades"]) {
+        await m.click('.movil [data-dueno="' + t + '"]'); await m.waitForTimeout(1500); await ver(t);
+        const a1 = await ancho(); exige(!a1.peor && !a1.scroll, "en el celular algo de «" + t + "» se sale de la pantalla: " + JSON.stringify(a1));
+      }
+      await m.click('.movil [data-dueno="reportes"]'); await m.waitForTimeout(1200);
+      exige(await m.isVisible('.movil [data-dueno="reportes"].primario') && ((await m.$$(".movil .rep-item")).length > 0) === ((await m.evaluate(() => fetch("api/admin/reportes").then((r) => r.json()))).reportes.length > 0), "en el celular no se ven los reportes");
+      exige(!m.errs.length, "errores en el celular: " + m.errs.join(" | ").slice(0, 200));
+      await m.context().close();
+      // Un usuario normal en el celular sigue viendo «se usa en computadora» y nada del panel
+      const u = await pagina("cel-" + Date.now() + "@prueba.mx", Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
+      exige(await u.isVisible("#mv-compu") && !(await u.$(".movil #cuentas")), "a un usuario normal en el celular le salió el panel de dueño");
+      await u.context().close();
+    });
     // Cupo de cuentas (beta): al llenarse, una cuenta nueva queda en lista de espera; quien compra entra siempre
     await paso("Cupo de cuentas: lleno manda a lista de espera, quien compra entra, y el dueño lo cambia en el Panel", async () => {
       const dn = await pagina(DUENO), api = (ruta, op) => dn.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
@@ -1629,6 +1659,63 @@ async function capasPesadas(p) {
       exige(pub && est(pub).apartado === "Reservado", "el tour publicado no trae «Reservado»: " + JSON.stringify(pub && pub.lotesEstados));
       exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
       await n.context().close();
+    });
+    // Pasó con Alexis en Firefox (nov 2026): subió su esfera y no la veía. Si el navegador entrega en negro la imagen que
+    // dibuja la tarjeta de video, Mozari la lee pixel por pixel. Aquí se imita ese navegador y la esfera debe verse igual.
+    await paso("Esfera subida en un navegador que entrega el WebGL en negro (Firefox): se ve igual que en Chrome", async () => {
+      const color = (pg, id) => pg.evaluate(async (id) => {
+        const d = await fetch("api/tours/" + id).then((r) => r.json()), esc = d.escenas[0].id, base = "t/" + id + "/escenas/" + esc + "/";
+        const e = await fetch(base + "escena.json").then((r) => r.json()), L = e.niveles.length - 1;
+        const out = {};
+        for (const [k, ruta] of [["pieza", L + "/f/0/0.jpg"], ["vista", "preview.jpg"]]) {
+          const b = await createImageBitmap(await fetch(base + ruta).then((r) => r.blob())), c = new OffscreenCanvas(32, 32), x = c.getContext("2d");
+          x.drawImage(b, 0, 0, 32, 32); const px = x.getImageData(0, 0, 32, 32).data; let n = 0; for (let i = 0; i < px.length; i += 4) n += (px[i] + px[i + 1] + px[i + 2]) / 3;
+          out[k] = Math.round(n / (32 * 32));
+        }
+        return out;
+      }, id);
+      const normal = await color(a, tour);
+      const u = await pagina("firefox-" + Date.now() + "@prueba.mx");
+      await u.addInitScript(() => {
+        // Como el Firefox de Alexis: lo que sale del WebGL llega vacío
+        const ctx = OffscreenCanvas.prototype.getContext, pasa = OffscreenCanvas.prototype.transferToImageBitmap, gl = new WeakSet();
+        OffscreenCanvas.prototype.getContext = function (t, o) { const c = ctx.call(this, t, o); if (/webgl/.test(t)) gl.add(this); return c; };
+        OffscreenCanvas.prototype.transferToImageBitmap = function () { const b = pasa.call(this); if (!gl.has(this)) return b; const w = b.width, h = b.height; b.close(); const v = new OffscreenCanvas(w, h); v.getContext("2d"); return v.transferToImageBitmap(); };
+      });
+      await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u); await cerrarGuia(u);
+      try { await nuevoTour(u, "Firefox"); }
+      catch (e) { throw new Error(e.message + " · " + (await u.textContent("#subir-zona").catch(() => "")).replace(/\s+/g, " ").slice(0, 160) + " · " + u.errs.join(" | ").slice(0, 300)); }
+      const raro = await color(u, await idTour(u));
+      console.log("    brillo de la esfera · normal: " + JSON.stringify(normal) + " · navegador con WebGL en negro: " + JSON.stringify(raro));
+      exige(normal.pieza > 60 && normal.vista > 60, "la esfera normal salió oscura: " + JSON.stringify(normal));
+      exige(raro.pieza > 60 && raro.vista > 60, "con el WebGL en negro la esfera se subió negra: " + JSON.stringify(raro));
+      exige(Math.abs(raro.pieza - normal.pieza) <= 6 && Math.abs(raro.vista - normal.vista) <= 6, "la esfera leída pixel por pixel no salió igual (¿al revés?): " + JSON.stringify({ normal, raro }));
+      exige(!u.errs.length, "errores en el estudio: " + u.errs.join(" | ").slice(0, 200));
+      await u.context().close();
+    });
+    // Pasó con Diego (nov 2026): compró Pro para quitarle la marca a un tour con 36 lotes, pero los lotes son de
+    // Desarrollos. Al pagar, si su tour tiene lotes, se le dice claro y se le sugiere Desarrollos.
+    await paso("Al comprar con un tour con lotes: sugiere Desarrollos y avisa que con Pro sigue la marca", async () => {
+      const u = await pagina("pago-" + Date.now() + "@prueba.mx"); await nuevoTour(u, "Con lotes");
+      const id = await idTour(u), d = await u.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      const esc = d.proyecto.escenaInicial || d.escenas[0].id, v = d.escenas.find((e) => e.id === esc).vista || {}, y = v.yaw || 0, p = (v.pitch || 0) + 0.25;
+      d.capas[esc] = (d.capas[esc] || []).concat([{ id: "lote-1", tipo: "poligono", nombre: "Lote", visible: true, puntos: [[y - 0.1, p], [y, p], [y, p + 0.08], [y - 0.1, p + 0.08]],
+        relleno: { color: "#D5FF40", opacidad: 0.35 }, trazo: { color: "#D5FF40", grosor: 1.5, opacidad: 1 }, lote: { numero: "1", manzana: "A", area: "100", precio: "", lados: [], frente: 0, estado: "disponible" } }]);
+      exige((await u.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [id, d])) === 200, "no se pudo poner el lote de prueba");
+      await u.goto(ESTUDIO + "/#t=" + id); await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u); await cerrarGuia(u);
+      // Desde «Ver licencias» (pide Pro): como el tour tiene lotes, abre con Desarrollos elegido
+      await u.evaluate(() => { const b = document.querySelector('[data-comprar="pro"]'); if (b) b.click(); });
+      await u.waitForTimeout(800);
+      exige(await u.isVisible("#dlg-pago"), "no se abrió la ventana de pago");
+      exige(await u.$('[data-dp-plan="desarrollos"][aria-pressed="true"]'), "con un tour con lotes no sugirió Desarrollos");
+      exige(/tours sin lotes/.test(await u.textContent('[data-dp-plan="pro"]')), "la tarjeta de Pro no dice que es para tours sin lotes");
+      exige(!(await u.isVisible("#dp-aviso-lotes")), "el aviso de lotes salió con Desarrollos elegido");
+      await u.click('[data-dp-plan="pro"]'); await u.waitForTimeout(400);
+      exige(await u.isVisible("#dp-aviso-lotes") && /sigue publicando con marca/.test(await u.textContent("#dp-aviso-lotes")), "al elegir Pro con un tour con lotes no avisó que sigue la marca");
+      if (process.env.CAPTURAS) await u.screenshot({ path: path.join(process.env.CAPTURAS, "pago-lotes.png") });
+      await u.click("[data-dp-cerrar]"); await u.waitForTimeout(300);
+      exige(!u.errs.length, "errores en el estudio: " + u.errs.join(" | ").slice(0, 200));
+      await u.context().close();
     });
     // Pedido de Icaro (nov 2026): además de cambiarles el nombre, agregar más estados. Nace en el Laboratorio.
     await paso("Más estados de lote: «+ Estado» agrega uno propio, se usa en un lote, sale en el tour y se quita sin perder lotes", async () => {

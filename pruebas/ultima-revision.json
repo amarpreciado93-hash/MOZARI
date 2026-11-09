@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-07T03:55:05.080Z",
- "bien": 61,
- "total": 61,
+ "fecha": "2026-11-08T21:04:54.364Z",
+ "bien": 64,
+ "total": 64,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -152,6 +152,10 @@
    "ok": true
   },
   {
+   "nombre": "Panel de dueño en el celular: se lee sin salirse de la pantalla",
+   "ok": true
+  },
+  {
    "nombre": "Cupo de cuentas: lleno manda a lista de espera, quien compra entra, y el dueño lo cambia en el Panel",
    "ok": true
   },
@@ -225,6 +229,14 @@
   },
   {
    "nombre": "Estados de los lotes con el nombre de cada país: «Apartado» se cambia a «Reservado» y sale en el tour",
+   "ok": true
+  },
+  {
+   "nombre": "Esfera subida en un navegador que entrega el WebGL en negro (Firefox): se ve igual que en Chrome",
+   "ok": true
+  },
+  {
+   "nombre": "Al comprar con un tour con lotes: sugiere Desarrollos y avisa que con Pro sigue la marca",
    "ok": true
   },
   {

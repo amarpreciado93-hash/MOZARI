@@ -180,6 +180,7 @@
   .dp-metodo button:disabled { opacity: 0.4; cursor: not-allowed; }
   .dp-pagar { width: 100%; padding: 12px 18px; font-size: 14px; }
   .dp-nota { font-size: 12px !important; text-align: center; }
+  .dp-aviso { margin: 0; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(242, 169, 0, 0.55); background: rgba(242, 169, 0, 0.1); color: var(--mz-texto); font-size: 13px; line-height: 1.45; }
   .dp-cupon { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; font-size: 12px; color: var(--mz-tenue); }
   .dp-cupon input { flex: 1; min-width: 140px; text-transform: uppercase; font: 500 13px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 10px; padding: 8px 10px; }
   .dp-cupon.ok { justify-content: space-between; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--mz-lima); color: var(--mz-texto); }
@@ -1543,6 +1544,35 @@
     .movil .tarjeta[hidden] { display: none; }
     .movil .mv-fila { display: flex; gap: 8px; flex-wrap: wrap; }
     .movil .mv-fila > * { flex: 1; }
+    /* Panel de dueño en el celular (Amar sin su compu, nov 2026): las tablas se vuelven tarjetas */
+    .movil > * { min-width: 0; }
+    .movil .cuentas { margin: 0; overflow: hidden; }
+    .movil .cuentas-titulo { padding: 12px; }
+    .movil .rep-tabs { overflow-x: auto; flex-wrap: nowrap; padding: 10px 12px 4px; scrollbar-width: none; }
+    .movil .rep-tabs::-webkit-scrollbar { display: none; }
+    .movil .rep-tabs button { flex: none; white-space: nowrap; }
+    .movil .cuentas-conteo { margin: 10px 12px 2px; gap: 6px; }
+    .movil .cuentas-conteo span { flex: 1 1 calc(33% - 6px); min-width: 0; padding: 7px 9px; }
+    .movil .cuentas-conteo b { font-size: 18px; }
+    .movil .paises-conteo span { flex: 0 1 auto; }
+    .movil .cupo-fila { margin: 10px 12px 0; }
+    .movil .cupo-fila input { width: 80px; }
+    .movil .cuentas-total { margin: 8px 12px 10px; }
+    .movil .cuentas table, .movil .cuentas tbody, .movil .cuentas td { display: block; }
+    .movil .cuentas thead { display: none; }
+    .movil .cuentas tbody tr { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 5px 10px; padding: 12px; border-top: 1px solid var(--mz-linea-neutra); }
+    .movil .cuentas td { padding: 0; border: 0; min-width: 0; overflow-wrap: anywhere; font-size: 13px; box-shadow: none !important; }
+    .movil .cuentas td:first-child { grid-column: 1; grid-row: 1; color: var(--mz-tenue); }
+    .movil .cuentas td:nth-child(2) { grid-row: 1; }
+    .movil .cuentas td:nth-child(n + 2) { grid-column: 2; }
+    .movil .cuentas td:empty { display: none; }
+    .movil .cuentas td[data-l]::before { content: attr(data-l) " · "; color: var(--mz-tenue); }
+    .movil .cuentas tbody tr.plan-pro { box-shadow: inset 3px 0 0 #6DB4FF; }
+    .movil .cuentas tbody tr.plan-desarrollos { box-shadow: inset 3px 0 0 #F5BE4E; }
+    .movil .cuentas tbody tr.dueno { box-shadow: inset 3px 0 0 var(--mz-lima); }
+    .movil .rep-item { padding: 12px; }
+    .movil .rep-item img { max-width: 100%; }
+    .movil .nov-form { grid-template-columns: 1fr; }
   }
   @media (prefers-reduced-motion: reduce) {
     .splash-centro, .splash-credito { animation: none; }
@@ -3632,7 +3662,7 @@
     caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p>' + TABS_DUENO(0) + resumen + '<p class="cuentas-total">' + totalPagos(cuentas) + '</p><table class="lotes-tabla"><thead><tr><th>#</th><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Pagó</th><th>Última entrada</th><th></th></tr></thead><tbody>' + cuentas.map((c) =>
       '<tr class="' + (c.admin ? "dueno" : "plan-" + (c.plan || "gratis")) + (c.pausada ? " pausada" : "") + (c.creado && new Date(c.creado).toDateString() === hoy ? " nueva" : "") + '"><td class="cuenta-n">' + c.n + "</td><td><b>" + esc(c.nombre || "") + "</b>" + (c.creado ? '<small class="cuenta-alta">desde ' + new Date(c.creado).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) + "</small>" : "") +
         (c.pais || c.ciudad ? '<small class="cuenta-pais" title="' + esc(nombrePais(c.pais)) + '">' + (c.pais ? '<span class="bandera">' + bandera(c.pais) + "</span>" : "") + esc([c.ciudad, c.pais ? nombrePais(c.pais) : ""].filter(Boolean).join(", ")) + "</small>" : "") + "</td><td>" + esc(c.email) + "</td><td>" + (c.admin ? '<span class="plan-dueno">Dueño</span>' : '<select class="plan-' + esc(c.plan || "gratis") + '" data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
-      "</td><td>" + (c.admin ? "" : pagoDe(c)) + "</td><td>" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td><td>" + (c.admin ? "" : '<button class="mini' + (c.pausada ? " primario" : "") + '" data-pausar="' + esc(c.uid) + '" data-v="' + (c.pausada ? "0" : "1") + '">' + (c.pausada ? "Reactivar" : "Pausar") + "</button>") + "</td></tr>").join("") + "</tbody></table>";
+      "</td><td data-l=\"Pagó\">" + (c.admin ? "" : pagoDe(c)) + "</td><td data-l=\"Entró\">" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td><td>" + (c.admin ? "" : '<button class="mini' + (c.pausada ? " primario" : "") + '" data-pausar="' + esc(c.uid) + '" data-v="' + (c.pausada ? "0" : "1") + '">' + (c.pausada ? "Reactivar" : "Pausar") + "</button>") + "</td></tr>").join("") + "</tbody></table>";
   }
   document.addEventListener("click", async (ev) => {
     if (ev.target.id === "cupo-espera") { const l = $("cupo-lista"); if (l) l.hidden = !l.hidden; return; }
@@ -3668,8 +3698,8 @@
   const enUSD = () => pago.metodo === "paypal";
   const tablaPago = () => (enUSD() ? COBRO_USD : COBRO);
   const QUE_INCLUYE = {
-    pro: ["Tours y esferas sin límite", "Hosting incluido: 10 GB", "Sin la marca de Mozari"],
-    desarrollos: ["Todo lo de Pro", "Hosting incluido: 50 GB", "Lotificación: manzanas, lotes, terreno y masterplan"],
+    pro: ["Tours y esferas sin límite", "Hosting incluido: 10 GB", "Sin la marca de Mozari en tours sin lotes"],
+    desarrollos: ["Todo lo de Pro", "Hosting incluido: 50 GB", "Lotificación sin marca: manzanas, lotes, terreno y masterplan"],
   };
   const yaPro = () => PLAN && PLAN.id === "pro" && !PLAN.vence;
   const precioHoy = (id) => { const t = tablaPago(); return id === "desarrollos" && yaPro() ? t.desarrollos - t.pro : t[id]; };
@@ -3719,6 +3749,8 @@
         '<button class="dp-plan" data-dp-plan="' + id + '" aria-pressed="' + (pago.plan === id) + '"><b>' + PLANES_TXT[id] + "</b>" +
         '<span class="dp-precio">' + etiquetaPrecio(id) + " <small>" + (regalo() && cuponPago.planes.includes(id) ? "con tu link" : id === "desarrollos" && yaPro() ? "pagas la diferencia" : "pago único") + "</small></span>" +
         "<ul>" + QUE_INCLUYE[id].map((x) => "<li>" + x + "</li>").join("") + "</ul></button>").join("") + "</div>" +
+      // Pasó con Diego (nov 2026): compró Pro para quitar la marca a un tour con lotes, y los lotes son de Desarrollos
+      (pago.plan === "pro" && tieneLotes() ? '<p class="dp-aviso" id="dp-aviso-lotes"><b>Este tour tiene lotes.</b> Con Pro se sigue publicando con marca de agua; para quitarla elige Desarrollos.</p>' : "") +
       (regalo() && cuponPago.planes.includes(pago.plan) ? "" : elegirMetodo()) + bloqueCupon() + botonPagar() +
       '<p class="dp-nota">' + (regalo() && cuponPago.planes.includes(pago.plan) ? "Este link es de un solo uso: la licencia queda en tu cuenta para siempre." : notaPago()) + "</p>";
   }
@@ -3730,6 +3762,7 @@
   function abrirPago(plan) {
     if (MODO !== "nube") { window.open(ESCAPARATE, "_blank", "noopener"); return; }
     if (COBRO[plan] !== undefined) pago.plan = plan;
+    if (pago.plan === "pro" && tieneLotes() && !yaPro()) pago.plan = "desarrollos"; // su tour tiene lotes: lo que le quita la marca es Desarrollos
     pintarPago(); $("dlg-pago").showModal();
     if (pago.cupon && !cuponPago) aplicarCupon(pago.cupon);
     // Según su país: fuera de México se sugiere PayPal en dólares (el cliente puede cambiarlo)
@@ -3786,6 +3819,14 @@
     mp.hidden = false;
     if (!TOUR) $("mv-tour").hidden = true;
     $("mv-compu").hidden = false;
+    // Amar sin su compu (nov 2026): en el celular el dueño tiene su Panel completo (cuentas, reportes, links…)
+    if (NUBE.admin && matchMedia("(max-width: 960px)").matches) {
+      const dn = document.createElement("section");
+      dn.className = "mv-dueno"; dn.innerHTML = '<div class="cuentas" id="cuentas"></div>';
+      document.querySelector(".movil .logo-m").after(dn);
+      $("mv-compu").hidden = true;
+      pintarCuentas();
+    }
     // Desde el cel: se manda el link para abrirlo en la compu (WhatsApp, correo…) o se copia
     $("mv-link").addEventListener("click", async () => {
       const link = location.origin + "/";
@@ -5315,14 +5356,41 @@ void main(){
   }
   function proyectar(P, lado, modo, cara, tile) {
     const { gl, U, cv } = P;
-    if (cv.width !== lado) { cv.width = lado; cv.height = lado; }
-    gl.viewport(0, 0, lado, lado);
-    gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.uniform1i(U.uModo, modo); gl.uniform1i(U.uCara, cara || 0); gl.uniform1i(U.uTex, 0);
-    gl.uniform4fv(U.uTile, tile || [0, 0, 1, 1]);
-    gl.activeTexture(gl.TEXTURE0);
-    P.piezas.forEach((p) => { gl.bindTexture(gl.TEXTURE_2D, p.tex); gl.uniform4fv(U.uPropio, p.propio); gl.uniform4fv(U.uPad, p.pad); gl.drawArrays(gl.TRIANGLES, 0, 3); });
-    return cv.transferToImageBitmap();
+    const dibujar = () => {
+      if (cv.width !== lado) { cv.width = lado; cv.height = lado; }
+      gl.viewport(0, 0, lado, lado);
+      gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.uniform1i(U.uModo, modo); gl.uniform1i(U.uCara, cara || 0); gl.uniform1i(U.uTex, 0);
+      gl.uniform4fv(U.uTile, tile || [0, 0, 1, 1]);
+      gl.activeTexture(gl.TEXTURE0);
+      P.piezas.forEach((p) => { gl.bindTexture(gl.TEXTURE_2D, p.tex); gl.uniform4fv(U.uPropio, p.propio); gl.uniform4fv(U.uPad, p.pad); gl.drawArrays(gl.TRIANGLES, 0, 3); });
+    };
+    dibujar();
+    if (P.leer) return leerPixeles(P, lado);
+    if (P.leer === false) return cv.transferToImageBitmap();
+    // Primera pieza con algo dibujado: se revisa que la imagen salga igual que lo que pintó la tarjeta de video.
+    // Pasó con Alexis en Firefox (nov 2026): la esfera se veía en negro. Si sale vacía, se lee pixel por pixel.
+    const k = Math.min(8, lado), x0 = Math.floor((lado - k) / 2), gpu = new Uint8Array(k * k * 4);
+    gl.readPixels(x0, x0, k, k, gl.RGBA, gl.UNSIGNED_BYTE, gpu);
+    const bm = cv.transferToImageBitmap(), t = new OffscreenCanvas(k, k).getContext("2d");
+    t.drawImage(bm, x0, lado - x0 - k, k, k, 0, 0, k, k);
+    const suma = (d) => { let n = 0; for (let i = 0; i < d.length; i += 4) n += d[i] + d[i + 1] + d[i + 2]; return n; };
+    const sGpu = suma(gpu), sImg = suma(t.getImageData(0, 0, k, k).data);
+    if (sGpu < 30 * k * k) return bm; // el centro es casi negro (cielo de noche, piso oscuro): se decide en otra pieza
+    P.leer = sImg < sGpu * 0.25;
+    if (!P.leer) return bm;
+    bm.close(); dibujar();
+    return leerPixeles(P, lado);
+  }
+  // Plan B: copia lo que dibujó la tarjeta de video (de abajo hacia arriba) a una imagen normal
+  function leerPixeles(P, lado) {
+    const { gl } = P, fila = lado * 4, px = new Uint8Array(lado * fila);
+    gl.readPixels(0, 0, lado, lado, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    const img = new ImageData(lado, lado);
+    for (let y = 0; y < lado; y++) img.data.set(px.subarray((lado - 1 - y) * fila, (lado - y) * fila), y * fila);
+    if (!P.c2 || P.c2.width !== lado) { P.c2 = new OffscreenCanvas(lado, lado); P.x2 = P.c2.getContext("2d"); }
+    P.x2.putImageData(img, 0, 0);
+    return P.c2.transferToImageBitmap();
   }
   async function aJpg(img, lado) {
     const c = new OffscreenCanvas(lado, lado), x = c.getContext("2d");
