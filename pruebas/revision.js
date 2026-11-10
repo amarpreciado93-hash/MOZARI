@@ -1898,6 +1898,74 @@ async function capasPesadas(p) {
       exige(!(await u.isVisible("#agregar-abrir")) && !(await u.isVisible("#props-todo")) && !(await u.$("#props > .grupo.acor")) && await u.isVisible("#add-lote"), "una cuenta normal ya ve la edición limpia (debe nacer en el Laboratorio)");
       await u.context().close();
     });
+    // Pedido de Amar (nov 2026): correo de bienvenida a cada cuenta nueva y las actualizaciones también por correo,
+    // solo a quien quiera recibirlas (link para darse de baja). Cloudflare Email Service; aquí el envío es simulado
+    // y wrangler deja cada correo en su registro (De, Para, Asunto y el archivo con el HTML).
+    await paso("Correos: bienvenida (se prende en el panel), novedad por correo una vez y link para darse de baja", async () => {
+      const LOG = path.join(DATOS, "worker-estudio.log"), registro = () => fs.readFileSync(LOG, "utf8");
+      const correosA = (para) => registro().split("send_email binding called").slice(1).filter((b) => b.includes("To: " + para));
+      const htmlDe = (bloque) => { const m = bloque.match(/HTML: (\S+\.html)/); return m ? fs.readFileSync(m[1], "utf8") : ""; };
+      const n = await pagina(DUENO);
+      const api = (url, op) => n.evaluate(([u, o]) => fetch(u, o).then(async (r) => ({ s: r.status, d: await r.json().catch(() => ({})) })), [url, op || {}]);
+      const ini = await api("api/admin/correos");
+      exige(ini.s === 200 && ini.d.activo && ini.d.conf.bienvenida === false, "los correos no están listos o la bienvenida no nace apagada: " + JSON.stringify(ini.d));
+      // Apagada: una cuenta nueva no recibe nada
+      const c1 = "sin-bienvenida-" + Date.now() + "@prueba.mx";
+      await (await pagina(c1)).context().close();
+      exige(correosA(c1).length === 0, "con la bienvenida apagada igual se mandó");
+      // Se prende desde el panel de dueño → Actualizaciones
+      await n.click('#nav button:has-text("Mis Tours")'); await n.waitForTimeout(800); await pasarGuias(n);
+      await n.click("#ver-cuentas"); await n.waitForTimeout(1200);
+      await n.click('[data-dueno="novedades"]'); await n.waitForTimeout(1200);
+      exige(await n.isVisible(".cor-caja") && /de 3,000 incluidos/.test(await n.textContent(".cor-caja")), "no se ve la caja de correos con lo que va del mes");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "correos-panel.png") });
+      await n.click("[data-cor-bienvenida]"); await n.waitForTimeout(800);
+      exige((await api("api/admin/correos")).d.conf.bienvenida === true, "el interruptor no prendió la bienvenida");
+      const c2 = "bienvenida-" + Date.now() + "@prueba.mx";
+      const u2 = await pagina(c2); await u2.context().close();
+      const b2 = correosA(c2);
+      exige(b2.length === 1 && /From: "Mozari" <hola@mozari\.app>/.test(b2[0]) && /Subject: .*bienvenido a Mozari/.test(b2[0]), "a la cuenta nueva no le llegó la bienvenida de hola@mozari.app: " + (b2[0] || "").slice(0, 200));
+      const h2 = htmlDe(b2[0]);
+      exige(/Tu primer tour, en 3 pasos/.test(h2) && /cuenta de prueba/.test(h2) && !/gratis/i.test(h2), "el correo de bienvenida no trae su contenido (o dice «gratis»)");
+      await (await pagina(c2)).context().close();
+      exige(correosA(c2).length === 1, "al volver a entrar le llegó otra bienvenida");
+      // Prueba al dueño
+      await n.click("[data-cor-prueba]"); await n.waitForTimeout(1500);
+      exige(correosA(DUENO).some((b) => /Subject: \[Prueba\]/.test(b)), "«Mandarme la bienvenida» no le llegó al dueño");
+      // Una actualización publicada, por correo: a quien la recibe, una sola vez y con su link de baja
+      const nv = (await api("api/admin/novedades", { method: "POST" })).d.novedad;
+      await api("api/admin/novedades/" + nv.id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ titulo: "Lotes desde un KMZ", texto: "Sube el KMZ de Google Earth\nMozari lee número, manzana y superficie", activa: true }) });
+      const cuantos = (await api("api/admin/novedades/" + nv.id + "/correo")).d.cuantos;
+      exige(cuantos >= 3, "no cuenta a quién le llega la novedad: " + cuantos);
+      await n.click('[data-dueno="novedades"]'); await n.waitForTimeout(900);
+      await n.click('[data-nf-editar="' + nv.id + '"]'); await n.waitForTimeout(900);
+      await n.click("[data-nf-correo]"); await n.waitForTimeout(4000); // confirma solo (las pruebas aceptan los avisos)
+      const env = (await api("api/admin/novedades/" + nv.id + "/correo")).d.correo;
+      exige(env && env.total === cuantos && env.enviados === Math.min(cuantos, 40) && env.faltan === cuantos - env.enviados, "la novedad no se mandó por correo (o no por tandas): " + JSON.stringify(env));
+      exige((await api("api/admin/novedades/" + nv.id + "/correo", { method: "POST" })).s === 409, "se pudo mandar dos veces la misma novedad");
+      const nc = correosA(c2).find((b) => /Subject: Mozari · Lotes desde un KMZ/.test(b));
+      if (cuantos <= 40) exige(nc, "la novedad no le llegó a la cuenta nueva");
+      if (nc) {
+        const hn = htmlDe(nc), baja = (hn.match(/href="([^"]*\/baja\?t=[^"]+)"/) || [])[1];
+        exige(/Sube el KMZ de Google Earth/.test(hn) && baja, "el correo de la novedad no trae su texto o el link para darse de baja");
+        // Darse de baja (sin sesión, desde el link del correo)
+        const x = await pagina(null); await x.goto(baja.replace(/&amp;/g, "&")); await x.waitForTimeout(600);
+        exige(/¿Ya no quieres recibir novedades\?/.test(await x.textContent("body")), "el link de baja no pregunta");
+        await x.click("button"); await x.waitForTimeout(800);
+        exige(/ya no te llegarán novedades/.test(await x.textContent("body")), "no se dio de baja");
+        exige((await api("api/admin/novedades/" + nv.id + "/correo")).d.cuantos === cuantos - 1, "después de darse de baja sigue en la lista");
+        await x.click("button"); await x.waitForTimeout(800);
+        exige(/te volverán a llegar/.test(await x.textContent("body")) && (await api("api/admin/novedades/" + nv.id + "/correo")).d.cuantos === cuantos, "no pudo volver a recibirlas");
+        await x.goto(ESTUDIO + "/baja?t=falso.123"); exige(/ya no sirve/.test(await x.textContent("body")), "un link falso no se rechaza");
+        await x.context().close();
+      }
+      exige((await api("api/admin/correos")).d.mes >= 3, "no se cuentan los correos del mes");
+      // Se queda apagada para lo demás de la revisión
+      await api("api/admin/correos", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ bienvenida: false }) });
+      await api("api/admin/novedades/" + nv.id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ activa: false }) });
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+    });
     // Pedido de Amar (nov 2026): los desarrollos suelen tener sus lotes en Google Earth (KMZ). Nace en el Laboratorio.
     await paso("Lotes desde un KMZ: dibuja el plano, lee número, manzana y superficie, y los coloca con 4 esquinas con su medida real", async () => {
       // Un KMZ de prueba como el de Google Earth: 2 manzanas de 6 lotes de 10 × 20 m, una calle, y el perímetro

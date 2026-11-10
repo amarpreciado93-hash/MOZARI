@@ -155,6 +155,15 @@
   .nov-form label { display: grid; gap: 5px; font-size: 12px; color: var(--mz-tenue); }
   .nov-form .ancho { grid-column: 1 / -1; }
   .nov-form textarea { resize: vertical; font: inherit; }
+  /* Correos a los usuarios (bienvenida y novedades) */
+  .cor-caja { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 13px; }
+  .cor-caja > div { flex: 1 1 240px; display: grid; gap: 3px; }
+  .cor-caja small, .cor-estado { color: var(--mz-tenue); font-size: 12px; }
+  .cor-caja .interruptor { gap: 10px; }
+  .cor-caja .interruptor b { text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--mz-texto); }
+  .cor-medidor { height: 4px; border-radius: 4px; background: var(--mz-linea-neutra); overflow: hidden; margin-top: 4px; }
+  .cor-medidor i { display: block; height: 100%; background: var(--mz-lima); }
+  .cor-estado b { color: var(--mz-lima); font-weight: 600; }
   .nov-form .nov-prev { max-width: 260px; max-height: 150px; border-radius: 10px; }
   .dlg-pago .dp-cuerpo { padding: 22px; display: grid; gap: 16px; }
   .dlg-pago h2 { margin: 0; font-size: 20px; font-weight: 600; }
@@ -3551,6 +3560,7 @@
     const r = await fetch("api/admin/novedades", { cache: "no-store" }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudieron leer las novedades"); return; }
     const { novedades: lista } = await r.json(), caja = $("cuentas"), n = novEdit && lista.find((x) => x.id === novEdit);
+    const cor = await fetch("api/admin/correos", { cache: "no-store" }).then((x) => (x.ok ? x.json() : null)).catch(() => null) || { conf: {}, activo: false, mes: 0, topeMes: 2800 };
     const PUB = { todos: "Todos", pagados: "Solo Pro y Desarrollos", gratis: "Solo Gratis" };
     let h = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) + '<div class="nov-admin">';
     if (n) {
@@ -3569,15 +3579,59 @@
         '<div class="ancho orden"><button class="btn-sec" data-nf-volver>← Todas</button><button class="btn-sec" data-nf-previa>Ver como usuario</button>' +
           (n.activa ? '<button class="btn-sec" data-nf-activa="0">Despublicar</button>' : '<button class="btn-prim" data-nf-activa="1">Publicar</button>') +
           '<button class="mini peligro-lleno" data-nf-borrar>Borrar</button></div>' +
-        '<p class="nota ancho">' + (n.activa ? "Publicada el " + fechaCorta(n.publicada) + " · la han visto " + (+n.vistas || 0) + " cuentas. Cada quien la ve una sola vez." : "Borrador: nadie la ve hasta que la publiques. Los cambios se guardan solos.") + "</p></div>";
+        '<p class="nota ancho">' + (n.activa ? "Publicada el " + fechaCorta(n.publicada) + " · la han visto " + (+n.vistas || 0) + " cuentas. Cada quien la ve una sola vez." : "Borrador: nadie la ve hasta que la publiques. Los cambios se guardan solos.") + "</p>" +
+        // Por correo: una sola vez, después de publicarla
+        '<div class="ancho cor-caja"><div><b>Por correo</b><small>' + (n.correo ? estadoCorreo(n.correo) : n.activa ? "Les llega a quienes reciben novedades, con un link para darse de baja. Se manda una sola vez." : "Publícala primero; luego la puedes mandar por correo.") + "</small></div>" +
+          '<button class="btn-sec" data-nf-correo-prueba>Mandarme una prueba</button>' + (n.activa && !n.correo && cor.activo ? '<button class="btn-prim" data-nf-correo>Mandar por correo</button>' : "") + "</div></div>";
     } else {
-      h += '<div class="orden"><button class="btn-prim" data-nf-nueva>Nueva actualización</button></div>' +
-        (lista.length ? lista.map((x) => '<div class="nov-fila"><div><b>' + esc(x.titulo) + '</b><small>' + (x.activa ? "Publicada el " + fechaCorta(x.publicada) + " · vista por " + (+x.vistas || 0) + " · " + PUB[x.publico] : "Borrador") + "</small></div>" +
+      h += cajaCorreos(cor) +
+        '<div class="orden"><button class="btn-prim" data-nf-nueva>Nueva actualización</button></div>' +
+        (lista.length ? lista.map((x) => '<div class="nov-fila"><div><b>' + esc(x.titulo) + '</b><small>' + (x.activa ? "Publicada el " + fechaCorta(x.publicada) + " · vista por " + (+x.vistas || 0) + " · " + PUB[x.publico] : "Borrador") + "</small>" + (x.correo ? '<small class="cor-estado">' + estadoCorreo(x.correo) + "</small>" : "") + "</div>" +
           '<span class="nov-estado' + (x.activa ? " si" : "") + '">' + (x.activa ? "Publicada" : "Borrador") + '</span><button class="mini" data-nf-editar="' + x.id + '">Editar</button></div>').join("") :
           '<p class="nota">Aún no hay actualizaciones. Cuando lances una herramienta, anúnciala aquí: cada usuario la verá una vez al entrar.</p>');
     }
     caja.innerHTML = h + "</div>";
   }
+  // Correos: prender la bienvenida, cuántos van este mes (el plan incluye 3,000; Mozari para en 2,800) y pruebas al dueño
+  const miles = (x) => Number(x || 0).toLocaleString("es-MX");
+  function cajaCorreos(cor) {
+    return '<div class="cor-caja"><div><b>Correos a tus usuarios</b><small>' + (cor.activo ? "Este mes van " + miles(cor.mes) + " de 3,000 incluidos en tu plan. Mozari se detiene en " + miles(cor.topeMes) + ", sin cobros extra." : "El envío se activa cuando subas esta versión.") + "</small>" +
+      '<div class="cor-medidor"><i style="width:' + Math.min(100, (cor.mes / 3000) * 100).toFixed(1) + '%"></i></div></div>' +
+      '<label class="interruptor"><b>Bienvenida a cuentas nuevas</b><input type="checkbox" class="toggle" data-cor-bienvenida' + (cor.conf.bienvenida ? " checked" : "") + (cor.activo ? "" : " disabled") + "></label>" +
+      '<button class="btn-sec" data-cor-prueba' + (cor.activo ? "" : " disabled") + ">Mandarme la bienvenida</button></div>";
+  }
+  const estadoCorreo = (c) => c.faltan ? "Por correo: <b>" + miles(c.enviados) + " de " + miles(c.total) + "</b> enviados; los demás salen cada hora." : "Por correo: <b>enviada a " + miles(c.enviados) + "</b>" + (c.fallas ? " (" + c.fallas + " no se pudieron)" : "") + " · " + fechaCorta(c.fin || c.inicio);
+  async function correoPrueba(datos) {
+    avisar("Mandando…");
+    const r = await fetch("api/admin/correos/prueba", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(datos || {}) }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    avisar(r && r.ok ? "Te la mandé a " + d.para + ". Revisa tu correo (y la carpeta de spam la primera vez)." : d.error || "No se pudo mandar");
+  }
+  document.addEventListener("change", async (ev) => {
+    if (!ev.target.matches || !ev.target.matches("[data-cor-bienvenida]")) return;
+    const si = ev.target.checked;
+    const r = await fetch("api/admin/correos", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ bienvenida: si }) }).catch(() => null);
+    if (!r || !r.ok) { ev.target.checked = !si; avisar("No se pudo guardar"); return; }
+    avisar(si ? "Listo: cada cuenta nueva recibirá la bienvenida" : "Bienvenida apagada");
+  });
+  document.addEventListener("click", async (ev) => {
+    if (ev.target.closest("[data-cor-prueba]")) { correoPrueba(); return; }
+    const f = ev.target.closest("[data-nov-id]"); if (!f) return;
+    if (ev.target.closest("[data-nf-correo-prueba]")) { await guardarPend(); correoPrueba({ novedad: f.dataset.novId }); return; }
+    const b = ev.target.closest("[data-nf-correo]"); if (!b) return;
+    await guardarPend();
+    const r = await fetch("api/admin/novedades/" + f.dataset.novId + "/correo", { cache: "no-store" }).catch(() => null);
+    if (!r || !r.ok) { avisar("No se pudo contar a quién le llega"); return; }
+    const { cuantos } = await r.json();
+    if (!cuantos) { avisar("Nadie la recibiría: revisa «¿Quién la ve?»"); return; }
+    if (!confirm("¿Mandarla por correo a " + miles(cuantos) + " cuentas? Se manda una sola vez.")) return;
+    b.disabled = true; avisar("Mandando…");
+    const e = await fetch("api/admin/novedades/" + f.dataset.novId + "/correo", { method: "POST" }).catch(() => null);
+    const d = e ? await e.json().catch(() => ({})) : {};
+    if (!e || !e.ok) { b.disabled = false; avisar(d.error || "No se pudo mandar"); return; }
+    avisar(d.correo.faltan ? "Enviada a " + miles(d.correo.enviados) + "; las demás salen cada hora." : "Enviada a " + miles(d.correo.enviados) + " cuentas");
+    pintarNovedadesAdmin();
+  });
   const guardarNov = async (id, datos) => {
     const r = await fetch("api/admin/novedades/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(datos) }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudo guardar"); return null; }

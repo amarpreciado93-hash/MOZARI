@@ -28,7 +28,8 @@
 // tours de otra cuenta. Los tours publicados se ven en el Worker de tours (público, solo lectura).
 
 import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR, conCarga, cargaEnViejos } from "./comun.js";
-import { rutasSesion, cuentaDe, perfil, leerCupo, contarCuentas } from "./sesion.js";
+import { rutasSesion, cuentaDe, perfil, leerCupo, contarCuentas, firmarLink, verificarLink } from "./sesion.js";
+import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoDeNovedad, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja } from "./correos.js";
 import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
 import { apiPagos, webhookMercadoPago, CODIGO, cuponClave } from "./pagos.js";
 import { EmailMessage } from "cloudflare:email";
@@ -313,8 +314,52 @@ async function resumenVisitas(env, id, dias) {
   return r;
 }
 
-async function admin(request, env, partes) {
+// Quién recibe una novedad por correo: cuentas con correo, sin pausar, que no se dieron de baja y del público de la novedad
+async function destinatarios(env, n) {
+  const claves = [];
+  let cur;
+  do {
+    const l = await env.R2.list({ prefix: "cuentas/", cursor: cur, limit: 1000 });
+    l.objects.forEach((o) => { if (o.key.endsWith("/perfil.json")) claves.push(o.key); });
+    cur = l.truncated ? l.cursor : undefined;
+  } while (cur);
+  const ps = [];
+  for (let i = 0; i < claves.length; i += 50) ps.push(...(await Promise.all(claves.slice(i, i + 50).map((k) => env.R2.get(k).then((o) => (o ? o.json() : null)).catch(() => null)))));
+  return ps.filter((p) => p && p.uid && /@/.test(p.email || "") && !p.bloqueado && !p.noNovedades && paraQuien(n, planDe(p)));
+}
+const firmaBaja = (env) => (uid) => firmarLink(env, { baja: uid });
+
+async function admin(request, env, partes, yo) {
   const m = request.method;
+  // Correos a los usuarios: la bienvenida (prender o apagar), cuántos van este mes y una prueba al dueño
+  if (partes[2] === "correos") {
+    if (partes.length === 3 && m === "GET") {
+      const [conf, cuenta] = await Promise.all([leerConf(env), contador(env)]);
+      return json({ conf, activo: !!env.ENVIOS, mes: cuenta.mes, dia: cuenta.dia, topeMes: TOPE_MES, topeDia: TOPE_DIA });
+    }
+    if (partes.length === 3 && m === "PUT") {
+      const c = await request.json().catch(() => ({})), conf = await leerConf(env);
+      if (typeof c.bienvenida === "boolean") conf.bienvenida = c.bienvenida;
+      await guardarConf(env, conf);
+      return json({ conf });
+    }
+    if (partes[3] === "prueba" && partes.length === 4 && m === "POST") {
+      const c = await request.json().catch(() => ({})), base = new URL(request.url).origin;
+      let correo, baja = "";
+      if (c.novedad) {
+        const o = /^[a-z0-9]{6,20}$/.test(c.novedad) ? await env.R2.get("novedades/" + c.novedad + ".json") : null;
+        if (!o) return error(404, "No existe esa actualización");
+        baja = enlaceBaja(base, await firmaBaja(env)(yo.uid));
+        correo = correoDeNovedad(await o.json(), yo, base, baja);
+      } else correo = correoBienvenida({ nombre: yo.nombre, base });
+      const cuenta = await contador(env);
+      const r = await enviar(env, cuenta, { para: yo.email, asunto: "[Prueba] " + correo.asunto, html: correo.html, texto: correo.texto, baja });
+      await cuenta.guardar();
+      if (r === "ok") return json({ ok: true, para: yo.email });
+      return error(r === "tope" ? 429 : 502, r === "tope" ? "Llegaste al tope de correos de hoy. Mañana sigue." : "No se pudo mandar (" + r.slice(6) + ")");
+    }
+    return error(405, "Método no permitido");
+  }
   if (partes[2] === "novedades") {
     if (partes.length === 3 && m === "GET") return json({ novedades: await listaNovedades(env) });
     if (partes.length === 3 && m === "POST") {
@@ -346,11 +391,22 @@ async function admin(request, env, partes) {
       if (!/^(image\/(png|jpeg|gif|webp)|video\/mp4)$/.test(tipo)) return error(415, "Usa un video MP4 o una imagen (GIF, PNG, JPG o WebP)");
       if (!largo || largo > MAX_MEDIA_NOV) return error(413, "El archivo pesa más de 25 MB");
       await env.R2.put("novedades/" + id + ".media", request.body, { httpMetadata: { contentType: tipo } });
-      n.media = true; n.mediaTipo = tipo.startsWith("video") ? "video" : "imagen";
+      n.media = true; n.mediaTipo = tipo.startsWith("video") ? "video" : "imagen"; n.mediaV = Date.now().toString(36);
       await env.R2.put(clave, JSON.stringify(n), { httpMetadata: { contentType: "application/json" } });
       return json({ novedad: n });
     }
     if (partes[4] === "media" && m === "GET") return servirR2(env, request, "novedades/" + id + ".media", "private, max-age=60");
+    // Mandarla también por correo (una sola vez): a quien la quiere recibir, por tandas y sin pasar los topes
+    if (partes[4] === "correo" && partes.length === 5 && m === "GET") return json({ cuantos: (await destinatarios(env, n)).length, correo: n.correo || null });
+    if (partes[4] === "correo" && partes.length === 5 && m === "POST") {
+      if (!n.activa || !n.publicada) return error(400, "Primero publícala");
+      if (n.correo) return error(409, "Esta actualización ya se mandó por correo");
+      if (!env.ENVIOS) return error(503, "El envío de correos no está activo");
+      const uids = (await destinatarios(env, n)).map((p) => p.uid);
+      await iniciarCola(env, n, uids);
+      const c = await avanzarCola(env, id, new URL(request.url).origin, firmaBaja(env));
+      return json({ correo: { total: c.total, enviados: c.enviados, fallas: c.fallas, faltan: c.pendientes.length, inicio: c.inicio, fin: c.fin } });
+    }
     return error(405, "Método no permitido");
   }
   if (partes[2] === "respaldos") return apiRespaldos(request, env, partes);
@@ -520,7 +576,7 @@ async function api(request, env, partes, yo) {
   }
   if (partes[1] === "pagos") return apiPagos(request, env, partes, yo);
   if (partes[1] === "reportes" && partes.length === 2 && m === "POST") return crearReporte(request, env, yo, plan);
-  if (partes[1] === "admin") return yo.admin ? admin(request, env, partes) : error(403, "Solo el dueño de Mozari");
+  if (partes[1] === "admin") return yo.admin ? admin(request, env, partes, yo) : error(403, "Solo el dueño de Mozari");
   if (partes[1] === "novedades") return apiNovedades(request, env, partes, yo, plan);
 
   if (partes[1] === "uso" && m === "GET") return json(Object.assign({ plan }, await usoDe(env, uid, true)));
@@ -686,7 +742,11 @@ const conAsset = (env, request, ruta) => env.ASSETS.fetch(new Request(new URL(ru
 // Una vez por copia del programa: si es una versión nueva de Mozari, respalda los datos antes de seguir
 let respaldoRevisado = false;
 export default {
-  async scheduled(evento, env, ctx) { ctx.waitUntil(vigilarRespaldos(env)); },
+  async scheduled(evento, env, ctx) {
+    ctx.waitUntil(vigilarRespaldos(env));
+    // Novedades por correo que aún tienen pendientes: una tanda por hora
+    if (env.ENVIOS) ctx.waitUntil(avanzarColas(env, "https://" + (env.DOMINIO || "mozari.app"), firmaBaja(env)).catch(() => {}));
+  },
   async fetch(request, env, ctx) {
     if (!respaldoRevisado && env.VERSION && ctx) { respaldoRevisado = true; ctx.waitUntil(vigilarRespaldos(env).catch(() => {})); }
     const url = new URL(request.url);
@@ -702,6 +762,14 @@ export default {
     if (segs[0] === "v" && segs.length === 2 && request.method === "POST") return registrarVisita(request, env, segs[1]);
     // Aviso si un tour publicado se cerró solo en un celular (público, sin sesión)
     if (segs[0] === "c" && segs.length === 2 && request.method === "POST") return registrarCaida(request, env, segs[1]);
+
+    // Correos: darse de baja de las novedades (sin sesión: el link va firmado) y la imagen de una novedad
+    if (url.pathname === "/baja" && (request.method === "GET" || request.method === "POST")) return rutaBaja(request, env, verificarLink);
+    if (segs[0] === "correo" && segs[1] === "novedad" && segs.length === 3 && request.method === "GET") {
+      const o = /^[a-z0-9]{6,20}$/.test(segs[2]) ? await env.R2.get("novedades/" + segs[2] + ".json") : null, n = o ? await o.json().catch(() => null) : null;
+      if (!n || !n.activa || !n.publicada || n.mediaTipo !== "imagen") return new Response("No existe", { status: 404 });
+      return servirR2(env, request, "novedades/" + segs[2] + ".media", "public, max-age=86400");
+    }
 
     const s = await rutasSesion(request, env, (p) => adoptarTours(env, p));
     if (s) return s;

@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-10T16:36:40.570Z",
- "bien": 68,
- "total": 68,
+ "fecha": "2026-11-10T17:39:35.934Z",
+ "bien": 69,
+ "total": 69,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -253,6 +253,10 @@
   },
   {
    "nombre": "Edición limpia: «+ Agregar» esconde las herramientas y en Propiedades se abre un grupo a la vez",
+   "ok": true
+  },
+  {
+   "nombre": "Correos: bienvenida (se prende en el panel), novedad por correo una vez y link para darse de baja",
    "ok": true
   },
   {

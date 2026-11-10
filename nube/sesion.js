@@ -10,6 +10,7 @@
 //   GOOGLE_CLIENT_SECRET (y opcional SESION_SECRETO; si no está, se crea solo)
 // Variables: GOOGLE_CLIENT_ID (no es secreto)
 // Variable: ADMIN (correo del dueño de Mozari: ve el panel de cuentas y adopta los tours viejos)
+import { mandarBienvenida } from "./correos.js";
 
 const COOKIE = "mz_sesion", ESTADO = "mz_estado", COMPRAR = "mz_comprar", PENDIENTE = "mz_pendiente", DIAS = 30;
 // Cada cuenta puede tener la sesión abierta en 2 dispositivos (el dueño de Mozari, sin límite).
@@ -84,6 +85,9 @@ async function firmar(env, datos) {
   const firma = await crypto.subtle.sign("HMAC", await llave(env), txt.encode(cuerpo));
   return cuerpo + "." + b64u(firma);
 }
+// Links firmados que no son sesión (por ejemplo, el de «ya no quiero recibir novedades»)
+export const firmarLink = (env, datos, dias = 3650) => firmar(env, Object.assign({}, datos, { exp: Math.floor(Date.now() / 1000) + dias * 86400 }));
+export const verificarLink = (env, token) => verificar(env, token);
 async function verificar(env, token) {
   const [cuerpo, firma] = String(token || "").split(".");
   if (!cuerpo || !firma) return null;
@@ -172,6 +176,11 @@ async function iniciarSesion(request, url, env, g, adopcion, comprar) {
     }
   }
   const { p, nueva } = await guardarCuenta(env, g);
+  // Correo de bienvenida (si el dueño lo prendió en su panel). Si falla, la entrada sigue igual.
+  if (nueva) {
+    try { if (await mandarBienvenida(env, p, url.origin)) { p.bienvenida = new Date().toISOString(); await env.R2.put(perfilClave(p.uid), JSON.stringify(p), { httpMetadata: { contentType: "application/json" } }); } }
+    catch (e) { /* sin correo, pero con cuenta */ }
+  }
   if (p.bloqueado) return new Response(PAUSADA, { status: 403, headers: { "content-type": "text/html; charset=utf-8", "set-cookie": cookie(url, COMPRAR, "", 0) } });
   if (nueva && adopcion) await adopcion(p);
   const ses = await leerSesiones(env, p.uid);
