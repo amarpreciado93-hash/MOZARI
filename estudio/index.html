@@ -542,7 +542,7 @@
   .agregar-abrir[aria-expanded="true"] svg { transform: rotate(45deg); }
   .acor-todo { color: var(--mz-tenue); padding: 4px 10px; }
   #izq-capas.limpio:not(.abierto) .agregar { display: none; }
-  #izq-capas.limpio.abierto .agregar { animation: acor-entra 0.18s ease-out; }
+  #izq-capas.limpio.abierto.anima .agregar { animation: acor-entra 0.18s ease-out; }
   .props.con-acor { gap: 0; padding-top: 4px; }
   .props.con-acor > .sel-multi, .props.con-acor > .orden, .props.con-acor > .mz-aviso { margin: 8px 0; }
   .props.con-acor > .grupo:not(.acor) { padding: 6px 0 10px; }
@@ -559,9 +559,9 @@
   .grupo.acor.abierto .acor-btn small { visibility: hidden; }
   .acor-cuerpo { display: grid; gap: 8px; padding: 0 0 16px; }
   .grupo.acor:not(.abierto) .acor-cuerpo { display: none; }
-  .grupo.acor.abierto .acor-cuerpo { animation: acor-entra 0.18s ease-out; }
+  .grupo.acor.abierto.anima .acor-cuerpo { animation: acor-entra 0.18s ease-out; }
   @keyframes acor-entra { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
-  @media (prefers-reduced-motion: reduce) { .grupo.acor.abierto .acor-cuerpo, #izq-capas.limpio.abierto .agregar { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .grupo.acor.abierto.anima .acor-cuerpo, #izq-capas.limpio.abierto.anima .agregar { animation: none; } }
   .lista { list-style: none; margin: 0; padding: 6px; overflow-y: auto; flex: 1; display: grid; align-content: start; gap: 2px; }
   .lista li { display: grid; grid-template-columns: 18px minmax(0, 1fr) 28px; align-items: center; gap: 8px; padding: 7px 6px 7px 10px; border-radius: 9px; cursor: pointer; font-size: 12px; border: 1px solid transparent; }
   .lista li:hover { background: var(--mz-lima-suave); }
@@ -621,6 +621,7 @@
   .tr-puntos li.falta .num { background: transparent; color: var(--mz-aviso); border: 1.5px dashed var(--mz-aviso); }
   .tr-puntos li.mal .num { background: var(--mz-error); }
   .tr-puntos small { color: var(--mz-tenue); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .tr-pasar { width: 100%; white-space: normal; text-align: center; line-height: 1.3; }
   .tr-agregar { width: 100%; box-sizing: border-box; font: 500 12px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px dashed var(--mz-linea); border-radius: 10px; padding: 9px 10px; }
   .ojo { width: 28px; height: 28px; display: grid; place-items: center; border: 0; background: transparent; color: var(--mz-tenue); cursor: pointer; border-radius: 8px; }
   .ojo:hover { color: var(--mz-lima); }
@@ -2385,15 +2386,79 @@
   }
   let consecutivoTr = Date.now() % 1e6;
   const idCopia = () => "t" + (consecutivoTr++).toString(36);
-  // Lleva una capa vinculada (polígono o texto) a todas las esferas listas del terreno
+  // Un punto de la esfera, con su manija en el suelo si la tiene ([yaw, pitch, hx, hy, r]), llevado a otra esfera
+  function trPunto(p, desde, hacia) {
+    const q = transferir([p[0], p[1]], desde, hacia);
+    if (!q) return null;
+    if (p.length <= 2) return q;
+    const out = q.concat(p.slice(2));
+    if (+p[2] || +p[3]) {
+      const a = aPlano(p[0], p[1]), b = aPlano(q[0], q[1]);
+      const h = a && transferir(dePlano([a[0] + (+p[2] || 0), a[1] + (+p[3] || 0)]), desde, hacia), hb = h && aPlano(h[0], h[1]);
+      out[2] = b && hb ? +(hb[0] - b[0]).toFixed(5) : 0;
+      out[3] = b && hb ? +(hb[1] - b[1]).toFixed(5) : 0;
+    }
+    return out;
+  }
+  // Datos de una manzana (a mano o del PDF) llevados a otra esfera: su orilla, nodos, manijas y puntos de control
+  function manzanaEnOtra(c, desde, hacia) {
+    const d = JSON.parse(JSON.stringify(c)), tp = (p) => trPunto(p, desde, hacia), lista = (L) => { const r = L.map(tp); return r.some((p) => !p) ? null : r; };
+    delete d.id; delete d.visible;
+    d.puntos = lista(c.puntos); if (!d.puntos) return null;
+    if (d.manzana) {
+      const m = d.manzana; delete m.hov;
+      for (const k of ["a", "b"]) if (m.lados && Array.isArray(m.lados[k])) { m.lados[k] = lista(m.lados[k]); if (!m.lados[k]) return null; }
+      for (const x of m.cortes || []) if (x && Array.isArray(x.medios)) { x.medios = lista(x.medios); if (!x.medios) return null; }
+    }
+    if (d.mzPlano) for (const k of d.mzPlano.ctrl || []) {
+      const t = tp([k.s[0], k.s[1]].concat(k.h ? [k.h[0], k.h[1]] : []));
+      if (!t) return null;
+      k.s = [t[0], t[1]]; if (k.h) k.h = [t[2], t[3]];
+    }
+    return d;
+  }
+  // Una manzana vinculada viaja completa: la manzana y cada uno de sus lotes, en su lugar en la otra esfera
+  function copiarManzana(c, lotesA, desde, id, l, copia) {
+    const d = manzanaEnOtra(c, desde, id);
+    if (!d) return false;
+    const geos = lotesA.map((x) => x.puntos.map((p) => transferir(p, desde, id)));
+    if (geos.some((g) => g.some((p) => !p))) return false;
+    if (!copia) { copia = { id: idCopia(), visible: c.visible !== false }; l.push(copia); }
+    Object.assign(copia, d);
+    const viejos = l.filter((x) => x.deManzana === copia.id).sort((a, b) => a.iManzana - b.iManzana);
+    lotesA.forEach((x, k) => {
+      const dl = JSON.parse(JSON.stringify(x));
+      delete dl.id; delete dl.visible; delete dl.vinculo;
+      let y = viejos[k];
+      if (!y) { y = { id: idCopia(), visible: x.visible !== false }; l.splice(l.indexOf(viejos[viejos.length - 1] || copia) + 1, 0, y); viejos.push(y); }
+      Object.assign(y, dl); y.deManzana = copia.id; y.puntos = geos[k];
+    });
+    viejos.slice(lotesA.length).forEach((x) => { const i = l.indexOf(x); if (i >= 0) l.splice(i, 1); });
+    return true;
+  }
+  // Quita de las demás esferas las copias de una capa vinculada (con los lotes de una manzana copiada)
+  function quitarCopias(v, aqui) {
+    let n = 0;
+    Object.keys(est.capas).forEach((id) => {
+      if (id === aqui) return;
+      const l = est.capas[id] || [], fuera = new Set(l.filter((x) => x.vinculo === v).map((x) => x.id));
+      if (!fuera.size) return;
+      est.capas[id] = l.filter((x) => !fuera.has(x.id) && !(x.deManzana && fuera.has(x.deManzana)));
+      n += fuera.size;
+    });
+    return n;
+  }
+  // Lleva una capa vinculada (polígono, texto o manzana con sus lotes) a todas las esferas listas del terreno
   function propagar(c, desde, soloFaltantes) {
     if (!c.vinculo || !trLista(desde)) return 0;
+    const lotesA = c.manzana || c.mzPlano ? (est.capas[desde] || []).filter((x) => x.deManzana === c.id).sort((a, b) => a.iManzana - b.iManzana) : null;
     let n = 0;
     trIds().forEach((id) => {
       if (id === desde || !trLista(id)) return;
       const l = est.capas[id] = est.capas[id] || [];
       let copia = l.find((x) => x.vinculo === c.vinculo);
       if (copia && soloFaltantes) return;
+      if (lotesA) { if (copiarManzana(c, lotesA, desde, id, l, copia)) n++; return; }
       let geo;
       if (c.tipo === "poligono") { geo = c.puntos.map((p) => transferir(p, desde, id)); if (geo.some((p) => !p)) return; }
       else { const p = transferir([c.yaw, c.pitch], desde, id); if (!p) return; geo = p; }
@@ -8622,9 +8687,15 @@ void main(){
   const OJO_NO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 4.4-1.1"/></svg>';
   const ICO_VINC = '<svg class="vinc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-label="En todas las esferas del terreno"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>';
   // Edición limpia (Laboratorio «limpio»): ver más abajo, junto a Propiedades
-  const ACOR = { abierto: {}, todo: false }, AGR = { abierto: false, vacio: null };
-  try { ACOR.todo = localStorage.getItem("mz-props-todo") === "1"; } catch (e) { /* sin almacenamiento */ }
-  const acorLimpio = () => enLab("limpio") && !ACOR.todo;
+  // Todo abierto de inicio; el usuario cierra lo que no usa y se recuerda (por tipo de capa). «mz-props-plano» = sin renglones (pruebas)
+  const ACOR = { cerrados: {}, plano: false }, AGR = { abierto: true, vacio: null };
+  try {
+    ACOR.plano = localStorage.getItem("mz-props-plano") === "1";
+    ACOR.cerrados = JSON.parse(localStorage.getItem("mz-acor-cerrados") || "{}") || {};
+    AGR.abierto = localStorage.getItem("mz-agregar-cerrado") !== "1";
+  } catch (e) { /* sin almacenamiento */ }
+  const guardarAcor = () => { try { localStorage.setItem("mz-acor-cerrados", JSON.stringify(ACOR.cerrados)); localStorage.setItem("mz-agregar-cerrado", AGR.abierto ? "0" : "1"); } catch (e) { /* sin almacenamiento */ } };
+  const acorLimpio = () => enLab("limpio") && !ACOR.plano;
   function pintarCapas() {
     if (!motorEd) return;
     const ul = $("lista"), l = cs();
@@ -8782,13 +8853,15 @@ void main(){
     const s = g.querySelector('select[data-k="accion"]');
     return s && s.selectedIndex >= 0 ? s.options[s.selectedIndex].text : "";
   }
+  function textoTodo() {
+    const b = $("props-todo"), gs = [...$("props").querySelectorAll(":scope > .grupo.acor")], abiertos = gs.some((g) => g.classList.contains("abierto"));
+    b.hidden = !gs.length;
+    b.textContent = abiertos ? "Cerrar todo" : "Abrir todo";
+    b.title = abiertos ? "Cerrar todos los grupos" : "Abrir todos los grupos";
+  }
   function acordeonProps(cont, c) {
-    const todo = $("props-todo");
-    todo.hidden = !enLab("limpio") || !c;
-    todo.textContent = ACOR.todo ? "Uno a la vez" : "Ver todo";
-    todo.title = ACOR.todo ? "Ver un grupo a la vez" : "Ver todos los grupos abiertos";
     cont.classList.toggle("con-acor", !!c && acorLimpio());
-    if (!c || !acorLimpio()) return;
+    if (!c || !acorLimpio()) { textoTodo(); return; }
     const grupos = [];
     cont.querySelectorAll(":scope > .grupo").forEach((g) => {
       const b = g.querySelector(":scope > b"), extra = [];
@@ -8815,10 +8888,9 @@ void main(){
       g.classList.add("acor"); g.dataset.acor = titulo; g.append(fila, cuerpo);
       grupos.push(g);
     });
-    const k = tipoAcor(c);
-    let ab = ACOR.abierto[k];
-    if (ab === undefined || (ab && !grupos.some((g) => g.dataset.acor === ab))) ab = grupos.length ? grupos[0].dataset.acor : "";
-    grupos.forEach((g) => abrirAcor(g, g.dataset.acor === ab));
+    const cerr = ACOR.cerrados[tipoAcor(c)] || [];
+    grupos.forEach((g) => abrirAcor(g, !cerr.includes(g.dataset.acor)));
+    textoTodo();
   }
   function abrirAcor(g, si) {
     g.classList.toggle("abierto", si);
@@ -8829,17 +8901,21 @@ void main(){
     if (!btn) return;
     const g = btn.closest(".grupo.acor"), c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
     if (!g || !c) return;
-    const abrir = !g.classList.contains("abierto");
-    $("props").querySelectorAll(":scope > .grupo.acor").forEach((x) => abrirAcor(x, abrir && x === g));
-    ACOR.abierto[tipoAcor(c)] = abrir ? g.dataset.acor : "";
+    const abrir = !g.classList.contains("abierto"), k = tipoAcor(c), s = new Set(ACOR.cerrados[k] || []);
+    g.classList.add("anima"); abrirAcor(g, abrir);
+    if (abrir) s.delete(g.dataset.acor); else s.add(g.dataset.acor);
+    ACOR.cerrados[k] = [...s]; guardarAcor(); textoTodo();
     if (abrir) g.scrollIntoView({ block: "nearest" });
   });
   $("props-todo").addEventListener("click", () => {
-    ACOR.todo = !ACOR.todo;
-    try { localStorage.setItem("mz-props-todo", ACOR.todo ? "1" : "0"); } catch (e) { /* sin almacenamiento */ }
-    pintarAgregar(); pintarProps();
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida), gs = [...$("props").querySelectorAll(":scope > .grupo.acor")];
+    if (!c || !gs.length) return;
+    const cerrar = gs.some((g) => g.classList.contains("abierto"));
+    gs.forEach((g) => abrirAcor(g, !cerrar));
+    ACOR.cerrados[tipoAcor(c)] = cerrar ? gs.map((g) => g.dataset.acor) : [];
+    guardarAcor(); textoTodo();
   });
-  // Capas: los botones para agregar se esconden tras «+ Agregar». Al elegir uno se cierran solos.
+  // Capas: los botones para agregar se ven de inicio; «Agregar» los esconde (se recuerda) y los vuelve a mostrar.
   // En una esfera sin capas se abren la primera vez, para que se vea por dónde empezar.
   function pintarAgregar() {
     const limpio = acorLimpio(), panel = $("izq-capas");
@@ -8848,10 +8924,10 @@ void main(){
     $("agregar-abrir").hidden = !limpio;
     $("agregar-abrir").setAttribute("aria-expanded", String(limpio && AGR.abierto));
   }
-  $("agregar-abrir").addEventListener("click", () => { AGR.abierto = !AGR.abierto; pintarAgregar(); });
-  $("agregar").addEventListener("click", (ev) => {
-    if (!acorLimpio() || !ev.target.closest("button")) return;
-    setTimeout(() => { AGR.abierto = false; pintarAgregar(); }, 0);
+  $("agregar-abrir").addEventListener("click", () => {
+    AGR.abierto = !AGR.abierto; guardarAcor();
+    $("izq-capas").classList.add("anima"); pintarAgregar();
+    setTimeout(() => $("izq-capas").classList.remove("anima"), 250);
   });
   function pintarProps() {
     const cont = $("props");
@@ -9004,10 +9080,13 @@ void main(){
       h += grupo3d(c);
     }
     if (!c.edificio) h += grupoAccion(c); // el edificio solo enmarca sus departamentos: no se clona ni tiene acción
-    if ((c.tipo === "poligono" || c.tipo === "texto") && !c.edificio) {
+    // Las manzanas pasan a otras esferas con sus lotes (Laboratorio); sin él no se ofrece, porque sus lotes no viajaban
+    const labMz = enLab("manzanas-esferas"), mzDe = c.deManzana && buscar(c.deManzana);
+    if ((c.tipo === "poligono" || c.tipo === "texto") && !c.edificio && (labMz || !(c.manzana || c.mzPlano))) {
       const aqui = motorEd.actual.id, listas = trIds().filter(trLista);
       h += '<div class="grupo"><b>Terreno</b>';
-      if (trLista(aqui) && listas.length > 1) {
+      if (labMz && mzDe) h += '<p class="nota">' + (mzDe.vinculo ? "Está en todas las esferas con su manzana." : "Para pasarlo a las otras esferas, selecciona su manzana y prende Aplicar a todas las esferas.") + '</p><div class="orden"><button class="mini" data-acc="ir-manzana">Ir a la manzana</button></div>';
+      else if (trLista(aqui) && listas.length > 1) {
         const otras = listas.filter((x) => x !== aqui).map(nombreDe).join(", ");
         h += interruptor("Aplicar a todas las esferas", "_vinculo", !!c.vinculo) +
           '<p class="nota">' + (c.vinculo ? "Está también en " + esc(otras) + ". Si lo editas aquí, se actualiza en todas." : "Lo copia a " + esc(otras) + " en el lugar correcto, con los puntos de referencia del terreno.") + "</p>";
@@ -9214,16 +9293,31 @@ void main(){
     if (!c) return;
     if (si) {
       c.vinculo = "v" + c.id;
+      // Una manzana viaja con sus lotes: si antes se pasó algún lote suelto, esa copia se quita
+      if (c.manzana || c.mzPlano) cs().forEach((x) => { if (x.deManzana === c.id && x.vinculo) { quitarCopias(x.vinculo, aqui); delete x.vinculo; } });
       const n = propagar(c, aqui);
       if (!n) { delete c.vinculo; avisar("No se pudo: esta capa no está sobre el suelo"); }
       else avisar("Aplicado en " + (n + 1) + " esferas");
     } else {
-      const v = c.vinculo;
-      Object.keys(est.capas).forEach((id) => { if (id !== aqui) est.capas[id] = est.capas[id].filter((x) => x.vinculo !== v); });
+      quitarCopias(c.vinculo, aqui);
       delete c.vinculo;
       avisar("Ahora solo está en " + nombreDe(aqui));
     }
     cambio();
+  }
+  // Las manzanas y lotes de una esfera que todavía no están en las demás (Laboratorio «manzanas-esferas»)
+  const sinPasar = (id) => (est.capas[id] || []).filter((x) => !x.vinculo && !x.deManzana && !x.edificio && (x.manzana || x.mzPlano || x.lote));
+  function pasarTodas(aqui) {
+    const l = est.capas[aqui] || [];
+    let mz = 0, lt = 0, fallo = 0;
+    sinPasar(aqui).forEach((x) => {
+      x.vinculo = "v" + x.id;
+      if (x.manzana || x.mzPlano) l.forEach((y) => { if (y.deManzana === x.id && y.vinculo) { quitarCopias(y.vinculo, aqui); delete y.vinculo; } });
+      if (propagar(x, aqui)) { if (x.lote) lt++; else mz++; } else { delete x.vinculo; fallo++; }
+    });
+    guardar();
+    const partes = [mz ? mz + (mz === 1 ? " manzana" : " manzanas") : "", lt ? lt + (lt === 1 ? " lote" : " lotes") : ""].filter(Boolean).join(" y ");
+    avisar(partes ? partes + " ya están en todas las esferas" + (fallo ? ". " + fallo + " no se pudieron: quedan fuera de la vista de otra esfera" : "") : "No se pudo: revisa los puntos del terreno", 6000);
   }
   $("props").addEventListener("click", (ev) => {
     const m = ev.target.closest(".muestra, .hs-estilo, .anim-op"); if (m) { aplicar(m, true); return; }
@@ -9252,6 +9346,8 @@ void main(){
   function duplicar() {
     const c = motorEd.elegida && buscar(motorEd.elegida);
     if (!c) return;
+    if ((c.manzana || c.mzPlano) && enLab("manzanas-esferas")) { duplicarManzana(c); return; }
+    if (c.deManzana && enLab("manzanas-esferas")) { avisar("Este lote es parte de una manzana: selecciona la manzana para duplicarla completa"); return; }
     if (c.manzana || c.mzPlano || c.deManzana || c.edificio) { avisar(c.edificio ? "Los edificios no se duplican; dibuja otro" : "Las manzanas no se duplican; dibuja otra"); return; }
     const copia = JSON.parse(JSON.stringify(c));
     copia.id = nuevoId(); copia.nombre = c.nombre + " copia"; delete copia.vinculo;
@@ -9260,11 +9356,44 @@ void main(){
     const l = cs(); l.splice(l.indexOf(c) + 1, 0, copia);
     motorEd.elegida = copia.id; cambio(); avisar("Capa duplicada");
   }
+  // Duplicar una manzana en la misma esfera (Laboratorio «manzanas-esferas»): sale a un lado, girada sobre el
+  // suelo alrededor del dron (no se deforma), con el siguiente número de manzana y sus lotes nuevos (Disponibles).
+  function duplicarManzana(c) {
+    const d = JSON.parse(JSON.stringify(c)), m = d.manzana || d.mzPlano;
+    d.id = nuevoId(); delete d.vinculo;
+    let y0 = c.puntos[0][0], mn = 0, mx = 0;
+    c.puntos.forEach((p) => { let v = p[0] - y0; while (v > Math.PI) v -= 2 * Math.PI; while (v < -Math.PI) v += 2 * Math.PI; mn = Math.min(mn, v); mx = Math.max(mx, v); });
+    const giro = Math.max(0.04, Math.min(0.6, (mx - mn) * 1.08)), co = Math.cos(giro), si = Math.sin(giro);
+    const gira = (p) => {
+      const o = p.slice(); let y = p[0] + giro; if (y > Math.PI) y -= 2 * Math.PI;
+      o[0] = +y.toFixed(5);
+      if (p.length > 3 && (+p[2] || +p[3])) { const hx = +p[2] || 0, hy = +p[3] || 0; o[2] = +(hx * co + hy * si).toFixed(5); o[3] = +(-hx * si + hy * co).toFixed(5); }
+      return o;
+    };
+    d.puntos = d.puntos.map(gira);
+    if (d.manzana) {
+      delete m.hov;
+      ["a", "b"].forEach((k) => { if (m.lados && Array.isArray(m.lados[k])) m.lados[k] = m.lados[k].map(gira); });
+      (m.cortes || []).forEach((x) => { if (x && Array.isArray(x.medios)) x.medios = x.medios.map(gira); });
+    } else m.ctrl.forEach((k) => { const g = gira([k.s[0], k.s[1]].concat(k.h ? [k.h[0], k.h[1]] : [])); k.s = [g[0], g[1]]; if (k.h) k.h = [g[2], g[3]]; });
+    // Siguiente número de manzana libre
+    const usadas = Object.values(est.capas).flat().filter((x) => x && (x.manzana || x.mzPlano)).map((x) => String((x.manzana || x.mzPlano).mz).trim());
+    const nums = usadas.map((v) => parseInt(v, 10)).filter((v) => isFinite(v));
+    let mz = /^\d+$/.test(String(m.mz).trim()) && nums.length ? String(Math.max(...nums) + 1) : String(m.mz) + " (2)";
+    for (let k = 3; usadas.map((v) => v.toLowerCase()).includes(mz.toLowerCase()); k++) mz = String(m.mz) + " (" + k + ")";
+    m.mz = mz; d.nombre = terminos().manzana + " " + mz;
+    const l = cs(), suyos = lotesDeManzana(c);
+    l.splice(l.indexOf(suyos[suyos.length - 1] || c) + 1, 0, d);
+    if (d.manzana) repartirManzana(d); else repartirPlano(d);
+    motorEd.elegida = d.id; seleccion = new Set([d.id]); cambio();
+    avisar(terminos().manzana + " " + mz + " lista, a un lado de la original. Jala sus esquinas a su lugar.", 6000);
+  }
   function eliminar() {
     const varios = seleccionadas();
     if (varios.length > 1) {
       const quitar = varios.filter((x) => !x.deManzana), quedan = varios.length - quitar.length;
       const ids = new Set(quitar.map((x) => x.id));
+      quitar.forEach((x) => { if (x.vinculo && (x.manzana || x.mzPlano)) quitarCopias(x.vinculo, motorEd.actual.id); });
       est.capas[motorEd.actual.id] = cs().filter((x) => !ids.has(x.id) && !(x.deManzana && ids.has(x.deManzana)));
       seleccion = new Set(); motorEd.elegida = null; cambio();
       avisar(quitar.length + " capas eliminadas" + (quedan ? ". Los lotes de una manzana se quitan desde la manzana." : ""));
@@ -9275,7 +9404,11 @@ void main(){
     const v = l[i].vinculo;
     if (l[i].deManzana) { avisar("Este lote es parte de una manzana. Quita lotes desde la manzana."); return; }
     if (l[i].edificio) { const id = l[i].id; est.capas[motorEd.actual.id] = l.filter((x) => x.id !== id && x.deManzana !== id); motorEd.elegida = null; cambio(); avisar("Edificio y sus departamentos eliminados"); return; }
-    if (l[i].manzana || l[i].mzPlano) { const id = l[i].id; est.capas[motorEd.actual.id] = l.filter((x) => x.id !== id && x.deManzana !== id); motorEd.elegida = null; cambio(); avisar("Manzana y sus lotes eliminados"); return; }
+    if (l[i].manzana || l[i].mzPlano) {
+      const id = l[i].id, aqui = motorEd.actual.id, n = v ? quitarCopias(v, aqui) : 0;
+      est.capas[aqui] = l.filter((x) => x.id !== id && x.deManzana !== id); motorEd.elegida = null; cambio();
+      avisar(n ? "Manzana eliminada en " + (n + 1) + " esferas" : "Manzana y sus lotes eliminados"); return;
+    }
     l.splice(i, 1); motorEd.elegida = null;
     let n = 0;
     if (v) Object.keys(est.capas).forEach((id) => { const antes = est.capas[id].length; est.capas[id] = est.capas[id].filter((x) => x.vinculo !== v); n += antes - est.capas[id].length; });
@@ -9310,6 +9443,8 @@ void main(){
     if (c && c.edificio) repartirEdificio(c);
     if (c && c.mzPlano) repartirPlano(c);
     if (c && c.vinculo) propagar(c, motorEd.actual.id);
+    const mzDe = c && c.deManzana && buscar(c.deManzana); // un lote de una manzana que está en todas las esferas
+    if (mzDe && mzDe.vinculo) propagar(mzDe, motorEd.actual.id);
     guardar(); motorEd.construir(); pintarCapas(); pintarProps(); pintarTira();
   }
   $("copiar").addEventListener("click", async () => {
@@ -9879,7 +10014,16 @@ void main(){
         "<li><b>Dibuja cada lote en la esfera donde se ve más cerca;</b> las demás reciben la copia.</li></ol>" +
         '<p class="nota"><b>Límites:</b> supone que el terreno es plano. Con pendientes, desniveles o lomas, los lotes lejos de los puntos se desvían. También necesita que el horizonte de la esfera esté derecho.</p></details></div>';
     }
-    h += '<div class="grupo"><b>Aplicado a todas</b><p class="nota">' + (vinc.length ? nPol + " polígonos" + (nTxt ? " y " + nTxt + " textos" : "") + " están en todas las esferas listas." : "Ninguna capa todavía.") + " Se activa en Capas → Aplicar a todas las esferas.</p></div>";
+    if (enLab("manzanas-esferas")) {
+      // Manzanas y lotes: un botón las pasa todas de la esfera Base a las demás
+      const nMz = vinc.filter((g) => g[0].c.manzana || g[0].c.mzPlano).length, nLt = vinc.filter((g) => g[0].c.lote).length, nOtras = vinc.length - nMz - nLt;
+      const pend = tr.a && trLista(tr.a) && trIds().filter(trLista).length > 1 ? sinPasar(tr.a) : [];
+      const pMz = pend.filter((x) => !x.lote).length, pLt = pend.length - pMz;
+      const cuenta = (n, uno, varios) => n + " " + (n === 1 ? uno : varios);
+      h += '<div class="grupo"><b>Aplicado a todas</b><p class="nota">' + (vinc.length ? [nMz && cuenta(nMz, "manzana", "manzanas"), nLt && cuenta(nLt, "lote", "lotes"), nOtras && cuenta(nOtras, "capa más", "capas más")].filter(Boolean).join(", ") + (vinc.length === 1 ? " está" : " están") + " en todas las esferas listas." : "Ninguna capa todavía.") + "</p>";
+      if (pend.length) h += '<button class="btn-prim tr-pasar" data-tr="pasar">Pasar ' + [pMz && cuenta(pMz, "manzana", "manzanas"), pLt && cuenta(pLt, "lote", "lotes")].filter(Boolean).join(" y ") + " de " + esc(nombreDe(tr.a)) + " a las demás esferas</button>";
+      h += '<p class="nota">Una por una: en Capas, selecciona la manzana y prende Aplicar a todas las esferas.</p></div>';
+    } else h += '<div class="grupo"><b>Aplicado a todas</b><p class="nota">' + (vinc.length ? nPol + " polígonos" + (nTxt ? " y " + nTxt + " textos" : "") + " están en todas las esferas listas." : "Ninguna capa todavía.") + " Se activa en Capas → Aplicar a todas las esferas.</p></div>";
     $("tr-panel").innerHTML = h;
     // Banda de ayuda
     let b;
@@ -10005,6 +10149,7 @@ void main(){
       sincronizarTerreno(false); guardar(); abrirTerreno(); avisar(nombreDe(id) + " ya no está en el terreno");
       return;
     }
+    if (ev.target.closest('[data-tr="pasar"]')) { pasarTodas(tr.a); cambioTerreno(); return; }
     const d = ev.target.closest("[data-borrar]");
     if (d) { borrarPunto(+d.dataset.borrar); return; }
     const li = ev.target.closest(".tr-puntos li[data-i]");

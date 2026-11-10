@@ -65,8 +65,8 @@ let navegador;
 async function pagina(correo, opciones = {}) {
   const { limpio, ...otras } = opciones;
   const ctx = await navegador.newContext(Object.assign({ viewport: { width: 1400, height: 900 }, acceptDownloads: true }, otras));
-  // Edición limpia (Laboratorio «limpio»): las pruebas de siempre usan «Ver todo»; la suya la apaga con { limpio: true }
-  if (!limpio) await ctx.addInitScript(() => { try { if (!localStorage.getItem("mz-props-todo")) localStorage.setItem("mz-props-todo", "1"); } catch (e) { /* sin almacenamiento */ } });
+  // Edición limpia (Laboratorio «limpio»): las pruebas de siempre ven Propiedades sin renglones; la suya lo apaga con { limpio: true }
+  if (!limpio) await ctx.addInitScript(() => { try { localStorage.setItem("mz-props-plano", "1"); } catch (e) { /* sin almacenamiento */ } });
   const p = await ctx.newPage();
   p.errs = [];
   p.on("pageerror", (e) => p.errs.push(e.message));
@@ -1839,55 +1839,54 @@ async function capasPesadas(p) {
       exige(!(await u.$(".anim-op")), "una cuenta normal ya ve los íconos animados (deben nacer en el Laboratorio)");
       await u.context().close();
     });
-    // Pedido de Amar (nov 2026): «que no se sienta invasivo como Photoshop». Las herramientas se esconden hasta pedirlas
-    // y en Propiedades se abre un grupo a la vez. Nace en el Laboratorio.
-    await paso("Edición limpia: «+ Agregar» esconde las herramientas y en Propiedades se abre un grupo a la vez", async () => {
+    // Pedido de Amar (nov 2026): «que no se sienta invasivo como Photoshop». Cada grupo de Propiedades tiene su flechita.
+    // Segundo pedido (10 nov): «todo cerrado no invita a usar la app»: todo sale abierto y tú cierras lo que no usas.
+    await paso("Edición limpia: todo sale abierto, cada grupo se cierra con su flechita y se recuerda; «Agregar» esconde los botones", async () => {
       const n = await pagina(DUENO, { limpio: true }); await nuevoTour(n, "Edicion limpia");
       await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1500); await pasarGuias(n);
-      // Esfera sin capas: los botones se ven la primera vez, para saber por dónde empezar
-      exige(await n.isVisible("#agregar-abrir") && await n.isVisible("#add-hs"), "en una esfera sin capas no se ven «+ Agregar» y sus botones");
-      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "limpio-vacio.png") });
+      exige(await n.isVisible("#agregar-abrir") && await n.isVisible("#add-hs"), "«Agregar» y sus botones no se ven de inicio");
       await n.click("#add-hs"); await n.waitForTimeout(700); await pasarGuias(n);
-      exige(!(await n.isVisible("#add-hs")) && !(await n.isVisible("#add-lote")), "al elegir el hotspot los botones no se escondieron");
+      exige(await n.isVisible("#add-hs") && await n.isVisible("#add-lote"), "al elegir el hotspot los botones de agregar se escondieron");
       const abiertos = () => n.$$eval("#props > .grupo.acor.abierto", (gs) => gs.map((g) => g.dataset.acor));
       const titulos = await n.$$eval("#props > .grupo.acor", (gs) => gs.map((g) => g.dataset.acor));
       for (const t of ["Hotspot", "Estilo", "Ícono animado", "Fijo en 3D", "Al hacer clic", "Orden"]) exige(titulos.includes(t), "falta el renglón «" + t + "» en Propiedades: " + titulos.join(", "));
-      exige(JSON.stringify(await abiertos()) === '["Hotspot"]', "al crear el hotspot no está abierto solo su primer grupo: " + (await abiertos()).join(", "));
-      exige(await n.isVisible('#props input[data-k="nombre"]') && await n.isVisible('[data-acc="eliminar"]'), "el nombre o Duplicar/Eliminar no quedaron a la vista");
-      exige(!(await n.isVisible('.anim-op[data-v="cocina"]')), "el grupo del ícono animado no está cerrado");
-      exige((await n.textContent('#props > .grupo.acor[data-acor="Al hacer clic"] .acor-btn small')).trim().length > 0, "el renglón «Al hacer clic» no dice qué hace");
-      // Abrir «Ícono animado»: se cierran los demás, y sigue abierto al elegir (aunque el panel se vuelve a pintar)
-      await n.click('#props .acor-btn:has-text("Ícono animado")'); await n.waitForTimeout(300);
-      exige(JSON.stringify(await abiertos()) === '["Ícono animado"]', "al abrir «Ícono animado» no se cerraron los demás: " + (await abiertos()).join(", "));
-      await n.click('.anim-op[data-v="cocina"]'); await n.waitForTimeout(700);
-      exige(JSON.stringify(await abiertos()) === '["Ícono animado"]' && await n.isVisible('input[type=color][data-k="animColores.acento"]'), "al elegir la cocina se cerró el grupo");
+      exige(JSON.stringify(await abiertos()) === JSON.stringify(titulos), "no salen todos los grupos abiertos: " + (await abiertos()).join(", "));
+      exige(await n.isVisible('.anim-op[data-v="cocina"]') && await n.isVisible('[data-acc="eliminar"]'), "los íconos animados o Duplicar/Eliminar no se ven");
+      exige((await n.textContent("#props-todo")).trim() === "Cerrar todo", "el botón de arriba no ofrece «Cerrar todo»");
       if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "limpio-hotspot.png") });
-      // Tocar el abierto lo cierra
+      // La flechita cierra solo ese grupo; sigue cerrado aunque el panel se vuelva a pintar
       await n.click('#props .acor-btn:has-text("Ícono animado")'); await n.waitForTimeout(300);
-      exige((await abiertos()).length === 0, "tocar el grupo abierto no lo cerró");
-      // El otro hotspot abre el mismo grupo que estabas usando
-      await n.click('#props .acor-btn:has-text("Estilo")'); await n.waitForTimeout(300);
-      await n.click("#agregar-abrir"); await n.waitForTimeout(300);
-      exige(await n.isVisible("#add-hs"), "«+ Agregar» no abrió los botones");
+      exige(!(await abiertos()).includes("Ícono animado") && (await abiertos()).length === titulos.length - 1, "la flechita no cerró solo «Ícono animado»: " + (await abiertos()).join(", "));
+      exige(!(await n.isVisible('.anim-op[data-v="cocina"]')), "el grupo cerrado se sigue viendo");
+      await n.click('#props .hs-estilo >> nth=1'); await n.waitForTimeout(700);
+      exige(!(await abiertos()).includes("Ícono animado") && (await abiertos()).includes("Estilo"), "al cambiar el estilo se volvió a abrir el grupo cerrado");
+      // Otro hotspot: lo que cerraste sigue cerrado
       await n.click("#add-hs"); await n.waitForTimeout(900); await pasarGuias(n);
-      exige((await n.$$("#lista li[data-id]")).length === 2 && JSON.stringify(await abiertos()) === '["Estilo"]', "el segundo hotspot no abrió «Estilo»: " + (await abiertos()).join(", "));
-      // «Ver todo»: la vista de siempre, y se recuerda
-      await n.click("#props-todo"); await n.waitForTimeout(400);
-      exige(!(await n.$("#props > .grupo.acor")) && await n.isVisible('.anim-op[data-v="cocina"]') && await n.isVisible("#add-hs") && !(await n.isVisible("#agregar-abrir")), "«Ver todo» no regresó la vista completa");
+      exige((await n.$$("#lista li[data-id]")).length === 2 && !(await abiertos()).includes("Ícono animado") && (await abiertos()).includes("Al hacer clic"), "el segundo hotspot no recordó lo cerrado: " + (await abiertos()).join(", "));
+      // «Cerrar todo» / «Abrir todo»
+      await n.click("#props-todo"); await n.waitForTimeout(300);
+      exige((await abiertos()).length === 0 && (await n.textContent("#props-todo")).trim() === "Abrir todo", "«Cerrar todo» no cerró todo");
+      exige(await n.isVisible('#props input[data-k="nombre"]') && await n.isVisible('[data-acc="eliminar"]'), "con todo cerrado el nombre o Duplicar/Eliminar no quedaron a la vista");
+      await n.click("#props-todo"); await n.waitForTimeout(300);
+      exige((await abiertos()).length === titulos.length, "«Abrir todo» no abrió todo");
+      // «Agregar» esconde los botones y se recuerda al volver a entrar
+      await n.click('#props .acor-btn:has-text("Orden")'); await n.waitForTimeout(200);
+      await n.click("#agregar-abrir"); await n.waitForTimeout(300);
+      exige(!(await n.isVisible("#add-hs")), "«Agregar» no escondió los botones");
       await n.reload(); await n.waitForTimeout(3000); await cerrarAnuncio(n);
       await n.click('#nav button:has-text("Panoramas")').catch(() => {}); await n.waitForTimeout(500);
       await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1500); await pasarGuias(n);
-      exige(await n.isVisible("#add-hs") && !(await n.isVisible("#agregar-abrir")), "«Ver todo» no se recordó al volver a entrar");
+      exige(await n.isVisible("#agregar-abrir") && !(await n.isVisible("#add-hs")), "los botones escondidos no se recordaron");
       await n.click("#lista li[data-id]"); await n.waitForTimeout(500);
-      exige((await n.textContent("#props-todo")).trim() === "Uno a la vez", "el botón no ofrece regresar a «Uno a la vez»");
-      await n.click("#props-todo"); await n.waitForTimeout(400);
-      exige((await n.$$("#props > .grupo.acor")).length >= 5 && await n.isVisible("#agregar-abrir"), "«Uno a la vez» no regresó la edición limpia");
-      // Una manzana: su primer grupo abierto y la ayuda «?» a la mano en su renglón
+      exige(!(await abiertos()).includes("Orden") && (await abiertos()).includes("Estilo"), "lo cerrado no se recordó al volver a entrar: " + (await abiertos()).join(", "));
       await n.click("#agregar-abrir"); await n.waitForTimeout(300);
+      exige(await n.isVisible("#add-hs"), "«Agregar» no volvió a mostrar los botones");
+      // Una manzana: todo abierto, con la ayuda «?» en su renglón
       await dibujarManzana(n, [[500, 640], [740, 625], [980, 640]], [[480, 820], [1000, 820]]);
       await n.click('#lista li:has-text("Manzana 1")'); await n.waitForTimeout(600);
-      exige(JSON.stringify(await abiertos()) === '["Lotes de la manzana"]' && await n.isVisible('#props .acor-fila [data-guia-ayuda="manzana"]'), "la manzana no abre «Lotes de la manzana» con su ayuda: " + (await abiertos()).join(", "));
-      exige(!(await n.isVisible("#add-manzana")), "después de dibujar la manzana los botones siguen abiertos");
+      const tm = await n.$$eval("#props > .grupo.acor", (gs) => gs.map((g) => g.dataset.acor));
+      exige(tm.includes("Lotes de la manzana") && JSON.stringify(await abiertos()) === JSON.stringify(tm) && await n.isVisible('#props .acor-fila [data-guia-ayuda="manzana"]'), "la manzana no sale toda abierta con su ayuda: " + (await abiertos()).join(", "));
+      exige(await n.isVisible("#add-manzana"), "después de dibujar la manzana se escondieron los botones");
       if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "limpio-manzana.png") });
       exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
       await n.context().close();
@@ -1896,6 +1895,78 @@ async function capasPesadas(p) {
       await u.click('#subtabs button:has-text("Capas")'); await u.waitForTimeout(1500); await pasarGuias(u);
       await u.click("#add-hs"); await u.waitForTimeout(600); await pasarGuias(u);
       exige(!(await u.isVisible("#agregar-abrir")) && !(await u.isVisible("#props-todo")) && !(await u.$("#props > .grupo.acor")) && await u.isVisible("#add-lote"), "una cuenta normal ya ve la edición limpia (debe nacer en el Laboratorio)");
+      await u.context().close();
+    });
+    // Pedido de Amar (10 nov 2026): «ya puse un chingo de puntos en dos esferas y no sé dónde duplicar las manzanas».
+    // Una manzana pasa completa, con sus lotes, a las demás esferas del terreno; en Terreno un botón pasa todas las de la
+    // Base; «Duplicar» en una manzana hace otra igual a un lado. Nace en el Laboratorio («manzanas-esferas»).
+    await paso("Manzanas en todas las esferas: pasa con sus lotes, el botón de Terreno pasa todas y Duplicar hace otra", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Manzanas terreno");
+      // Segunda esfera del mismo terreno: la misma foto, así cada punto cae en el mismo lugar de las dos
+      await n.evaluate(async () => {
+        const cv = document.createElement("canvas"); cv.width = 4096; cv.height = 2048; const x = cv.getContext("2d");
+        x.fillStyle = "#7ab"; x.fillRect(0, 0, 4096, 1024); x.fillStyle = "#6a5"; x.fillRect(0, 1024, 4096, 1024);
+        const bl = await new Promise((o) => cv.toBlob(o, "image/jpeg", 0.85));
+        const inp = document.querySelector("#subir-zona input[type=file]"); const dt = new DataTransfer(); dt.items.add(new File([bl], "campo-2.jpg", { type: "image/jpeg" }));
+        inp.files = dt.files; inp.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      for (let i = 0; i < 45; i++) { await n.waitForTimeout(1000); if ((await n.$$("#pano-lista [data-abrir]")).length >= 2) break; }
+      exige((await n.$$("#pano-lista [data-abrir]")).length >= 2, "la segunda esfera no terminó de subir");
+      await n.waitForTimeout(1500);
+      // Terreno: las dos esferas y 4 puntos en el suelo
+      await n.click('#subtabs button:has-text("Terreno")'); await n.waitForTimeout(1500); await pasarGuias(n);
+      for (let i = 0; i < 2; i++) { const v = await n.$eval("#tr-agregar", (x) => x.options[1].value); await n.selectOption("#tr-agregar", v); await n.waitForTimeout(1500); }
+      const A = await n.locator("#tr-stage-a").boundingBox(), B = await n.locator("#tr-stage-b").boundingBox();
+      for (const [fx, fy] of [[0.2, 0.72], [0.8, 0.72], [0.7, 0.84], [0.3, 0.84]]) { // arriba del aviso de abajo (tapa los clics)
+        await n.mouse.click(A.x + A.width * fx, A.y + A.height * fy); await n.waitForTimeout(400);
+        await n.mouse.click(B.x + B.width * fx, B.y + B.height * fy); await n.waitForTimeout(600);
+      }
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "manzana-terreno.png") });
+      exige(/4 puntos/.test(await n.textContent("#tr-prec")), "el terreno no quedó con 4 puntos: " + (await n.textContent("#tr-prec")) + " · " + (await n.textContent("#tr-panel")).replace(/\s+/g, " ").slice(0, 200));
+      // Capas, esfera 1: una manzana y «Aplicar a todas las esferas»
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1500); await pasarGuias(n);
+      await n.click("#panos-tira li:nth-child(1)"); await n.waitForTimeout(1200);
+      await dibujarManzana(n, [[500, 640], [740, 625], [980, 640]], [[480, 820], [1000, 820]]);
+      await n.click('#lista li:has-text("Manzana 1")'); await n.waitForTimeout(600);
+      const nLotes = (await lotes(n)).length;
+      exige(nLotes >= 5, "la manzana no hizo sus lotes: " + nLotes);
+      exige(await n.isVisible('#props input[data-k="_vinculo"]'), "la manzana no ofrece «Aplicar a todas las esferas»");
+      await n.click('#props .interruptor:has(input[data-k="_vinculo"])'); await n.waitForTimeout(900);
+      exige(await n.$eval('#props input[data-k="_vinculo"]', (x) => x.checked), "no se prendió «Aplicar a todas las esferas»");
+      // Esfera 2: la manzana con todos sus lotes, con los mismos números
+      await n.click("#panos-tira li:nth-child(2)"); await n.waitForTimeout(1500);
+      exige((await capas(n)).some((t) => /^Manzana 1/.test(t)) && (await lotes(n)).length === nLotes, "la manzana no llegó con sus lotes a la otra esfera: " + (await capas(n)).join(", "));
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "manzana-otra-esfera.png") });
+      // Un lote de la copia: dice que viaja con su manzana
+      await n.click('#lista li:has-text("Lote 1")'); await n.waitForTimeout(500);
+      exige(/con su manzana/.test(await n.textContent("#props")), "el lote de la copia no explica que viaja con su manzana");
+      // Duplicar en la esfera 1: Manzana 2 con sus lotes nuevos
+      await n.click("#panos-tira li:nth-child(1)"); await n.waitForTimeout(1500);
+      await n.click('#lista li:has-text("Manzana 1")'); await n.waitForTimeout(500);
+      await n.click('#props [data-acc="duplicar"]'); await n.waitForTimeout(900);
+      exige((await capas(n)).some((t) => /^Manzana 2/.test(t)) && (await lotes(n)).length === 2 * nLotes, "Duplicar no hizo la Manzana 2 con sus lotes: " + (await capas(n)).join(", "));
+      // Terreno: el botón pasa la Manzana 2 a la otra esfera
+      await n.click('#subtabs button:has-text("Terreno")'); await n.waitForTimeout(1500);
+      exige(/1 manzana/.test(await n.textContent('[data-tr="pasar"]')), "el botón de Terreno no ofrece pasar la Manzana 2");
+      await n.click('[data-tr="pasar"]'); await n.waitForTimeout(900);
+      exige(!(await n.$('[data-tr="pasar"]')) && /2 manzanas/.test(await n.textContent("#tr-panel")), "el botón no pasó la manzana: " + (await n.textContent("#tr-panel")).slice(0, 300));
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1500);
+      await n.click("#panos-tira li:nth-child(2)"); await n.waitForTimeout(1500);
+      exige((await capas(n)).some((t) => /^Manzana 2/.test(t)) && (await lotes(n)).length === 2 * nLotes, "la Manzana 2 no llegó a la otra esfera: " + (await capas(n)).join(", "));
+      // Quitarla de las demás esferas: se van la manzana y sus lotes
+      await n.click("#panos-tira li:nth-child(1)"); await n.waitForTimeout(1500);
+      await n.click('#lista li:has-text("Manzana 1")'); await n.waitForTimeout(500);
+      await n.click('#props .interruptor:has(input[data-k="_vinculo"])'); await n.waitForTimeout(900);
+      await n.click("#panos-tira li:nth-child(2)"); await n.waitForTimeout(1500);
+      exige(!(await capas(n)).some((t) => /^Manzana 1/.test(t)) && (await lotes(n)).length === nLotes, "al apagarlo no se quitaron la manzana y sus lotes de la otra esfera: " + (await capas(n)).join(", "));
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+      // Cuenta normal: la manzana no ofrece pasarse (sus lotes no viajaban) y Duplicar sigue diciendo que no
+      const u = await pagina("mzesf-" + Date.now() + "@prueba.mx"); await nuevoTour(u, "Sin manzanas esferas");
+      await u.click('#subtabs button:has-text("Capas")'); await u.waitForTimeout(1500); await pasarGuias(u);
+      await dibujarManzana(u, [[500, 640], [740, 625], [980, 640]], [[480, 820], [1000, 820]]);
+      await u.click('#lista li:has-text("Manzana 1")'); await u.waitForTimeout(600);
+      exige(!(await u.$('#props input[data-k="_vinculo"]')), "una cuenta normal ya ve «Aplicar a todas las esferas» en una manzana (debe nacer en el Laboratorio)");
       await u.context().close();
     });
     // Pedido de Amar (nov 2026): correo de bienvenida a cada cuenta nueva y las actualizaciones también por correo,
