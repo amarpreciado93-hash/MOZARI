@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-10T15:57:50.506Z",
- "bien": 67,
- "total": 67,
+ "fecha": "2026-11-10T16:36:40.570Z",
+ "bien": 68,
+ "total": 68,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -249,6 +249,10 @@
   },
   {
    "nombre": "Íconos animados: un hotspot con la cocina, sus colores y así se ve en el tour",
+   "ok": true
+  },
+  {
+   "nombre": "Edición limpia: «+ Agregar» esconde las herramientas y en Propiedades se abre un grupo a la vez",
    "ok": true
   },
   {

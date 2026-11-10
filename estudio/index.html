@@ -512,6 +512,36 @@
   .agregar button:last-child:nth-child(odd) { grid-column: span 2; }
   .agregar button:hover, .agregar button[aria-pressed="true"] { border-color: var(--mz-lima); color: var(--mz-lima); }
   .agregar svg { width: 18px; height: 18px; }
+  /* Edición limpia (Laboratorio «limpio»): las herramientas se esconden hasta que las pides */
+  .cab-fila { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+  .cab-fila h3 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .agregar-abrir, .acor-todo { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--mz-pastilla); border: 1px solid var(--mz-linea); background: transparent; color: var(--mz-texto); font: 500 11px var(--mz-texto-ui); cursor: pointer; }
+  .agregar-abrir { padding-left: 9px; }
+  .agregar-abrir svg { width: 14px; height: 14px; transition: transform 0.2s; }
+  .agregar-abrir:hover, .agregar-abrir[aria-expanded="true"], .acor-todo:hover { border-color: var(--mz-lima); color: var(--mz-lima); }
+  .agregar-abrir[aria-expanded="true"] svg { transform: rotate(45deg); }
+  .acor-todo { color: var(--mz-tenue); padding: 4px 10px; }
+  #izq-capas.limpio:not(.abierto) .agregar { display: none; }
+  #izq-capas.limpio.abierto .agregar { animation: acor-entra 0.18s ease-out; }
+  .props.con-acor { gap: 0; padding-top: 4px; }
+  .props.con-acor > .sel-multi, .props.con-acor > .orden, .props.con-acor > .mz-aviso { margin: 8px 0; }
+  .props.con-acor > .grupo:not(.acor) { padding: 6px 0 10px; }
+  .props.con-acor > .acciones { margin-top: 14px; }
+  .grupo.acor { gap: 0; border-bottom: 1px solid var(--mz-linea-neutra); }
+  .acor-fila { display: flex; align-items: center; gap: 6px; }
+  .acor-btn { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 12px 0; background: none; border: 0; color: var(--mz-texto); font: 500 12.5px var(--mz-texto-ui); text-align: left; cursor: pointer; }
+  .acor-btn > span { flex: none; }
+  .acor-btn small { flex: 1; min-width: 0; text-align: right; color: var(--mz-tenue); font-size: 11px; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .acor-btn .acor-flecha { flex: none; width: 14px; height: 14px; color: var(--mz-tenue); transition: transform 0.2s; }
+  .acor-btn:hover, .acor-btn:hover .acor-flecha { color: var(--mz-lima); }
+  .grupo.acor.abierto .acor-btn { color: var(--mz-lima); }
+  .grupo.acor.abierto .acor-flecha { transform: rotate(90deg); color: var(--mz-lima); }
+  .grupo.acor.abierto .acor-btn small { visibility: hidden; }
+  .acor-cuerpo { display: grid; gap: 8px; padding: 0 0 16px; }
+  .grupo.acor:not(.abierto) .acor-cuerpo { display: none; }
+  .grupo.acor.abierto .acor-cuerpo { animation: acor-entra 0.18s ease-out; }
+  @keyframes acor-entra { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .grupo.acor.abierto .acor-cuerpo, #izq-capas.limpio.abierto .agregar { animation: none; } }
   .lista { list-style: none; margin: 0; padding: 6px; overflow-y: auto; flex: 1; display: grid; align-content: start; gap: 2px; }
   .lista li { display: grid; grid-template-columns: 18px minmax(0, 1fr) 28px; align-items: center; gap: 8px; padding: 7px 6px 7px 10px; border-radius: 9px; cursor: pointer; font-size: 12px; border: 1px solid transparent; }
   .lista li:hover { background: var(--mz-lima-suave); }
@@ -1785,8 +1815,8 @@
       </aside>
       <aside class="ed-panel" id="izq-capas" aria-label="Capas">
         <header>
-          <h3>Capas</h3>
-          <div class="agregar">
+          <div class="cab-fila"><h3>Capas</h3><button class="agregar-abrir" id="agregar-abrir" aria-expanded="false" aria-controls="agregar" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Agregar</button></div>
+          <div class="agregar" id="agregar">
             <button id="add-lote" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 7.5 12 4l8.5 3.5v9L12 20l-8.5-3.5z"/><path d="M12 4v16M3.5 7.5 12 11l8.5-3.5"/></svg>Lote</button>
             <button id="add-edificio" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 21V4h14v17"/><path d="M3 21h18M9 8h2M13 8h2M9 12h2M13 12h2M9 16h2M13 16h2" stroke-linecap="round"/></svg>Edificio</button>
             <button id="add-manzana" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6h18v12H3z"/><path d="M7.5 6v12M12 6v12M16.5 6v12" stroke-opacity=".6"/></svg>Manzana</button>
@@ -1832,7 +1862,7 @@
       </div>
 
       <aside class="ed-panel der" id="der-capas" aria-label="Propiedades">
-        <header><h3 id="props-titulo">Propiedades</h3></header>
+        <header><div class="cab-fila"><h3 id="props-titulo">Propiedades</h3><button class="acor-todo" id="props-todo" hidden></button></div></header>
         <div class="props" id="props"></div>
       </aside>
       <aside class="ed-panel der" id="der-piloto" aria-label="Ajustes del piloto" hidden>
@@ -8366,10 +8396,20 @@ void main(){
   const OJO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   const OJO_NO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 4.4-1.1"/></svg>';
   const ICO_VINC = '<svg class="vinc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-label="En todas las esferas del terreno"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>';
+  // Edición limpia (Laboratorio «limpio»): ver más abajo, junto a Propiedades
+  const ACOR = { abierto: {}, todo: false }, AGR = { abierto: false, vacio: null };
+  try { ACOR.todo = localStorage.getItem("mz-props-todo") === "1"; } catch (e) { /* sin almacenamiento */ }
+  const acorLimpio = () => enLab("limpio") && !ACOR.todo;
   function pintarCapas() {
     if (!motorEd) return;
     const ul = $("lista"), l = cs();
-    if (!l.length) { ul.innerHTML = '<li class="vacio" role="presentation">Este panorama no tiene capas. Agrega un polígono, un texto o un hotspot.</li>'; return; }
+    if (acorLimpio()) {
+      const pano = motorEd.actual && motorEd.actual.id;
+      if (!l.length && !motorEd.dibujo && AGR.vacio !== pano) { AGR.vacio = pano; AGR.abierto = true; }
+      if (l.length && AGR.vacio === pano) AGR.vacio = null;
+      pintarAgregar();
+    }
+    if (!l.length) { ul.innerHTML = '<li class="vacio" role="presentation">Este panorama no tiene capas. ' + (acorLimpio() ? "Toca «+ Agregar» para poner un lote, un polígono, un texto o un hotspot." : "Agrega un polígono, un texto o un hotspot.") + "</li>"; return; }
     ul.innerHTML = l.slice().reverse().map((c) =>
       '<li role="option" draggable="true" data-id="' + c.id + '" aria-selected="' + (c.id === motorEd.elegida || (seleccion.size > 1 && seleccion.has(c.id))) + '"' + (c.visible ? "" : ' class="oculta"') + ">" +
       (c.lote ? ICONOS.lote : c.manzana || c.mzPlano ? ICONOS.manzana : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.tipo === "interes" ? (piDe(c).nombre || "Punto de interés") + (piDe(c).dato ? " · " + piDe(c).dato : "") : c.nombre)) + (c.vinculo ? ICO_VINC : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>").join("");
@@ -8505,10 +8545,93 @@ void main(){
     if (a !== "ninguna") g += '<p class="nota">Funciona en la Vista previa y en el tour publicado.</p>';
     return g + "</div>";
   }
+  // Edición limpia (Laboratorio «limpio»): en Propiedades cada grupo es un renglón con su título.
+  // Tocas uno, se abre y se cierran los demás. «Ver todo» regresa a la vista de siempre (se recuerda en esta compu).
+  const ACOR_FLECHA = '<svg class="acor-flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';
+  // Grupos que empiezan con un interruptor (sin título): su título sale del interruptor
+  const ACOR_TITULOS = { en3d: "Fijo en 3D", "rollover.activo": "Rollover", "fondo.activo": "Fondo", "camino.flecha": "Flecha y movimiento" };
+  const tipoAcor = (c) => (c.lote ? "lote" : c.edificio ? "edificio" : c.manzana ? "manzana" : c.mzPlano ? "mzplano" : c.camino ? "camino" : c.tipo);
+  function resumenAcor(g) {
+    const e = g.querySelector('.estados [aria-pressed="true"], .anim-ops [aria-pressed="true"], :scope > .hs-estilos [aria-pressed="true"]');
+    if (e) return e.title || e.textContent.trim();
+    const s = g.querySelector('select[data-k="accion"]');
+    return s && s.selectedIndex >= 0 ? s.options[s.selectedIndex].text : "";
+  }
+  function acordeonProps(cont, c) {
+    const todo = $("props-todo");
+    todo.hidden = !enLab("limpio") || !c;
+    todo.textContent = ACOR.todo ? "Uno a la vez" : "Ver todo";
+    todo.title = ACOR.todo ? "Ver un grupo a la vez" : "Ver todos los grupos abiertos";
+    cont.classList.toggle("con-acor", !!c && acorLimpio());
+    if (!c || !acorLimpio()) return;
+    const grupos = [];
+    cont.querySelectorAll(":scope > .grupo").forEach((g) => {
+      const b = g.querySelector(":scope > b"), extra = [];
+      let titulo = "", resumen = "";
+      if (b) {
+        b.querySelectorAll("button").forEach((x) => { extra.push(x); x.remove(); });
+        titulo = b.textContent.trim(); b.remove();
+      } else {
+        const it = g.firstElementChild, chk = it && it.classList.contains("interruptor") && it.querySelector("input[data-k]");
+        if (!chk) return; // sin título (el nombre): se queda siempre a la vista
+        titulo = ACOR_TITULOS[chk.dataset.k] || it.textContent.trim();
+        if (g.querySelectorAll(".interruptor").length === 1) resumen = chk.checked ? "Sí" : "No";
+      }
+      if (!titulo) return;
+      resumen = resumen || resumenAcor(g);
+      const cuerpo = document.createElement("div"), fila = document.createElement("div");
+      cuerpo.className = "acor-cuerpo";
+      while (g.firstChild) cuerpo.appendChild(g.firstChild);
+      fila.className = "acor-fila";
+      fila.innerHTML = '<button type="button" class="acor-btn" aria-expanded="false"><span></span><small></small>' + ACOR_FLECHA + "</button>";
+      fila.querySelector("span").textContent = titulo;
+      fila.querySelector("small").textContent = resumen;
+      extra.forEach((x) => fila.appendChild(x));
+      g.classList.add("acor"); g.dataset.acor = titulo; g.append(fila, cuerpo);
+      grupos.push(g);
+    });
+    const k = tipoAcor(c);
+    let ab = ACOR.abierto[k];
+    if (ab === undefined || (ab && !grupos.some((g) => g.dataset.acor === ab))) ab = grupos.length ? grupos[0].dataset.acor : "";
+    grupos.forEach((g) => abrirAcor(g, g.dataset.acor === ab));
+  }
+  function abrirAcor(g, si) {
+    g.classList.toggle("abierto", si);
+    g.querySelector(".acor-btn").setAttribute("aria-expanded", String(si));
+  }
+  $("props").addEventListener("click", (ev) => {
+    const btn = ev.target.closest(".acor-btn");
+    if (!btn) return;
+    const g = btn.closest(".grupo.acor"), c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
+    if (!g || !c) return;
+    const abrir = !g.classList.contains("abierto");
+    $("props").querySelectorAll(":scope > .grupo.acor").forEach((x) => abrirAcor(x, abrir && x === g));
+    ACOR.abierto[tipoAcor(c)] = abrir ? g.dataset.acor : "";
+    if (abrir) g.scrollIntoView({ block: "nearest" });
+  });
+  $("props-todo").addEventListener("click", () => {
+    ACOR.todo = !ACOR.todo;
+    try { localStorage.setItem("mz-props-todo", ACOR.todo ? "1" : "0"); } catch (e) { /* sin almacenamiento */ }
+    pintarAgregar(); pintarProps();
+  });
+  // Capas: los botones para agregar se esconden tras «+ Agregar». Al elegir uno se cierran solos.
+  // En una esfera sin capas se abren la primera vez, para que se vea por dónde empezar.
+  function pintarAgregar() {
+    const limpio = acorLimpio(), panel = $("izq-capas");
+    panel.classList.toggle("limpio", limpio);
+    panel.classList.toggle("abierto", limpio && AGR.abierto);
+    $("agregar-abrir").hidden = !limpio;
+    $("agregar-abrir").setAttribute("aria-expanded", String(limpio && AGR.abierto));
+  }
+  $("agregar-abrir").addEventListener("click", () => { AGR.abierto = !AGR.abierto; pintarAgregar(); });
+  $("agregar").addEventListener("click", (ev) => {
+    if (!acorLimpio() || !ev.target.closest("button")) return;
+    setTimeout(() => { AGR.abierto = false; pintarAgregar(); }, 0);
+  });
   function pintarProps() {
     const cont = $("props");
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
-    if (!c) { $("props-titulo").textContent = "Propiedades"; cont.innerHTML = '<p class="vacio">Selecciona una capa en la lista o sobre la esfera para editarla.</p>'; return; }
+    if (!c) { $("props-titulo").textContent = "Propiedades"; cont.innerHTML = '<p class="vacio">Selecciona una capa en la lista o sobre la esfera para editarla.</p>'; acordeonProps(cont, null); return; }
     $("props-titulo").textContent = c.lote ? nombreLote(c) : c.edificio ? "Edificio " + (c.edificio.torre || "") : c.manzana || c.mzPlano ? terminos().manzana + " " + ((c.manzana || c.mzPlano).mz || "") : c.camino ? "Ruta" : c.tipo === "interes" ? "Punto de interés" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
     const multi = seleccionadas().length > 1 ? seleccionadas() : null;
     if (multi) $("props-titulo").textContent = multi.length + (c.lote ? " lotes" : " capas") + " seleccionados";
@@ -8661,6 +8784,7 @@ void main(){
     h += '<div class="grupo"><b>Orden</b><div class="orden"><button class="mini" data-orden="frente">Arriba</button><button class="mini" data-orden="subir">Subir</button><button class="mini" data-orden="bajar">Bajar</button><button class="mini" data-orden="fondo">Abajo</button></div></div>';
     h += '<div class="acciones"><button class="mini" data-acc="duplicar">Duplicar</button><button class="mini peligro" data-acc="eliminar">Eliminar</button>' + (c.lote ? '<button class="mini" data-acc="quitar-lote">Quitar datos de lote</button>' : "") + "</div>";
     cont.innerHTML = h;
+    acordeonProps(cont, c);
     guiasDeManzana(c);
   }
   function aplicar(el, repintar) {

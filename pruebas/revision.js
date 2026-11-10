@@ -63,7 +63,10 @@ const exige = (cond, msg) => { if (!cond) throw new Error(msg); };
 // ---------- ayudantes ----------
 let navegador;
 async function pagina(correo, opciones = {}) {
-  const ctx = await navegador.newContext(Object.assign({ viewport: { width: 1400, height: 900 }, acceptDownloads: true }, opciones));
+  const { limpio, ...otras } = opciones;
+  const ctx = await navegador.newContext(Object.assign({ viewport: { width: 1400, height: 900 }, acceptDownloads: true }, otras));
+  // Edición limpia (Laboratorio «limpio»): las pruebas de siempre usan «Ver todo»; la suya la apaga con { limpio: true }
+  if (!limpio) await ctx.addInitScript(() => { try { if (!localStorage.getItem("mz-props-todo")) localStorage.setItem("mz-props-todo", "1"); } catch (e) { /* sin almacenamiento */ } });
   const p = await ctx.newPage();
   p.errs = [];
   p.on("pageerror", (e) => p.errs.push(e.message));
@@ -1834,6 +1837,65 @@ async function capasPesadas(p) {
       await u.click('#subtabs button:has-text("Capas")'); await u.waitForTimeout(1500); await pasarGuias(u);
       await u.click("#add-hs"); await u.waitForTimeout(600); await pasarGuias(u);
       exige(!(await u.$(".anim-op")), "una cuenta normal ya ve los íconos animados (deben nacer en el Laboratorio)");
+      await u.context().close();
+    });
+    // Pedido de Amar (nov 2026): «que no se sienta invasivo como Photoshop». Las herramientas se esconden hasta pedirlas
+    // y en Propiedades se abre un grupo a la vez. Nace en el Laboratorio.
+    await paso("Edición limpia: «+ Agregar» esconde las herramientas y en Propiedades se abre un grupo a la vez", async () => {
+      const n = await pagina(DUENO, { limpio: true }); await nuevoTour(n, "Edicion limpia");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1500); await pasarGuias(n);
+      // Esfera sin capas: los botones se ven la primera vez, para saber por dónde empezar
+      exige(await n.isVisible("#agregar-abrir") && await n.isVisible("#add-hs"), "en una esfera sin capas no se ven «+ Agregar» y sus botones");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "limpio-vacio.png") });
+      await n.click("#add-hs"); await n.waitForTimeout(700); await pasarGuias(n);
+      exige(!(await n.isVisible("#add-hs")) && !(await n.isVisible("#add-lote")), "al elegir el hotspot los botones no se escondieron");
+      const abiertos = () => n.$$eval("#props > .grupo.acor.abierto", (gs) => gs.map((g) => g.dataset.acor));
+      const titulos = await n.$$eval("#props > .grupo.acor", (gs) => gs.map((g) => g.dataset.acor));
+      for (const t of ["Hotspot", "Estilo", "Ícono animado", "Fijo en 3D", "Al hacer clic", "Orden"]) exige(titulos.includes(t), "falta el renglón «" + t + "» en Propiedades: " + titulos.join(", "));
+      exige(JSON.stringify(await abiertos()) === '["Hotspot"]', "al crear el hotspot no está abierto solo su primer grupo: " + (await abiertos()).join(", "));
+      exige(await n.isVisible('#props input[data-k="nombre"]') && await n.isVisible('[data-acc="eliminar"]'), "el nombre o Duplicar/Eliminar no quedaron a la vista");
+      exige(!(await n.isVisible('.anim-op[data-v="cocina"]')), "el grupo del ícono animado no está cerrado");
+      exige((await n.textContent('#props > .grupo.acor[data-acor="Al hacer clic"] .acor-btn small')).trim().length > 0, "el renglón «Al hacer clic» no dice qué hace");
+      // Abrir «Ícono animado»: se cierran los demás, y sigue abierto al elegir (aunque el panel se vuelve a pintar)
+      await n.click('#props .acor-btn:has-text("Ícono animado")'); await n.waitForTimeout(300);
+      exige(JSON.stringify(await abiertos()) === '["Ícono animado"]', "al abrir «Ícono animado» no se cerraron los demás: " + (await abiertos()).join(", "));
+      await n.click('.anim-op[data-v="cocina"]'); await n.waitForTimeout(700);
+      exige(JSON.stringify(await abiertos()) === '["Ícono animado"]' && await n.isVisible('input[type=color][data-k="animColores.acento"]'), "al elegir la cocina se cerró el grupo");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "limpio-hotspot.png") });
+      // Tocar el abierto lo cierra
+      await n.click('#props .acor-btn:has-text("Ícono animado")'); await n.waitForTimeout(300);
+      exige((await abiertos()).length === 0, "tocar el grupo abierto no lo cerró");
+      // El otro hotspot abre el mismo grupo que estabas usando
+      await n.click('#props .acor-btn:has-text("Estilo")'); await n.waitForTimeout(300);
+      await n.click("#agregar-abrir"); await n.waitForTimeout(300);
+      exige(await n.isVisible("#add-hs"), "«+ Agregar» no abrió los botones");
+      await n.click("#add-hs"); await n.waitForTimeout(900); await pasarGuias(n);
+      exige((await n.$$("#lista li[data-id]")).length === 2 && JSON.stringify(await abiertos()) === '["Estilo"]', "el segundo hotspot no abrió «Estilo»: " + (await abiertos()).join(", "));
+      // «Ver todo»: la vista de siempre, y se recuerda
+      await n.click("#props-todo"); await n.waitForTimeout(400);
+      exige(!(await n.$("#props > .grupo.acor")) && await n.isVisible('.anim-op[data-v="cocina"]') && await n.isVisible("#add-hs") && !(await n.isVisible("#agregar-abrir")), "«Ver todo» no regresó la vista completa");
+      await n.reload(); await n.waitForTimeout(3000); await cerrarAnuncio(n);
+      await n.click('#nav button:has-text("Panoramas")').catch(() => {}); await n.waitForTimeout(500);
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1500); await pasarGuias(n);
+      exige(await n.isVisible("#add-hs") && !(await n.isVisible("#agregar-abrir")), "«Ver todo» no se recordó al volver a entrar");
+      await n.click("#lista li[data-id]"); await n.waitForTimeout(500);
+      exige((await n.textContent("#props-todo")).trim() === "Uno a la vez", "el botón no ofrece regresar a «Uno a la vez»");
+      await n.click("#props-todo"); await n.waitForTimeout(400);
+      exige((await n.$$("#props > .grupo.acor")).length >= 5 && await n.isVisible("#agregar-abrir"), "«Uno a la vez» no regresó la edición limpia");
+      // Una manzana: su primer grupo abierto y la ayuda «?» a la mano en su renglón
+      await n.click("#agregar-abrir"); await n.waitForTimeout(300);
+      await dibujarManzana(n, [[500, 640], [740, 625], [980, 640]], [[480, 820], [1000, 820]]);
+      await n.click('#lista li:has-text("Manzana 1")'); await n.waitForTimeout(600);
+      exige(JSON.stringify(await abiertos()) === '["Lotes de la manzana"]' && await n.isVisible('#props .acor-fila [data-guia-ayuda="manzana"]'), "la manzana no abre «Lotes de la manzana» con su ayuda: " + (await abiertos()).join(", "));
+      exige(!(await n.isVisible("#add-manzana")), "después de dibujar la manzana los botones siguen abiertos");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "limpio-manzana.png") });
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+      // Es del Laboratorio («Solo yo» al nacer): una cuenta normal sigue con la vista de siempre
+      const u = await pagina("limpio-" + Date.now() + "@prueba.mx", { limpio: true }); await nuevoTour(u, "Sin limpia");
+      await u.click('#subtabs button:has-text("Capas")'); await u.waitForTimeout(1500); await pasarGuias(u);
+      await u.click("#add-hs"); await u.waitForTimeout(600); await pasarGuias(u);
+      exige(!(await u.isVisible("#agregar-abrir")) && !(await u.isVisible("#props-todo")) && !(await u.$("#props > .grupo.acor")) && await u.isVisible("#add-lote"), "una cuenta normal ya ve la edición limpia (debe nacer en el Laboratorio)");
       await u.context().close();
     });
     // Pedido de Amar (nov 2026): los desarrollos suelen tener sus lotes en Google Earth (KMZ). Nace en el Laboratorio.
