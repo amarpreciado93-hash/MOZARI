@@ -570,6 +570,13 @@
   .lista li.arrastrando { opacity: 0.4; }
   .lista li.sobre { box-shadow: 0 -2px 0 var(--mz-lima); }
   .lista li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lista li.carpeta { grid-template-columns: 16px 18px minmax(0, 1fr) 28px; padding-left: 4px; }
+  .lista li.carpeta small { margin-left: 8px; color: var(--mz-tenue); font-size: 11px; }
+  .lista li.hijo { margin-left: 22px; border-left: 1px solid var(--mz-linea-neutra); border-radius: 0 9px 9px 0; }
+  .carp-flecha { width: 16px; height: 22px; padding: 0; display: grid; place-items: center; background: none; border: 0; color: var(--mz-tenue); cursor: pointer; }
+  .carp-flecha svg { width: 13px; height: 13px; transition: transform 0.15s; }
+  .carp-flecha:hover { color: var(--mz-lima); }
+  .lista li.carpeta.abierta .carp-flecha svg { transform: rotate(90deg); }
   .lista li.vacio { display: block; cursor: default; color: var(--mz-tenue); line-height: 1.5; padding: 14px 10px; }
   .lista li.vacio:hover { background: none; }
   .lista .tipo { width: 18px; height: 18px; color: var(--mz-tenue); }
@@ -607,6 +614,25 @@
   .tr-guia li { margin: 4px 0; }
   .tr-guia b { color: var(--mz-texto); font-weight: 500; }
   details.tr-ayuda summary { cursor: pointer; font-size: 12px; font-weight: 500; color: var(--mz-lima); margin-bottom: 6px; }
+  /* Terreno fácil (Laboratorio «terreno-facil»): 3 pasos, la esfera que toca tocar se ilumina */
+  .tr-pasos { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .tr-paso { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: center; padding: 10px; border-radius: 14px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); opacity: 0.55; }
+  .tr-paso .n { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; border: 1.5px solid var(--mz-linea); color: var(--mz-texto); }
+  .tr-paso > div > b { display: block; font-size: 13px; font-weight: 600; }
+  .tr-paso small b { color: var(--mz-texto); font-weight: 600; }
+  .tr-paso small { display: block; font-size: 11.5px; color: var(--mz-tenue); line-height: 1.35; margin-top: 2px; }
+  .tr-paso.activo { opacity: 1; border-color: var(--mz-lima); }
+  .tr-paso.activo .n { background: var(--mz-lima); border-color: var(--mz-lima); color: var(--mz-tinta); }
+  .tr-paso.hecho { opacity: 1; }
+  .tr-paso.hecho .n { border-color: var(--mz-lima); color: var(--mz-lima); }
+  .tr-como { justify-self: start; }
+  .tr-det summary { cursor: pointer; font-size: 12px; color: var(--mz-tenue); padding: 4px 0; }
+  .tr-det[open] summary { margin-bottom: 8px; }
+  .tr-lado.toca::after { content: ""; position: absolute; inset: 0; z-index: 5; pointer-events: none; border: 3px solid var(--mz-lima); animation: tr-toca 1.4s ease-in-out infinite; }
+  .tr-lado.toca .tr-cab::after { content: "Toca aquí"; order: 9; background: var(--mz-lima); color: var(--mz-tinta); font: 700 11px var(--mz-texto-ui); padding: 7px 11px; border-radius: var(--mz-pastilla); }
+  .tr-lado.espera .stage { filter: brightness(0.6); transition: filter 0.2s; }
+  @keyframes tr-toca { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+  @media (prefers-reduced-motion: reduce) { .tr-lado.toca::after { animation: none; } }
   .tr-esf, .tr-puntos { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
   .tr-esf li { display: grid; grid-template-columns: 46px minmax(0, 1fr) 28px; gap: 10px; align-items: center; padding: 6px; border-radius: 12px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); }
   .tr-esf img { width: 46px; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 7px; display: block; }
@@ -4863,8 +4889,10 @@
         // nunca cambia a una versión corta ni crece (así lo pidió el dueño de Mozari)
         const elegido = 0;
         const letra = poner(versiones[0][0], versiones[0][1], 1);
+        // Al alejarte el nombre nunca se borra (pedido de Amar, 10 nov 2026): si quedaría de menos de 5 px, se queda en 5 px
+        if (letra > 0 && letra < 5) poner(versiones[0][0], versiones[0][1], 5 / letra);
         versiones.forEach(([el], i) => { if (i !== elegido) el.style.display = "none"; });
-        versiones[0][0].style.visibility = letra >= 3 ? "" : "hidden";
+        versiones[0][0].style.visibility = "";
       }
       R.lados.forEach((el, i) => {
         if (!el) return;
@@ -4901,9 +4929,10 @@
           // Del más completo al más corto ("Lote 3 · Mz B" → "3 · B" → "3"): el número nunca se borra al alejarse
           const opciones = [nombreLote(c), nombreCorto(l), l.numero || "—"], cabe = (s) => (ancho * 0.92) / Math.max(1, s.length * 0.6);
           // Siempre el rótulo completo, del tamaño que le toca al lote (sin versiones cortas)
-          const nivel = 0, tx = opciones[0], fs = Math.min(20 * t, lado * 0.17 * t, cabe(tx));
+          // Al alejarte nunca se borra: a lo mucho baja a 5 px (pedido de Amar, 10 nov 2026)
+          const nivel = 0, tx = opciones[0], fs = Math.max(5, Math.min(20 * t, lado * 0.17 * t, cabe(tx)));
           const area = l.verArea ? fmtArea(l.area) : "";
-          if (fs >= 4) {
+          {
             h += '<text class="lt-nom" x="' + C.x.toFixed(1) + '" y="' + (C.y - (area ? fs * 0.45 : 0)).toFixed(1) + '" font-size="' + fs.toFixed(1) + '">' + esc(tx) + "</text>";
             if (area && fs * 0.78 >= 7) h += '<text class="lt-area" x="' + C.x.toFixed(1) + '" y="' + (C.y + fs * 0.75).toFixed(1) + '" font-size="' + (fs * 0.78).toFixed(1) + '">' + esc(area) + "</text>";
           }
@@ -8706,13 +8735,38 @@ void main(){
       pintarAgregar();
     }
     if (!l.length) { ul.innerHTML = '<li class="vacio" role="presentation">Este panorama no tiene capas. ' + (acorLimpio() ? "Toca «+ Agregar» para poner un lote, un polígono, un texto o un hotspot." : "Agrega un polígono, un texto o un hotspot.") + "</li>"; return; }
-    ul.innerHTML = l.slice().reverse().map((c) =>
-      '<li role="option" draggable="true" data-id="' + c.id + '" aria-selected="' + (c.id === motorEd.elegida || (seleccion.size > 1 && seleccion.has(c.id))) + '"' + (c.visible ? "" : ' class="oculta"') + ">" +
-      (c.lote ? ICONOS.lote : c.manzana || c.mzPlano ? ICONOS.manzana : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.tipo === "interes" ? (piDe(c).nombre || "Punto de interés") + (piDe(c).dato ? " · " + piDe(c).dato : "") : c.nombre)) + (c.vinculo ? ICO_VINC : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>").join("");
+    const fila = (c, o = {}) => '<li role="option" draggable="' + !o.hijo + '" data-id="' + c.id + '" aria-selected="' + (c.id === motorEd.elegida || (seleccion.size > 1 && seleccion.has(c.id))) + '" class="' + [c.visible ? "" : "oculta", o.carpeta ? "carpeta" : "", o.abierta ? "abierta" : "", o.hijo ? "hijo" : ""].join(" ").trim() + '">' +
+      (o.carpeta ? '<button class="carp-flecha" data-carpeta="' + c.id + '" aria-expanded="' + !!o.abierta + '" aria-label="' + (o.abierta ? "Cerrar" : "Abrir") + ' la carpeta de lotes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>' : "") +
+      (c.lote ? ICONOS.lote : c.manzana || c.mzPlano ? ICONOS.manzana : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.tipo === "interes" ? (piDe(c).nombre || "Punto de interés") + (piDe(c).dato ? " · " + piDe(c).dato : "") : c.nombre)) + (c.vinculo ? ICO_VINC : "") + (o.carpeta ? "<small>" + o.n + " " + (o.n === 1 ? terminos().lote : plural(terminos().lote)).toLowerCase() + "</small>" : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>";
+    if (!enCarpetas()) { ul.innerHTML = l.slice().reverse().map((c) => fila(c)).join(""); return; }
+    // Carpetas (Laboratorio «carpetas», pedido de Amar 10 nov 2026): cada manzana guarda sus lotes, como un grupo de
+    // Photoshop. Cerrada de inicio; se abre con su flechita o sola al elegir uno de sus lotes en la esfera.
+    const esCarpeta = (c) => !!(c.manzana || c.mzPlano), suyos = new Map();
+    l.forEach((x) => { if (x.deManzana) (suyos.get(x.deManzana) || suyos.set(x.deManzana, []).get(x.deManzana)).push(x); });
+    const elegida = motorEd.elegida && buscar(motorEd.elegida);
+    if (elegida && elegida.deManzana && !CARPETAS.has(elegida.deManzana)) { CARPETAS.add(elegida.deManzana); guardarCarpetas(); }
+    const ids = new Set(l.map((x) => x.id));
+    ul.innerHTML = l.slice().reverse().map((c) => {
+      if (c.deManzana && ids.has(c.deManzana) && esCarpeta(buscar(c.deManzana))) return ""; // va dentro de su manzana
+      if (!esCarpeta(c)) return fila(c);
+      const hijos = (suyos.get(c.id) || []).slice().sort((a, b) => a.iManzana - b.iManzana), abierta = CARPETAS.has(c.id);
+      return fila(c, { carpeta: true, abierta, n: hijos.length }) + (abierta ? hijos.map((x) => fila(x, { hijo: true })).join("") : "");
+    }).join("");
   }
+  const CARPETAS = new Set();
+  let carpetasPlano = false; // «mz-carpetas-plano» = la lista de siempre (pruebas)
+  try { JSON.parse(localStorage.getItem("mz-carpetas") || "[]").forEach((id) => CARPETAS.add(id)); carpetasPlano = localStorage.getItem("mz-carpetas-plano") === "1"; } catch (e) { /* sin almacenamiento */ }
+  const enCarpetas = () => enLab("carpetas") && !carpetasPlano;
+  const guardarCarpetas = () => { try { localStorage.setItem("mz-carpetas", JSON.stringify([...CARPETAS].slice(-300))); } catch (e) { /* sin almacenamiento */ } };
   $("lista").addEventListener("click", (ev) => {
+    const carp = ev.target.closest("[data-carpeta]");
+    if (carp) { const id = carp.dataset.carpeta; if (CARPETAS.has(id)) CARPETAS.delete(id); else CARPETAS.add(id); guardarCarpetas(); pintarCapas(); return; }
     const ojo = ev.target.closest("[data-ojo]");
-    if (ojo) { const c = buscar(ojo.dataset.ojo); c.visible = !c.visible; cambio(); return; }
+    if (ojo) {
+      const c = buscar(ojo.dataset.ojo); c.visible = !c.visible;
+      if (enCarpetas() && (c.manzana || c.mzPlano)) cs().forEach((x) => { if (x.deManzana === c.id) x.visible = c.visible; }); // la carpeta oculta o muestra todos sus lotes
+      cambio(); return;
+    }
     const li = ev.target.closest("li[data-id]");
     if (li) seleccionar(li.dataset.id, ev.shiftKey ? "rango" : ev.metaKey || ev.ctrlKey ? "sumar" : null);
   });
@@ -9085,12 +9139,12 @@ void main(){
     if ((c.tipo === "poligono" || c.tipo === "texto") && !c.edificio && (labMz || !(c.manzana || c.mzPlano))) {
       const aqui = motorEd.actual.id, listas = trIds().filter(trLista);
       h += '<div class="grupo"><b>Terreno</b>';
-      if (labMz && mzDe) h += '<p class="nota">' + (mzDe.vinculo ? "Está en todas las esferas con su manzana." : "Para pasarlo a las otras esferas, selecciona su manzana y prende Aplicar a todas las esferas.") + '</p><div class="orden"><button class="mini" data-acc="ir-manzana">Ir a la manzana</button></div>';
+      if (labMz && mzDe) h += '<p class="nota">' + (mzDe.vinculo ? "Está en todas las esferas con su manzana." : "Para pasarlo a las otras esferas, selecciona su manzana y prende " + (trFacil() ? "Pasar a las esferas amarradas." : "Aplicar a todas las esferas.")) + '</p><div class="orden"><button class="mini" data-acc="ir-manzana">Ir a la manzana</button></div>';
       else if (trLista(aqui) && listas.length > 1) {
         const otras = listas.filter((x) => x !== aqui).map(nombreDe).join(", ");
-        h += interruptor("Aplicar a todas las esferas", "_vinculo", !!c.vinculo) +
+        h += interruptor(trFacil() ? "Pasar a las esferas amarradas" : "Aplicar a todas las esferas", "_vinculo", !!c.vinculo) +
           '<p class="nota">' + (c.vinculo ? "Está también en " + esc(otras) + ". Si lo editas aquí, se actualiza en todas." : "Lo copia a " + esc(otras) + " en el lugar correcto, con los puntos de referencia del terreno.") + "</p>";
-      } else h += '<p class="nota">Para aplicarlo a otras esferas, une este panorama al terreno en Panoramas → Terreno.</p>';
+      } else h += trFacil() ? '<p class="nota">Para pasarlo a otra esfera, primero amarra las dos en Panoramas → Terreno (3 pasos).</p><div class="orden"><button class="mini" data-acc="ir-terreno">Ir a Terreno</button></div>' : '<p class="nota">Para aplicarlo a otras esferas, une este panorama al terreno en Panoramas → Terreno.</p>';
       h += "</div>";
     }
     h += '<div class="grupo"><b>Orden</b><div class="orden"><button class="mini" data-orden="frente">Arriba</button><button class="mini" data-orden="subir">Subir</button><button class="mini" data-orden="bajar">Bajar</button><button class="mini" data-orden="fondo">Abajo</button></div></div>';
@@ -9317,7 +9371,7 @@ void main(){
     });
     guardar();
     const partes = [mz ? mz + (mz === 1 ? " manzana" : " manzanas") : "", lt ? lt + (lt === 1 ? " lote" : " lotes") : ""].filter(Boolean).join(" y ");
-    avisar(partes ? partes + " ya están en todas las esferas" + (fallo ? ". " + fallo + " no se pudieron: quedan fuera de la vista de otra esfera" : "") : "No se pudo: revisa los puntos del terreno", 6000);
+    avisar(partes ? partes + " ya están en " + (trFacil() ? "las esferas amarradas" : "todas las esferas") + (fallo ? ". " + fallo + " no se pudieron: quedan fuera de la vista de otra esfera" : "") : "No se pudo: revisa los puntos del terreno", 6000);
   }
   $("props").addEventListener("click", (ev) => {
     const m = ev.target.closest(".muestra, .hs-estilo, .anim-op"); if (m) { aplicar(m, true); return; }
@@ -9333,6 +9387,7 @@ void main(){
     if (a && a.dataset.acc === "t3d-reset") { const c = buscar(motorEd.elegida); if (c) { c.t3d = Object.assign({}, T3_DEF); cambio(); } return; }
     if (a && a.dataset.acc === "sel-una") { seleccionar(motorEd.elegida); return; }
     if (a && a.dataset.acc === "ir-lotes") { ir("panoramas", "lotes"); return; }
+    if (a && a.dataset.acc === "ir-terreno") { ir("panoramas", "terreno"); return; }
     if (a && a.dataset.acc === "duplicar") duplicar();
     if (a && a.dataset.acc === "eliminar") eliminar();
   });
@@ -9950,7 +10005,23 @@ void main(){
   const TP = () => est.terreno.puntos;
   const grad2 = (g) => (g < 0.01 ? "<0.01°" : "±" + g.toFixed(2) + "°");
   const largoPuntos = () => Math.max(0, ...Object.values(TP()).map((l) => l.length));
+  // Terreno fácil (Laboratorio «terreno-facil», pedido de Amar 10 nov 2026: «no entiendo nada»): 3 pasos.
+  // 1) dos menús arriba de cada esfera (de todas las del tour; solo esas dos se amarran), 2) 4 puntos con
+  // la esfera que toca tocar iluminada, 3) un botón verde que pasa las manzanas. Animación la primera vez.
+  const trFacil = () => enLab("terreno-facil");
+  const existe = (id) => est.escenas.some((e) => e.id === id);
+  function asegurarEnTerreno(id) { if (!id) return; if (!TP()[id]) TP()[id] = []; if (!est.terreno.base || !TP()[est.terreno.base]) est.terreno.base = id; }
+  // Una esfera que se eligió y se cambió sin marcarle puntos se suelta del terreno
+  function soltarSiVacia(id) { if (!id || id === tr.a || id === tr.b || !TP()[id] || (TP()[id] || []).some(Boolean)) return; delete TP()[id]; (est.capas[id] || []).forEach((c) => delete c.vinculo); }
   function abrirTerreno() {
+    const primera = !tr.ma;
+    if (trFacil() && est.escenas.length > 1) {
+      const ids = trIds();
+      if (!tr.a || !existe(tr.a)) tr.a = (est.terreno.base && TP()[est.terreno.base] && existe(est.terreno.base) ? est.terreno.base : ids[0]) || est.escenas[0].id;
+      if (!tr.b || tr.b === tr.a || !existe(tr.b)) tr.b = ids.find((x) => x !== tr.a) || est.escenas.find((e) => e.id !== tr.a).id;
+      asegurarEnTerreno(tr.a); asegurarEnTerreno(tr.b); est.terreno.base = tr.a;
+      if (primera) setTimeout(() => { if (tr.ma) guiaTerreno(false); }, 700);
+    }
     const ids = trIds();
     if (!tr.a || !ids.includes(tr.a)) tr.a = est.terreno.base || ids[0] || est.escenas[0].id;
     if (!tr.b || tr.b === tr.a || !ids.includes(tr.b)) tr.b = ids.find((x) => x !== tr.a) || null;
@@ -9969,8 +10040,10 @@ void main(){
   function pintarTerreno() {
     const ids = trIds(), T = est.terreno, n = largoPuntos(), P = TP();
     const opc = (lista, sel) => lista.map((id) => '<option value="' + id + '"' + (id === sel ? " selected" : "") + ">" + esc(nombreDe(id)) + "</option>").join("");
-    $("tr-a").innerHTML = opc(ids.length ? ids : [tr.a], tr.a);
-    $("tr-b").innerHTML = opc(ids.filter((x) => x !== tr.a), tr.b);
+    const facil = trFacil() && est.escenas.length > 1, todas = est.escenas.map((e) => e.id);
+    $("tr-a").innerHTML = opc(facil ? todas : ids.length ? ids : [tr.a], tr.a);
+    $("tr-b").innerHTML = opc((facil ? todas : ids).filter((x) => x !== tr.a), tr.b);
+    document.querySelectorAll("#terreno .tr-cab .etiq").forEach((x, k) => { x.textContent = facil ? "Esfera " + (k + 1) : k ? "Comparar con" : "Base"; });
     const rb = tr.b && trH(tr.b);
     // Precisión de la esfera comparada
     const chip = $("tr-prec");
@@ -10024,13 +10097,142 @@ void main(){
       if (pend.length) h += '<button class="btn-prim tr-pasar" data-tr="pasar">Pasar ' + [pMz && cuenta(pMz, "manzana", "manzanas"), pLt && cuenta(pLt, "lote", "lotes")].filter(Boolean).join(" y ") + " de " + esc(nombreDe(tr.a)) + " a las demás esferas</button>";
       h += '<p class="nota">Una por una: en Capas, selecciona la manzana y prende Aplicar a todas las esferas.</p></div>';
     } else h += '<div class="grupo"><b>Aplicado a todas</b><p class="nota">' + (vinc.length ? nPol + " polígonos" + (nTxt ? " y " + nTxt + " textos" : "") + " están en todas las esferas listas." : "Ninguna capa todavía.") + " Se activa en Capas → Aplicar a todas las esferas.</p></div>";
+    if (facil) h = panelFacil(rb, malo);
     $("tr-panel").innerHTML = h;
     // Banda de ayuda
     let b;
+    ["a", "b"].forEach((l) => { const el = $(l === "a" ? "tr-stage-a" : "tr-stage-b").parentNode; el.classList.remove("toca", "espera"); });
+    if (facil) { $("tr-banda").innerHTML = bandaFacil(rb); return; }
     if (ids.length < 2) b = "<span><b>Agrega 2 o más esferas</b> del mismo terreno en el panel de la izquierda.</span>";
     else if (tr.pend) b = "<span><b>Punto " + (tr.pend.i + 1) + ":</b> ahora haz clic en el mismo lugar en " + esc(nombreDe(tr.pend.lado === "a" ? tr.b : tr.a)) + '.</span><button class="mini" data-tr="cancelar">Cancelar</button>';
     else b = "<span><b>Clic en el suelo</b> para un punto nuevo. Arrastra un punto para ajustarlo.</span>";
     $("tr-banda").innerHTML = b;
+  }
+  // --- Terreno fácil: panel de 3 pasos, banda que dice qué tocar y animación ---
+  const cuentaTr = (k, uno, varios) => k + " " + (k === 1 ? uno : varios);
+  function listaPuntosTr(rb, malo) {
+    const P = TP();
+    return '<ol class="tr-puntos">' + Array.from({ length: largoPuntos() }, (_, i) => {
+      const enA = (P[tr.a] || [])[i], enB = (P[tr.b] || [])[i];
+      if (!enA && !enB) return "";
+      const falta = !enA ? nombreDe(tr.a) : !enB ? nombreDe(tr.b) : "";
+      const err = rb && rb.H && rb.n > 4 && rb.err[i] !== undefined ? grad2(rb.err[i]) : "";
+      return '<li data-i="' + i + '" class="' + [i === tr.sel ? "activo" : "", falta ? "falta" : "", malo(i) ? "mal" : ""].join(" ") + '"><span class="num">' + (i + 1) + "</span><span>" + (falta ? "Falta en " + esc(falta) : rb && i === rb.excluido ? "No coincide · no se usa" : "En las dos esferas") + "</span><small>" + err + '</small><button class="ojo" data-borrar="' + i + '" aria-label="Quitar punto ' + (i + 1) + '">✕</button></li>';
+    }).join("") + "</ol>";
+  }
+  function panelFacil(rb, malo) {
+    const listo = !!(rb && rb.H), pares = rb ? rb.n : 0;
+    const paso = (k, titulo, det, estado) => '<li class="tr-paso ' + estado + '"><span class="n">' + (estado === "hecho" ? "✓" : k) + "</span><div><b>" + titulo + "</b><small>" + det + "</small></div></li>";
+    let h = '<div class="grupo"><ol class="tr-pasos">' +
+      paso(1, "Elige 2 esferas", "Arriba de cada una: <b>" + esc(nombreDe(tr.a)) + "</b> y <b>" + esc(nombreDe(tr.b)) + "</b>. Solo esas dos se amarran.", "hecho") +
+      paso(2, "Marca 4 puntos iguales", listo ? cuentaTr(pares, "punto listo", "puntos listos") + ". Puedes agregar más para afinar." : Math.min(pares, 4) + " de 4. El mismo lugar del suelo en las dos.", listo ? "hecho" : "activo") +
+      paso(3, "Pasa tus manzanas", listo ? "Con el botón verde de abajo." : "Se activa con 4 puntos.", listo ? "activo" : "") + "</ol>";
+    if (listo) {
+      let algo = false;
+      [[tr.a, tr.b], [tr.b, tr.a]].forEach(([de, a]) => {
+        const pend = sinPasar(de);
+        if (!pend.length) return;
+        const pMz = pend.filter((x) => !x.lote).length, pLt = pend.length - pMz;
+        algo = true;
+        h += '<button class="btn-prim tr-pasar" data-tr="pasar" data-de="' + de + '">Pasar ' + [pMz && cuentaTr(pMz, "manzana", "manzanas"), pLt && cuentaTr(pLt, "lote", "lotes")].filter(Boolean).join(" y ") + " de " + esc(nombreDe(de)) + " a " + esc(nombreDe(a)) + "</button>";
+      });
+      const ya = Object.values(gruposVinculo()).filter((g) => g.some((m) => m.id === tr.a) && g.some((m) => m.id === tr.b) && (g[0].c.manzana || g[0].c.mzPlano || g[0].c.lote)).length;
+      if (!algo) h += '<p class="nota">' + (ya ? cuentaTr(ya, "manzana o lote ya está", "manzanas y lotes ya están") + " en las dos esferas. Si cambias una, se cambia en la otra." : "Aún no hay manzanas. Dibújalas en Capas, en la esfera donde se vean más cerca, y regresa aquí a pasarlas.") + "</p>";
+      else if (ya) h += '<p class="nota">' + cuentaTr(ya, "ya está", "ya están") + " en las dos esferas.</p>";
+    }
+    h += '<button class="mini tr-como" data-tr="ayuda">▶ ¿Cómo se usa? Ver animación</button></div>';
+    if (largoPuntos()) h += '<details class="grupo tr-det"><summary>Ver los puntos (' + pares + ")</summary>" + listaPuntosTr(rb, malo) + "</details>";
+    const otras = trIds().filter((x) => x !== tr.a && x !== tr.b);
+    if (otras.length) h += '<details class="grupo tr-det"><summary>También amarradas (' + otras.length + ')</summary><ul class="tr-esf">' + otras.map((id) => { const r = trH(id); return '<li><img src="' + thumbDe(id) + '" alt=""><div><b>' + esc(nombreDe(id)) + '</b><small class="' + (r && r.H ? "ok" : "aviso") + '">' + (r && r.H ? r.n + " puntos · lista" : (r ? r.n : 0) + " de 4 puntos") + '</small></div><button class="ojo" data-quitar="' + id + '" aria-label="Soltar ' + esc(nombreDe(id)) + '">✕</button></li>'; }).join("") + "</ul></details>";
+    h += '<details class="grupo tr-det"><summary>Consejos para que quede exacto</summary><ol class="tr-guia">' +
+      "<li><b>Puntos en el suelo,</b> nunca arriba: la base de un poste, no la punta; esquinas de banqueta, no techos ni árboles.</li>" +
+      "<li><b>Cerca del dron.</b> Lo que se ve cerca del horizonte es impreciso.</li>" +
+      "<li><b>Repartidos alrededor de los lotes,</b> en las 4 esquinas. Nunca todos en línea.</li>" +
+      "<li><b>Usa la lupa</b> y pon la mira justo en la esquina. Desde el punto 5, el círculo te dice dónde va.</li></ol></details>";
+    return h;
+  }
+  function bandaFacil(rb) {
+    const listo = !!(rb && rb.H), lado = (l) => $(l === "a" ? "tr-stage-a" : "tr-stage-b").parentNode;
+    const marcar = (l) => { lado(l).classList.add("toca"); lado(l === "a" ? "b" : "a").classList.add("espera"); };
+    if (tr.pend) {
+      const otro = tr.pend.lado === "a" ? "b" : "a"; marcar(otro);
+      return "<span><b>Punto " + (tr.pend.i + 1) + (listo ? "" : " de 4") + ":</b> ahora toca <b>el mismo lugar</b> en " + esc(nombreDe(idDe(otro))) + (objetivoPendiente() ? " (el círculo te dice dónde)" : "") + '.</span><button class="mini" data-tr="cancelar">Cancelar</button>';
+    }
+    if (!listo) { marcar("a"); return "<span><b>Punto " + ((rb ? rb.n : 0) + 1) + " de 4:</b> toca un punto del suelo en " + esc(nombreDe(tr.a)) + ": una esquina de banqueta, la base de un poste, una marca en el piso.</span>"; }
+    return "<span><b>¡Listo!</b> " + esc(nombreDe(tr.a)) + " y " + esc(nombreDe(tr.b)) + " ya están amarradas. Pasa tus manzanas con el botón verde de la izquierda.</span>";
+  }
+  // Animaciones de la guía (360 × 200)
+  const easeTr = (u) => (u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2);
+  const cursorTr = (x, y) => '<path transform="translate(' + x.toFixed(1) + " " + y.toFixed(1) + ')" d="M0 0 L0 15 L4 11.5 L7 18 L10 16.5 L7 10.5 L12.5 10.5 Z" fill="#fff" stroke="#111" stroke-width="1.2"/>';
+  // Recorrido del cursor: [[t, x, y], …]; llega a cada punto en su tiempo y se mueve en los 0.55 s antes
+  function caminoTr(P, t) {
+    let x = P[0][1], y = P[0][2];
+    for (let k = 1; k < P.length; k++) {
+      const [t1, x1, y1] = P[k], [t0, x0, y0] = P[k - 1], ini = Math.max(t0, t1 - 0.55);
+      if (t >= t1) { x = x1; y = y1; continue; }
+      if (t > ini) { const u = easeTr((t - ini) / (t1 - ini)); x = x0 + (x1 - x0) * u; y = y0 + (y1 - y0) * u; }
+      break;
+    }
+    return [x, y];
+  }
+  function panelTr(x, nombre, borde) {
+    return '<g transform="translate(' + x + ' 28)"><rect width="164" height="140" rx="9" fill="#6f9fb3"/><path d="M0 62 H164 V131 Q164 140 155 140 H9 Q0 140 0 131 Z" fill="#5a8f4a"/>' +
+      (borde ? '<rect x="1.5" y="1.5" width="161" height="137" rx="8" fill="none" stroke="#D5FF40" stroke-width="3"/>' : "") +
+      '<rect x="8" y="8" width="84" height="22" rx="11" fill="rgba(11,11,11,.78)" stroke="rgba(255,255,255,.35)"/><text x="18" y="23" fill="#fff" font-size="10.5" font-weight="600">' + nombre + " ▾</text></g>";
+  }
+  const pieTr = (txt, ok) => '<text x="180" y="190" fill="' + (ok ? "#D5FF40" : "#fff") + '" font-size="11" font-weight="600" text-anchor="middle">' + txt + "</text>";
+  function animTr1(svg, t) {
+    const lista = ["Dron 4", "Dron 7", "Dron 12", "Dron 15"], abierto = t > 1.15 && t < 2.45, elegido = t >= 2.45;
+    let h = '<rect width="360" height="200" fill="#1a2014"/>' + panelTr(12, "Dron 3") + panelTr(184, elegido ? "Dron 12" : "Dron 4", elegido && t < 3.6);
+    const [cx, cy] = caminoTr([[0, 330, 185], [1.0, 236, 47], [2.3, 236, 101], [3.6, 330, 185]], t);
+    if (abierto) {
+      h += '<rect x="192" y="60" width="96" height="78" rx="8" fill="#0b0b0b" stroke="rgba(255,255,255,.25)"/>';
+      lista.forEach((n, k) => { const y = 62 + k * 19, sobre = cy > y && cy < y + 19 && t > 1.7; h += (sobre ? '<rect x="195" y="' + y + '" width="90" height="18" rx="5" fill="#D5FF40"/>' : "") + '<text x="204" y="' + (y + 13) + '" fill="' + (sobre ? "#0b0b0b" : "#fff") + '" font-size="10.5" font-weight="600">' + n + "</text>"; });
+    }
+    h += pieTr(elegido ? "Solo esas dos se amarran; las demás no se tocan" : "Arriba de cada esfera eliges cuál", elegido);
+    svg.innerHTML = h + cursorTr(cx, cy);
+  }
+  function animTr2(svg, t) {
+    const QL = [[42, 104], [132, 98], [152, 148], [28, 156]].map(([x, y]) => [x, y]), QR = [[246, 112], [322, 120], [314, 156], [226, 146]];
+    const tiempos = [0, 1, 2, 3].map((k) => [0.7 + k * 1.6, 1.5 + k * 1.6]);
+    const P = [[0, 330, 185]]; tiempos.forEach(([ta, tb], k) => { P.push([ta, QL[k][0], QL[k][1]]); P.push([tb, QR[k][0], QR[k][1]]); }); P.push([7.4, 330, 185]);
+    const [cx, cy] = caminoTr(P, t), fin = t > tiempos[3][1] + 0.2;
+    let k = tiempos.findIndex(([ta, tb]) => t < tb); if (k < 0) k = 3;
+    const enA = !fin && t < tiempos[k][0];
+    let h = '<rect width="360" height="200" fill="#1a2014"/>' + panelTr(12, "Dron 3", !fin && enA) + panelTr(184, "Dron 12", !fin && !enA);
+    const lote = (Q) => '<path d="M' + Q.map((p) => p.join(" ")).join("L") + 'Z" fill="rgba(255,255,255,.12)" stroke="#fff" stroke-width="2"/>';
+    h += lote(QL) + lote(QR) + '<rect x="150" y="70" width="6" height="30" fill="#3d3d3d"/><rect x="306" y="78" width="5" height="26" fill="#3d3d3d"/>';
+    const marca = (p, n, tk) => { const r = t - tk < 0.3 ? 5 + 10 * (t - tk) / 0.3 : 0; return (r ? '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r.toFixed(1) + '" fill="none" stroke="#D5FF40" stroke-width="2" opacity="' + (1 - (t - tk) / 0.3).toFixed(2) + '"/>' : "") + '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="5.5" fill="#D5FF40" stroke="#0b0b0b" stroke-width="1.5"/><text x="' + (p[0] + 8) + '" y="' + (p[1] - 6) + '" fill="#fff" font-size="10" font-weight="700">' + n + "</text>"; };
+    tiempos.forEach(([ta, tb], j) => { if (t >= ta) h += marca(QL[j], j + 1, ta); if (t >= tb) h += marca(QR[j], j + 1, tb); });
+    h += pieTr(fin ? "Listo: las dos esferas quedaron amarradas" : "Punto " + (k + 1) + " de 4: " + (enA ? "toca una esquina en la esfera 1" : "y la misma esquina en la esfera 2"), fin);
+    svg.innerHTML = h + cursorTr(cx, cy);
+  }
+  function animTr3(svg, t) {
+    const lotes = (F0, F1, B0, B1, n, x0, desde) => {
+      let h = "";
+      for (let k = 0; k < n; k++) {
+        const ap = desde === null ? 1 : Math.max(0, Math.min(1, (t - desde - k * 0.18) / 0.3));
+        if (!ap) continue;
+        const L = (a, b, u) => [a[0] + (b[0] - a[0]) * u + x0, a[1] + (b[1] - a[1]) * u + 28];
+        const pts = [L(F0, F1, k / n), L(F0, F1, (k + 1) / n), L(B0, B1, (k + 1) / n), L(B0, B1, k / n)];
+        h += '<path d="M' + pts.map((p) => p.map((v) => v.toFixed(1)).join(" ")).join("L") + 'Z" fill="#D5FF40" fill-opacity="' + (0.35 * ap).toFixed(2) + '" stroke="#fff" stroke-opacity="' + ap.toFixed(2) + '" stroke-width="1.5"/>';
+      }
+      return h;
+    };
+    const pasado = t > 1.55;
+    let h = '<rect width="360" height="200" fill="#1a2014"/>' + panelTr(12, "Dron 3") + panelTr(184, "Dron 12", pasado && t < 3.4);
+    h += lotes([18, 76], [148, 70], [12, 124], [154, 118], 5, 12, null) + (pasado ? lotes([34, 84], [138, 92], [24, 124], [152, 130], 5, 184, 1.8) : "");
+    h += '<g transform="translate(110 172)"><rect width="140" height="22" rx="11" fill="' + (t > 1.35 && t < 1.6 ? "#a9cc2e" : "#D5FF40") + '"/><text x="70" y="15" fill="#0b0b0b" font-size="10.5" font-weight="700" text-anchor="middle">' + (pasado ? "✓ Manzanas pasadas" : "Pasar manzanas →") + "</text></g>";
+    h += '<text x="180" y="18" fill="' + (t > 2.6 ? "#D5FF40" : "#fff") + '" font-size="11" font-weight="600" text-anchor="middle">' + (t > 2.6 ? "Ya están en la otra esfera, con sus lotes" : "Toca el botón verde") + "</text>";
+    const [cx, cy] = caminoTr([[0, 330, 120], [1.3, 200, 183], [3.6, 330, 120]], t);
+    svg.innerHTML = h + cursorTr(cx, cy);
+  }
+  function guiaTerreno(repetir) {
+    return mostrarGuia("terreno-facil", [
+      { el: "#tr-b", titulo: "1 · Elige tus 2 esferas", dur: 4.6, anim: animTr1, texto: "Arriba de cada esfera hay un menú: elige las dos que ven el mismo terreno. <b>Solo esas dos</b> se amarran; las demás esferas de tu tour no se tocan." },
+      { el: "#tr-stage-a", titulo: "2 · Marca 4 puntos iguales", dur: 8, anim: animTr2, texto: "Toca un punto del suelo en la esfera 1 (una esquina, la base de un poste) y luego <b>el mismo lugar</b> en la esfera 2. Repite hasta 4. La esfera que toca tocar se ilumina en verde." },
+      { el: "#tr-panel", titulo: "3 · Pasa tus manzanas", dur: 4.6, anim: animTr3, boton: "A amarrar", texto: "Con 4 puntos sale un <b>botón verde</b> a la izquierda: pasa tus manzanas, con sus lotes, a la otra esfera. Si después cambias una, se cambia en las dos." },
+    ], { repetir: !!repetir });
   }
   // Cambió algún punto: recalcula y lleva de nuevo las capas a todas las esferas
   function cambioTerreno() {
@@ -10149,7 +10351,9 @@ void main(){
       sincronizarTerreno(false); guardar(); abrirTerreno(); avisar(nombreDe(id) + " ya no está en el terreno");
       return;
     }
-    if (ev.target.closest('[data-tr="pasar"]')) { pasarTodas(tr.a); cambioTerreno(); return; }
+    const pa = ev.target.closest('[data-tr="pasar"]');
+    if (pa) { pasarTodas(pa.dataset.de || tr.a); cambioTerreno(); return; }
+    if (ev.target.closest('[data-tr="ayuda"]')) { guiaTerreno(true); return; }
     const d = ev.target.closest("[data-borrar]");
     if (d) { borrarPunto(+d.dataset.borrar); return; }
     const li = ev.target.closest(".tr-puntos li[data-i]");
@@ -10165,12 +10369,24 @@ void main(){
   });
   $("tr-a").addEventListener("change", (e) => {
     const id = e.target.value;
+    if (trFacil()) { // Esfera 1: cualquiera del tour; se amarra sola y la que se deja sin puntos se suelta
+      const viejo = tr.a;
+      if (tr.b === id) tr.b = viejo;
+      tr.a = id; tr.pend = null; tr.sel = -1;
+      asegurarEnTerreno(id); est.terreno.base = id; soltarSiVacia(viejo);
+      sincronizarTerreno(false); guardar(); abrirTerreno(); return;
+    }
     est.terreno.base = id;
     if (tr.b === id) tr.b = tr.a;
     tr.a = id; tr.pend = null;
     sincronizarTerreno(false); guardar(); abrirTerreno();
   });
-  $("tr-b").addEventListener("change", (e) => { tr.b = e.target.value; tr.pend = null; abrirTerreno(); });
+  $("tr-b").addEventListener("change", (e) => {
+    const viejo = tr.b;
+    tr.b = e.target.value; tr.pend = null;
+    if (trFacil()) { tr.sel = -1; asegurarEnTerreno(tr.b); soltarSiVacia(viejo); sincronizarTerreno(false); guardar(); }
+    abrirTerreno();
+  });
   document.addEventListener("keydown", (ev) => {
     if (!tr.ma || /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
     if ((ev.key === "Delete" || ev.key === "Backspace") && tr.sel >= 0) { ev.preventDefault(); borrarPunto(tr.sel); }

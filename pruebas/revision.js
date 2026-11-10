@@ -63,10 +63,12 @@ const exige = (cond, msg) => { if (!cond) throw new Error(msg); };
 // ---------- ayudantes ----------
 let navegador;
 async function pagina(correo, opciones = {}) {
-  const { limpio, ...otras } = opciones;
+  const { limpio, carpetas, ...otras } = opciones;
   const ctx = await navegador.newContext(Object.assign({ viewport: { width: 1400, height: 900 }, acceptDownloads: true }, otras));
   // Edición limpia (Laboratorio «limpio»): las pruebas de siempre ven Propiedades sin renglones; la suya lo apaga con { limpio: true }
   if (!limpio) await ctx.addInitScript(() => { try { localStorage.setItem("mz-props-plano", "1"); } catch (e) { /* sin almacenamiento */ } });
+  // Manzanas como carpeta (Laboratorio «carpetas»): las pruebas de siempre ven la lista de capas completa
+  if (!carpetas) await ctx.addInitScript(() => { try { localStorage.setItem("mz-carpetas-plano", "1"); } catch (e) { /* sin almacenamiento */ } });
   const p = await ctx.newPage();
   p.errs = [];
   p.on("pageerror", (e) => p.errs.push(e.message));
@@ -1897,6 +1899,72 @@ async function capasPesadas(p) {
       exige(!(await u.isVisible("#agregar-abrir")) && !(await u.isVisible("#props-todo")) && !(await u.$("#props > .grupo.acor")) && await u.isVisible("#add-lote"), "una cuenta normal ya ve la edición limpia (debe nacer en el Laboratorio)");
       await u.context().close();
     });
+    // Pedido de Amar (10 nov 2026): «está cero intuitiva la herramienta de terreno… solo quiero amarrar dos esferas
+    // y tengo 20». Terreno en 3 pasos: dos menús (solo esas dos se amarran), la esfera que toca tocar se ilumina y un
+    // botón verde pasa las manzanas. Animación la primera vez. Solo para el dueño (Laboratorio «terreno-facil»).
+    await paso("Terreno en 3 pasos: eliges 2 de varias esferas, te dice dónde tocar y un botón pasa las manzanas", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Terreno facil");
+      for (const nombre of ["campo-2.jpg", "campo-3.jpg"]) {
+        const antes = (await n.$$("#pano-lista [data-abrir]")).length;
+        await n.evaluate(async (nombre) => {
+          const cv = document.createElement("canvas"); cv.width = 4096; cv.height = 2048; const x = cv.getContext("2d");
+          x.fillStyle = "#7ab"; x.fillRect(0, 0, 4096, 1024); x.fillStyle = "#6a5"; x.fillRect(0, 1024, 4096, 1024);
+          const bl = await new Promise((o) => cv.toBlob(o, "image/jpeg", 0.85));
+          const inp = document.querySelector("#subir-zona input[type=file]"); const dt = new DataTransfer(); dt.items.add(new File([bl], nombre, { type: "image/jpeg" }));
+          inp.files = dt.files; inp.dispatchEvent(new Event("change", { bubbles: true }));
+        }, nombre);
+        for (let i = 0; i < 45; i++) { await n.waitForTimeout(1000); if ((await n.$$("#pano-lista [data-abrir]")).length > antes) break; }
+      }
+      exige((await n.$$("#pano-lista [data-abrir]")).length === 3, "no se subieron las 3 esferas");
+      await n.waitForTimeout(1500);
+      await n.click('#subtabs button:has-text("Terreno")'); await n.waitForTimeout(1600);
+      exige(await n.isVisible(".guia-tarjeta svg.guia-anim"), "la primera vez no sale la animación de cómo se usa");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "terreno-guia.png") });
+      await pasarGuias(n);
+      exige((await n.$$eval("#terreno .tr-cab .etiq", (l) => l.map((x) => x.textContent))).join() === "Esfera 1,Esfera 2", "los menús no dicen Esfera 1 y Esfera 2");
+      exige((await n.$$("#tr-a option")).length === 3 && (await n.$$("#tr-b option")).length === 2, "los menús no traen todas las esferas del tour");
+      exige(await n.$eval("#tr-stage-a", (x) => x.parentNode.classList.contains("toca")) && /Punto 1 de 4/.test(await n.textContent("#tr-banda")), "no dice que toques el punto 1 en la esfera 1");
+      // Esfera 2 = campo-3: campo-2 se queda fuera del terreno
+      await n.selectOption("#tr-b", { label: "campo-3" }); await n.waitForTimeout(1200);
+      exige(!/También amarradas/.test(await n.textContent("#tr-panel")) && /campo-3/.test(await n.textContent("#tr-panel")), "al cambiar la esfera 2 la otra se quedó amarrada");
+      const A = await n.locator("#tr-stage-a").boundingBox(), B = await n.locator("#tr-stage-b").boundingBox();
+      let k = 0;
+      for (const [fx, fy] of [[0.2, 0.72], [0.8, 0.72], [0.7, 0.84], [0.3, 0.84]]) {
+        await n.mouse.click(A.x + A.width * fx, A.y + A.height * fy); await n.waitForTimeout(400);
+        if (!k++) exige(await n.$eval("#tr-stage-b", (x) => x.parentNode.classList.contains("toca")) && /el mismo lugar/.test(await n.textContent("#tr-banda")), "después del primer toque no dice que toques la esfera 2");
+        await n.mouse.click(B.x + B.width * fx, B.y + B.height * fy); await n.waitForTimeout(600);
+      }
+      exige(/Listo/.test(await n.textContent("#tr-banda")) && !(await n.$(".tr-lado.toca")), "con 4 puntos no dice que ya quedó: " + (await n.textContent("#tr-banda")));
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "terreno-listo.png") });
+      // Paso 3: una manzana en la esfera 1 y el botón verde la pasa solo a campo-3
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1500); await pasarGuias(n);
+      await n.click("#panos-tira li:nth-child(1)"); await n.waitForTimeout(1200);
+      await dibujarManzana(n, [[500, 640], [740, 625], [980, 640]], [[480, 820], [1000, 820]]);
+      await n.click('#lista li:has-text("Manzana 1")'); await n.waitForTimeout(600);
+      exige(/Pasar a las esferas amarradas/.test(await n.textContent("#props")), "en Capas el interruptor no se llama «Pasar a las esferas amarradas»");
+      const nLotes = (await lotes(n)).length;
+      await n.click('#subtabs button:has-text("Terreno")'); await n.waitForTimeout(1500);
+      exige(/Pasar 1 manzana de campo a campo-3/.test(await n.textContent('[data-tr="pasar"]')), "no sale el botón verde para pasar la manzana: " + (await n.textContent("#tr-panel")).slice(0, 200));
+      await n.click('[data-tr="pasar"]'); await n.waitForTimeout(900);
+      exige(/en las dos esferas/.test(await n.textContent("#tr-panel")), "después de pasarla no dice que ya está en las dos");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1500);
+      await n.click("#panos-tira li:nth-child(3)"); await n.waitForTimeout(1500);
+      exige((await capas(n)).some((t) => /^Manzana 1/.test(t)) && (await lotes(n)).length === nLotes, "la manzana no llegó a campo-3: " + (await capas(n)).join(", "));
+      await n.click("#panos-tira li:nth-child(2)"); await n.waitForTimeout(1500);
+      exige(!(await capas(n)).some((t) => /^Manzana/.test(t)), "la manzana también se pasó a campo-2, que no estaba amarrada");
+      // «¿Cómo se usa?» vuelve a enseñar la animación
+      await n.click('#subtabs button:has-text("Terreno")'); await n.waitForTimeout(1500);
+      await n.click('[data-tr="ayuda"]'); await n.waitForTimeout(500);
+      exige(await n.isVisible(".guia-tarjeta svg.guia-anim"), "«¿Cómo se usa?» no abre la animación");
+      await pasarGuias(n);
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+      // Cuenta normal: el Terreno de siempre
+      const u = await pagina("trfacil-" + Date.now() + "@prueba.mx"); await nuevoTour(u, "Terreno normal");
+      await u.click('#subtabs button:has-text("Terreno")'); await u.waitForTimeout(1500); await pasarGuias(u);
+      exige((await u.textContent("#terreno .tr-cab .etiq")).trim() === "Base" && !(await u.$(".tr-pasos")), "una cuenta normal ya ve el Terreno en 3 pasos (debe nacer en el Laboratorio)");
+      await u.context().close();
+    });
     // Pedido de Amar (10 nov 2026): «ya puse un chingo de puntos en dos esferas y no sé dónde duplicar las manzanas».
     // Una manzana pasa completa, con sus lotes, a las demás esferas del terreno; en Terreno un botón pasa todas las de la
     // Base; «Duplicar» en una manzana hace otra igual a un lado. Nace en el Laboratorio («manzanas-esferas»).
@@ -1915,7 +1983,8 @@ async function capasPesadas(p) {
       await n.waitForTimeout(1500);
       // Terreno: las dos esferas y 4 puntos en el suelo
       await n.click('#subtabs button:has-text("Terreno")'); await n.waitForTimeout(1500); await pasarGuias(n);
-      for (let i = 0; i < 2; i++) { const v = await n.$eval("#tr-agregar", (x) => x.options[1].value); await n.selectOption("#tr-agregar", v); await n.waitForTimeout(1500); }
+      // Con «Terreno en 3 pasos» las dos esferas ya vienen elegidas; sin él se agregan con el menú
+      if (await n.$("#tr-agregar")) for (let i = 0; i < 2; i++) { const v = await n.$eval("#tr-agregar", (x) => x.options[1].value); await n.selectOption("#tr-agregar", v); await n.waitForTimeout(1500); }
       const A = await n.locator("#tr-stage-a").boundingBox(), B = await n.locator("#tr-stage-b").boundingBox();
       for (const [fx, fy] of [[0.2, 0.72], [0.8, 0.72], [0.7, 0.84], [0.3, 0.84]]) { // arriba del aviso de abajo (tapa los clics)
         await n.mouse.click(A.x + A.width * fx, A.y + A.height * fy); await n.waitForTimeout(400);
@@ -1946,6 +2015,7 @@ async function capasPesadas(p) {
       await n.click('#props [data-acc="duplicar"]'); await n.waitForTimeout(900);
       exige((await capas(n)).some((t) => /^Manzana 2/.test(t)) && (await lotes(n)).length === 2 * nLotes, "Duplicar no hizo la Manzana 2 con sus lotes: " + (await capas(n)).join(", "));
       // Terreno: el botón pasa la Manzana 2 a la otra esfera
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "manzana-duplicada.png") });
       await n.click('#subtabs button:has-text("Terreno")'); await n.waitForTimeout(1500);
       exige(/1 manzana/.test(await n.textContent('[data-tr="pasar"]')), "el botón de Terreno no ofrece pasar la Manzana 2");
       await n.click('[data-tr="pasar"]'); await n.waitForTimeout(900);
@@ -1968,6 +2038,41 @@ async function capasPesadas(p) {
       await u.click('#lista li:has-text("Manzana 1")'); await u.waitForTimeout(600);
       exige(!(await u.$('#props input[data-k="_vinculo"]')), "una cuenta normal ya ve «Aplicar a todas las esferas» en una manzana (debe nacer en el Laboratorio)");
       await u.context().close();
+    });
+    // Pedido de Amar (10 nov 2026): (1) «se generan muchos lotes, quiero más orden»: cada manzana es una carpeta en
+    // Capas, como un grupo de Photoshop (Laboratorio «carpetas», solo el dueño). (2) «al hacer zoom out los textos
+    // de los lotes se borran»: el nombre nunca se borra al alejarse (para todos; regresa lo que ya se había resuelto).
+    await paso("Manzana como carpeta en Capas y los nombres de los lotes no se borran al alejarse", async () => {
+      const n = await pagina(DUENO, { carpetas: true }); await nuevoTour(n, "Carpetas");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1500); await pasarGuias(n);
+      await dibujarManzana(n, [[500, 640], [740, 625], [980, 640]], [[480, 820], [1000, 820]]);
+      await n.keyboard.press("Escape"); await n.waitForTimeout(300);
+      const filas = () => n.$$eval("#lista li[data-id]", (l) => l.map((x) => x.innerText.trim().split("\n")[0]));
+      exige((await lotes(n)).length === 0 && /10 lotes/.test(await n.textContent("#lista li.carpeta")), "la manzana no sale como carpeta cerrada con «10 lotes»: " + (await filas()).join(", "));
+      await n.click("#lista .carp-flecha"); await n.waitForTimeout(300);
+      exige((await n.$$("#lista li.hijo")).length === 10 && (await lotes(n)).length === 10, "al abrir la carpeta no salen sus 10 lotes adentro");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "carpeta-abierta.png") });
+      await n.click("#lista .carp-flecha"); await n.waitForTimeout(300);
+      exige((await lotes(n)).length === 0, "la flechita no cerró la carpeta");
+      // El ojito de la manzana oculta todos sus lotes
+      await n.click("#lista li.carpeta [data-ojo]"); await n.waitForTimeout(400);
+      await n.click("#lista .carp-flecha"); await n.waitForTimeout(300);
+      exige((await n.$$("#lista li.hijo.oculta")).length === 10, "el ojito de la carpeta no ocultó sus lotes");
+      await n.click("#lista li.carpeta [data-ojo]"); await n.waitForTimeout(400);
+      exige((await n.$$("#lista li.hijo.oculta")).length === 0, "el ojito de la carpeta no volvió a mostrar sus lotes");
+      // Cerrada, al tocar un lote en la esfera se abre sola
+      await n.click("#lista .carp-flecha"); await n.waitForTimeout(300);
+      await n.mouse.click(740, 730); await n.waitForTimeout(600);
+      exige((await n.$$("#lista li.hijo")).length === 10 && await n.$('#lista li.hijo[aria-selected="true"]'), "al tocar un lote en la esfera su carpeta no se abrió");
+      // Zoom out al máximo: cada lote conserva su nombre
+      await n.keyboard.press("Escape");
+      for (let i = 0; i < 12; i++) { await n.click("#ed-menos"); await n.waitForTimeout(120); }
+      await n.waitForTimeout(800);
+      const vis = await n.$$eval(".capa-etq .lt-planos", (l) => l.filter((c) => { const e = c.querySelector(".lt-p.nom"); if (!e) return false; const s = getComputedStyle(e); return s.display !== "none" && s.visibility !== "hidden"; }).length);
+      exige(vis === 10, "al alejarse se borraron nombres de lotes: se ven " + vis + " de 10");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "zoom-out-nombres.png") });
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
     });
     // Pedido de Amar (nov 2026): correo de bienvenida a cada cuenta nueva y las actualizaciones también por correo,
     // solo a quien quiera recibirlas (link para darse de baja). Cloudflare Email Service; aquí el envío es simulado

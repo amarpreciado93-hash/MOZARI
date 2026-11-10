@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-10T21:27:27.402Z",
- "bien": 74,
- "total": 74,
+ "fecha": "2026-11-10T22:29:28.949Z",
+ "bien": 76,
+ "total": 76,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -256,7 +256,15 @@
    "ok": true
   },
   {
+   "nombre": "Terreno en 3 pasos: eliges 2 de varias esferas, te dice dónde tocar y un botón pasa las manzanas",
+   "ok": true
+  },
+  {
    "nombre": "Manzanas en todas las esferas: pasa con sus lotes, el botón de Terreno pasa todas y Duplicar hace otra",
+   "ok": true
+  },
+  {
+   "nombre": "Manzana como carpeta en Capas y los nombres de los lotes no se borran al alejarse",
    "ok": true
   },
   {
