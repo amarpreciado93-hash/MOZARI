@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-09T21:31:55.698Z",
- "bien": 65,
- "total": 65,
+ "fecha": "2026-11-10T01:40:15.888Z",
+ "bien": 66,
+ "total": 66,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -153,6 +153,10 @@
   },
   {
    "nombre": "Panel de dueño en el celular: se lee sin salirse de la pantalla",
+   "ok": true
+  },
+  {
+   "nombre": "Cuenta de prueba: tours sin límite para practicar; al topar las esferas explica cómo seguir",
    "ok": true
   },
   {

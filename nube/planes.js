@@ -6,7 +6,7 @@
 const GB = 1024 ** 3;
 
 export const PLANES = {
-  gratis:      { nombre: "Gratis",      tours: 1,    esferas: 5,    bytes: 2 * GB,   lotificacion: false, marca: true,  precio: 0,   lanzamiento: 0 },
+  gratis:      { nombre: "Gratis",      tours: null,    esferas: 5,    bytes: 2 * GB,   lotificacion: false, marca: true,  precio: 0,   lanzamiento: 0 },
   pro:         { nombre: "Pro",         tours: null, esferas: null, bytes: 10 * GB,  lotificacion: false, marca: false, precio: 990,  lanzamiento: 990 },
   desarrollos: { nombre: "Desarrollos", tours: null, esferas: null, bytes: 50 * GB,  lotificacion: true,  marca: false, precio: 4990, lanzamiento: 4990 },
 };

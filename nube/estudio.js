@@ -535,7 +535,8 @@ async function api(request, env, partes, yo) {
     if (m === "POST") {
       if (plan.tours !== null) {
         const l = await env.R2.list({ prefix: "cuentas/" + uid + "/tours/", limit: 1000 });
-        if (l.objects.length >= plan.tours) return limite("Tu plan " + plan.nombre + " incluye " + plan.tours + (plan.tours === 1 ? " tour" : " tours") + ". Mejora tu plan para crear más.", "tours");
+        // En la cuenta de prueba se dice cómo seguir practicando (un usuario creyó que solo podía pagar, nov 2026)
+        if (l.objects.length >= plan.tours) return limite(plan.marca ? "Tu cuenta de prueba incluye " + plan.tours + " tours. Para practicar más, borra uno que ya no uses, o pasa a Pro para crear sin límite." : "Tu plan " + plan.nombre + " incluye " + plan.tours + (plan.tours === 1 ? " tour" : " tours") + ". Mejora tu plan para crear más.", "tours");
       }
       const cuerpo = await request.json().catch(() => ({}));
       const nombre = String(cuerpo.nombre || "Tour nuevo").slice(0, 80);
@@ -563,7 +564,7 @@ async function api(request, env, partes, yo) {
       let p;
       try { p = JSON.parse(txt); } catch (e) { return error(400, "JSON inválido"); }
       if (!p || !p.proyecto || !Array.isArray(p.escenas)) return error(400, "Proyecto incompleto");
-      if (!pasa(plan.esferas, p.escenas.length)) return limite("Tu plan " + plan.nombre + " incluye " + plan.esferas + " esferas por tour. Mejora tu plan para subir más.", "esferas");
+      if (!pasa(plan.esferas, p.escenas.length)) return limite(plan.marca ? "Tu cuenta de prueba incluye " + plan.esferas + " esferas por tour. Para practicar más, borra una que ya no uses, o pasa a Pro para subir sin límite." : "Tu plan " + plan.nombre + " incluye " + plan.esferas + " esferas por tour. Mejora tu plan para subir más.", "esferas");
       await env.R2.put(base + "proyecto.json", txt, { httpMetadata: { contentType: tipoDe("x.json") } });
       const portada = typeof p.proyecto.thumbnail === "string" && rutaValida(p.proyecto.thumbnail) ? p.proyecto.thumbnail : "";
       await guardarIndice(env, uid, id, { nombre: p.proyecto.nombre || "Tour", escenas: p.escenas.length, inicial: p.proyecto.escenaInicial || "", portada });
@@ -662,7 +663,7 @@ async function api(request, env, partes, yo) {
       if (!largo || largo > (tipoDe(ruta) === "video/mp4" ? MAX_VIDEO : MAX_ARCHIVO)) return error(413, tipoDe(ruta) === "video/mp4" ? "El video pesa más de 95 MB. Compáctalo o súbelo a YouTube y pega el link." : "Archivo vacío o muy pesado");
       if (plan.bytes !== null) {
         const u = await usoDe(env, uid);
-        if (u.bytes + largo > plan.bytes) return limite("Llegaste al espacio de tu plan " + plan.nombre + " (" + gb(plan.bytes) + "). Mejora tu plan para subir más.", "espacio");
+        if (u.bytes + largo > plan.bytes) return limite(plan.marca ? "Llegaste a los " + gb(plan.bytes) + " de tu cuenta de prueba. Para practicar más, borra un tour o una esfera que ya no uses, o pasa a Pro para tener más espacio." : "Llegaste al espacio de tu plan " + plan.nombre + " (" + gb(plan.bytes) + "). Mejora tu plan para subir más.", "espacio");
       }
       const tipo = tipoDe(ruta);
       if (tipo === "application/octet-stream" || tipo.startsWith("text/html")) return error(415, "Tipo de archivo no permitido");

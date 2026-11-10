@@ -945,6 +945,21 @@ async function capasPesadas(p) {
       exige(await u.isVisible("#mv-compu") && !(await u.$(".movil #cuentas")), "a un usuario normal en el celular le salió el panel de dueño");
       await u.context().close();
     });
+    // Nov 2026: la cuenta de prueba hace los tours que quiera para practicar (siempre con marca de agua). Si topa con
+    // las 5 esferas de un tour, se le dice cómo seguir sin pagar (un usuario creyó que solo podía pagar)
+    await paso("Cuenta de prueba: tours sin límite para practicar; al topar las esferas explica cómo seguir", async () => {
+      const u = await pagina("practica-" + Date.now() + "@prueba.mx");
+      const crear = (n) => u.evaluate((n) => fetch("api/tours", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nombre: n }) }).then(async (r) => ({ s: r.status, d: await r.json().catch(() => ({})) })), n);
+      const hechos = []; for (let i = 1; i <= 4; i++) hechos.push(await crear("Práctica " + i));
+      exige(hechos.every((t) => t.s === 201), "la cuenta de prueba no deja crear varios tours: " + hechos.map((t) => t.s).join(","));
+      const id = hechos[0].d.id, p = hechos[0].d.proyecto;
+      p.escenas = Array.from({ length: 6 }, (_, k) => ({ id: "e" + k, nombre: "Esfera " + k }));
+      const r = await u.evaluate(([id, p]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(p) }).then(async (x) => ({ s: x.status, d: await x.json().catch(() => ({})) })), [id, p]);
+      exige(r.s === 403 && /5 esferas/.test(r.d.error) && /borra una/.test(r.d.error) && !/gratis/i.test(r.d.error), "al pasar de 5 esferas no explica cómo seguir practicando: " + JSON.stringify(r));
+      // Y lo que publica sigue con marca de agua
+      exige((await u.evaluate(() => fetch("api/uso").then((x) => x.json()))).plan.marca === true, "la cuenta de prueba ya no lleva marca de agua");
+      await u.context().close();
+    });
     // Cupo de cuentas (beta): al llenarse, una cuenta nueva queda en lista de espera; quien compra entra siempre
     await paso("Cupo de cuentas: lleno manda a lista de espera, quien compra entra, y el dueño lo cambia en el Panel", async () => {
       const dn = await pagina(DUENO), api = (ruta, op) => dn.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
