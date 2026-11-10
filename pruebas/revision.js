@@ -1039,7 +1039,7 @@ async function capasPesadas(p) {
       const st2 = await g.evaluate((t) => fetch("api/admin/tours/" + t).then((r) => r.status), tour);
       exige(st2 === 403, "un usuario normal pudo leer el tour de otra cuenta (" + st2 + ")");
       // Ninguna ruta del dueño responde a una cuenta normal, y no ve nada marcado LAB ni del panel
-      for (const r of ["cuentas", "cupones", "reportes", "laboratorio", "novedades", "respaldos"]) {
+      for (const r of ["cuentas", "cupones", "reportes", "laboratorio", "novedades", "respaldos", "galeria", "campanas", "correos"]) {
         const x = await g.evaluate((r) => fetch("api/admin/" + r).then((y) => y.status), r);
         exige(x === 403, "un usuario normal entró a api/admin/" + r + " (" + x + ")");
       }
@@ -2058,6 +2058,40 @@ async function capasPesadas(p) {
       await u.click('#subtabs button:has-text("Capas")'); await u.waitForTimeout(1500); await pasarGuias(u);
       exige(!(await u.isVisible("#add-img")), "una cuenta normal ya ve «Imagen 3D» (debe nacer en el Laboratorio)");
       await u.context().close();
+    });
+    // Pedido de Amar (nov 2026): un apartado en mozari.app con tours hechos con Mozari. Los elige él en su panel
+    // (solo los de clientes que le dieron permiso); si no hay ninguno, la sección no aparece.
+    await paso("Tours hechos con Mozari: el dueño elige tours publicados y salen en el sitio con portada y link", async () => {
+      exige((await a.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), tour)) === 200, "no se pudo publicar el tour de prueba");
+      const n = await pagina(DUENO);
+      const api = (url, op) => n.evaluate(([u, o]) => fetch(u, o).then(async (r) => ({ s: r.status, d: await r.json().catch(() => ({})) })), [url, op || {}]);
+      await api("api/admin/galeria", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ tours: [] }) });
+      const x = await pagina(null);
+      await x.goto(ESTUDIO + "/"); await x.waitForTimeout(1500);
+      exige(!(await x.isVisible("#tours")), "sin tours elegidos la sección se ve vacía");
+      // Panel de dueño → Tours en la web: agregar el tour, ponerle nombre y lugar
+      await n.click('#nav button:has-text("Mis Tours")'); await n.waitForTimeout(800); await pasarGuias(n);
+      await n.click("#ver-cuentas"); await n.waitForTimeout(1200);
+      await n.click('[data-dueno="galeria"]'); await n.waitForTimeout(1500);
+      exige(await n.isVisible('[data-gal-libre="' + tour + '"]'), "el tour publicado no sale para elegirlo");
+      await n.click('[data-gal-libre="' + tour + '"] [data-gal-agregar]'); await n.waitForTimeout(1200);
+      await n.fill('[data-gal-id="' + tour + '"] [data-gal-titulo]', "Desarrollo de prueba"); await n.press('[data-gal-id="' + tour + '"] [data-gal-titulo]', "Tab"); await n.waitForTimeout(800);
+      await n.fill('[data-gal-id="' + tour + '"] [data-gal-lugar]', "León, Guanajuato"); await n.press('[data-gal-id="' + tour + '"] [data-gal-lugar]', "Tab"); await n.waitForTimeout(1000);
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "galeria-panel.png") });
+      const g = await x.evaluate(() => fetch("/galeria.json", { cache: "no-store" }).then((r) => r.json()));
+      const t = g.tours[0];
+      exige(g.tours.length === 1 && t.titulo === "Desarrollo de prueba" && t.lugar === "León, Guanajuato" && t.url === TOURS + "/" + tour + "/" && /\/escenas\/.+\.jpg$|archivos\//.test(t.portada), "la lista pública no trae el tour con su nombre, lugar, link y portada: " + JSON.stringify(g));
+      exige((await x.request.get(t.portada)).status() === 200, "la portada del tour no se puede ver sin sesión");
+      // El sitio lo muestra
+      await x.goto(ESTUDIO + "/"); await x.waitForTimeout(2000);
+      exige(await x.isVisible("#tours") && (await x.$$("#tours .tour-card")).length === 1 && /Desarrollo de prueba/.test(await x.textContent("#tours")) && await x.$('nav.links a[href="#tours"]'), "el sitio no muestra el tour en «Tours hechos con Mozari»");
+      exige((await x.getAttribute("#tours .tour-card", "href")) === t.url, "la tarjeta no lleva al tour");
+      if (process.env.CAPTURAS) { await x.$eval("#tours", (e) => e.scrollIntoView()); await x.waitForTimeout(800); await x.screenshot({ path: path.join(process.env.CAPTURAS, "galeria-web.png") }); }
+      // Quitarlo: la sección desaparece
+      await n.click('[data-gal-id="' + tour + '"] [data-gal-quitar]'); await n.waitForTimeout(1200);
+      exige(((await x.evaluate(() => fetch("/galeria.json", { cache: "no-store" }).then((r) => r.json()))).tours || []).length === 0, "al quitarlo sigue en la web");
+      exige(!n.errs.length && !x.errs.length, "errores: " + n.errs.concat(x.errs).join(" | ").slice(0, 200));
+      await n.context().close(); await x.context().close();
     });
     // Pedido de Amar (nov 2026): los desarrollos suelen tener sus lotes en Google Earth (KMZ). Nace en el Laboratorio.
     await paso("Lotes desde un KMZ: dibuja el plano, lee número, manzana y superficie, y los coloca con 4 esquinas con su medida real", async () => {

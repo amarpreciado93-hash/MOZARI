@@ -151,7 +151,18 @@
   footer nav a:hover { color: var(--texto); }
   footer svg { height: 30px; width: auto; color: var(--texto); }
 
+  /* Tours hechos con Mozari (los elige el dueño en su panel; si no hay, la sección no aparece) */
+  .galeria-lista { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .tour-card { display: block; text-decoration: none; border-radius: 18px; overflow: hidden; background: var(--gris); transition: transform 0.2s, box-shadow 0.2s; }
+  .tour-card:hover { transform: translateY(-3px); box-shadow: 0 14px 34px rgba(11, 11, 11, 0.1); }
+  .tour-card .portada { position: relative; aspect-ratio: 16 / 10; background: var(--gris2) center / cover no-repeat; }
+  .tour-card .portada span { position: absolute; left: 12px; bottom: 12px; font-size: 12px; font-weight: 500; color: #fff; background: rgba(11, 11, 11, 0.55); backdrop-filter: blur(8px); padding: 5px 11px; border-radius: 999px; }
+  .tour-card .info { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 18px 18px; }
+  .tour-card b { display: block; font-weight: 500; font-size: 16px; line-height: 1.3; }
+  .tour-card small { display: block; color: var(--tenue); font-size: 13px; }
+  .tour-card .ir { flex: none; font-size: 13px; font-weight: 500; white-space: nowrap; }
   @media (max-width: 900px) {
+    .galeria-lista { grid-template-columns: repeat(2, 1fr); gap: 16px; }
     nav.links { display: none; }
     .tarjeta-hero { grid-template-columns: 1fr; transform: translate(-50%, 72%); }
     .esfera-marco { margin-bottom: 250px; }
@@ -165,6 +176,7 @@
     .fila.inversa .foto { order: 0; }
   }
   @media (max-width: 600px) {
+    .galeria-lista { grid-template-columns: 1fr; }
     .envoltura { padding: 0 18px; }
     .esfera-marco { height: auto; background: none; margin-bottom: 0; }
     #esfera { position: relative; height: 50vh; }
@@ -263,6 +275,13 @@
   </div>
 </section>
 
+<section class="galeria" id="tours" hidden>
+  <div class="envoltura">
+    <div class="intro"><h2>Tours hechos con Mozari.</h2><p>Desarrollos y lugares reales que ya se recorren con un link. Ábrelos y muévete como si estuvieras ahí.</p></div>
+    <div class="galeria-lista" id="galeria-lista"></div>
+  </div>
+</section>
+
 <section id="planes">
   <div class="envoltura">
     <div class="intro"><h2>Pagas una vez. Es tuyo.</h2><p>Sin mensualidades y con el hosting de tus tours incluido.</p></div>
@@ -323,6 +342,19 @@
     return { scene, view, paneo: Marzipano.autorotate({ yawSpeed: o.vel || 0.05, targetPitch: pitch, targetFov: fov }), o };
   }
   const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Tours hechos con Mozari: los que el dueño eligió en su panel (si no hay ninguno, la sección no aparece)
+  const escH = (t) => String(t || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  fetch("/galeria.json").then((r) => (r.ok ? r.json() : null)).then((d) => {
+    const l = (d && d.tours) || [];
+    if (!l.length) return;
+    document.getElementById("galeria-lista").innerHTML = l.map((t) => '<a class="tour-card" href="' + escH(t.url) + '" target="_blank" rel="noopener">' +
+      '<div class="portada"' + (t.portada ? ' style="background-image:url(&quot;' + escH(t.portada) + '&quot;)"' : "") + '><span>360°</span></div>' +
+      '<div class="info"><div><b>' + escH(t.titulo) + "</b>" + (t.lugar ? "<small>" + escH(t.lugar) + "</small>" : "") + '</div><span class="ir">Ver el tour →</span></div></a>').join("");
+    document.getElementById("tours").hidden = false;
+    const nav = document.querySelector("nav.links"), a = document.createElement("a");
+    a.href = "#tours"; a.textContent = "Tours"; nav.insertBefore(a, nav.querySelector('a[href="#planes"]'));
+    if (location.hash === "#tours") document.getElementById("tours").scrollIntoView();
+  }).catch(() => {});
   (async () => {
     if (!window.Marzipano) return;
     const viewer = crearVisor(document.getElementById("esfera"));

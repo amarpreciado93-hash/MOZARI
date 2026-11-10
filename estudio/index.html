@@ -155,6 +155,17 @@
   .nov-form label { display: grid; gap: 5px; font-size: 12px; color: var(--mz-tenue); }
   .nov-form .ancho { grid-column: 1 / -1; }
   .nov-form textarea { resize: vertical; font: inherit; }
+  /* Tours en la web (galería de mozari.app) */
+  .gal-admin { padding: 0 16px 16px; display: grid; gap: 10px; }
+  .gal-admin h4 { margin: 14px 0 2px; font-size: 13px; font-weight: 600; }
+  .gal-admin a { color: var(--mz-lima); }
+  .gal-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 13px; }
+  .gal-mini { flex: none; width: 88px; height: 56px; border-radius: 8px; background: var(--mz-negro) center / cover no-repeat; }
+  .gal-campos { flex: 1 1 260px; display: grid; gap: 6px; min-width: 0; }
+  .gal-campos small { color: var(--mz-tenue); }
+  .gal-acc { display: flex; gap: 6px; align-items: center; }
+  .gal-acc a.mini { text-decoration: none; color: var(--mz-texto); }
+  .gal-busca { max-width: 360px; }
   /* Correos a los usuarios (bienvenida y novedades) */
   .cor-caja { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 13px; }
   .cor-caja > div { flex: 1 1 240px; display: grid; gap: 3px; }
@@ -3407,7 +3418,7 @@
   let vistaDueno = "cuentas";
   const TAB_DUENO = (k, txt, color) => '<button class="mini' + (vistaDueno === k ? " primario" : "") + '" data-dueno="' + k + '"><i class="tab-punto" style="--c:' + color + '"></i>' + txt + "</button>";
   const TABS_DUENO = (n) => '<div class="rep-tabs">' + TAB_DUENO("cuentas", "Cuentas", "#3DDC84") + TAB_DUENO("links", "Links de regalo y descuento", "#F5BE4E") + TAB_DUENO("reportes", "Reportes" + (n ? " (" + n + " nuevos)" : ""), n ? "#FF5A5F" : "#FF9A9E") +
-    TAB_DUENO("laboratorio", "Laboratorio", "#B48CFF") + TAB_DUENO("novedades", "Actualizaciones", "#6DB4FF") + TAB_DUENO("respaldos", "Respaldos", "#8FA6AD") + "</div>";
+    TAB_DUENO("laboratorio", "Laboratorio", "#B48CFF") + TAB_DUENO("novedades", "Actualizaciones", "#6DB4FF") + TAB_DUENO("galeria", "Tours en la web", "#FFB020") + TAB_DUENO("respaldos", "Respaldos", "#8FA6AD") + "</div>";
   // Links de un solo uso: cada alumno recibe el suyo (licencia de regalo o descuento)
   const TIPOS_LINK = { "pro-100": ["Pro de regalo", 100, ["pro"]], "des-100": ["Desarrollos de regalo", 100, ["desarrollos"]], "des-50": ["Desarrollos con 50% de descuento", 50, ["desarrollos"]], "todo-30": ["30% en Pro y Desarrollos", 30, ["pro", "desarrollos"]] };
   const linkDe = (codigo) => location.origin + "/entrar?cupon=" + codigo;
@@ -3462,6 +3473,57 @@
   const MODOS_LAB = [["yo", "Solo yo"], ["probadores", "Probadores"], ["pago", "Pro y Desarrollos"], ["todos", "Todos"]];
   // Respaldos: copia diaria de los datos (proyectos, cuentas, planes); las fotos no cambian con las actualizaciones
   const MOTIVO_RESP = { noche: "Copia de la noche", actualizacion: "Antes de una actualización", primero: "Primer respaldo", manual: "Hecho a mano" };
+  // Tours hechos con Mozari: el dueño elige qué tours publicados salen en mozari.app (con permiso de su cliente)
+  let galeria = null, galBusca = "";
+  async function pintarGaleria(recargar = true) {
+    if (recargar || !galeria) {
+      const r = await fetch("api/admin/galeria", { cache: "no-store" }).catch(() => null);
+      if (!r || !r.ok) { avisar("No se pudo leer la galería"); return; }
+      galeria = await r.json();
+    }
+    const { elegidos, publicados } = galeria, info = (id) => publicados.find((x) => x.id === id) || { nombre: id, portada: "", url: "" };
+    const q = galBusca.trim().toLowerCase(), libres = publicados.filter((t) => !elegidos.some((e) => e.id === t.id) && (!q || (t.nombre + " " + t.dueno).toLowerCase().includes(q)));
+    const mini = (src) => '<span class="gal-mini"' + (src ? ' style="background-image:url(&quot;' + esc(src) + '&quot;)"' : "") + "></span>";
+    $("cuentas").innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) +
+      '<div class="gal-admin"><p class="nota">Estos tours salen en mozari.app, en «Tours hechos con Mozari», en este orden. Pon solo los de clientes que te dieron permiso. Si uno se despublica o pasa a modo privado, se quita solo de la web. <a href="/escaparate#tours" target="_blank" rel="noopener">Ver la web</a></p>' +
+      "<h4>En la web (" + elegidos.length + ")</h4>" +
+      (elegidos.length ? elegidos.map((e, i) => { const t = info(e.id); return '<div class="gal-fila" data-gal-id="' + esc(e.id) + '">' + mini(t.portada) +
+        '<div class="gal-campos"><input class="entrada" data-gal-titulo maxlength="60" value="' + esc(e.titulo || t.nombre) + '" aria-label="Nombre en la web"><input class="entrada" data-gal-lugar maxlength="60" value="' + esc(e.lugar || "") + '" placeholder="Lugar (opcional): Mérida, Yucatán" aria-label="Lugar"></div>' +
+        '<div class="gal-acc"><button class="mini" data-gal-mover="-1"' + (i ? "" : " disabled") + ' aria-label="Subir">↑</button><button class="mini" data-gal-mover="1"' + (i < elegidos.length - 1 ? "" : " disabled") + ' aria-label="Bajar">↓</button>' +
+        (t.url ? '<a class="mini" href="' + esc(t.url) + '" target="_blank" rel="noopener">Ver</a>' : "") + '<button class="mini peligro" data-gal-quitar>Quitar</button></div></div>'; }).join("")
+        : '<p class="nota">Todavía no hay ninguno: la sección no se ve en la web hasta que agregues uno.</p>') +
+      '<h4>Tours publicados</h4><input class="entrada gal-busca" id="gal-busca" placeholder="Buscar por nombre o correo" value="' + esc(galBusca) + '">' +
+      (libres.length ? libres.slice(0, 60).map((t) => '<div class="gal-fila" data-gal-libre="' + esc(t.id) + '">' + mini(t.portada) + '<div class="gal-campos"><b>' + esc(t.nombre) + "</b><small>" + esc(t.dueno) + " · " + fechaCorta(t.publicado) + '</small></div><div class="gal-acc"><a class="mini" href="' + esc(t.url) + '" target="_blank" rel="noopener">Ver</a><button class="mini primario" data-gal-agregar>Agregar</button></div></div>').join("")
+        : '<p class="nota">No hay más tours publicados' + (q ? " con esa búsqueda" : "") + ".</p>") + "</div>";
+  }
+  async function guardarGaleria(lista) {
+    const r = await fetch("api/admin/galeria", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ tours: lista }) }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    if (!r || !r.ok) { avisar(d.error || "No se pudo guardar"); return false; }
+    galeria.elegidos = d.elegidos; return true;
+  }
+  document.addEventListener("input", (ev) => { if (ev.target.id !== "gal-busca") return; galBusca = ev.target.value; const pos = ev.target.selectionStart; pintarGaleria(false); const b = $("gal-busca"); if (b) { b.focus(); b.setSelectionRange(pos, pos); } });
+  document.addEventListener("change", async (ev) => {
+    const f = ev.target.closest && ev.target.closest("[data-gal-id]"); if (!f || !galeria) return;
+    const e = galeria.elegidos.find((x) => x.id === f.dataset.galId); if (!e) return;
+    if (ev.target.matches("[data-gal-titulo]")) e.titulo = ev.target.value.trim();
+    if (ev.target.matches("[data-gal-lugar]")) e.lugar = ev.target.value.trim();
+    if (await guardarGaleria(galeria.elegidos)) avisar("Guardado");
+  });
+  document.addEventListener("click", async (ev) => {
+    if (!galeria || !ev.target.closest(".gal-admin")) return;
+    const libre = ev.target.closest("[data-gal-agregar]") && ev.target.closest("[data-gal-libre]");
+    if (libre) {
+      const t = galeria.publicados.find((x) => x.id === libre.dataset.galLibre);
+      if (await guardarGaleria(galeria.elegidos.concat([{ id: t.id, titulo: t.nombre, lugar: "" }]))) { avisar("Agregado a la web"); pintarGaleria(false); }
+      return;
+    }
+    const f = ev.target.closest("[data-gal-id]"); if (!f) return;
+    const l = galeria.elegidos.slice(), i = l.findIndex((x) => x.id === f.dataset.galId);
+    const mv = ev.target.closest("[data-gal-mover]");
+    if (mv) { const j = i + +mv.dataset.galMover; if (j < 0 || j >= l.length) return; [l[i], l[j]] = [l[j], l[i]]; if (await guardarGaleria(l)) pintarGaleria(false); return; }
+    if (ev.target.closest("[data-gal-quitar]")) { l.splice(i, 1); if (await guardarGaleria(l)) { avisar("Quitado de la web"); pintarGaleria(false); } }
+  });
   async function pintarRespaldos() {
     const r = await fetch("api/admin/respaldos", { cache: "no-store" }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudieron leer los respaldos"); return; }
@@ -3811,6 +3873,7 @@
     if (vistaDueno === "laboratorio") return pintarLaboratorio();
     if (vistaDueno === "novedades") return pintarNovedadesAdmin();
     if (vistaDueno === "respaldos") return pintarRespaldos();
+    if (vistaDueno === "galeria") return pintarGaleria();
     const [r, rc] = await Promise.all([fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null), fetch("api/admin/cupo", { cache: "no-store" }).catch(() => null)]);
     if (!r || !r.ok) { avisar("No se pudieron leer las cuentas"); return; }
     const { cuentas: todas, tours: tt } = await r.json();

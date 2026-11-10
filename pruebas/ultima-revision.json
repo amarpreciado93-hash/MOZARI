@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-10T19:26:07.326Z",
- "bien": 71,
- "total": 71,
+ "fecha": "2026-11-10T19:54:24.666Z",
+ "bien": 72,
+ "total": 72,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -265,6 +265,10 @@
   },
   {
    "nombre": "Imagen en 3D: un PNG transparente pegado a la esfera, crece sin deformarse y se inclina sobre el terreno",
+   "ok": true
+  },
+  {
+   "nombre": "Tours hechos con Mozari: el dueño elige tours publicados y salen en el sitio con portada y link",
    "ok": true
   },
   {

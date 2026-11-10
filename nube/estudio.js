@@ -405,8 +405,67 @@ async function apiCampanas(request, env, partes, yo) {
   return error(405, "Método no permitido");
 }
 
+// ---------- Tours hechos con Mozari (galería del sitio) ----------
+// config/galeria.json: { tours: [{ id, titulo, lugar }] }, en el orden en que salen. Los elige el dueño desde su
+// panel (solo tours con permiso de su cliente). La página pública lee /galeria.json: solo los que siguen publicados
+// y no están en pausa ni en modo privado, con su portada y el link de tours.mozari.app.
+const GALERIA = "config/galeria.json";
+const leerGaleria = async (env) => { const o = await env.R2.get(GALERIA); const g = o ? await o.json().catch(() => ({})) : {}; return Array.isArray(g && g.tours) ? g.tours : []; };
+const origenTours = (env, url) => url.hostname === "localhost" ? "http://localhost:8788" : env.DOMINIO ? "https://tours." + env.DOMINIO : url.origin.replace("mozari-estudio", "mozari-tours");
+const portadaDe = (base, pr, inicial) => (typeof pr.thumbnail === "string" && rutaValida(pr.thumbnail) ? base + pr.thumbnail : /^[A-Za-z0-9_-]{1,80}$/.test(inicial || "") ? base + "escenas/" + inicial + "/1/f/0/0.jpg" : "");
+async function galeriaPublica(request, env, ctx) {
+  const url = new URL(request.url), cache = caches.default, clave = new Request(url.origin + "/galeria.json");
+  const ya = await cache.match(clave).catch(() => null);
+  if (ya) return ya;
+  const host = origenTours(env, url), tours = [];
+  for (const t of (await leerGaleria(env)).slice(0, 24)) {
+    const [pub, pausa, priv] = await Promise.all([env.R2.get("publicado/" + t.id + "/proyecto.json"), env.R2.head("pausados/" + t.id), env.R2.head("privados/" + t.id)]);
+    if (!pub || pausa || priv) continue;
+    const p = await pub.json().catch(() => null), pr = (p && p.proyecto) || {}, base = host + "/" + t.id + "/";
+    tours.push({ id: t.id, titulo: t.titulo || pr.nombre || "Tour 360", lugar: t.lugar || "", portada: portadaDe(base, pr, pr.escenaInicial), url: base });
+  }
+  const r = json({ tours }, 200, { "cache-control": "public, max-age=300" });
+  if (ctx) ctx.waitUntil(cache.put(clave, r.clone()).catch(() => {}));
+  return r;
+}
+async function apiGaleria(request, env, partes) {
+  const m = request.method, url = new URL(request.url), host = origenTours(env, url);
+  if (m === "GET") {
+    // Todos los tours publicados (de todas las cuentas) para elegir
+    const [cuentas, elegidos] = await Promise.all([todasLasCuentas(env), leerGaleria(env)]);
+    const correo = new Map(cuentas.map((p) => [p.uid, p.email || ""])), publicados = [];
+    let cur;
+    do {
+      const l = await env.R2.list({ prefix: "cuentas/", cursor: cur, limit: 1000, include: ["customMetadata"] });
+      for (const o of l.objects) {
+        const t = o.key.match(/^cuentas\/([^/]+)\/tours\/([^/]+)$/), md = o.customMetadata || {};
+        if (!t || !md.publicado) continue;
+        publicados.push({ id: t[2], nombre: md.nombre || "Tour", dueno: correo.get(t[1]) || "", publicado: md.publicado, portada: portadaDe(host + "/" + t[2] + "/", { thumbnail: md.portada }, md.inicial), url: host + "/" + t[2] + "/" });
+      }
+      cur = l.truncated ? l.cursor : undefined;
+    } while (cur);
+    publicados.sort((a, b) => String(b.publicado).localeCompare(String(a.publicado)));
+    return json({ elegidos, publicados });
+  }
+  if (m === "PUT") {
+    const c = await request.json().catch(() => ({})), lista = Array.isArray(c.tours) ? c.tours.slice(0, 24) : null;
+    if (!lista) return error(400, "Lista inválida");
+    const limpios = [];
+    for (const t of lista) {
+      if (!t || !ID_TOUR.test(String(t.id || "")) || limpios.some((x) => x.id === t.id)) continue;
+      if (!(await env.R2.head("publicado/" + t.id + "/proyecto.json"))) return error(400, "Ese tour no está publicado");
+      limpios.push({ id: t.id, titulo: String(t.titulo || "").slice(0, 60), lugar: String(t.lugar || "").slice(0, 60) });
+    }
+    await env.R2.put(GALERIA, JSON.stringify({ tours: limpios }), { httpMetadata: { contentType: "application/json" } });
+    await caches.default.delete(new Request(url.origin + "/galeria.json")).catch(() => {});
+    return json({ elegidos: limpios });
+  }
+  return error(405, "Método no permitido");
+}
+
 async function admin(request, env, partes, yo) {
   const m = request.method;
+  if (partes[2] === "galeria" && partes.length === 3) return apiGaleria(request, env, partes);
   if (partes[2] === "campanas") return apiCampanas(request, env, partes, yo);
   // Correos a los usuarios: la bienvenida (prender o apagar), cuántos van este mes y una prueba al dueño
   if (partes[2] === "correos") {
@@ -840,6 +899,8 @@ export default {
     // Aviso si un tour publicado se cerró solo en un celular (público, sin sesión)
     if (segs[0] === "c" && segs.length === 2 && request.method === "POST") return registrarCaida(request, env, segs[1]);
 
+    // Tours hechos con Mozari: la lista pública para el sitio (sin sesión)
+    if (url.pathname === "/galeria.json" && request.method === "GET") return galeriaPublica(request, env, ctx);
     // Correos: darse de baja de las novedades (sin sesión: el link va firmado) y la imagen de una novedad
     if (url.pathname === "/baja" && (request.method === "GET" || request.method === "POST")) return rutaBaja(request, env, verificarLink);
     if (segs[0] === "correo" && segs[1] === "novedad" && segs.length === 3 && request.method === "GET") {
