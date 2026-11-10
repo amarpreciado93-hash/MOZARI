@@ -463,9 +463,37 @@ async function apiGaleria(request, env, partes) {
   return error(405, "Método no permitido");
 }
 
+// ---------- Ventas para Google Sheets ----------
+// /ventas.csv?k=<clave>: los pagos de todas las cuentas, para que la hoja «Ventas de Mozari» los lea sola
+// (IMPORTDATA, cada hora). Sin correos: nombre del cliente y un ID corto. La clave vive en config/ventas-clave
+// y solo la ve el dueño (Panel → api/admin/ventas-link). Sin la clave correcta, no existe.
+const CLAVE_VENTAS = "config/ventas-clave";
+const PLAN_TXT = { pro: "Pro", desarrollos: "Desarrollos", espacio: "Espacio" }, METODO_TXT = { mercadopago: "Mercado Pago", paypal: "PayPal", cupon: "Cupón" };
+async function ventasCsv(request, env) {
+  const url = new URL(request.url), o = await env.R2.get(CLAVE_VENTAS), clave = o ? await o.text() : "";
+  if (!clave || url.searchParams.get("k") !== clave) return new Response("No existe", { status: 404 });
+  const campo = (v) => { const t = String(v == null ? "" : v).replace(/[\r\n]+/g, " ").trim(); return /[",]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const idCorto = async (uid) => { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("mz-" + uid)); return [...new Uint8Array(b)].slice(0, 4).map((x) => x.toString(16).padStart(2, "0")).join(""); };
+  const filas = [];
+  for (const p of await todasLasCuentas(env)) {
+    const pagos = Array.isArray(p.pagos) ? p.pagos : p.ultimoPago ? [Object.assign({ moneda: "MXN", metodo: "mercadopago" }, p.ultimoPago)] : [];
+    if (!pagos.length) continue;
+    const id = await idCorto(p.uid), nombre = String(p.nombre || "").includes("@") ? "" : p.nombre || "";
+    pagos.forEach((x) => filas.push([String(x.fecha || "").slice(0, 10), nombre, id, PLAN_TXT[x.plan] || "Sin plan", METODO_TXT[x.metodo] || x.metodo || "", x.moneda || "MXN", +x.monto || 0, x.cupon || ""]));
+  }
+  filas.sort((a, b) => a[0].localeCompare(b[0]));
+  const csv = [["Fecha", "Cliente", "ID cliente", "Plan", "Método", "Moneda", "Monto"]].concat(filas.map((f) => f.slice(0, 7))).map((f) => f.map(campo).join(",")).join("\n");
+  return new Response(csv + "\n", { headers: { "content-type": "text/csv; charset=utf-8", "cache-control": "no-store" } });
+}
+
 async function admin(request, env, partes, yo) {
   const m = request.method;
   if (partes[2] === "galeria" && partes.length === 3) return apiGaleria(request, env, partes);
+  if (partes[2] === "ventas-link" && partes.length === 3 && m === "GET") {
+    let o = await env.R2.get(CLAVE_VENTAS), clave = o ? await o.text() : "";
+    if (!clave) { clave = [...crypto.getRandomValues(new Uint8Array(24))].map((x) => x.toString(16).padStart(2, "0")).join(""); await env.R2.put(CLAVE_VENTAS, clave); }
+    return json({ url: new URL(request.url).origin + "/ventas.csv?k=" + clave });
+  }
   if (partes[2] === "campanas") return apiCampanas(request, env, partes, yo);
   // Correos a los usuarios: la bienvenida (prender o apagar), cuántos van este mes y una prueba al dueño
   if (partes[2] === "correos") {
@@ -899,6 +927,8 @@ export default {
     // Aviso si un tour publicado se cerró solo en un celular (público, sin sesión)
     if (segs[0] === "c" && segs.length === 2 && request.method === "POST") return registrarCaida(request, env, segs[1]);
 
+    // Ventas para la hoja de Google (con su clave, sin sesión)
+    if (url.pathname === "/ventas.csv" && request.method === "GET") return ventasCsv(request, env);
     // Tours hechos con Mozari: la lista pública para el sitio (sin sesión)
     if (url.pathname === "/galeria.json" && request.method === "GET") return galeriaPublica(request, env, ctx);
     // Correos: darse de baja de las novedades (sin sesión: el link va firmado) y la imagen de una novedad

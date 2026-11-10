@@ -1039,7 +1039,7 @@ async function capasPesadas(p) {
       const st2 = await g.evaluate((t) => fetch("api/admin/tours/" + t).then((r) => r.status), tour);
       exige(st2 === 403, "un usuario normal pudo leer el tour de otra cuenta (" + st2 + ")");
       // Ninguna ruta del dueño responde a una cuenta normal, y no ve nada marcado LAB ni del panel
-      for (const r of ["cuentas", "cupones", "reportes", "laboratorio", "novedades", "respaldos", "galeria", "campanas", "correos"]) {
+      for (const r of ["cuentas", "cupones", "reportes", "laboratorio", "novedades", "respaldos", "galeria", "campanas", "correos", "ventas-link"]) {
         const x = await g.evaluate((r) => fetch("api/admin/" + r).then((y) => y.status), r);
         exige(x === 403, "un usuario normal entró a api/admin/" + r + " (" + x + ")");
       }
@@ -2092,6 +2092,19 @@ async function capasPesadas(p) {
       exige(((await x.evaluate(() => fetch("/galeria.json", { cache: "no-store" }).then((r) => r.json()))).tours || []).length === 0, "al quitarlo sigue en la web");
       exige(!n.errs.length && !x.errs.length, "errores: " + n.errs.concat(x.errs).join(" | ").slice(0, 200));
       await n.context().close(); await x.context().close();
+    });
+    // Pedido de Amar (nov 2026): la hoja «Ventas de Mozari» se actualiza sola (IMPORTDATA de un link con clave, sin correos)
+    await paso("Ventas para Google Sheets: CSV con clave, sin correos, y sin clave no existe", async () => {
+      const lk = await a.evaluate(() => fetch("api/admin/ventas-link").then((r) => r.json()));
+      exige(/\/ventas\.csv\?k=[0-9a-f]{48}$/.test(lk.url || ""), "no da el link de ventas: " + JSON.stringify(lk));
+      const lk2 = await a.evaluate(() => fetch("api/admin/ventas-link").then((r) => r.json()));
+      exige(lk2.url === lk.url, "la clave cambia cada vez (la hoja dejaría de leerla)");
+      const x = await pagina(null);
+      const r = await x.request.get(lk.url), t = await r.text();
+      exige(r.status() === 200 && /text\/csv/.test(r.headers()["content-type"]) && t.startsWith("Fecha,Cliente,ID cliente,Plan,Método,Moneda,Monto"), "el CSV no sale o no trae sus columnas: " + t.slice(0, 120));
+      exige(!/@/.test(t), "el CSV trae correos");
+      exige((await x.request.get(ESTUDIO + "/ventas.csv")).status() === 404 && (await x.request.get(ESTUDIO + "/ventas.csv?k=" + "0".repeat(48))).status() === 404, "sin la clave correcta igual se ven las ventas");
+      await x.context().close();
     });
     // Pedido de Amar (nov 2026): los desarrollos suelen tener sus lotes en Google Earth (KMZ). Nace en el Laboratorio.
     await paso("Lotes desde un KMZ: dibuja el plano, lee número, manzana y superficie, y los coloca con 4 esquinas con su medida real", async () => {
