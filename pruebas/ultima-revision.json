@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-10T17:39:35.934Z",
- "bien": 69,
- "total": 69,
+ "fecha": "2026-11-10T18:51:11.845Z",
+ "bien": 70,
+ "total": 70,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -257,6 +257,10 @@
   },
   {
    "nombre": "Correos: bienvenida (se prende en el panel), novedad por correo una vez y link para darse de baja",
+   "ok": true
+  },
+  {
+   "nombre": "Correo con descuento: lista + cuentas de prueba, cupón personal, no a quien pagó, y baja sin cuenta",
    "ok": true
   },
   {

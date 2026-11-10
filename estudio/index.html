@@ -3561,6 +3561,7 @@
     if (!r || !r.ok) { avisar("No se pudieron leer las novedades"); return; }
     const { novedades: lista } = await r.json(), caja = $("cuentas"), n = novEdit && lista.find((x) => x.id === novEdit);
     const cor = await fetch("api/admin/correos", { cache: "no-store" }).then((x) => (x.ok ? x.json() : null)).catch(() => null) || { conf: {}, activo: false, mes: 0, topeMes: 2800 };
+    const camps = n ? [] : ((await fetch("api/admin/campanas", { cache: "no-store" }).then((x) => (x.ok ? x.json() : null)).catch(() => null)) || { campanas: [] }).campanas;
     const PUB = { todos: "Todos", pagados: "Solo Pro y Desarrollos", gratis: "Solo Gratis" };
     let h = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) + '<div class="nov-admin">';
     if (n) {
@@ -3584,7 +3585,7 @@
         '<div class="ancho cor-caja"><div><b>Por correo</b><small>' + (n.correo ? estadoCorreo(n.correo) : n.activa ? "Les llega a quienes reciben novedades, con un link para darse de baja. Se manda una sola vez." : "Publícala primero; luego la puedes mandar por correo.") + "</small></div>" +
           '<button class="btn-sec" data-nf-correo-prueba>Mandarme una prueba</button>' + (n.activa && !n.correo && cor.activo ? '<button class="btn-prim" data-nf-correo>Mandar por correo</button>' : "") + "</div></div>";
     } else {
-      h += cajaCorreos(cor) +
+      h += cajaCorreos(cor) + cajaCampanas(camps) +
         '<div class="orden"><button class="btn-prim" data-nf-nueva>Nueva actualización</button></div>' +
         (lista.length ? lista.map((x) => '<div class="nov-fila"><div><b>' + esc(x.titulo) + '</b><small>' + (x.activa ? "Publicada el " + fechaCorta(x.publicada) + " · vista por " + (+x.vistas || 0) + " · " + PUB[x.publico] : "Borrador") + "</small>" + (x.correo ? '<small class="cor-estado">' + estadoCorreo(x.correo) + "</small>" : "") + "</div>" +
           '<span class="nov-estado' + (x.activa ? " si" : "") + '">' + (x.activa ? "Publicada" : "Borrador") + '</span><button class="mini" data-nf-editar="' + x.id + '">Editar</button></div>').join("") :
@@ -3600,6 +3601,65 @@
       '<label class="interruptor"><b>Bienvenida a cuentas nuevas</b><input type="checkbox" class="toggle" data-cor-bienvenida' + (cor.conf.bienvenida ? " checked" : "") + (cor.activo ? "" : " disabled") + "></label>" +
       '<button class="btn-sec" data-cor-prueba' + (cor.activo ? "" : " disabled") + ">Mandarme la bienvenida</button></div>";
   }
+  // Correo con descuento (campaña): a una lista de correos y a quien tiene cuenta de prueba, con link personal
+  let campNueva = false;
+  function cajaCampanas(camps) {
+    const abierta = camps.some((k) => k.estado === "borrador");
+    let h = '<div class="cor-caja"><div><b>Correo con descuento</b><small>«Ya salió Mozari» a tu lista de correos y a quien tiene cuenta de prueba. Cada quien recibe su link de descuento de un solo uso. A quien ya pagó no le llega.</small></div>' +
+      (abierta || campNueva ? "" : '<button class="btn-sec" data-camp-nueva>Preparar uno</button>') + "</div>";
+    if (campNueva) h += '<div class="nov-form camp-form">' +
+      '<label>Nombre<input class="entrada" data-cf="nombre" maxlength="60" value="Beta 30 %"></label>' +
+      '<label>Descuento (%)<input class="entrada" data-cf="pct" type="number" min="1" max="90" value="30"></label>' +
+      '<label>Vale hasta<input class="entrada" data-cf="vence" type="date" value="2026-12-15"></label>' +
+      '<label class="interruptor"><b>También a quien tiene cuenta de prueba</b><input type="checkbox" class="toggle" data-cf="usuarios" checked></label>' +
+      '<label class="ancho">Correos de tu lista (pégalos como vengan: uno por renglón, con comas o con nombres)<textarea class="entrada" rows="6" data-cf="correos" placeholder="ana@gmail.com, luis@hotmail.com…"></textarea></label>' +
+      '<div class="ancho orden"><button class="btn-sec" data-camp-cancelar>Cancelar</button><button class="btn-prim" data-camp-preparar>Preparar</button></div></div>';
+    camps.forEach((k) => {
+      const c = k.cuenta || {}, e = k.envio;
+      const txt = k.estado === "borrador"
+        ? "Lista para mandar a <b>" + miles(c.total) + "</b>: " + miles(c.lista) + " de tu lista y " + miles(c.usuarios) + " con cuenta de prueba." + (c.yaPagaron ? " " + miles(c.yaPagaron) + " ya pagaron: a ellos no." : "")
+        : e && e.faltan ? "Enviado a <b>" + miles(e.enviados) + " de " + miles(e.total) + "</b>; los demás salen cada hora."
+        : "Enviada a <b>" + miles(e ? e.enviados : 0) + "</b>" + (e && e.omitidos ? " (" + miles(e.omitidos) + " se dieron de baja o ya pagaron)" : "") + " · " + fechaCorta((e && (e.fin || e.inicio)) || k.creada);
+      h += '<div class="nov-fila" data-camp-id="' + esc(k.id) + '"><div><b>' + esc(k.nombre) + " · " + k.pct + ' %</b><small class="cor-estado">' + txt + "</small></div>" +
+        (k.estado === "borrador" ? '<button class="mini" data-camp-prueba>Mandarme una prueba</button><button class="btn-prim" data-camp-enviar data-n="' + c.total + '">Mandar a ' + miles(c.total) + '</button><button class="mini peligro" data-camp-borrar>Borrar</button>' : '<span class="nov-estado si">' + (k.estado === "enviando" ? "Enviando" : "Enviada") + "</span>") + "</div>";
+    });
+    return h;
+  }
+  document.addEventListener("click", async (ev) => {
+    if (ev.target.closest("[data-camp-nueva]")) { campNueva = true; pintarNovedadesAdmin(); return; }
+    if (ev.target.closest("[data-camp-cancelar]")) { campNueva = false; pintarNovedadesAdmin(); return; }
+    if (ev.target.closest("[data-camp-preparar]")) {
+      const f = ev.target.closest(".camp-form"), v = (k) => f.querySelector('[data-cf="' + k + '"]');
+      const datos = { nombre: v("nombre").value, pct: +v("pct").value, vence: v("vence").value, usuarios: v("usuarios").checked, correos: v("correos").value };
+      avisar("Preparando…");
+      const r = await fetch("api/admin/campanas", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(datos) }).catch(() => null);
+      const d = r ? await r.json().catch(() => ({})) : {};
+      if (!r || !r.ok) { avisar(d.error || "No se pudo preparar"); return; }
+      campNueva = false; avisar("Lista: revisa a cuántos le llega y mándate una prueba"); pintarNovedadesAdmin(); return;
+    }
+    const fila = ev.target.closest("[data-camp-id]"); if (!fila) return;
+    const id = fila.dataset.campId;
+    if (ev.target.closest("[data-camp-prueba]")) {
+      avisar("Mandando…");
+      const r = await fetch("api/admin/campanas/" + id + "/prueba", { method: "POST" }).catch(() => null), d = r ? await r.json().catch(() => ({})) : {};
+      avisar(r && r.ok ? "Te la mandé a " + d.para + " (con un link de ejemplo)" : d.error || "No se pudo mandar"); return;
+    }
+    const b = ev.target.closest("[data-camp-enviar]");
+    if (b) {
+      if (!confirm("¿Mandar el correo con descuento a " + miles(b.dataset.n) + " personas? Se manda una sola vez, por tandas.")) return;
+      b.disabled = true; avisar("Mandando…");
+      const r = await fetch("api/admin/campanas/" + id + "/enviar", { method: "POST" }).catch(() => null), d = r ? await r.json().catch(() => ({})) : {};
+      if (!r || !r.ok) { b.disabled = false; avisar(d.error || "No se pudo mandar"); return; }
+      const e = d.campana.envio || {};
+      avisar(e.faltan ? "Enviada a " + miles(e.enviados) + "; las demás salen cada hora." : "Enviada a " + miles(e.enviados));
+      pintarNovedadesAdmin(); return;
+    }
+    if (ev.target.closest("[data-camp-borrar]")) {
+      if (!confirm("¿Borrar esta campaña? No se mandó a nadie.")) return;
+      await fetch("api/admin/campanas/" + id, { method: "DELETE" }).catch(() => null);
+      pintarNovedadesAdmin(); avisar("Campaña borrada");
+    }
+  });
   const estadoCorreo = (c) => c.faltan ? "Por correo: <b>" + miles(c.enviados) + " de " + miles(c.total) + "</b> enviados; los demás salen cada hora." : "Por correo: <b>enviada a " + miles(c.enviados) + "</b>" + (c.fallas ? " (" + c.fallas + " no se pudieron)" : "") + " · " + fechaCorta(c.fin || c.inicio);
   async function correoPrueba(datos) {
     avisar("Mandando…");

@@ -6,6 +6,8 @@
 // Diseño: tabla de 600 px, todo en línea (los correos no leen hojas de estilo) y claro, que se lee
 // igual en Gmail, Outlook y el celular. Sin la palabra "gratis": es una "cuenta de prueba".
 
+import { planDe } from "./planes.js";
+
 const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const LIMA = "#D5FF40", TINTA = "#0B0B0B", TEXTO = "#1E1F1C", TENUE = "#6B6E66", FONDO = "#F1F2EC";
 const FUENTE = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
@@ -95,6 +97,37 @@ export function correoNovedad({ nombre, base, etiqueta, titulo, texto, imagen, b
   return { asunto: "Mozari · " + titulo, html: plantilla({ base, preencabezado: parrafos[0] || titulo, cuerpo, pie, portada: imagen ? "" : base + FOTOS.novedad }), texto: textoPlano };
 }
 
+// Campaña «Ya salió Mozari» con descuento de la beta: link personal de un solo uso para cada quien
+export function correoCampana({ nombre, base, link, pct, vence, baja }) {
+  const n = primerNombre(nombre), hola = n ? "Hola, " + n + "." : "Hola.";
+  const fecha = vence ? new Date(vence).toLocaleDateString("es-MX", { day: "numeric", month: "long", timeZone: "America/Mexico_City" }) : "";
+  const pasos = PASOS.map(([t, d], i) =>
+    '<tr><td colspan="2" style="padding:0 0 12px"><img src="' + esc(base + FOTOS.pasos[i]) + '" width="528" alt="" style="display:block;width:100%;max-width:528px;height:auto;border:1px solid #E6E8E0;border-radius:14px"></td></tr>' +
+    '<tr><td valign="top" width="44" style="padding:0 14px 26px 0"><div style="width:30px;height:30px;border-radius:50%;background:' + TINTA + ";color:" + LIMA + ";text-align:center;font:700 14px/30px " + FUENTE + '">' + (i + 1) + "</div></td>" +
+    '<td valign="top" style="padding:2px 0 26px;font:400 15px/1.5 ' + FUENTE + ";color:" + TEXTO + '"><b style="font-weight:600;font-size:16px">' + esc(t) + '</b><br><span style="color:' + TENUE + '">' + esc(d) + "</span></td></tr>").join("");
+  const cupon = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 28px"><tr><td bgcolor="' + TINTA + '" style="border-radius:18px;padding:26px 26px 24px">' +
+    '<p style="margin:0 0 4px;font:600 12px ' + FUENTE + ";letter-spacing:2px;text-transform:uppercase;color:" + LIMA + '">Precio de la beta</p>' +
+    '<p style="margin:0 0 8px;font:700 40px/1.1 ' + FUENTE + ';color:#F7F9F2">' + pct + ' % de descuento</p>' +
+    '<p style="margin:0 0 20px;font:400 15px/1.5 ' + FUENTE + ';color:#C9CCC2">En Pro o Desarrollos. Tu link es personal y se usa una vez' + (fecha ? "; vale hasta el " + esc(fecha) : "") + ".</p>" +
+    boton("Usar mi " + pct + " %", link) + "</td></tr></table>";
+  const cuerpo =
+    '<p style="margin:0 0 6px;font:600 12px ' + FUENTE + ';letter-spacing:2px;text-transform:uppercase;color:' + TENUE + '">Ya salió Mozari</p>' +
+    '<h1 style="margin:0 0 16px;font:700 28px/1.2 ' + FUENTE + ";color:" + TINTA + '">Tus tours 360, con tu marca y tus lotes, desde el navegador</h1>' +
+    '<p style="margin:0 0 14px">' + esc(hola) + "</p>" +
+    '<p style="margin:0 0 22px">Mozari es el software que hicimos en R360 para hacer tours virtuales 360: subes tus esferas, las conectas, dibujas tus lotes y compartes un link. Ya está abierto, y mientras dure la beta tienes un descuento para entrar.</p>' +
+    cupon +
+    '<p style="margin:0 0 16px;font-weight:600;color:' + TINTA + '">Así se hace un tour en Mozari:</p>' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">' + pasos + "</table>" +
+    '<p style="margin:0 0 18px;padding:16px 18px;border-radius:14px;background:' + FONDO + ';font-size:14px;line-height:1.55">¿Primero quieres probar? Entra y practica con tu cuenta de prueba: tours sin límite, de hasta 5 esferas cada uno, con la marca de agua de Mozari. Tu descuento te espera.</p>' +
+    '<p style="margin:22px 0 0">Nos vemos dentro,<br><b>Amar Preciado</b><br><span style="color:' + TENUE + ';font-size:14px">Creador de Mozari · R360</span></p>';
+  const pie = "Te llegó porque tomaste un curso o te registraste con R360 o en mozari.app.<br>" +
+    '<a href="' + esc(baja) + '" style="color:' + TENUE + '">Ya no quiero recibir correos de Mozari</a> · Mozari · León, Guanajuato, México';
+  const texto = "Ya salió Mozari\n\n" + hola + "\n\nMozari es el software que hicimos en R360 para hacer tours virtuales 360: subes tus esferas, las conectas, dibujas tus lotes y compartes un link. Ya está abierto, y mientras dure la beta tienes un descuento para entrar.\n\n" +
+    pct + " % de descuento en Pro o Desarrollos. Tu link es personal y se usa una vez" + (fecha ? "; vale hasta el " + fecha : "") + ":\n" + link + "\n\n" +
+    "¿Primero quieres probar? Entra y practica con tu cuenta de prueba: tours sin límite, de hasta 5 esferas cada uno.\n\nNos vemos dentro,\nAmar Preciado\nCreador de Mozari · R360\n\n—\nYa no quiero recibir correos de Mozari: " + baja;
+  return { asunto: (n ? n + ", ya" : "Ya") + " salió Mozari: " + pct + " % de descuento en la beta", html: plantilla({ base, preencabezado: "Tu link personal con " + pct + " % de descuento en Pro o Desarrollos.", cuerpo, pie, portada: base + FOTOS.bienvenida }), texto };
+}
+
 // ---------- Envío ----------
 // Topes para no tener sorpresas en el cobro: el plan de Cloudflare incluye 3,000 correos al mes.
 // Nunca se pasa de 2,800 al mes ni de 300 al día; lo que falte se manda al día siguiente (o al otro mes).
@@ -159,6 +192,7 @@ export async function iniciarCola(env, n, uids) {
 export async function avanzarCola(env, id, base, firma, cuantos = LOTE) {
   const oc = await env.R2.get(COLA(id)); if (!oc) return null;
   const c = await oc.json(); if (!c.pendientes.length) return c;
+  if (c.tipo === "campana") return avanzarCampana(env, c, base, firma, cuantos);
   const on = await env.R2.get("novedades/" + id + ".json"), n = on ? await on.json() : null;
   if (!n || !n.activa) { c.pendientes = []; c.fin = new Date().toISOString(); c.cancelada = true; }
   const cuenta = await contador(env);
@@ -187,6 +221,65 @@ export async function avanzarColas(env, base, firma) {
   }
 }
 
+// ---------- Campañas (correo con descuento a una lista + usuarios con cuenta de prueba) ----------
+// correos/campanas/<id>.json guarda la campaña (y a quién va); la cola es correos/cola/c<id>.json.
+// Cada correo lleva su propio cupón de un solo uso (cupones/AL-XXXXXX.json, nota = el correo), creado
+// justo al mandarlo: a quien no le llega, no se le crea. Quien se da de baja sin tener cuenta queda en
+// correos/baja/<huella del correo> y ya no recibe ninguna campaña.
+export const CAMPANA = (id) => "correos/campanas/" + id + ".json";
+async function huella(t) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(t).trim().toLowerCase())); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
+export const claveBajaCorreo = async (email) => "correos/baja/" + (await huella(email));
+const LETRAS_CUPON = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+async function nuevoCupon(env, k, email) {
+  for (let i = 0; i < 6; i++) {
+    const r = crypto.getRandomValues(new Uint8Array(6)), codigo = "AL-" + [...r].map((x) => LETRAS_CUPON[x % LETRAS_CUPON.length]).join("");
+    if (await env.R2.head("cupones/" + codigo + ".json")) continue;
+    const cupon = { codigo, pct: k.pct, planes: k.planes, max: 1, vence: k.vence || null, usos: 0, usadoPor: [], activo: true, nota: String(email).slice(0, 60), lote: "c" + k.id, creado: new Date().toISOString() };
+    await env.R2.put("cupones/" + codigo + ".json", JSON.stringify(cupon), JSONH);
+    return codigo;
+  }
+  return null;
+}
+export async function iniciarCampana(env, k) {
+  const c = { id: "c" + k.id, tipo: "campana", campana: k.id, pendientes: k.destinos, total: k.destinos.length, enviados: 0, fallas: 0, omitidos: 0, inicio: new Date().toISOString(), fin: "" };
+  await env.R2.put(COLA(c.id), JSON.stringify(c), JSONH);
+  k.estado = "enviando"; k.envio = { total: c.total, enviados: 0, fallas: 0, omitidos: 0, faltan: c.total, inicio: c.inicio, fin: "" };
+  await env.R2.put(CAMPANA(k.id), JSON.stringify(k), JSONH);
+  return c;
+}
+async function avanzarCampana(env, c, base, firma, cuantos) {
+  const ok = await env.R2.get(CAMPANA(c.campana)), k = ok ? await ok.json() : null;
+  if (!k) { c.pendientes = []; c.fin = new Date().toISOString(); c.cancelada = true; }
+  const cuenta = await contador(env);
+  while (c.pendientes.length && cuantos-- > 0) {
+    const it = c.pendientes[0];
+    let nombre = "", omitir = !!(await env.R2.head(await claveBajaCorreo(it.e)));
+    if (!omitir && it.u) {
+      const op = await env.R2.get(PERFIL(it.u)), p = op ? await op.json().catch(() => null) : null;
+      if (!p || p.bloqueado || p.noNovedades || planDe(p).id !== "gratis") omitir = true; else nombre = p.nombre;
+    }
+    if (omitir) { c.omitidos++; c.pendientes.shift(); continue; }
+    if (cuenta.mes >= TOPE_MES || cuenta.dia >= TOPE_DIA) break; // lo demás en la siguiente hora (o mañana)
+    const codigo = await nuevoCupon(env, k, it.e);
+    if (!codigo) { c.fallas++; c.pendientes.shift(); continue; }
+    const baja = enlaceBaja(base, await firma(it.u ? it.u : { bajaCorreo: it.e }));
+    const m = correoCampana({ nombre, base, link: base + "/entrar?cupon=" + codigo, pct: k.pct, vence: k.vence, baja });
+    const r = await enviar(env, cuenta, { para: it.e, asunto: m.asunto, html: m.html, texto: m.texto, baja });
+    if (r === "tope") { await env.R2.delete("cupones/" + codigo + ".json"); break; }
+    if (r === "ok") c.enviados++;
+    else { c.fallas++; await env.R2.delete("cupones/" + codigo + ".json"); }
+    c.pendientes.shift();
+  }
+  if (!c.pendientes.length && !c.fin) c.fin = new Date().toISOString();
+  await Promise.all([cuenta.guardar(), env.R2.put(COLA(c.id), JSON.stringify(c), JSONH)]);
+  if (k) {
+    k.envio = { total: c.total, enviados: c.enviados, fallas: c.fallas, omitidos: c.omitidos, faltan: c.pendientes.length, inicio: c.inicio, fin: c.fin };
+    if (c.fin) k.estado = "enviada";
+    await env.R2.put(CAMPANA(k.id), JSON.stringify(k), JSONH);
+  }
+  return c;
+}
+
 // Página para darse de baja (y volver a recibirlas). El link trae la cuenta firmada.
 const paginaBaja = (titulo, texto, boton, accion, t) => '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Mozari · Novedades</title>' +
   '<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:' + TINTA + ";color:#F7F9F2;font:16px/1.55 " + FUENTE + "}.c{max-width:420px;padding:32px 24px;text-align:center}h1{font-size:24px;margin:16px 0 8px}p{color:#B9BCB2;margin:0 0 22px}" +
@@ -197,6 +290,20 @@ const paginaBaja = (titulo, texto, boton, accion, t) => '<!doctype html><html la
 export async function rutaBaja(request, env, verificar) {
   const url = new URL(request.url), t = url.searchParams.get("t") || "", d = await verificar(env, t);
   const html = (cuerpo, status = 200) => new Response(cuerpo, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+  // Sin cuenta en Mozari (de una lista): se marca su correo y ya no recibe campañas
+  if (d && d.bajaCorreo) {
+    const k = await claveBajaCorreo(d.bajaCorreo), ya = !!(await env.R2.head(k));
+    if (request.method === "POST") {
+      const f = await request.text().catch(() => ""), accion = /accion=alta/.test(f) ? "alta" : "baja";
+      if (accion === "baja") await env.R2.put(k, JSON.stringify({ fecha: new Date().toISOString() }), JSONH); else await env.R2.delete(k);
+      return accion === "baja"
+        ? html(paginaBaja("Listo, ya no te escribiremos", "No te llegarán más correos de Mozari. Si cambias de opinión, puedes volver a recibirlos.", "Volver a recibirlos", "alta", t))
+        : html(paginaBaja("Listo, te volverán a llegar", "Te escribimos solo cuando haya algo nuevo en Mozari.", "", "", ""));
+    }
+    return ya
+      ? html(paginaBaja("Ya no recibes correos de Mozari", "Si quieres, puedes volver a recibirlos.", "Volver a recibirlos", "alta", t))
+      : html(paginaBaja("¿Ya no quieres recibir correos de Mozari?", "Dejaremos de escribirte. Es un solo clic.", "Sí, ya no quiero recibirlos", "baja", t));
+  }
   if (!d || !d.baja) return html(paginaBaja("Este link ya no sirve", "Ábrelo desde el último correo de Mozari que te llegó.", "", "", ""), 400);
   const op = await env.R2.get(PERFIL(d.baja)), p = op ? await op.json().catch(() => null) : null;
   if (!p) return html(paginaBaja("Este link ya no sirve", "No encontramos tu cuenta.", "", "", ""), 404);

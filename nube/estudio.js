@@ -29,7 +29,7 @@
 
 import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR, conCarga, cargaEnViejos } from "./comun.js";
 import { rutasSesion, cuentaDe, perfil, leerCupo, contarCuentas, firmarLink, verificarLink } from "./sesion.js";
-import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoDeNovedad, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja } from "./correos.js";
+import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoDeNovedad, correoCampana, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja, CAMPANA, iniciarCampana } from "./correos.js";
 import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
 import { apiPagos, webhookMercadoPago, CODIGO, cuponClave } from "./pagos.js";
 import { EmailMessage } from "cloudflare:email";
@@ -327,10 +327,86 @@ async function destinatarios(env, n) {
   for (let i = 0; i < claves.length; i += 50) ps.push(...(await Promise.all(claves.slice(i, i + 50).map((k) => env.R2.get(k).then((o) => (o ? o.json() : null)).catch(() => null)))));
   return ps.filter((p) => p && p.uid && /@/.test(p.email || "") && !p.bloqueado && !p.noNovedades && paraQuien(n, planDe(p)));
 }
-const firmaBaja = (env) => (uid) => firmarLink(env, { baja: uid });
+// Link de baja firmado: con cuenta (uid) o solo el correo (contactos de una lista)
+const firmaBaja = (env) => (x) => firmarLink(env, typeof x === "string" ? { baja: x } : x);
+// Todas las cuentas (perfil.json), leídas de 50 en 50
+async function todasLasCuentas(env) {
+  const claves = [];
+  let cur;
+  do {
+    const l = await env.R2.list({ prefix: "cuentas/", cursor: cur, limit: 1000 });
+    l.objects.forEach((o) => { if (o.key.endsWith("/perfil.json")) claves.push(o.key); });
+    cur = l.truncated ? l.cursor : undefined;
+  } while (cur);
+  const ps = [];
+  for (let i = 0; i < claves.length; i += 50) ps.push(...(await Promise.all(claves.slice(i, i + 50).map((k) => env.R2.get(k).then((o) => (o ? o.json() : null)).catch(() => null)))));
+  return ps.filter((p) => p && p.uid);
+}
+const CORREO_RE = /[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/g;
+// Campañas con descuento: a una lista de correos y (si se quiere) a los usuarios con cuenta de prueba.
+// A quien ya pagó no se le manda. Se prepara (borrador), se prueba con el dueño y se manda con su clic.
+async function apiCampanas(request, env, partes, yo) {
+  const m = request.method, base = new URL(request.url).origin;
+  const resumen = (k) => ({ id: k.id, nombre: k.nombre, pct: k.pct, vence: k.vence, creada: k.creada, estado: k.estado, cuenta: k.cuenta, envio: k.envio || null });
+  if (partes.length === 3 && m === "GET") {
+    const l = await env.R2.list({ prefix: "correos/campanas/", limit: 200 });
+    const ks = (await Promise.all(l.objects.map((o) => env.R2.get(o.key).then((x) => (x ? x.json() : null)).catch(() => null)))).filter(Boolean);
+    ks.sort((a, b) => String(b.creada).localeCompare(String(a.creada)));
+    return json({ campanas: ks.map(resumen) });
+  }
+  if (partes.length === 3 && m === "POST") {
+    const c = await request.json().catch(() => ({}));
+    const pct = Math.round(+c.pct || 30), vence = /^\d{4}-\d{2}-\d{2}$/.test(c.vence || "") ? new Date(c.vence + "T23:59:59-06:00").toISOString() : null;
+    if (!(pct >= 1 && pct <= 90)) return error(400, "El descuento va de 1 % a 90 %");
+    const lista = [...new Set((String(c.correos || "").match(CORREO_RE) || []).map((e) => e.toLowerCase()))].slice(0, 5000);
+    const cuentas = await todasLasCuentas(env), porCorreo = new Map(cuentas.filter((p) => p.email).map((p) => [p.email.toLowerCase(), p]));
+    const pagado = (p) => planDe(p).id !== "gratis", mio = String(yo.email || "").toLowerCase();
+    const destinos = [], vistos = new Set(), cuenta = { lista: 0, usuarios: 0, yaPagaron: 0 };
+    const agregar = (e, p) => {
+      if (vistos.has(e) || e === mio) return; vistos.add(e);
+      if (p && (p.admin || p.bloqueado)) return;
+      if (p && pagado(p)) { cuenta.yaPagaron++; return; }
+      destinos.push(p ? { e, u: p.uid } : { e }); p ? cuenta.usuarios++ : cuenta.lista++;
+    };
+    if (c.usuarios !== false) cuentas.filter((p) => p.email && !p.noNovedades).forEach((p) => agregar(p.email.toLowerCase(), p));
+    lista.forEach((e) => agregar(e, porCorreo.get(e)));
+    if (!destinos.length) return error(400, "No hay a quién mandarle: pega al menos un correo");
+    const id = Date.now().toString(36);
+    const k = { id, nombre: String(c.nombre || "Beta " + pct + " %").slice(0, 60), pct, planes: ["pro", "desarrollos"], vence, creada: new Date().toISOString(), estado: "borrador", cuenta: Object.assign(cuenta, { total: destinos.length }), destinos };
+    await env.R2.put(CAMPANA(id), JSON.stringify(k), { httpMetadata: { contentType: "application/json" } });
+    return json({ campana: resumen(k) }, 201);
+  }
+  const id = partes[3];
+  if (!/^[a-z0-9]{4,20}$/.test(id || "")) return error(400, "Campaña inválida");
+  const o = await env.R2.get(CAMPANA(id));
+  if (!o) return error(404, "No existe");
+  const k = await o.json();
+  if (partes[4] === "prueba" && m === "POST") {
+    const cm = correoCampana({ nombre: yo.nombre, base, link: base + "/entrar?cupon=AL-EJEMPLO", pct: k.pct, vence: k.vence, baja: enlaceBaja(base, await firmaBaja(env)(yo.uid)) });
+    const cuenta = await contador(env);
+    const r = await enviar(env, cuenta, { para: yo.email, asunto: "[Prueba] " + cm.asunto, html: cm.html, texto: cm.texto });
+    await cuenta.guardar();
+    return r === "ok" ? json({ ok: true, para: yo.email }) : error(r === "tope" ? 429 : 502, r === "tope" ? "Llegaste al tope de correos de hoy" : "No se pudo mandar (" + r.slice(6) + ")");
+  }
+  if (partes[4] === "enviar" && m === "POST") {
+    if (k.estado !== "borrador") return error(409, "Esta campaña ya se mandó");
+    if (!env.ENVIOS) return error(503, "El envío de correos no está activo");
+    await iniciarCampana(env, k);
+    await avanzarCola(env, "c" + id, base, firmaBaja(env));
+    const k2 = await (await env.R2.get(CAMPANA(id))).json();
+    return json({ campana: resumen(k2) });
+  }
+  if (partes.length === 4 && m === "DELETE") {
+    if (k.estado !== "borrador") return error(409, "Ya se mandó: no se puede borrar");
+    await env.R2.delete(CAMPANA(id));
+    return json({ ok: true });
+  }
+  return error(405, "Método no permitido");
+}
 
 async function admin(request, env, partes, yo) {
   const m = request.method;
+  if (partes[2] === "campanas") return apiCampanas(request, env, partes, yo);
   // Correos a los usuarios: la bienvenida (prender o apagar), cuántos van este mes y una prueba al dueño
   if (partes[2] === "correos") {
     if (partes.length === 3 && m === "GET") {

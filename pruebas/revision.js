@@ -1966,6 +1966,59 @@ async function capasPesadas(p) {
       exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
       await n.context().close();
     });
+    // Pedido de Amar (nov 2026): «Ya salió Mozari» con el 30 % de la beta a sus exalumnos (lista de correos) y a quien
+    // tiene cuenta de prueba. Cada quien su cupón de un solo uso; a quien ya pagó no le llega; link de baja sin cuenta.
+    await paso("Correo con descuento: lista + cuentas de prueba, cupón personal, no a quien pagó, y baja sin cuenta", async () => {
+      const LOG = path.join(DATOS, "worker-estudio.log"), registro = () => fs.readFileSync(LOG, "utf8");
+      const correosA = (para) => registro().split("send_email binding called").slice(1).filter((b) => b.includes("To: " + para));
+      const htmlDe = (bloque) => { const m = bloque.match(/HTML: (\S+\.html)/); return m ? fs.readFileSync(m[1], "utf8") : ""; };
+      const n = await pagina(DUENO);
+      const api = (url, op) => n.evaluate(([u, o]) => fetch(u, o).then(async (r) => ({ s: r.status, d: await r.json().catch(() => ({})) })), [url, op || {}]);
+      const pon = (o) => ({ method: o.m || "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(o.b || {}) });
+      // Una cuenta de prueba y una que ya pagó (Pro)
+      const prueba = "camp-prueba-" + Date.now() + "@prueba.mx", pago = "camp-pro-" + Date.now() + "@prueba.mx";
+      await (await pagina(prueba)).context().close(); await (await pagina(pago)).context().close();
+      const cs = (await api("api/admin/cuentas")).d.cuentas, cPro = cs.find((c) => c.email === pago);
+      exige((await api("api/admin/cuentas/" + cPro.uid, pon({ m: "PUT", b: { plan: "pro" } }))).s === 200, "no se pudo poner en Pro");
+      const ext1 = "exalumno-" + Date.now() + "@ejemplo.com", ext2 = "colega-" + Date.now() + "@ejemplo.com";
+      // Desde el panel: Preparar con la lista pegada como venga (con nombres, comas, renglones)
+      await n.click('#nav button:has-text("Mis Tours")'); await n.waitForTimeout(800); await pasarGuias(n);
+      await n.click("#ver-cuentas"); await n.waitForTimeout(1200);
+      await n.click('[data-dueno="novedades"]'); await n.waitForTimeout(1200);
+      await n.click("[data-camp-nueva]"); await n.waitForTimeout(500);
+      await n.fill('[data-cf="correos"]', "Ana López <" + ext1 + ">\n" + ext2.toUpperCase() + ", " + pago + "\n" + ext1);
+      await n.click("[data-camp-preparar]"); await n.waitForTimeout(2500);
+      const lista = (await api("api/admin/campanas")).d.campanas, k = lista[0];
+      exige(k && k.estado === "borrador" && k.pct === 30 && k.cuenta.lista === 2 && k.cuenta.yaPagaron >= 1 && k.cuenta.usuarios >= 2, "la campaña no cuenta bien a quién le llega: " + JSON.stringify(k && k.cuenta));
+      exige(await n.isVisible('[data-camp-id="' + k.id + '"] [data-camp-enviar]'), "no sale el botón para mandarla");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "campana-panel.png") });
+      // Prueba al dueño: link de ejemplo, sin crear cupones
+      const cupAntes = (await api("api/admin/cupones")).d.cupones.length;
+      await n.click('[data-camp-id="' + k.id + '"] [data-camp-prueba]'); await n.waitForTimeout(1500);
+      const pr = correosA(DUENO).filter((b) => /Subject: \[Prueba\] .*salió Mozari/.test(b));
+      exige(pr.length && /AL-EJEMPLO/.test(htmlDe(pr[pr.length - 1])) && (await api("api/admin/cupones")).d.cupones.length === cupAntes, "la prueba no llegó al dueño o creó cupones");
+      // Mandar: cada quien su cupón; al que pagó no
+      await n.click('[data-camp-id="' + k.id + '"] [data-camp-enviar]'); await n.waitForTimeout(5000);
+      const k2 = (await api("api/admin/campanas")).d.campanas.find((x) => x.id === k.id);
+      exige(k2.estado !== "borrador" && k2.envio && k2.envio.enviados >= 3, "la campaña no se mandó: " + JSON.stringify(k2));
+      const m1 = correosA(ext1), m2 = correosA(ext2), mp = correosA(prueba);
+      exige(m1.length === 1 && m2.length === 1 && mp.length >= 1 && correosA(pago).filter((b) => /salió Mozari/.test(b)).length === 0, "no le llegó a la lista y a la cuenta de prueba, o le llegó al que pagó");
+      const h1 = htmlDe(m1[0]), c1 = (h1.match(/entrar\?cupon=(AL-[A-Z0-9]+)/) || [])[1], c2 = (htmlDe(m2[0]).match(/entrar\?cupon=(AL-[A-Z0-9]+)/) || [])[1];
+      exige(c1 && c2 && c1 !== c2 && /30 % de descuento/.test(h1) && !/gratis/i.test(h1), "cada correo no trae su propio cupón del 30 %");
+      const cup = (await api("api/admin/cupones")).d.cupones.find((x) => x.codigo === c1);
+      exige(cup && cup.pct === 30 && cup.max === 1 && cup.nota === ext1 && cup.planes.join() === "pro,desarrollos" && /2026-12-1[56]/.test(cup.vence || ""), "el cupón no es de un solo uso, 30 % y con su correo: " + JSON.stringify(cup));
+      exige((await api("api/admin/campanas/" + k.id + "/enviar", { method: "POST" })).s === 409, "se pudo mandar dos veces");
+      // Baja sin cuenta: ya no recibe la siguiente campaña
+      const baja = (h1.match(/href="([^"]*\/baja\?t=[^"]+)"/) || [])[1];
+      const x = await pagina(null); await x.goto(baja.replace(/&amp;/g, "&")); await x.waitForTimeout(600);
+      exige(/¿Ya no quieres recibir correos de Mozari\?/.test(await x.textContent("body")), "el link de baja de la lista no pregunta");
+      await x.click("button"); await x.waitForTimeout(800); await x.context().close();
+      const k3 = (await api("api/admin/campanas", pon({ b: { correos: ext1 + " " + ext2, usuarios: false, vence: "2026-12-20" } }))).d.campana;
+      await api("api/admin/campanas/" + k3.id + "/enviar", { method: "POST" }); await n.waitForTimeout(1500);
+      exige(correosA(ext1).length === 1 && correosA(ext2).length === 2, "quien se dio de baja recibió otra campaña (o el otro no)");
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+    });
     // Pedido de Amar (nov 2026): los desarrollos suelen tener sus lotes en Google Earth (KMZ). Nace en el Laboratorio.
     await paso("Lotes desde un KMZ: dibuja el plano, lee número, manzana y superficie, y los coloca con 4 esquinas con su medida real", async () => {
       // Un KMZ de prueba como el de Google Earth: 2 manzanas de 6 lotes de 10 × 20 m, una calle, y el perímetro
