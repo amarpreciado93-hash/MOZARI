@@ -2019,6 +2019,46 @@ async function capasPesadas(p) {
       exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
       await n.context().close();
     });
+    // Pedido de Amar (nov 2026, video de Loom): poner una imagen (el plano de CAD, unas manzanas) en la esfera, que crezca
+    // sin deformarse y se acueste sobre el terreno con Inclinar. Nace en el Laboratorio.
+    await paso("Imagen en 3D: un PNG transparente pegado a la esfera, crece sin deformarse y se inclina sobre el terreno", async () => {
+      const hoja = await navegador.newPage({ viewport: { width: 800, height: 400 } });
+      await hoja.setContent('<!doctype html><html><body style="margin:0;background:transparent"><svg width="800" height="400" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke="#ffffff" stroke-width="6"><rect x="40" y="40" width="340" height="320"/><rect x="420" y="40" width="340" height="320"/><path d="M210 40v320M590 40v320M40 200h340M420 200h340"/></g></svg></body></html>');
+      const png = path.join(DATOS, "manzanas.png"); await hoja.screenshot({ path: png, omitBackground: true }); await hoja.close();
+      const n = await pagina(DUENO); await nuevoTour(n, "Imagen 3D");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1500); await pasarGuias(n);
+      exige(await n.isVisible("#add-img"), "no sale el botón «Imagen 3D» en Capas");
+      await n.setInputFiles("#add-img-archivo", png); await n.waitForTimeout(3000);
+      const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      let c = Object.values((await leer()).capas).flat().find((x) => x.tipo === "imagen");
+      exige(c && /^archivos\/capa-.*\.png$/.test(c.foto) && Math.abs(c.proporcion - 0.5) < 0.01 && c.tamano === 320, "no se creó la capa de imagen (PNG, proporción 2:1): " + JSON.stringify(c));
+      await n.waitForFunction(() => { const e = document.querySelector(".capas .cp-img"); return e && e.complete; }, null, { timeout: 8000 }).catch(() => {});
+      const caja = () => n.$eval(".capas .cp-img", (e) => ({ w: e.offsetWidth, h: e.offsetHeight, cargada: e.complete && e.naturalWidth > 0, src: e.getAttribute("src"), tr: e.closest(".cp").style.transform.slice(-60) }));
+      let b = await caja();
+      exige(b.cargada && b.w === 800 && b.h === 400, "la imagen no se ve o no guarda su proporción: " + JSON.stringify(b) + " | " + (await n.$eval(".capas .cp-img", (e) => e.outerHTML.slice(0, 200))) + " | " + JSON.stringify(c));
+      exige(await n.$('.asas [data-h="escala"]') && !(await n.$('.asas [data-h="ancho"]')) && !(await n.$('.asas [data-h="alto"]')), "la imagen tiene asas para deformarla (solo debe crecer y rotar)");
+      // Tamaño desde Propiedades (sigue sin deformarse) e Inclinar para acostarla sobre el terreno
+      await n.$eval('input[type=range][data-k="tamano"]', (e) => { e.value = "600"; e.dispatchEvent(new Event("input", { bubbles: true })); e.dispatchEvent(new Event("change", { bubbles: true })); });
+      await n.$eval('input[type=range][data-k="t3d.inclinar"]', (e) => { e.value = "60"; e.dispatchEvent(new Event("input", { bubbles: true })); e.dispatchEvent(new Event("change", { bubbles: true })); });
+      await n.waitForTimeout(1500);
+      b = await caja();
+      exige(b.w === 1500 && b.h === 750 && /rotateX\(60deg\)/.test(b.tr), "no creció parejo o no se inclinó: " + JSON.stringify(b));
+      c = Object.values((await leer()).capas).flat().find((x) => x.tipo === "imagen");
+      exige(c.tamano === 600 && c.t3d && c.t3d.inclinar === 60, "no se guardó el tamaño o la inclinación: " + JSON.stringify({ t: c.tamano, t3d: c.t3d }));
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "imagen3d.png") });
+      // En la vista previa (como en el tour) se ve, y no tapa los clics de lo que tenga abajo
+      await n.click('button:has-text("Vista previa")'); await n.waitForTimeout(3500);
+      const pv = await n.$eval("#previa .cp-img", (e) => ({ ok: e.complete && e.naturalWidth > 0, pe: getComputedStyle(e).pointerEvents }));
+      exige(pv.ok && pv.pe === "none", "en la vista previa la imagen no se ve o tapa los clics: " + JSON.stringify(pv));
+      await n.keyboard.press("Escape"); await n.waitForTimeout(500);
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+      // Es del Laboratorio («Solo yo» al nacer)
+      const u = await pagina("img3d-" + Date.now() + "@prueba.mx"); await nuevoTour(u, "Sin imagen");
+      await u.click('#subtabs button:has-text("Capas")'); await u.waitForTimeout(1500); await pasarGuias(u);
+      exige(!(await u.isVisible("#add-img")), "una cuenta normal ya ve «Imagen 3D» (debe nacer en el Laboratorio)");
+      await u.context().close();
+    });
     // Pedido de Amar (nov 2026): los desarrollos suelen tener sus lotes en Google Earth (KMZ). Nace en el Laboratorio.
     await paso("Lotes desde un KMZ: dibuja el plano, lee número, manzana y superficie, y los coloca con 4 esquinas con su medida real", async () => {
       // Un KMZ de prueba como el de Google Earth: 2 manzanas de 6 lotes de 10 × 20 m, una calle, y el perímetro

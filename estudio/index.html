@@ -1099,6 +1099,11 @@
   /* Textos y hotspots pegados a la esfera (3D) */
   .cp.en3d { width: max-content; }
   .cp.en3d .cp-texto { position: static; transform: none; display: block; }
+  /* Imagen en 3D (Laboratorio «imagen3d»): un plano de CAD o unas manzanas en PNG, pegados a la esfera */
+  .cp-img { display: block; max-width: none; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+  .editable .cp-img, .cp.con-accion .cp-img { pointer-events: auto; }
+  .editable .cp-img { cursor: move; }
+  .cp.elegida .cp-img { outline: 2px dashed rgba(255, 255, 255, 0.8); outline-offset: 0; }
   .hs.en3d { width: var(--hs-tam); height: var(--hs-tam); }
   .hs.en3d .hs-boton { left: 0; top: 0; }
   .hs.en3d .hs-texto { left: 50%; top: calc(100% + 0.5em); }
@@ -1834,6 +1839,8 @@
             <button id="add-txt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13"/></svg>Texto</button>
             <button id="add-pi" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="18" r="2.2"/><path d="M6.6 16.4 12 8h9"/></svg>Punto de interés</button>
             <button id="add-hs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="8.5" stroke-opacity=".5"/></svg>Hotspot</button>
+            <button id="add-img" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 16.5 9.5 19 20 15.5V5L9.5 8.5 4 6z"/><path d="m4 13 4-2.5 4 3 3-2 5 2.5" stroke-opacity=".6"/></svg>Imagen 3D</button>
+            <input type="file" id="add-img-archivo" accept="image/png,image/jpeg,image/webp" hidden>
           </div>
         </header>
         <ul class="lista" id="lista" role="listbox" aria-label="Capas del panorama"></ul>
@@ -4436,7 +4443,7 @@
       const capaEtq = document.createElement("div"), svgEtq = document.createElementNS(SVGNS, "svg");
       capaEtq.className = "capa-etq"; svgEtq.setAttribute("class", "cp-svg");
       capaEtq.appendChild(svgEtq);
-      const arriba = []; // hotspots, textos y puntos de interés: van encima de todos los polígonos
+      const arriba = [], imagenes = []; // hotspots, textos y puntos de interés: van encima de todos los polígonos
       lista().forEach((c) => {
         if (!editable && !c.visible) return;
         if (!editable && c.manzana) return;
@@ -4496,6 +4503,15 @@
           el.appendChild(t);
           t.addEventListener("pointerdown", (ev) => tomar(ev, c, "mover"));
           nodos.set(c.id, { el, c, t });
+        } else if (c.tipo === "imagen") {
+          const im = document.createElement("img");
+          im.className = "cp-img"; im.alt = ""; im.draggable = false; im.decoding = "async";
+          im.src = urlArchivo(c.foto);
+          im.style.opacity = c.opacidad ?? 1;
+          el.appendChild(im);
+          im.addEventListener("pointerdown", (ev) => tomar(ev, c, "mover"));
+          nodos.set(c.id, { el, c, im });
+          imagenes.push(el);
         } else if (c.tipo === "hotspot") {
           el.classList.add("hs");
           if (c.verNombre === false) el.classList.add("sin-nombre");
@@ -4518,12 +4534,14 @@
           if (!editable && accionDe(c) !== "ninguna") { el.classList.add("con-accion"); el.addEventListener("click", (ev) => { ev.stopPropagation(); ejecutar(c); }); }
           medir(nodos.get(c.id));
         }
-        if (c.tipo === "poligono") capasEl.appendChild(el); else arriba.push(el);
+        if (c.tipo === "poligono") capasEl.appendChild(el); else if (c.tipo !== "imagen") arriba.push(el);
       });
       // Orden fijo, sin importar en qué orden se crearon: polígonos y lotes abajo, sus rótulos, y hasta
       // arriba hotspots, textos y puntos de interés. Un polígono (mide toda la pantalla) que queda encima
       // de algo animado o en 3D obliga al iPhone a guardarlo en su propia capa de pantalla completa: con
       // unos 20 lotes así Safari se queda sin memoria y cierra el tour (pasó con El Mirador).
+      // Imágenes en 3D: encima de los polígonos (no los obligan a ser capas pesadas en el iPhone) y abajo de los rótulos
+      imagenes.forEach((el) => capasEl.appendChild(el));
       capasEl.appendChild(capaEtq);
       arriba.forEach((el) => capasEl.appendChild(el));
       render();
@@ -4536,6 +4554,8 @@
       const c = n.c, k = es3d(c) ? K3 : 1;
       n.el.classList.toggle("en3d", es3d(c));
       if (c.tipo === "interes") return;
+      // La imagen siempre guarda su proporción: solo cambia el tamaño, nunca se deforma
+      if (c.tipo === "imagen") { n.el.classList.add("en3d"); n.im.style.width = c.tamano * k + "px"; n.im.style.height = c.tamano * (c.proporcion || 0.75) * k + "px"; return; }
       if (c.tipo === "texto") n.t.style.fontSize = c.tamano * k + "px";
       else { n.el.style.setProperty("--hs-tam", tamHs(c) * k + "px"); n.el.style.fontSize = 12 * k + "px"; }
     }
@@ -4899,7 +4919,7 @@
         const linea = document.createElementNS(SVGNS, "path");
         linea.setAttribute("class", "asa-marco"); linea.setAttribute("d", "M" + arriba.x.toFixed(1) + " " + arriba.y.toFixed(1) + "L" + giro.x.toFixed(1) + " " + giro.y.toFixed(1));
         g.appendChild(linea);
-        [["rotar", giro, "circle"], ["escala", q.c, "rect"], ["ancho", q.der, "rect"], ["alto", q.abajo, "rect"]].forEach(([h, p, forma]) => {
+        [["rotar", giro, "circle"], ["escala", q.c, "rect"], ["ancho", q.der, "rect"], ["alto", q.abajo, "rect"]].filter(([h]) => ne.c.tipo !== "imagen" || h === "rotar" || h === "escala").forEach(([h, p, forma]) => {
           if (!es3d(ne.c) && h !== "escala") return;
           const e = document.createElementNS(SVGNS, forma);
           e.setAttribute("class", "asa asa-" + h);
@@ -5023,7 +5043,7 @@
       if (!n) return;
       ev.stopPropagation(); ev.preventDefault();
       const r = stage.getBoundingClientRect();
-      asa = { h: h.getAttribute("data-h"), c: n.c, n, x0: ev.clientX - r.left, y0: ev.clientY - r.top, tam: n.c.tipo === "texto" ? n.c.tamano : tamHs(n.c), t: t3(n.c), movido: false };
+      asa = { h: h.getAttribute("data-h"), c: n.c, n, x0: ev.clientX - r.left, y0: ev.clientY - r.top, tam: n.c.tipo === "texto" || n.c.tipo === "imagen" ? n.c.tamano : tamHs(n.c), t: t3(n.c), movido: false };
     });
     function moverAsa(ev) {
       const r = stage.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
@@ -5038,7 +5058,8 @@
         c.t3d = Object.assign(t3(c), { rotar: Math.round(a) });
       } else if (asa.h === "escala") {
         const k = Math.hypot(x - C.x, y - C.y) / L;
-        c.tamano = Math.round(Math.max(c.tipo === "texto" ? 8 : 16, Math.min(c.tipo === "texto" ? 160 : 240, asa.tam * k)));
+        const [mn, mx] = c.tipo === "imagen" ? [40, 3000] : c.tipo === "texto" ? [8, 160] : [16, 240];
+        c.tamano = Math.round(Math.max(mn, Math.min(mx, asa.tam * k)));
         medir(asa.n);
       } else {
         const k = ((x - C.x) * dx + (y - C.y) * dy) / (L * L);
@@ -8489,6 +8510,32 @@ void main(){
     avisar("Arrástralo sobre el lugar (la gasolinera, la escuela…) y escribe sus datos a la derecha");
     setTimeout(() => guiaCapa("interes"), 400);
   });
+  // Imagen en 3D (Laboratorio «imagen3d»): un PNG (plano de CAD, manzanas) pegado a la esfera, que crece sin deformarse
+  if (enLab("imagen3d")) $("add-img").hidden = false;
+  $("add-img").addEventListener("click", () => { if (motorEd.dibujo) terminarDibujo(false); $("add-img-archivo").click(); });
+  $("add-img-archivo").addEventListener("change", (ev) => { const f = ev.target.files[0]; ev.target.value = ""; if (f) imagenCapa(f, null); });
+  // Lee la imagen, la reduce a 2400 px por lado (PNG si trae transparencia) y la sube. c = capa a la que se le cambia la imagen
+  function imagenCapa(f, c) {
+    const img = new Image();
+    img.onload = async () => {
+      const k = Math.min(1, 2400 / Math.max(img.naturalWidth, img.naturalHeight)), cv = document.createElement("canvas");
+      cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+      cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(img.src);
+      const png = /png|webp/.test(f.type);
+      if (MODO === "nube") avisar("Subiendo imagen…");
+      let ruta;
+      try { ruta = await medio(cv, png ? "image/png" : "image/jpeg", 0.88, "capa"); } catch (err) { avisar(err.message); return; }
+      const prop = +(cv.height / cv.width).toFixed(4);
+      if (c) { c.foto = ruta; c.proporcion = prop; cambio(); pintarProps(); avisar("Imagen cambiada"); return; }
+      const k3 = centro();
+      const nueva = { id: nuevoId(), tipo: "imagen", nombre: (f.name || "Imagen").replace(/\.[a-z0-9]+$/i, "").slice(0, 40) || "Imagen", visible: true, yaw: k3.yaw, pitch: k3.pitch, en3d: true, foto: ruta, proporcion: prop, tamano: 320, opacidad: 1 };
+      cs().push(nueva); motorEd.elegida = nueva.id; cambio();
+      avisar("Imagen lista: arrástrala a su lugar, agrándala desde la esquina y acuéstala con «Inclinar»");
+    };
+    img.onerror = () => avisar("No se pudo leer esa imagen. Usa PNG, JPG o WebP.");
+    img.src = URL.createObjectURL(f);
+  }
   $("add-hs").addEventListener("click", () => {
     if (motorEd.dibujo) terminarDibujo(false);
     const otra = est.escenas.find((e) => e.id !== motorEd.actual.id);
@@ -8506,6 +8553,7 @@ void main(){
     camino: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2.2 3"><path d="M4 19c4 0 3-6 8-7s4-6 8-7"/></svg>',
     texto: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13"/></svg>',
     hotspot: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="8.5" stroke-opacity=".5"/></svg>',
+    imagen: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 16.5 9.5 19 20 15.5V5L9.5 8.5 4 6z"/><path d="m4 13 4-2.5 4 3 3-2 5 2.5" stroke-opacity=".6"/></svg>',
   };
   const OJO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   const OJO_NO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 4.4-1.1"/></svg>';
@@ -8746,7 +8794,7 @@ void main(){
     const cont = $("props");
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
     if (!c) { $("props-titulo").textContent = "Propiedades"; cont.innerHTML = '<p class="vacio">Selecciona una capa en la lista o sobre la esfera para editarla.</p>'; acordeonProps(cont, null); return; }
-    $("props-titulo").textContent = c.lote ? nombreLote(c) : c.edificio ? "Edificio " + (c.edificio.torre || "") : c.manzana || c.mzPlano ? terminos().manzana + " " + ((c.manzana || c.mzPlano).mz || "") : c.camino ? "Ruta" : c.tipo === "interes" ? "Punto de interés" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot" }[c.tipo];
+    $("props-titulo").textContent = c.lote ? nombreLote(c) : c.edificio ? "Edificio " + (c.edificio.torre || "") : c.manzana || c.mzPlano ? terminos().manzana + " " + ((c.manzana || c.mzPlano).mz || "") : c.camino ? "Ruta" : c.tipo === "interes" ? "Punto de interés" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot", imagen: "Imagen en 3D" }[c.tipo];
     const multi = seleccionadas().length > 1 ? seleccionadas() : null;
     if (multi) $("props-titulo").textContent = multi.length + (c.lote ? " lotes" : " capas") + " seleccionados";
     let h = (multi ? '<div class="sel-multi"><b>' + multi.length + ' seleccionados.</b> Lo que cambies aquí se aplica a todos' + (c.lote ? ": manzana, estado, precio, superficie y estilo. Para los números usa «Numerar desde»." : ".") + ' <button class="mini" data-acc="sel-una">Solo este</button></div>' : "") +
@@ -8865,6 +8913,14 @@ void main(){
         campo("Peso", '<select data-k="peso">' + [[300, "Light"], [400, "Regular"], [500, "Medium"], [600, "Semibold"], [800, "Black"]].map(([v, n]) => '<option value="' + v + '"' + (+c.peso === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select>") + campo("Color", campoColor("color", c.color)) + "</div>";
       h += '<div class="grupo">' + interruptor("Fondo", "fondo.activo", c.fondo.activo) + (c.fondo.activo ? campo("Color", campoColor("fondo.color", c.fondo.color)) : "") + "</div>";
       h += grupo3d(c);
+    } else if (c.tipo === "imagen") {
+      const t = t3(c);
+      h += '<div class="grupo"><b>Imagen</b><div class="img-accion"><img src="' + esc(urlArchivo(c.foto)) + '" alt="La imagen de esta capa"><label class="mini">Cambiar imagen<input type="file" accept="image/png,image/jpeg,image/webp" data-subir="capa" hidden></label></div>' +
+        campo("Tamaño", campoRango("tamano", c.tamano, 40, 3000, 10, px)) + campo("Opacidad", campoRango("opacidad", c.opacidad ?? 1, 0.1, 1, 0.05, pct)) +
+        '<p class="nota">Nunca se deforma: al agrandarla guarda su proporción. Un PNG con fondo transparente (por ejemplo, tu plano de CAD) deja ver la foto.</p></div>';
+      h += '<div class="grupo"><b>Acomodar en 3D</b>' + campo("Inclinar", campoRango("t3d.inclinar", t.inclinar, -85, 85, 1, deg)) + campo("Girar", campoRango("t3d.girar", t.girar, -85, 85, 1, deg)) +
+        campo("Rotar", campoRango("t3d.rotar", t.rotar, -180, 180, 1, deg)) +
+        '<div class="orden"><button class="mini" data-acc="t3d-reset">Enderezar</button></div><p class="nota">Inclinar la acuesta sobre el terreno, con su perspectiva. Sobre la esfera: arrastra para moverla, el círculo de arriba la rota y la esquina la agranda.</p></div>';
     } else if (c.tipo === "hotspot") {
       h += '<div class="grupo"><b>Hotspot</b>' + campo("Texto", '<input type="text" data-k="texto" placeholder="' + esc(textoHotspot(Object.assign({}, c, { texto: "" }))) + '" value="' + esc(c.texto || "") + '">') +
         interruptor("Mostrar nombre", "verNombre", c.verNombre !== false) +
@@ -9040,6 +9096,7 @@ void main(){
     if (ev.target.dataset.k === "_vinculo") { vincular(ev.target.checked); return; }
     if (ev.target.dataset.frente !== undefined) { const c = buscar(motorEd.elegida); c.lote.frente = +ev.target.dataset.frente; c.lote.frenteManual = true; if (c.vinculo) propagar(c, motorEd.actual.id); guardar(); pintarProps(); return; }
     if (ev.target.dataset.subir === "imagen") { subirImagenAccion(ev.target); return; }
+    if (ev.target.dataset.subir === "capa") { const f = ev.target.files[0], c = motorEd.elegida && buscar(motorEd.elegida); ev.target.value = ""; if (f && c) imagenCapa(f, c); return; }
     if (ev.target.dataset.galFoto) {
       const c = buscar(motorEd.elegida), id = ev.target.dataset.galFoto;
       c.galeria = (c.galeria || []).filter((x) => x !== id);

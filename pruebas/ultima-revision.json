@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-10T18:51:11.845Z",
- "bien": 70,
- "total": 70,
+ "fecha": "2026-11-10T19:26:07.326Z",
+ "bien": 71,
+ "total": 71,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -261,6 +261,10 @@
   },
   {
    "nombre": "Correo con descuento: lista + cuentas de prueba, cupón personal, no a quien pagó, y baja sin cuenta",
+   "ok": true
+  },
+  {
+   "nombre": "Imagen en 3D: un PNG transparente pegado a la esfera, crece sin deformarse y se inclina sobre el terreno",
    "ok": true
   },
   {
