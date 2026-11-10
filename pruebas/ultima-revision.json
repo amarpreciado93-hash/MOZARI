@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-10T22:29:28.949Z",
- "bien": 76,
- "total": 76,
+ "fecha": "2026-11-10T23:56:35.643Z",
+ "bien": 78,
+ "total": 78,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -201,6 +201,14 @@
   },
   {
    "nombre": "Foto 360: también se pegan los textos, las rutas, los polígonos y los puntos de interés",
+   "ok": true
+  },
+  {
+   "nombre": "Edificio: los nombres de los departamentos no se borran con el zoom, se planchan en la fachada y salen en la foto 360",
+   "ok": true
+  },
+  {
+   "nombre": "Foto 360: los hotspots salen tal cual (ícono y nombre) y los rótulos de lotes con su letra",
    "ok": true
   },
   {

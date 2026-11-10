@@ -1273,6 +1273,101 @@ async function capasPesadas(p) {
       await n.context().close();
     }, a);
 
+    // Pedido de Amar (10 nov 2026): «en edificios, al hacer zoom se borran los textos; que exista la opción de planchar
+    // los departamentos para que no se muevan». Rótulo «Planchado en la fachada» y en la foto 360 van en la fachada.
+    await paso("Edificio: los nombres de los departamentos no se borran con el zoom, se planchan en la fachada y salen en la foto 360", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Edificio planchado");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800); await cerrarGuia(n);
+      await n.click("#add-edificio"); await n.waitForTimeout(400); await pasarGuias(n);
+      for (const [x, y] of [[905, 470], [620, 285], [900, 278], [615, 480]]) { await n.mouse.click(x, y); await n.waitForTimeout(180); }
+      await n.waitForTimeout(900); await cerrarGuia(n);
+      exige(/^Edificio/.test(await n.textContent("#props-titulo")), "no se creó el edificio");
+      const deFrente = () => n.$$eval("#ed-stage svg text.lt-nom", (l) => l.filter((e) => e.getClientRects().length).length);
+      const planchados = () => n.$$eval("#ed-stage .lt-planos .lt-p.nom", (l) => l.filter((e) => { const s = getComputedStyle(e); return s.display !== "none" && s.visibility !== "hidden" && e.getClientRects().length; }).length);
+      const zoom = async (b, k) => { for (let i = 0; i < k; i++) { await n.click(b); await n.waitForTimeout(100); } await n.waitForTimeout(700); };
+      await zoom("#ed-menos", 10);
+      exige((await deFrente()) === 32, "al alejar se borraron nombres de departamentos (de frente): " + (await deFrente()));
+      await zoom("#ed-mas", 6);
+      exige((await deFrente()) >= 20, "al acercar se borraron nombres de departamentos (de frente): " + (await deFrente()));
+      await zoom("#ed-menos", 6);
+      // «Planchado en la fachada» para todo el edificio
+      exige(await n.$('#props select[data-k="_lotes.lote.rotulo"] option[value="fachada"]'), "el edificio no ofrece «Planchado en la fachada»");
+      await n.selectOption('#props select[data-k="_lotes.lote.rotulo"]', "fachada"); await n.waitForTimeout(900);
+      exige((await planchados()) === 32, "los departamentos no salen planchados en la fachada: " + (await planchados()));
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "edificio-planchado.png") });
+      await zoom("#ed-menos", 10);
+      exige((await planchados()) === 32, "al alejar se borraron departamentos planchados: " + (await planchados()));
+      await zoom("#ed-mas", 6);
+      exige((await planchados()) >= 20, "al acercar se borraron departamentos planchados: " + (await planchados()));
+      await zoom("#ed-menos", 6);
+      // Foto 360: los nombres van en la fachada (blanco dentro de cada departamento)
+      await n.keyboard.press("Escape"); await n.waitForTimeout(300);
+      const id = await idTour(n), d = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id), deps = Object.values(d.capas).flat().filter((c) => c.lote && c.deManzana);
+      const [descarga] = await Promise.all([n.waitForEvent("download", { timeout: 180000 }), n.click("#foto360-boton")]);
+      if (process.env.CAPTURAS) fs.copyFileSync(await descarga.path(), path.join(process.env.CAPTURAS, "edificio-360.jpg"));
+      const b64 = fs.readFileSync(await descarga.path()).toString("base64");
+      const r = await n.evaluate(async ([b64, cs]) => {
+        const bl = await (await fetch("data:image/jpeg;base64," + b64)).blob(), bm = await createImageBitmap(bl), cv = document.createElement("canvas");
+        cv.width = bm.width; cv.height = bm.height; const x = cv.getContext("2d"); x.drawImage(bm, 0, 0);
+        const W = cv.width, H = cv.height, px = ([yaw, pitch]) => [Math.floor((((yaw / (2 * Math.PI) + 0.5) % 1) + 1) % 1 * W), Math.floor((pitch / Math.PI + 0.5) * H)];
+        return cs.map((p) => { const [X, Y] = px(p), dd = x.getImageData(X - 14, Y - 6, 28, 12).data; let k = 0; for (let i = 0; i < dd.length; i += 4) if (dd[i] > 225 && dd[i + 1] > 225 && dd[i + 2] > 225) k++; return k; });
+      }, [b64, deps.map((c) => [c.puntos.reduce((s, p) => s + p[0], 0) / 4, c.puntos.reduce((s, p) => s + p[1], 0) / 4])]);
+      exige(r.filter((k) => k > 6).length >= 28, "los nombres de los departamentos no salieron en la foto 360: " + r.filter((k) => k > 6).length + " de 32");
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await n.context().close();
+    });
+
+    // Pedido de Amar (10 nov 2026): «que se puedan exportar todos los hotspots tal cual y que no se rompan los textos».
+    // La foto 360 ya no vuelve a dibujar a mano: le toma una foto a cada cosa como se ve en el editor y la pega.
+    await paso("Foto 360: los hotspots salen tal cual (ícono y nombre) y los rótulos de lotes con su letra", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Hotspots en la foto");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800); await cerrarGuia(n);
+      await dibujarManzana(n, [[500, 640], [740, 625], [980, 640]], [[480, 820], [1000, 820]]);
+      await n.keyboard.press("Escape"); await n.waitForTimeout(300);
+      // Dos hotspots arriba del horizonte, uno con estilo «Información», y un texto con fondo
+      await n.click("#add-hs"); await n.waitForTimeout(800); await pasarGuias(n);
+      const B = await n.evaluate(() => { const e = [...document.querySelectorAll(".capas")].find((x) => x.getClientRects().length && x.getBoundingClientRect().width > 300); const b = e.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
+      const hs1 = await n.$("#lista li[aria-selected=true]");
+      await n.click('#props .hs-estilo >> nth=3'); await n.waitForTimeout(500);
+      await n.keyboard.press("Escape");
+      // Otro con ícono animado (la cocina), un poco a la derecha
+      await n.mouse.move(B[0] + 200, B[1] - 150); await n.mouse.down(); for (let k = 1; k <= 6; k++) await n.mouse.move(B[0] + 200 - k * 40, B[1] - 150); await n.mouse.up(); await n.waitForTimeout(400);
+      await n.click("#add-hs"); await n.waitForTimeout(800); await pasarGuias(n);
+      await n.click('.anim-op[data-v="cocina"]'); await n.waitForTimeout(600);
+      await n.keyboard.press("Escape");
+      await n.click("#add-txt"); await n.waitForTimeout(700); await pasarGuias(n);
+      await n.fill('#props [data-k="texto"]', "Club de playa").catch(() => {}); await n.waitForTimeout(400);
+      await n.keyboard.press("Escape"); await n.waitForTimeout(800);
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "foto-editor.png") });
+      const id = await idTour(n), d = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id), cs = Object.values(d.capas).flat();
+      const hs = cs.filter((c) => c.tipo === "hotspot"), txt = cs.find((c) => c.tipo === "texto"), lt = cs.filter((c) => c.lote);
+      exige(hs.length === 2 && hs.some((c) => c.animado) && txt && lt.length === 10, "no se crearon los hotspots, el texto y los lotes: " + hs.length);
+      const [descarga] = await Promise.all([n.waitForEvent("download", { timeout: 180000 }), n.click("#foto360-boton")]);
+      if (process.env.CAPTURAS) fs.copyFileSync(await descarga.path(), path.join(process.env.CAPTURAS, "hotspots-360.jpg"));
+      const b64 = fs.readFileSync(await descarga.path()).toString("base64");
+      // El rótulo va al centro del lote en el suelo (no en la foto): centroide en el piso y de regreso a la esfera
+      const centro = (c) => {
+        const G = c.puntos.map(([y, p]) => [Math.sin(y) / Math.tan(p), Math.cos(y) / Math.tan(p)]);
+        let A2 = 0, cx = 0, cz = 0; G.forEach((p, i) => { const q = G[(i + 1) % G.length], k = p[0] * q[1] - q[0] * p[1]; A2 += k; cx += (p[0] + q[0]) * k; cz += (p[1] + q[1]) * k; });
+        const C = [cx / (3 * A2), cz / (3 * A2)]; return [Math.atan2(C[0], C[1]), Math.atan2(1, Math.hypot(C[0], C[1]))];
+      };
+      const r = await n.evaluate(async ([b64, puntos]) => {
+        const bl = await (await fetch("data:image/jpeg;base64," + b64)).blob(), bm = await createImageBitmap(bl), cv = document.createElement("canvas");
+        cv.width = bm.width; cv.height = bm.height; const x = cv.getContext("2d"); x.drawImage(bm, 0, 0);
+        const W = cv.width, H = cv.height, px = ([yaw, pitch]) => [Math.floor((((yaw / (2 * Math.PI) + 0.5) % 1) + 1) % 1 * W), Math.floor((pitch / Math.PI + 0.5) * H)];
+        const cuenta = (pt, rr, f, dy = 0) => { const [X, Y] = px(pt), d = x.getImageData(Math.max(0, X - rr), Math.max(0, Y + dy - rr), 2 * rr, 2 * rr).data; let k = 0; for (let i = 0; i < d.length; i += 4) if (f(d[i], d[i + 1], d[i + 2])) k++; return k; };
+        const lima = (r, g, b) => r > 170 && g > 215 && b < 120, blanco = (r, g, b) => r > 220 && g > 220 && b > 220, oscuro = (r, g, b) => r < 60 && g < 60 && b < 60;
+        const colorido = (r, g, b) => Math.max(r, g, b) - Math.min(r, g, b) > 60 && !(g > r && g > b && r < 140);
+        return { hs: puntos.hs.map((p) => cuenta(p, 40, (r, g, b) => lima(r, g, b) || oscuro(r, g, b) || colorido(r, g, b))), nombre: puntos.hs.map((p) => cuenta(p, 60, blanco, 80)), lotes: puntos.lt.map((p) => cuenta(p, 24, blanco)), W };
+      }, [b64, { hs: hs.map((c) => [c.yaw, c.pitch]), lt: lt.map(centro) }]);
+      if (process.env.CAPTURAS) console.log("    hotspots:", JSON.stringify(r));
+      exige(r.hs.every((k) => k > 200), "un hotspot no salió en la foto 360: " + r.hs.join(", "));
+      exige(r.nombre.every((k) => k > 20), "el nombre del hotspot no salió debajo de él: " + r.nombre.join(", "));
+      exige(r.lotes.filter((k) => k > 15).length >= 8, "faltan rótulos de lotes en la foto 360: " + r.lotes.join(", "));
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await n.context().close();
+    });
+
     // Pedido de Amar (nov 2026): los lados de la manzana (de la calle de enfrente a la de atrás) aceptan puntos, para terrenos con relieve
     await paso("Los lados de la manzana aceptan puntos en medio y los lotes los siguen", async () => {
       const n = await pagina(DUENO); await nuevoTour(n, "Lados con relieve");
