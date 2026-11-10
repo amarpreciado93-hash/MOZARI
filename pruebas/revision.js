@@ -1799,6 +1799,43 @@ async function capasPesadas(p) {
     // Pasó con Las Alamedas (nov 2026): la manzana del tour quedó como «1» (la de siempre) y en el inventario era la 30,
     // con un lote 15-A. El plano sí traía escrito, como texto, el número y la superficie de cada lote. Ahora Mozari los lee,
     // y al importar el Excel avisa antes de cambiar nada si las superficies no van con los lotes dibujados.
+    // Nov 2026: íconos que se mueven (espacios, amenidades, dron…) para los hotspots, con sus 3 colores. Nace en el Laboratorio.
+    await paso("Íconos animados: un hotspot con la cocina, sus colores y así se ve en el tour", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Iconos animados");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1500); await pasarGuias(n);
+      await n.click("#add-hs"); await n.waitForTimeout(600); await pasarGuias(n);
+      exige(await n.isVisible('.anim-op[data-v="cocina"]'), "en el hotspot no sale para elegir un ícono animado");
+      exige((await n.$$(".anim-op[data-v]:not([data-v=''])")).length === 56, "no salen los 56 íconos animados");
+      await n.click('.anim-op[data-v="cocina"]'); await n.waitForTimeout(600);
+      exige(await n.$(".capas .hs-boton.con-animado svg.ma-cocina"), "el hotspot no muestra la cocina animada en la esfera");
+      // Se mueve de verdad (tiene animaciones corriendo) y toma sus colores
+      const anima = await n.evaluate(() => { const s = document.querySelector(".capas .hs-anim"); return { corre: s.getAnimations({ subtree: true }).filter((a) => a.playState === "running").length, a: s.style.getPropertyValue("--a").trim(), linea: s.style.color }; });
+      exige(anima.corre > 0, "la cocina no se mueve");
+      exige(/^#[0-9A-F]{6}$/i.test(anima.a) && anima.a.toUpperCase() !== "#FFFFFF", "el acento no salió de color (debe tomar la Interfaz o dorado): " + JSON.stringify(anima));
+      // Cambiar el acento a azul
+      await n.$eval('input[type=color][data-k="animColores.acento"]', (e) => { e.value = "#3366ff"; e.dispatchEvent(new Event("input", { bubbles: true })); e.dispatchEvent(new Event("change", { bubbles: true })); });
+      await n.waitForTimeout(1200);
+      const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      const hs = Object.values((await leer()).capas).flat().find((c) => c.tipo === "hotspot");
+      exige(hs && hs.animado === "cocina" && hs.animColores && hs.animColores.acento.toLowerCase() === "#3366ff", "no se guardó el ícono o su color: " + JSON.stringify(hs && { animado: hs.animado, col: hs.animColores }));
+      exige((await n.$eval(".capas .hs-anim", (e) => e.style.getPropertyValue("--a").trim().toLowerCase())) === "#3366ff", "la esfera no cambió al acento azul");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "iconos-hotspot.png") });
+      // En la vista previa (como en el tour) también se mueve
+      await n.click('button:has-text("Vista previa")'); await n.waitForTimeout(3500);
+      exige(await n.$("#previa .hs-boton.con-animado svg.ma-cocina"), "en la vista previa el hotspot no trae la cocina animada");
+      await n.keyboard.press("Escape"); await n.waitForTimeout(500);
+      // «Sin»: regresa al hotspot de siempre
+      await n.click('.anim-op[data-v=""]'); await n.waitForTimeout(600);
+      exige(!(await n.$(".capas .hs-boton.con-animado")) && (await n.$(".capas .hs-boton .hs-nucleo")), "«Sin» no regresó el hotspot normal");
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+      // Es del Laboratorio («Solo yo» al nacer): una cuenta normal no lo ve
+      const u = await pagina("iconos-" + Date.now() + "@prueba.mx"); await nuevoTour(u, "Sin iconos");
+      await u.click('#subtabs button:has-text("Capas")'); await u.waitForTimeout(1500); await pasarGuias(u);
+      await u.click("#add-hs"); await u.waitForTimeout(600); await pasarGuias(u);
+      exige(!(await u.$(".anim-op")), "una cuenta normal ya ve los íconos animados (deben nacer en el Laboratorio)");
+      await u.context().close();
+    });
     // Pedido de Amar (nov 2026): los desarrollos suelen tener sus lotes en Google Earth (KMZ). Nace en el Laboratorio.
     await paso("Lotes desde un KMZ: dibuja el plano, lee número, manzana y superficie, y los coloca con 4 esquinas con su medida real", async () => {
       // Un KMZ de prueba como el de Google Earth: 2 manzanas de 6 lotes de 10 × 20 m, una calle, y el perímetro
