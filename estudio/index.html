@@ -664,6 +664,70 @@
   .pl-lista input:focus { outline: none; border-color: var(--mz-linea); background: var(--mz-superficie); }
   .pl-lista small { display: block; font-size: 11px; color: var(--mz-tenue); padding-left: 5px; }
   .pl-subir { justify-self: start; }
+  /* Cotas */
+  .cp-cota .cota-sombra { fill: none; stroke: rgba(0, 0, 0, 0.45); stroke-linecap: round; }
+  .cp-cota .cota-tics line { stroke-width: 2; stroke-linecap: round; }
+  .cota-etq { position: absolute; left: 0; top: 0; transform-origin: 0 0; padding: 3px 9px; border-radius: 7px; background: rgba(11, 11, 11, 0.8); color: #fff; font: 600 13px/1.3 var(--mz-texto-ui); letter-spacing: 0.01em; white-space: nowrap; pointer-events: none; font-variant-numeric: tabular-nums; }
+  .cota-etq.falta { background: rgba(11, 11, 11, 0.55); color: rgba(255, 255, 255, 0.75); font-weight: 500; font-style: italic; }
+  /* Antes y después: editor */
+  .ad-ed { height: 100%; display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 0; }
+  .ad-centro { position: relative; min-width: 0; min-height: 0; padding: 18px; background: var(--mz-negro); }
+  .ad-vista { position: relative; width: 100%; height: 100%; border-radius: 14px; overflow: hidden; background: #000; isolation: isolate; }
+  .ad-vista > .stage { position: absolute; inset: 0; isolation: isolate; }
+  .ad-vacio { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; padding: 30px; text-align: center; color: var(--mz-tenue); font-size: 14px; line-height: 1.6; background: var(--mz-negro); }
+  .ad-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .ad-lista li { display: grid; grid-template-columns: 78px minmax(0, 1fr) 28px; gap: 10px; align-items: center; padding: 6px; border-radius: 12px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); cursor: pointer; }
+  .ad-lista li[aria-current="true"] { border-color: var(--mz-lima); }
+  .ad-par { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border-radius: 7px; overflow: hidden; }
+  .ad-par img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+  .ad-lista b { display: block; font-weight: 500; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ad-lista small { font-size: 11px; color: var(--mz-tenue); }
+  .ad-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  /* Antes y después: la comparación (editor y tour) */
+  .ad-capa { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+  .ad-capa > .stage { position: absolute; inset: 0; pointer-events: none; }
+  .ad-capa .capas, .ad-capa .cp-svg { display: none; }
+  .ad-linea { position: absolute; top: 0; bottom: 0; z-index: 4; width: 0; pointer-events: none; }
+  .ad-linea::before { content: ""; position: absolute; top: 0; bottom: 0; left: -1px; width: 2px; background: #fff; box-shadow: 0 0 10px rgba(0, 0, 0, 0.45); }
+  .ad-asa { position: absolute; top: 50%; left: 0; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; background: #fff; color: #0B0B0B; display: grid; place-items: center; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35); cursor: ew-resize; pointer-events: auto; touch-action: none; }
+  .ad-asa svg { width: 24px; height: 24px; }
+  .ad-etq { position: absolute; top: calc(50% - 64px); padding: 5px 11px; border-radius: 999px; background: rgba(11, 11, 11, 0.72); color: #fff; font: 600 11.5px var(--mz-texto-ui); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; pointer-events: none; }
+  .ad-etq.izq { right: 12px; } .ad-etq.der { left: 12px; }
+  .ad-boton { position: absolute; z-index: 32; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 26px); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px 10px 12px; border-radius: 999px; border: 0; cursor: pointer; pointer-events: auto; background: rgba(11, 11, 11, 0.78); color: #fff; font: 600 13px var(--mz-texto-ui); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28); white-space: nowrap; }
+  .ad-boton svg { width: 18px; height: 18px; color: var(--sk-acento, #D5FF40); }
+  .ad-boton[aria-pressed="true"] { background: #fff; color: #0B0B0B; }
+  .ad-boton[aria-pressed="true"] svg { color: #0B0B0B; }
+  .sk--v .ad-boton { bottom: auto; top: 92px; } /* en el celular abajo están el nombre, las flechas y el plano */
+  .sk--v:has(.ad-boton:not([hidden])) .nr { top: 148px; }
+  /* Ficha de acabados: editor */
+  .ac-lista { display: grid; gap: 10px; margin: 8px 0; }
+  .ac-item { position: relative; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; padding: 10px 30px 10px 10px; border-radius: 12px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); }
+  .ac-foto { width: 64px; height: 64px; border-radius: 10px; overflow: hidden; display: grid; place-items: center; cursor: pointer; border: 1.5px dashed var(--mz-linea); color: var(--mz-tenue); font-size: 11px; text-align: center; }
+  .ac-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ac-foto:hover { border-color: var(--mz-lima); }
+  .ac-campos { display: grid; gap: 5px; min-width: 0; }
+  .ac-campos input { width: 100%; box-sizing: border-box; font: 400 12px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); border-radius: 7px; padding: 6px 8px; }
+  .ac-campos input:first-child { font-weight: 600; }
+  .ac-campos input:focus { outline: none; border-color: var(--mz-lima); }
+  .ac-quitar { position: absolute; top: 6px; right: 4px; }
+  /* Ficha de acabados: en el tour */
+  .pop-caja.acab { width: min(440px, 100%); max-height: min(92cqh, 860px); display: flex; flex-direction: column; background: #F6F4F0; color: #1D1C1A; border-radius: 18px; }
+  .pop-caja.acab .pop-x { position: absolute; top: 12px; right: 12px; z-index: 2; background: rgba(29, 28, 26, 0.08); color: #1D1C1A; }
+  .acab-cab { padding: 22px 60px 14px 22px; }
+  .acab-cab small { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #8A857C; }
+  .acab-cab h3 { margin: 4px 0 0; font-size: 24px; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
+  .pop-caja.acab ul { list-style: none; margin: 0; padding: 0 14px 14px; overflow-y: auto; display: grid; gap: 8px; }
+  .pop-caja.acab li { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 14px; align-items: center; padding: 8px; border-radius: 14px; background: #FFFFFF; box-shadow: 0 1px 0 rgba(29, 28, 26, 0.06); }
+  .pop-caja.acab li > img, .acab-sin { width: 88px; height: 88px; border-radius: 10px; object-fit: cover; display: block; background: #E9E5DE; }
+  .acab-sin { display: grid; place-items: center; color: #B4AEA4; }
+  .acab-sin svg { width: 30px; height: 30px; }
+  .pop-caja.acab li div { display: grid; gap: 2px; min-width: 0; }
+  .pop-caja.acab li small { font-size: 10.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #8A857C; }
+  .pop-caja.acab li b { font-size: 15px; font-weight: 600; line-height: 1.25; }
+  .pop-caja.acab li span { font-size: 12.5px; color: #5E5A53; line-height: 1.35; }
+  .pop-caja.acab li em { font-style: normal; font-size: 13.5px; font-weight: 600; margin-top: 2px; }
+  .pop-caja.acab li a { justify-self: start; margin-top: 4px; font-size: 12.5px; font-weight: 600; color: #1D1C1A; text-decoration: none; border-bottom: 1.5px solid currentColor; padding-bottom: 1px; }
+  .acab-cta { margin: 0 14px 14px; padding: 13px; border-radius: 12px; text-align: center; font-weight: 600; font-size: 14px; text-decoration: none; background: #1D1C1A; color: #F6F4F0; }
   /* Narración por espacio: editor */
   .nr-conf { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: center; margin: 4px 0 18px; padding: 12px 16px; border-radius: var(--mz-radio); background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); }
   .nr-conf .interruptor { gap: 12px; }
@@ -1914,6 +1978,14 @@
         <div class="rejilla" id="fotos-lista"></div>
       </div>
     </section>
+    <!-- Panoramas / Antes y después (Laboratorio «antes-despues»): dos versiones del mismo espacio, con una línea para compararlas -->
+    <section data-vista="panoramas/antes" class="ad-ed" id="v-antes" hidden>
+      <aside class="ed-panel" aria-label="Antes y después">
+        <header><h3>Antes y después</h3><p class="nota">Junta dos esferas del mismo lugar (vacío y amueblado, obra negra y terminado, de día y de noche). En el tour tu cliente las compara jalando una línea.</p></header>
+        <div class="props" id="ad-panel"></div>
+      </aside>
+      <div class="ad-centro"><div class="ad-vista" id="ad-vista"><div class="stage" id="ad-stage"></div><div class="ad-vacio" id="ad-vacio" hidden></div></div></div>
+    </section>
     <!-- Media / Audios (Laboratorio «narracion»): la voz de cada espacio suena al llegar a su esfera -->
     <section data-vista="media/audios" id="v-audios" hidden>
       <div class="contenido" style="max-width:1040px">
@@ -1991,6 +2063,8 @@
             <button id="add-txt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13"/></svg>Texto</button>
             <button id="add-pi" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="18" r="2.2"/><path d="M6.6 16.4 12 8h9"/></svg>Punto de interés</button>
             <button id="add-hs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="8.5" stroke-opacity=".5"/></svg>Hotspot</button>
+            <button id="add-cota" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 15h16M4 11.5v7M20 11.5v7"/><path d="M8 15v-2M12 15v-3M16 15v-2" stroke-opacity=".6"/></svg>Cota</button>
+            <button id="add-acab" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><path d="M13 16.5h7M16.5 13v7" stroke-linecap="round"/></svg>Acabado</button>
             <button id="add-img" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 16.5 9.5 19 20 15.5V5L9.5 8.5 4 6z"/><path d="m4 13 4-2.5 4 3 3-2 5 2.5" stroke-opacity=".6"/></svg>Imagen 3D</button>
             <input type="file" id="add-img-archivo" accept="image/png,image/jpeg,image/webp" hidden>
           </div>
@@ -2381,6 +2455,25 @@
   // punto de ese plano; entre dos esferas del mismo terreno, esos planos se relacionan con una
   // homografía que se calcula con 4 o más puntos de referencia marcados en ambas.
   function aPlano(yaw, pitch) { if (!(pitch > 0.012)) return null; const t = Math.tan(pitch); return [Math.sin(yaw) / t, Math.cos(yaw) / t]; }
+  // Cotas (Laboratorio «cotas»): una línea de medida entre 2 puntos. Con los 2 en el piso (el largo de un muro) o uno en el
+  // piso y otro arriba de él (una altura), Mozari la calcula con la altura de la cámara de esa esfera; si no, se escribe.
+  const alturaCamara = (id) => { const h = +((escena(id) || {}).alturaCamara); return h > 0.2 && h < 10 ? h : 1.5; };
+  function cotaAuto(c, id) {
+    const [A, B] = c.puntos || []; if (!A || !B) return null;
+    const h = alturaCamara(id), ga = aPlano(A[0], A[1]), gb = aPlano(B[0], B[1]);
+    if (ga && gb) return h * Math.hypot(ga[0] - gb[0], ga[1] - gb[1]);
+    const [P0, P1] = ga ? [A, B] : gb ? [B, A] : [];
+    if (!P0 || Math.abs(Math.atan2(Math.sin(P0[0] - P1[0]), Math.cos(P0[0] - P1[0]))) > 0.15) return null; // la altura va derechito hacia arriba
+    const v = h - (h / Math.tan(P0[1])) * Math.tan(P1[1]);
+    return v > 0 && v < 30 ? v : null;
+  }
+  const medidaCota = (c, id) => { const m = String((c.cota && c.cota.medida) || "").trim(); if (m) return m; const v = cotaAuto(c, id); return v ? v.toFixed(2) + " m" : ""; };
+  function medioCota(c) {
+    const [A, B] = c.puntos, ga = aPlano(A[0], A[1]), gb = aPlano(B[0], B[1]);
+    if (ga && gb) { const gx = (ga[0] + gb[0]) / 2, gz = (ga[1] + gb[1]) / 2; return [Math.atan2(gx, gz), Math.atan2(1, Math.hypot(gx, gz))]; }
+    const u = ([y, p]) => [Math.sin(y) * Math.cos(p), -Math.sin(p), Math.cos(y) * Math.cos(p)], a = u(A), b = u(B), m = [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+    return [Math.atan2(m[0], m[2]), -Math.atan2(m[1], Math.hypot(m[0], m[2]))];
+  }
   function dePlano(q) { return [Math.atan2(q[0], q[1]), Math.atan2(1, Math.hypot(q[0], q[1]))]; }
   // Orillas curvas de una manzana (como la pluma de Illustrator): un punto puede guardar su manija en el suelo,
   // [yaw, pitch, hx, hy]. Entre dos puntos con manija la orilla es una curva Bézier; los lados quedan rectos.
@@ -2722,6 +2815,7 @@
     web: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M3.5 9h17"/></svg>',
     imagen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m20.5 16-5-5-8 8"/></svg>',
     ninguna: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 11v6M12 7.5v.01"/></svg>',
+    acabado: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><path d="M13 16.5h7M16.5 13v7" stroke-linecap="round"/></svg>',
   };
   // Estilos de hotspot: ícono propio y su manera de "respirar". Clásico usa el ícono de su acción.
   const ESTILOS_HS = {
@@ -2753,7 +2847,7 @@
     if (c.texto) return c.texto;
     const a = accionDe(c);
     if (a === "panorama") return escena(c.destino) ? "Ir a " + escena(c.destino).nombre : "Sin destino";
-    return { url: "Abrir enlace", web: "Ver página", imagen: "Ver imagen" }[a] || "Información";
+    return { url: "Abrir enlace", web: "Ver página", imagen: "Ver imagen", acabado: "Acabados" }[a] || "Información";
   }
   const normYaw = (y) => Math.atan2(Math.sin(y), Math.cos(y));
   // Vista al llegar por un hotspot: "de frente" sigue la dirección del viaje. Se calcula con el
@@ -2917,8 +3011,9 @@
   $("nav").addEventListener("click", (ev) => { const b = ev.target.closest("[data-sec]"); if (b) ir(b.dataset.sec); });
   $("subtabs").addEventListener("click", (ev) => { const b = ev.target.closest("[data-sub]"); if (b) ir(nav.sec, b.dataset.sub); });
 
-  const SIN_ESFERAS = ["panoramas/mapa", "panoramas/capas", "panoramas/piloto", "panoramas/terreno", "skin/h", "skin/v"];
+  const SIN_ESFERAS = ["panoramas/mapa", "panoramas/capas", "panoramas/piloto", "panoramas/terreno", "panoramas/antes", "skin/h", "skin/v"];
   if (enLab("estadisticas")) SECCIONES.find((x) => x.id === "publicar").subs.push(["estadisticas", "Estadísticas"]);
+  if (enLab("antes-despues")) SECCIONES.find((x) => x.id === "panoramas").subs.splice(4, 0, ["antes", "Antes y después"]);
   // Secciones de «Próximo bloque» que ya existen en el Laboratorio: [función, sección]
   const LAB_VISTAS = { "media/planos": ["planos", "v-planos"], "media/audios": ["narracion", "v-audios"] };
   function ir(sec, sub) {
@@ -2940,6 +3035,7 @@
     Object.entries(LAB_VISTAS).forEach(([k, [lab, el]]) => { if (clave === k && !enLab(lab)) $(el).hidden = true; }); // sin el Laboratorio sigue «Próximo bloque»
     if (antes === "media/planos" && clave !== antes) cerrarPlanos();
     if (antes === "media/audios" && clave !== antes) cerrarAudios();
+    if (antes === "panoramas/antes" && clave !== antes) cerrarAntes();
     $("sel-pano-wrap").hidden = !enEditor;
     $("proximo").classList.remove("ancho");
     if (clave === "publicar/web" && MODO === "nube") { pintarPublicar(); }
@@ -2959,6 +3055,7 @@
     if (clave === "media/videos") pintarVideos();
     if (clave === "media/planos" && enLab("planos")) requestAnimationFrame(abrirPlanos);
     if (clave === "media/audios" && enLab("narracion")) pintarAudios();
+    if (clave === "panoramas/antes") requestAnimationFrame(abrirAntes);
     if (clave === "panoramas/mapa") requestAnimationFrame(() => mapa.dibujar());
     if (enEditor) abrirEditor(edPano || P().escenaInicial, sub);
     if (clave === "panoramas/terreno") requestAnimationFrame(abrirTerreno);
@@ -4761,7 +4858,15 @@
             estiloRotulo(etq, lq); if (planos) estiloRotulo(planos.cont, lq);
             if (lq.fuente) fuentesPendientes.add(lq.fuente);
           }
-          nodos.set(c.id, { el, c, svg, path, etq, planos, toque });
+          let cota = null;
+          if (c.cota) { // la línea de medida: sombra abajo, rayitas en las puntas y la medida al centro
+            el.classList.add("cp-cota");
+            const sombra = document.createElementNS(SVGNS, "path"); sombra.setAttribute("class", "cota-sombra"); svg.insertBefore(sombra, path);
+            const tics = document.createElementNS(SVGNS, "g"); tics.setAttribute("class", "cota-tics"); svg.appendChild(tics);
+            const et = document.createElement("div"); et.className = "cota-etq"; if (!c.visible) et.hidden = true; capaEtq.appendChild(et);
+            cota = { sombra, tics, et };
+          }
+          nodos.set(c.id, { el, c, svg, path, etq, planos, toque, cota });
           if (!editable && accionDe(c) !== "ninguna") { path.classList.add("con-accion"); path.addEventListener("click", (ev) => { ev.stopPropagation(); ejecutar(c); }); }
         } else if (c.tipo === "interes") {
           construirInteres(el, c, editable);
@@ -5119,6 +5224,26 @@
       e.sort((a, b) => a - b);
       return e[Math.floor(0.3 * (e.length - 1))];
     }
+    function pintarCota(n, cam, enCam, d) {
+      const t = n.cota, c = n.c, [a, b] = enCam, va = a.z > CERCA, vb = b.z > CERCA;
+      t.sombra.setAttribute("d", d); t.sombra.style.strokeWidth = (+c.camino.grosor || 2) + 3;
+      if (!va && !vb) { t.tics.innerHTML = ""; t.et.style.display = "none"; return; }
+      const corta = (p, q) => { const k = (CERCA - p.z) / (q.z - p.z); return { x: p.x + (q.x - p.x) * k, y: p.y + (q.y - p.y) * k, z: CERCA }; };
+      const A = aPantalla(cam, va ? a : corta(a, b)), B = aPantalla(cam, vb ? b : corta(b, a));
+      const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1, px = (-dy / L) * 9, py = (dx / L) * 9, col = esc(c.camino.color || "#FFFFFF");
+      const tic = (P) => '<line x1="' + (P.x - px).toFixed(1) + '" y1="' + (P.y - py).toFixed(1) + '" x2="' + (P.x + px).toFixed(1) + '" y2="' + (P.y + py).toFixed(1) + '" stroke="' + col + '"/>';
+      t.tics.innerHTML = (va ? tic(A) : "") + (vb ? tic(B) : "");
+      const [my, mp] = medioCota(c), m = aCamara(cam, my, mp);
+      if (m.z <= CERCA) { t.et.style.display = "none"; return; }
+      const s = aPantalla(cam, m);
+      let ang = (Math.atan2(dy, dx) * 180) / Math.PI; if (ang > 90) ang -= 180; if (ang < -90) ang += 180;
+      t.et.style.display = "";
+      t.et.style.transform = "translate(" + s.x.toFixed(1) + "px," + s.y.toFixed(1) + "px) rotate(" + ang.toFixed(1) + "deg) translate(-50%, calc(-100% - 7px))";
+      const txt = medidaCota(c, actual.id) || (editable ? "Escribe la medida" : "");
+      if (!txt) { t.et.style.display = "none"; return; }
+      if (t.et.textContent !== txt) t.et.textContent = txt;
+      t.et.classList.toggle("falta", !medidaCota(c, actual.id));
+    }
     function render() {
       if (!actual) return;
       const cam = camara();
@@ -5134,6 +5259,7 @@
           n.path.classList.toggle("en-sel", !!(opciones.enSeleccion && opciones.enSeleccion(id)));
           if (n.toque) n.toque.setAttribute("d", d);
           if (n.etq) etiquetasLote(n, cam, enCam, rec);
+          if (n.cota) pintarCota(n, cam, enCam, d);
           n.svg.querySelectorAll(".cp-sel, .cp-vert").forEach((x) => x.remove());
           if (editable && motor.modo === "capas" && id === motor.elegida && d && !c.deManzana && !c.mzPlano) {
             const sel = document.createElementNS(SVGNS, "path");
@@ -5509,7 +5635,7 @@
         }
         dib.puntos.push([k.yaw, k.pitch]);
         programar();
-        if ((dib.tipo === "pdf" || dib.tipo === "edificio") && opciones.alPuntoDibujo) opciones.alPuntoDibujo(dib);
+        if ((dib.tipo === "pdf" || dib.tipo === "edificio" || dib.tipo === "cota") && opciones.alPuntoDibujo) opciones.alPuntoDibujo(dib);
       } else if (motor.elegida) opciones.alSeleccionar(null);
     });
 
@@ -6425,13 +6551,13 @@ void main(){
         alCambiar: () => cambio(),
         alSoltar: (c) => { if (c.edificio) { repartirEdificio(c); cambio(); return; } if (c.manzana) { repartirManzana(c); cambio(); return; } if (c.mzPlano) { soltarPlano(c); cambio(); return; } if (c.vinculo) propagar(c, motorEd.actual.id); },
         alArrastrar: (c) => { if (c.edificio) repartirEdificio(c); if (c.manzana) repartirManzana(c); if (c.mzPlano) arrastrarPlano(c); },
-        asasExtra: (c) => (c.edificio ? asasEdificio(c) : c.manzana ? asasManzana(c) : c.mzPlano ? asasPlano(c) : c.camino && enLab("manzana-curvas") ? asasCamino(c) : null),
+        asasExtra: (c) => (c.edificio ? asasEdificio(c) : c.manzana ? asasManzana(c) : c.mzPlano ? asasPlano(c) : c.camino && !c.cota && enLab("manzana-curvas") ? asasCamino(c) : null),
         tomarAsaExtra: (c, h) => (c.edificio || c.camino ? h : c.mzPlano ? tomarAsaPlano(c, h) : tomarAsaManzana(c, h)),
         moverAsaExtra: (c, h, k) => (c.edificio ? moverAsaEdificio(c, h, k) : c.camino ? moverAsaCamino(c, h, k) : c.mzPlano ? moverAsaPlano(c, h, k) : moverAsaManzana(c, h, k)),
         quitarAsaExtra: (c, h) => (c.edificio ? null : c.camino ? quitarAsaCamino(c, h) : c.mzPlano ? quitarAsaPlano(c, h) : quitarAsaManzana(c, h)),
         alEntrar: (c, origen) => { abrirEditor(c.destino, nav.sub, vistaLlegada(c, origen)); avisar("Llegaste a " + nombreDe(c.destino) + (c.llegada === "frente" ? " viendo de frente" : "")); },
         alCerrarDibujo: () => terminarDibujo(true),
-        alPuntoDibujo: (d) => { if (d.tipo === "edificio") { if (d.puntos.length >= 4) terminarDibujo(true); return; } puntoPDF(d); },
+        alPuntoDibujo: (d) => { if (d.tipo === "edificio") { if (d.puntos.length >= 4) terminarDibujo(true); return; } if (d.tipo === "cota") { if (d.puntos.length >= 2) terminarDibujo(true); return; } puntoPDF(d); },
         alInteractuar: () => { if (pilotoEd) detenerPilotoEd(); },
         alMoverVista: () => { if (motorEd && motorEd.modo === "piloto") marcarPuntoActual(); },
       });
@@ -8350,13 +8476,17 @@ void main(){
     motorEd.dibujo = { puntos: [], cursor: null, tipo: tipo || "poligono" };
     seleccionar(null);
     document.body.classList.add("dibujando");
-    $(tipo === "lote" ? "add-lote" : tipo === "camino" ? "add-camino" : tipo === "manzana" ? "add-manzana" : tipo === "edificio" ? "add-edificio" : "add-pol").setAttribute("aria-pressed", "true");
+    $(tipo === "lote" ? "add-lote" : tipo === "camino" ? "add-camino" : tipo === "cota" ? "add-cota" : tipo === "manzana" ? "add-manzana" : tipo === "edificio" ? "add-edificio" : "add-pol").setAttribute("aria-pressed", "true");
     if (tipo === "edificio") {
       banda('<span><b>Edificio.</b> Toca las 4 esquinas de la fachada (las de afuera). Con la cuarta se arman los departamentos.</span><button class="mini" data-a="deshacer">Quitar punto</button><button class="mini" data-a="cancelar">Cancelar</button>');
       return;
     }
     if (tipo === "manzana") {
       banda('<span><b>Manzana · paso 1 de 2.</b> Dibuja el <b>frente</b> (el lado de la calle): clic en cada esquina, Enter para seguir.</span><button class="mini" data-a="deshacer">Quitar punto</button><button class="mini" data-a="cancelar">Cancelar</button><button class="mini primario" data-a="cerrar">Siguiente</button>');
+      return;
+    }
+    if (tipo === "cota") {
+      banda('<span><b>Cota.</b> Toca el inicio y el final del muro, abajo donde toca el piso. Para una altura: un punto en el piso y otro justo arriba.</span><button class="mini" data-a="deshacer">Quitar punto</button><button class="mini" data-a="cancelar">Cancelar</button>');
       return;
     }
     if (tipo === "camino") {
@@ -8912,6 +9042,18 @@ void main(){
         return;
       }
       crearManzana(dib.frente, dib.puntos);
+    } else if (guardarlo && dib && dib.tipo === "cota") {
+      if (dib.puntos.length < 2) { avisar("Una cota necesita 2 puntos: el inicio y el final"); return; }
+      const c = {
+        id: nuevoId(), tipo: "poligono", nombre: "Cota " + (cs().filter((x) => x.cota).length + 1), visible: true,
+        puntos: dib.puntos.slice(0, 2).map((p) => [+p[0].toFixed(5), +p[1].toFixed(5)]),
+        camino: { estilo: "continua", color: BLANCO, grosor: 2, opacidad: 1, flecha: false, animada: false }, cota: { medida: "" },
+        relleno: { color: BLANCO, opacidad: 0 }, trazo: { color: BLANCO, grosor: 2, opacidad: 1 }, rollover: { activo: false, relleno: { color: BLANCO, opacidad: 0 }, trazo: { color: BLANCO, grosor: 2, opacidad: 1 } },
+      };
+      cs().push(c);
+      motorEd.elegida = c.id;
+      const v = cotaAuto(c, motorEd.actual.id);
+      avisar(v ? "Cota de " + v.toFixed(2) + " m. Si tienes la medida del plano, escríbela a la derecha." : "Cota creada. Escribe su medida a la derecha.");
     } else if (guardarlo && dib && dib.tipo === "camino") {
       if (dib.puntos.length < 2) { avisar("Una ruta necesita al menos 2 puntos"); return; }
       const c = {
@@ -9015,6 +9157,17 @@ void main(){
     img.onerror = () => avisar("No se pudo leer esa imagen. Usa PNG, JPG o WebP.");
     img.src = URL.createObjectURL(f);
   }
+  // Ficha de acabados (Laboratorio «acabados»): un punto que abre la ficha de los materiales y muebles de ese lugar
+  if (enLab("acabados")) $("add-acab").hidden = false;
+  if (enLab("cotas")) $("add-cota").hidden = false;
+  $("add-cota").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "cota") empezarDibujo("cota"); });
+  $("add-acab").addEventListener("click", () => {
+    if (motorEd.dibujo) terminarDibujo(false);
+    const k = centro();
+    const c = { id: nuevoId(), tipo: "hotspot", nombre: "Acabados", visible: true, yaw: k.yaw, pitch: k.pitch, accion: "acabado", texto: "", acabados: [{}] };
+    cs().push(c); motorEd.elegida = c.id; cambio();
+    avisar("Arrastra el punto sobre el piso, la cubierta o el mueble, y a la derecha llena su ficha");
+  });
   $("add-hs").addEventListener("click", () => {
     if (motorEd.dibujo) terminarDibujo(false);
     const otra = est.escenas.find((e) => e.id !== motorEd.actual.id);
@@ -9029,6 +9182,7 @@ void main(){
     poligono: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 7l9-3 7 8-5 8-10-3z"/></svg>',
     manzana: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6h18v12H3z"/><path d="M7.5 6v12M12 6v12M16.5 6v12" stroke-opacity=".6"/></svg>',
     interes: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="18" r="2.2"/><path d="M6.6 16.4 12 8h9"/></svg>',
+    cota: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 15h16M4 11.5v7M20 11.5v7"/></svg>',
     camino: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2.2 3"><path d="M4 19c4 0 3-6 8-7s4-6 8-7"/></svg>',
     texto: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13"/></svg>',
     hotspot: '<svg class="tipo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="8.5" stroke-opacity=".5"/></svg>',
@@ -9059,7 +9213,7 @@ void main(){
     if (!l.length) { ul.innerHTML = '<li class="vacio" role="presentation">Este panorama no tiene capas. ' + (acorLimpio() ? "Toca «+ Agregar» para poner un lote, un polígono, un texto o un hotspot." : "Agrega un polígono, un texto o un hotspot.") + "</li>"; return; }
     const fila = (c, o = {}) => '<li role="option" draggable="' + !o.hijo + '" data-id="' + c.id + '" aria-selected="' + (c.id === motorEd.elegida || (seleccion.size > 1 && seleccion.has(c.id))) + '" class="' + [c.visible ? "" : "oculta", o.carpeta ? "carpeta" : "", o.abierta ? "abierta" : "", o.hijo ? "hijo" : ""].join(" ").trim() + '">' +
       (o.carpeta ? '<button class="carp-flecha" data-carpeta="' + c.id + '" aria-expanded="' + !!o.abierta + '" aria-label="' + (o.abierta ? "Cerrar" : "Abrir") + ' la carpeta de lotes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>' : "") +
-      (c.lote ? ICONOS.lote : c.manzana || c.mzPlano ? ICONOS.manzana : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.tipo === "interes" ? (piDe(c).nombre || "Punto de interés") + (piDe(c).dato ? " · " + piDe(c).dato : "") : c.nombre)) + (c.vinculo ? ICO_VINC : "") + (o.carpeta ? "<small>" + o.n + " " + (o.n === 1 ? terminos().lote : plural(terminos().lote)).toLowerCase() + "</small>" : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>";
+      (c.lote ? ICONOS.lote : c.manzana || c.mzPlano ? ICONOS.manzana : c.cota ? ICONOS.cota : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.tipo === "interes" ? (piDe(c).nombre || "Punto de interés") + (piDe(c).dato ? " · " + piDe(c).dato : "") : c.nombre)) + (c.vinculo ? ICO_VINC : "") + (o.carpeta ? "<small>" + o.n + " " + (o.n === 1 ? terminos().lote : plural(terminos().lote)).toLowerCase() + "</small>" : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>";
     if (!enCarpetas()) { ul.innerHTML = l.slice().reverse().map((c) => fila(c)).join(""); return; }
     // Carpetas (Laboratorio «carpetas», pedido de Amar 10 nov 2026): cada manzana guarda sus lotes, como un grupo de
     // Photoshop. Cerrada de inicio; se abre con su flechita o sola al elegir uno de sus lotes en la esfera.
@@ -9191,7 +9345,8 @@ void main(){
   function grupoAccion(c) {
     const a = accionDe(c), aqui = motorEd.actual.id;
     if (a === "panorama" && !escena(c.destino)) { const o = est.escenas.find((e) => e.id !== aqui); if (o) { c.destino = o.id; guardar(); } }
-    let g = '<div class="grupo"><b>Al hacer clic</b>' + campo("Acción", '<select data-k="accion">' + (c.lote ? [["ficha", "Ficha del lote"]] : []).concat(ACCIONES).map(([v, n]) => '<option value="' + v + '"' + (a === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select>");
+    const acciones = (c.lote ? [["ficha", "Ficha del lote"]] : []).concat(ACCIONES, enLab("acabados") || a === "acabado" ? [["acabado", "Ficha de acabados"]] : []);
+    let g = '<div class="grupo"><b>Al hacer clic</b>' + campo("Acción", '<select data-k="accion">' + acciones.map(([v, n]) => '<option value="' + v + '"' + (a === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select>");
     if (a === "panorama") {
       g += campo("Panorama", '<select data-k="destino">' + est.escenas.filter((e) => e.id !== aqui).map((e) => '<option value="' + e.id + '"' + (c.destino === e.id ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("") + "</select>");
       const fr = c.llegada === "frente";
@@ -9214,6 +9369,17 @@ void main(){
     }
     if (a === "imagen") g += '<div class="img-accion">' + (c.imagen ? '<img src="' + esc(urlArchivo(c.imagen)) + '" alt="Imagen de la acción">' : '<span class="nota">Sin imagen todavía</span>') + '<label class="mini">' + (c.imagen ? "Cambiar imagen" : "Subir imagen") + '<input type="file" accept="image/*" data-subir="imagen" hidden></label></div>';
     if (a === "web") g += '<p class="nota">Si un sitio no se deja mostrar en ventana, el tour ofrece abrirlo en otra pestaña.</p>';
+    if (a === "acabado") {
+      if (!Array.isArray(c.acabados) || !c.acabados.length) c.acabados = [{}];
+      const inp = (i, k, ph, v, tipo) => '<input type="text"' + (tipo ? ' inputmode="' + tipo + '"' : "") + ' maxlength="' + (k === "enlace" ? 400 : 90) + '" data-ac="' + i + "." + k + '" placeholder="' + ph + '" value="' + esc(v || "") + '"' + (k === "categoria" ? ' list="ac-tipos"' : "") + ">";
+      g += '<p class="nota">El título de la ficha es el <b>Texto</b> del hotspot (por ejemplo «Cocina»). Agrega cada material o mueble de este lugar.</p><div class="ac-lista">' + c.acabados.map((x, i) =>
+        '<div class="ac-item"><label class="ac-foto" title="' + (x.foto ? "Cambiar foto" : "Subir foto") + '">' + (x.foto ? '<img src="' + esc(urlArchivo(x.foto)) + '" alt="">' : "<span>+ Foto</span>") + '<input type="file" accept="image/png,image/jpeg,image/webp" data-ac-foto="' + i + '" hidden></label>' +
+        '<div class="ac-campos">' + inp(i, "nombre", "Nombre (Porcelanato Calacatta)", x.nombre) + inp(i, "categoria", "Tipo (Piso, Cubierta, Mueble…)", x.categoria) + inp(i, "marca", "Marca o modelo", x.marca) +
+        inp(i, "detalle", "Medida, color o acabado", x.detalle) + inp(i, "precio", "Precio (opcional)", x.precio) + inp(i, "enlace", "Enlace del producto (opcional)", x.enlace, "url") + "</div>" +
+        '<button class="ojo ac-quitar" data-ac-quitar="' + i + '" aria-label="Quitar este acabado" title="Quitar">✕</button></div>').join("") + "</div>" +
+        (c.acabados.length < 8 ? '<div class="orden"><button class="mini" data-ac-mas>+ Otro acabado</button></div>' : "") +
+        '<datalist id="ac-tipos">' + ["Piso", "Muro", "Cubierta", "Gabinetes", "Mueble", "Iluminación", "Grifería", "Cancelería", "Carpintería", "Textil", "Decoración", "Electrodoméstico"].map((t) => "<option value=\"" + t + "\">").join("") + "</datalist>";
+    }
     if (a !== "ninguna") g += '<p class="nota">Funciona en la Vista previa y en el tour publicado.</p>';
     return g + "</div>";
   }
@@ -9309,7 +9475,7 @@ void main(){
     const cont = $("props");
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
     if (!c) { $("props-titulo").textContent = "Propiedades"; cont.innerHTML = '<p class="vacio">Selecciona una capa en la lista o sobre la esfera para editarla.</p>'; acordeonProps(cont, null); return; }
-    $("props-titulo").textContent = c.lote ? nombreLote(c) : c.edificio ? "Edificio " + (c.edificio.torre || "") : c.manzana || c.mzPlano ? terminos().manzana + " " + ((c.manzana || c.mzPlano).mz || "") : c.camino ? "Ruta" : c.tipo === "interes" ? "Punto de interés" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot", imagen: "Imagen en 3D" }[c.tipo];
+    $("props-titulo").textContent = c.lote ? nombreLote(c) : c.edificio ? "Edificio " + (c.edificio.torre || "") : c.manzana || c.mzPlano ? terminos().manzana + " " + ((c.manzana || c.mzPlano).mz || "") : c.cota ? c.nombre || "Cota" : c.camino ? "Ruta" : c.tipo === "interes" ? "Punto de interés" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot", imagen: "Imagen en 3D" }[c.tipo];
     const multi = seleccionadas().length > 1 ? seleccionadas() : null;
     if (multi) $("props-titulo").textContent = multi.length + (c.lote ? " lotes" : " capas") + " seleccionados";
     let h = (multi ? '<div class="sel-multi"><b>' + multi.length + ' seleccionados.</b> Lo que cambies aquí se aplica a todos' + (c.lote ? ": manzana, estado, precio, superficie y estilo. Para los números usa «Numerar desde»." : ".") + ' <button class="mini" data-acc="sel-una">Solo este</button></div>' : "") +
@@ -9406,6 +9572,14 @@ void main(){
       h += '<div class="grupo"><b>Contraste</b>' + botones("contraste", [["sombra", "Sombra"], ["caja", "Caja oscura"], ["caja-clara", "Caja clara"], ["ninguno", "Sin fondo"]], 2) +
         interruptor("Animación al aparecer (en el tour)", "pi.animar", !!p.animar) +
         '<p class="nota">Arrastra el punto o la etiqueta para clavarlo sobre el lugar.</p></div>';
+    }
+    else if (c.cota) {
+      const v = cotaAuto(c, motorEd.actual.id), aqui = motorEd.actual.id;
+      h += '<div class="grupo"><b>Cota</b>' + campo("Medida", '<input type="text" maxlength="20" data-k="cota.medida" placeholder="' + (v ? v.toFixed(2) + " m" : "Ej. 4.20 m") + '" value="' + esc(c.cota.medida || "") + '">') +
+        '<p class="nota" id="cota-nota">' + (v ? "Mozari la calcula: <b>" + v.toFixed(2) + " m</b>, con la cámara a " + alturaCamara(aqui).toFixed(2) + " m del piso. Si tienes la medida del plano, escríbela y manda esa." : "Para que Mozari la calcule, pon los 2 puntos en el piso (el largo de un muro) o uno en el piso y otro justo arriba (una altura). Si no, escribe la medida.") + "</p>" +
+        campo("Altura de la cámara", '<input type="number" min="0.3" max="5" step="0.05" data-cota-altura value="' + alturaCamara(aqui).toFixed(2) + '">') +
+        '<p class="nota">A qué altura del piso estaba la cámara en esta esfera (en metros). Vale para todas sus cotas.</p>' +
+        campo("Color", campoColor("camino.color", c.camino.color)) + "</div>";
     }
     else if (c.camino) {
       const k = c.camino;
@@ -9527,7 +9701,7 @@ void main(){
     if (el.dataset.k === "nombre") { pintarCapas(); return; }
     if (el.dataset.k === "pi.nombre" || el.dataset.k === "pi.dato") pintarCapas();
     if (c.lote) { motorEd.construir(); if (repintar) pintarProps(); return; }
-    if (c.tipo === "poligono" && !/^rollover\.(activo|oculto)$/.test(el.dataset.k)) motorEd.estiloPoligono(c.id, c);
+    if (c.tipo === "poligono" && !/^rollover\.(activo|oculto)$/.test(el.dataset.k)) { motorEd.estiloPoligono(c.id, c); if (c.cota) motorEd.render(); }
     else motorEd.construir();
     if (repintar) pintarProps();
   }
@@ -9643,6 +9817,46 @@ void main(){
   }
   $("props").addEventListener("focusin", (ev) => { const i = ev.target.dataset && ev.target.dataset.lado; if (i !== undefined && motorEd) { motorEd.ladoResaltado = { id: motorEd.elegida, i: +i }; motorEd.render(); } });
   $("props").addEventListener("focusout", (ev) => { if (ev.target.dataset && ev.target.dataset.lado !== undefined && motorEd) { motorEd.ladoResaltado = null; motorEd.render(); } });
+  // Cotas: la altura de la cámara de la esfera (vale para todas sus cotas)
+  $("props").addEventListener("change", (ev) => {
+    if (!ev.target.dataset || ev.target.dataset.cotaAltura === undefined || !motorEd) return;
+    const v = +ev.target.value; if (!(v >= 0.3 && v <= 5)) { avisar("Escribe la altura en metros, entre 0.3 y 5"); pintarProps(); return; }
+    escena(motorEd.actual.id).alturaCamara = +v.toFixed(2); guardar(); motorEd.render(); pintarProps();
+  });
+  // Ficha de acabados: escribir, agregar, quitar y foto de cada material o mueble
+  $("props").addEventListener("input", (ev) => {
+    const k = ev.target.dataset && ev.target.dataset.ac; if (!k) return;
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !Array.isArray(c.acabados)) return;
+    const [i, campo] = k.split("."); if (!c.acabados[+i]) return;
+    c.acabados[+i][campo] = ev.target.value.slice(0, campo === "enlace" ? 400 : 90);
+    if (c.vinculo) propagar(c, motorEd.actual.id);
+    guardar();
+  });
+  $("props").addEventListener("click", (ev) => {
+    const mas = ev.target.closest("[data-ac-mas]"), q = ev.target.closest("[data-ac-quitar]");
+    if (!mas && !q) return;
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c) return;
+    c.acabados = Array.isArray(c.acabados) ? c.acabados : [];
+    if (mas && c.acabados.length < 8) c.acabados.push({});
+    if (q) { c.acabados.splice(+q.dataset.acQuitar, 1); if (!c.acabados.length) c.acabados.push({}); }
+    if (c.vinculo) propagar(c, motorEd.actual.id);
+    guardar(); pintarProps();
+    if (mas) { const l = $("props").querySelectorAll('[data-ac$=".nombre"]'); if (l.length) l[l.length - 1].focus(); }
+  });
+  $("props").addEventListener("change", async (ev) => {
+    const i = ev.target.dataset && ev.target.dataset.acFoto; if (i === undefined) return;
+    const f = ev.target.files[0], c = motorEd.elegida && buscar(motorEd.elegida); ev.target.value = "";
+    if (!f || !c || !c.acabados || !c.acabados[+i]) return;
+    try {
+      if (MODO === "nube") avisar("Subiendo foto…");
+      const im = await leerImagen(f), k = Math.min(1, 900 / Math.max(im.naturalWidth, im.naturalHeight)), cv = document.createElement("canvas");
+      cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k);
+      const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(im, 0, 0, cv.width, cv.height); URL.revokeObjectURL(im.src);
+      c.acabados[+i].foto = await medio(cv, "image/jpeg", 0.85, "acabado");
+      if (c.vinculo) propagar(c, motorEd.actual.id);
+      guardar(); pintarProps(); avisar("Foto lista");
+    } catch (err) { avisar(err.message || "No se pudo subir la foto"); }
+  });
   // Imagen para la acción "Imagen en ventana": se reduce a 1600 px para no pesar de más
   function subirImagenAccion(input) {
     const f = input.files[0], c = motorEd.elegida && buscar(motorEd.elegida);
@@ -10835,7 +11049,7 @@ void main(){
     ui.style.setProperty("--sk-radio-img", Math.max(0, sk.radio - 8) + "px");
     const btn = (k, etq, cls) => '<button class="sk-btn ' + cls + '" data-sk="' + k + '" aria-label="' + etq + '">' + ICO_SK[k] + "</button>";
     const c = {
-      sk, vertical, escenas: est.escenas,
+      sk, vertical, escenas: escenasTour(),
       logo: sk.logo.tipo === "propio" && sk.logo.img ? '<span class="sk-logo"><img src="' + esc(urlArchivo(sk.logo.img)) + '" alt=""></span>' : sk.logo.tipo === "mozari" ? '<span class="sk-logo"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg></span>' : "",
       botones: (cls) => (sk.botones.musica && o.hayMusica ? btn("musica", "Silenciar música", cls) : "") + (sk.botones.zoom ? btn("menos", "Alejar", cls) + btn("mas", "Acercar", cls) : "") + (sk.botones.limpiar ? btn("limpiar", "Ocultar puntos y lotes", cls) : "") + (sk.botones.pantalla ? btn("pantalla", "Pantalla completa", cls) : ""),
       cerrar: (cls) => (o.cerrable ? btn("cerrar", "Cerrar vista previa", cls) : ""),
@@ -10865,7 +11079,7 @@ void main(){
       if (pie) pie.insertAdjacentHTML("beforeend", h.replace('class="sk-credito"', 'class="sk-credito en-panel"')); else ui.insertAdjacentHTML("beforeend", h);
     }
     let actualId = null;
-    const ids = est.escenas.map((e) => e.id);
+    const ids = escenasTour().map((e) => e.id);
     const irRel = (d) => { if (!actualId || !o.motor()) return; const i = ids.indexOf(actualId); o.motor().mostrar(ids[(i + d + ids.length) % ids.length]); };
     ui.onclick = (ev) => {
       const it = ev.target.closest("[data-ir]");
@@ -11054,10 +11268,74 @@ void main(){
     return { escena(id) { if (VOZ.id === id && VOZ.estado !== "nada") pintarVoz(); else vozEscena(id); } };
   }
   function callarVoz() { vozTour.pause(); musicaPorVoz(false); VOZ.id = null; VOZ.estado = "nada"; VOZ.oidas.clear(); VOZ.caja = null; }
+  // Antes y después (Laboratorio «antes-despues»): la esfera tiene su otra versión (escena.comparar = { id, izq, der, auto }).
+  // La otra versión no sale en el menú del tour; se ve encima, recortada por una línea que se jala.
+  const esAlterna = (id) => est.escenas.some((e) => e.comparar && e.comparar.id === id && e.id !== id && escena(e.comparar.id));
+  const escenasTour = () => est.escenas.filter((e) => !esAlterna(e.id));
+  const parDe = (id) => { const e = escena(id), c = e && e.comparar; return c && c.id && c.id !== id && escena(c.id) ? c : null; };
+  const ICO_AD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg>';
+  function comparador(zona, motorA, par) {
+    const capa = document.createElement("div"); capa.className = "ad-capa"; capa.innerHTML = '<div class="stage"></div>';
+    const linea = document.createElement("div"); linea.className = "ad-linea";
+    linea.innerHTML = '<span class="ad-etq izq">' + esc(par.izq || "Antes") + '</span><span class="ad-etq der">' + esc(par.der || "Después") + '</span><button class="ad-asa" aria-label="Jala para comparar">' + ICO_AD + "</button>";
+    zona.appendChild(capa); zona.appendChild(linea);
+    const mB = crearMotor(capa.firstChild, { editable: false, sinHotspots: true, sinAcciones: true });
+    const vA = motorA.view();
+    mB.mostrar(par.id, 0, vA ? { yaw: vA.yaw(), pitch: vA.pitch(), fov: vA.fov() } : undefined);
+    let x = 0.5, arr = null;
+    const poner = () => { capa.style.clipPath = "inset(0 0 0 " + (x * 100).toFixed(2) + "%)"; linea.style.left = (x * 100).toFixed(2) + "%"; };
+    const sync = () => { const a = motorA.view(), b = mB.view(); if (a && b) b.setParameters({ yaw: a.yaw(), pitch: a.pitch(), fov: a.fov() }); };
+    const asa = linea.querySelector(".ad-asa");
+    asa.addEventListener("pointerdown", (ev) => { ev.preventDefault(); ev.stopPropagation(); arr = ev.pointerId; try { asa.setPointerCapture(ev.pointerId); } catch (e) { /* nada */ } });
+    asa.addEventListener("pointermove", (ev) => { if (arr !== ev.pointerId) return; const r = zona.getBoundingClientRect(); x = Math.max(0.02, Math.min(0.98, (ev.clientX - r.left) / r.width)); poner(); });
+    const soltar = (ev) => { if (arr === ev.pointerId) arr = null; };
+    asa.addEventListener("pointerup", soltar); asa.addEventListener("pointercancel", soltar);
+    ["click", "wheel", "touchstart"].forEach((t) => asa.addEventListener(t, (ev) => ev.stopPropagation(), { passive: true }));
+    poner(); sync();
+    return { sync, mover(k) { x = k; poner(); }, get x() { return x; }, destruir() { mB.destruir(); capa.remove(); linea.remove(); } };
+  }
+  // En el tour: un botón abajo al centro abre y cierra la comparación de la esfera donde estás
+  function botonComparar(ui, motorDe, zona) {
+    const st = zona._ad || (zona._ad = { comp: null, id: null });
+    if (!est.escenas.some((e) => parDe(e.id))) return { escena() {}, vista() {} };
+    const b = document.createElement("button"); b.className = "ad-boton"; b.hidden = true; b.dataset.ad = "";
+    ui.appendChild(b);
+    const pintar = () => {
+      const par = st.id && parDe(st.id); b.hidden = !par; if (!par) return;
+      b.setAttribute("aria-pressed", !!st.comp);
+      b.innerHTML = ICO_AD + (st.comp ? "Cerrar comparación" : esc(par.izq || "Antes") + " y " + esc((par.der || "Después").toLowerCase()));
+    };
+    const cerrar = () => { if (st.comp) { st.comp.destruir(); st.comp = null; } };
+    const abrir = () => { const par = parDe(st.id), m = motorDe(); if (!par || !m || st.comp) return; st.comp = comparador(zona, m, par); };
+    b.addEventListener("click", (ev) => { ev.stopPropagation(); if (st.comp) cerrar(); else abrir(); pintar(); });
+    ["pointerdown", "wheel", "touchstart"].forEach((t) => b.addEventListener(t, (ev) => ev.stopPropagation(), { passive: true }));
+    pintar();
+    return {
+      escena(id) {
+        if (st.id !== id) { cerrar(); st.id = id; const par = parDe(id); if (par && par.auto) abrir(); }
+        pintar();
+      },
+      vista() { if (st.comp) st.comp.sync(); },
+    };
+  }
+  // Ficha de acabados en el tour (Laboratorio «acabados»): los materiales y muebles de ese lugar, con su foto y su enlace
+  function fichaAcabados(c) {
+    const l = (c.acabados || []).filter((x) => x && (x.nombre || x.foto || x.marca));
+    if (!l.length) return "";
+    const sk = est.skin, cta = sk.cta && sk.cta.mostrar && sk.cta.enlace ? urlSegura(sk.cta.enlace) : "";
+    return '<div class="pop-caja acab" role="dialog" aria-label="' + esc(textoHotspot(c)) + '"><button class="pop-x" aria-label="Cerrar">×</button>' +
+      '<div class="acab-cab"><small>' + (l.length === 1 ? "Acabado" : l.length + " acabados") + "</small><h3>" + esc(c.texto || "Acabados") + "</h3></div><ul>" +
+      l.map((x) => { const u = urlSegura(x.enlace);
+        return "<li>" + (x.foto ? '<img src="' + esc(urlArchivo(x.foto)) + '" alt="" loading="lazy">' : '<span class="acab-sin" aria-hidden="true">' + ICO_ACCION.acabado + "</span>") + "<div>" +
+          (x.categoria ? "<small>" + esc(x.categoria) + "</small>" : "") + "<b>" + esc(x.nombre || x.marca || "") + "</b>" +
+          ([x.nombre ? x.marca : "", x.detalle].filter(Boolean).length ? "<span>" + esc([x.nombre ? x.marca : "", x.detalle].filter(Boolean).join(" · ")) + "</span>" : "") +
+          (x.precio ? "<em>" + esc(x.precio) + "</em>" : "") + (u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">Ver producto ↗</a>' : "") + "</div></li>"; }).join("") + "</ul>" +
+      (cta ? '<a class="acab-cta" href="' + esc(cta) + '" target="_blank" rel="noopener">' + esc(sk.cta.texto || "Contactar") + "</a>" : "") + "</div>";
+  }
   // Une un motor con su skin y su piloto automático (vista previa y editor de skin)
   // Siguiente esfera de la presentación: sigue el orden de Panoramas, se salta las marcadas y al final vuelve al inicio (o se detiene)
   function siguientePresentacion(id) {
-    const l = est.escenas, i = l.findIndex((e) => e.id === id), pr = P().presentacion || {};
+    const l = escenasTour(), i = l.findIndex((e) => e.id === id), pr = P().presentacion || {};
     for (let k = 1; k <= l.length; k++) {
       const j = i + k;
       if (j >= l.length && pr.alTerminar === "detener") return null;
@@ -11368,6 +11646,7 @@ void main(){
       const a = accionDe(c), url = urlSegura(c.url);
       if (piloto) piloto.interrumpir(true);
       if (a === "ficha" && c.lote) { statsLote(c); pop.innerHTML = fichaLote(c); pop.hidden = false; return; }
+      if (a === "acabado") { const h = fichaAcabados(c); if (!h) return; pop.innerHTML = h; pop.hidden = false; return; }
       if (a === "url") { if (url) window.open(url, "_blank", "noopener"); return; }
       if (a === "web" && url) pop.innerHTML = '<div class="pop-caja web" role="dialog" aria-label="Página"><div class="pop-cab"><a href="' + esc(url) + '" target="_blank" rel="noopener">Abrir en otra pestaña ↗</a><button class="pop-x" aria-label="Cerrar">×</button></div><iframe src="' + esc(url) + '" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe></div>';
       else if (a === "video") {
@@ -11410,8 +11689,9 @@ void main(){
       stage.style.setProperty("--hs-color", est.skin.acento);
       stage.style.setProperty("--hs-sobre", textoSobre(est.skin.acento));
       api = renderSkin(ui, Object.assign({}, o, { orientacion, motor: () => motor }));
-      const mini = miniPlano(ui, () => motor), voz = o.narrar ? pastillaVoz(ui) : { escena() {} }, e0 = api.escena, v0 = api.vista; // el plano con radar y la narración siguen a la esfera
-      api.escena = (id) => { e0(id); mini.escena(id); voz.escena(id); }; api.vista = (v) => { v0(v); mini.vista(v); };
+      const mini = miniPlano(ui, () => motor), voz = o.narrar ? pastillaVoz(ui) : { escena() {} }, comp = o.narrar ? botonComparar(ui, () => motor, stage.parentNode) : { escena() {}, vista() {} };
+      const e0 = api.escena, v0 = api.vista; // el plano con radar, la narración y el antes y después siguen a la esfera
+      api.escena = (id) => { e0(id); mini.escena(id); voz.escena(id); comp.escena(id); }; api.vista = (v) => { v0(v); mini.vista(v); comp.vista(); };
       if (actualId) api.escena(actualId); if (motor) api.vista(motor.view()); };
     pintar(o.orientacion);
     motor = crearMotor(stage, {
@@ -11430,6 +11710,7 @@ void main(){
       destruir() {
         if (piloto) piloto.detener();
         clearInterval(reloj); EVENTOS.forEach((e) => zona.removeEventListener(e, tocar));
+        if (zona._ad && zona._ad.comp) { zona._ad.comp.destruir(); zona._ad.comp = null; } if (zona._ad) zona._ad.id = null;
         motor.destruir(); motor = null; ui.innerHTML = ""; ui.onclick = null; pop.remove();
       },
     };
@@ -11590,6 +11871,70 @@ void main(){
   const orientacionPantalla = () => (window.innerWidth < window.innerHeight ? "v" : "h");
   // =================== MEDIA: FOTOS ===================
   // Biblioteca del tour: se suben una vez (reducidas a 2400 px) y se usan en cualquier capa.
+  // =================== PANORAMAS: ANTES Y DESPUÉS (Laboratorio «antes-despues», pedido de Amar 11 nov 2026) ===================
+  // Parejas de esferas del mismo lugar. La principal guarda comparar = { id: la otra, izq, der, auto }.
+  const AD = { sel: null, motor: null, comp: null, nuevoA: "", nuevoB: "" };
+  const AD_PRESETS = [["Antes", "Después"], ["Vacío", "Amueblado"], ["Obra negra", "Terminado"], ["Día", "Noche"]];
+  const parejas = () => est.escenas.filter((e) => parDe(e.id));
+  function abrirAntes() {
+    if (!AD.sel || !parDe(AD.sel)) AD.sel = (parejas()[0] || {}).id || null;
+    pintarAntes();
+  }
+  function cerrarAntes() { if (AD.comp) { AD.comp.destruir(); AD.comp = null; } if (AD.motor) { AD.motor.destruir(); AD.motor = null; } }
+  function vistaAntes() {
+    const par = AD.sel && parDe(AD.sel);
+    $("ad-vacio").hidden = !!par;
+    if (!par) { cerrarAntes(); $("ad-vacio").innerHTML = est.escenas.length < 2 ? "Sube al menos 2 esferas del mismo lugar en Panoramas → Lista." : "Elige a la izquierda la esfera y su otra versión, y toca <b>Juntar</b>.<br>Aquí la comparas como la verá tu cliente."; return; }
+    if (!AD.motor) AD.motor = crearMotor($("ad-stage"), { editable: false, sinHotspots: true, sinAcciones: true, alMoverVista: () => AD.comp && AD.comp.sync() });
+    const x = AD.comp ? AD.comp.x : 0.5;
+    if (AD.comp) { AD.comp.destruir(); AD.comp = null; }
+    if (!AD.motor.actual || AD.motor.actual.id !== AD.sel) AD.motor.mostrar(AD.sel, 0);
+    AD.comp = comparador($("ad-vista"), AD.motor, par); AD.comp.mover(x);
+  }
+  function pintarAntes() {
+    const ps = parejas(), libres = est.escenas.filter((e) => !parDe(e.id) && !esAlterna(e.id));
+    if (!libres.some((e) => e.id === AD.nuevoA)) AD.nuevoA = (libres[0] || {}).id || "";
+    if (!libres.some((e) => e.id === AD.nuevoB) || AD.nuevoB === AD.nuevoA) AD.nuevoB = (libres.find((e) => e.id !== AD.nuevoA) || {}).id || "";
+    const opc = (l, v) => l.map((e) => '<option value="' + e.id + '"' + (e.id === v ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("");
+    let h = '<div class="grupo"><b>Tus parejas</b>' + (ps.length ? '<ul class="ad-lista">' + ps.map((e) => { const c = e.comparar;
+      return '<li data-ad="' + e.id + '" aria-current="' + (e.id === AD.sel) + '"><div class="ad-par"><img src="' + thumbDe(e.id) + '" alt=""><img src="' + thumbDe(c.id) + '" alt=""></div><div><b>' + esc(e.nombre) + "</b><small>" + esc(c.izq || "Antes") + " / " + esc(c.der || "Después") + " · con " + esc(nombreDe(c.id)) + '</small></div><button class="ojo" data-ad-quitar="' + e.id + '" aria-label="Separar ' + esc(e.nombre) + '" title="Separar">✕</button></li>'; }).join("") + "</ul>" : '<p class="nota">Aún no juntas ninguna.</p>') + "</div>";
+    h += '<div class="grupo"><b>Nueva pareja</b>' + (libres.length >= 2
+      ? campo("Esfera", '<select data-ad-nuevo="A">' + opc(libres, AD.nuevoA) + "</select>") + campo("Otra versión", '<select data-ad-nuevo="B">' + opc(libres.filter((e) => e.id !== AD.nuevoA), AD.nuevoB) + "</select>") +
+        '<button class="btn-sec" data-ad-juntar>Juntar</button><p class="nota">La otra versión ya no sale en el menú del tour: solo al comparar.</p>'
+      : '<p class="nota">Necesitas 2 esferas sueltas del mismo lugar. Súbelas en Panoramas → Lista.</p>') + "</div>";
+    const par = AD.sel && parDe(AD.sel);
+    if (par) {
+      h += '<div class="grupo"><b>' + esc(nombreDe(AD.sel)) + "</b>" + campo("Izquierda", '<input type="text" maxlength="24" data-ad-k="izq" value="' + esc(par.izq || "Antes") + '">') + campo("Derecha", '<input type="text" maxlength="24" data-ad-k="der" value="' + esc(par.der || "Después") + '">') +
+        '<div class="ad-presets">' + AD_PRESETS.map(([a, b]) => '<button class="mini" data-ad-preset="' + esc(a) + "|" + esc(b) + '">' + esc(a) + " / " + esc(b) + "</button>").join("") + "</div>" +
+        '<label class="interruptor"><b>Abrir comparando al llegar</b><input type="checkbox" class="toggle" data-ad-k="auto"' + (par.auto ? " checked" : "") + "></label>" +
+        '<p class="nota">Para que coincidan, las dos fotos deben tomarse desde el mismo punto y a la misma altura. En Piloto automático deja su vista de inicio mirando a lo mismo.</p></div>';
+    }
+    $("ad-panel").innerHTML = h;
+    vistaAntes();
+  }
+  $("ad-panel").addEventListener("click", (ev) => {
+    const q = ev.target.closest("[data-ad-quitar]"), j = ev.target.closest("[data-ad-juntar]"), pr = ev.target.closest("[data-ad-preset]"), li = ev.target.closest("[data-ad]");
+    if (q) { const e = escena(q.dataset.adQuitar); delete e.comparar; if (AD.sel === e.id) AD.sel = null; guardar(); abrirAntes(); avisar(e.nombre + " ya no tiene antes y después"); return; }
+    if (j) {
+      const a = escena(AD.nuevoA), b = escena(AD.nuevoB); if (!a || !b || a === b) return;
+      a.comparar = { id: b.id, izq: "Antes", der: "Después" }; AD.sel = a.id; guardar(); pintarAntes();
+      avisar("Listo: jala la línea para comparar " + a.nombre + " con " + b.nombre); return;
+    }
+    if (pr) { const par = parDe(AD.sel); if (!par) return; const [a, b] = pr.dataset.adPreset.split("|"); par.izq = a; par.der = b; guardar(); pintarAntes(); return; }
+    if (li && !ev.target.closest("button")) { AD.sel = li.dataset.ad; pintarAntes(); }
+  });
+  $("ad-panel").addEventListener("change", (ev) => {
+    const t = ev.target;
+    if (t.dataset.adNuevo === "A") { AD.nuevoA = t.value; pintarAntes(); return; }
+    if (t.dataset.adNuevo === "B") { AD.nuevoB = t.value; return; }
+    if (t.dataset.adK === "auto") { const par = parDe(AD.sel); if (par) { par.auto = t.checked; guardar(); } }
+  });
+  $("ad-panel").addEventListener("input", (ev) => {
+    const k = ev.target.dataset.adK; if (k !== "izq" && k !== "der") return;
+    const par = parDe(AD.sel); if (!par) return;
+    par[k] = ev.target.value.trim().slice(0, 24); guardar();
+    const etq = document.querySelector("#ad-vista .ad-etq." + k); if (etq) etq.textContent = par[k] || (k === "izq" ? "Antes" : "Después");
+  });
   // =================== MEDIA: NARRACIÓN POR ESPACIO (Laboratorio «narracion», pedido de Amar 11 nov 2026) ===================
   // Cada esfera puede llevar su voz (MP3, M4A o WAV) y un subtítulo. En el tour suena sola al llegar a esa esfera y la
   // música de fondo baja mientras habla. P().narracion: { musicaBaja, unaVez }; escena.narracion: { archivo, nombre, peso, duracion, texto }

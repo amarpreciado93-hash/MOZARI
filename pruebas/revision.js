@@ -1450,6 +1450,163 @@ async function capasPesadas(p) {
       await t.context().close(); await n.context().close();
     });
 
+    // Pedido de Amar (11 nov 2026), funciones para interiores, 3 de 5: un punto en la cocina abre la ficha de sus
+    // acabados y muebles (foto, tipo, marca, medida, precio y enlace), con el botón de contacto del tour.
+    await paso("Ficha de acabados: un punto abre los materiales y muebles de ese lugar con foto, precio y enlace (también publicado)", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Cocina con acabados");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800); await cerrarGuia(n);
+      exige(await n.isVisible("#add-acab"), "no sale el botón «Acabado» en Agregar");
+      await n.click("#add-acab"); await n.waitForTimeout(800); await pasarGuias(n);
+      exige(await n.$('#props [data-ac="0.nombre"]'), "el acabado no abre sus campos en Propiedades");
+      await n.fill('#props input[data-k="texto"]', "Cocina"); await n.waitForTimeout(200);
+      const llenar = async (i, o) => { for (const [k, v] of Object.entries(o)) { await n.fill('#props [data-ac="' + i + "." + k + '"]', v); await n.waitForTimeout(80); } };
+      await llenar(0, { nombre: "Cubierta de cuarzo", categoria: "Cubierta", marca: "Calacatta Gold", detalle: "2 cm · pulido", precio: "$4,800 por m²", enlace: "example.com/cuarzo" });
+      await n.evaluate(async () => { // foto de muestra: veta clara
+        const cv = document.createElement("canvas"); cv.width = 600; cv.height = 600; const x = cv.getContext("2d");
+        x.fillStyle = "#EDEAE4"; x.fillRect(0, 0, 600, 600); x.strokeStyle = "#B9A98E"; x.lineWidth = 3; for (let i = 0; i < 9; i++) { x.beginPath(); x.moveTo(-50, i * 80); x.bezierCurveTo(200, i * 80 + 60, 400, i * 80 - 60, 650, i * 80 + 40); x.stroke(); }
+        const bl = await new Promise((o) => cv.toBlob(o, "image/jpeg", 0.9)), inp = document.querySelector('#props [data-ac-foto="0"]'), dt = new DataTransfer();
+        dt.items.add(new File([bl], "cuarzo.jpg", { type: "image/jpeg" })); inp.files = dt.files; inp.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      for (let i = 0; i < 20; i++) { await n.waitForTimeout(400); if (await n.$("#props .ac-foto img")) break; }
+      exige(await n.$("#props .ac-foto img"), "la foto del acabado no se subió");
+      await n.click("#props [data-ac-mas]"); await n.waitForTimeout(500);
+      await llenar(1, { nombre: "Gabinetes de nogal", categoria: "Gabinetes", detalle: "Nogal mate · jaladera negra" });
+      await n.waitForTimeout(1500);
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "acabados-editor.png") });
+      await n.keyboard.press("Escape"); await n.waitForTimeout(800);
+      const id = await idTour(n), d = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id), hs = Object.values(d.capas).flat().find((c) => c.accion === "acabado");
+      exige(hs && hs.texto === "Cocina" && hs.acabados.length === 2, "la ficha no se guardó: " + JSON.stringify(hs || {}).slice(0, 160));
+      exige(hs.acabados[0].foto && hs.acabados[0].precio === "$4,800 por m²" && hs.acabados[1].detalle === "Nogal mate · jaladera negra", "faltan datos del acabado: " + JSON.stringify(hs.acabados).slice(0, 200));
+      // El contacto del tour (Interfaz) sale al pie de la ficha
+      d.skin = Object.assign({}, d.skin, { cta: Object.assign({}, (d.skin || {}).cta, { mostrar: true, texto: "Cotizar", enlace: "https://wa.me/5214770000000" }) });
+      await n.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }), [id, d]);
+      const probar = async (t, nombre) => {
+        await t.waitForSelector('#previa .hs-boton[aria-label="Cocina"]', { timeout: 15000 }); await t.waitForTimeout(600);
+        await t.click('#previa .hs-boton[aria-label="Cocina"]'); await t.waitForTimeout(700);
+        exige(await t.isVisible("#previa .pop-caja.acab"), nombre + ": el punto no abrió la ficha de acabados");
+        const r = await t.evaluate(() => { const f = document.querySelector("#previa .pop-caja.acab"); return { titulo: f.querySelector("h3").textContent, items: f.querySelectorAll("li").length, foto: !!f.querySelector("li img") && f.querySelector("li img").naturalWidth > 0, enlace: (f.querySelector("li a") || {}).href || "", cta: (f.querySelector(".acab-cta") || {}).textContent || "" }; });
+        exige(r.titulo === "Cocina" && r.items === 2, nombre + ": la ficha no trae sus 2 acabados: " + JSON.stringify(r));
+        exige(r.foto, nombre + ": la foto del acabado no se ve");
+        exige(/^https:\/\/example\.com\/cuarzo/.test(r.enlace), nombre + ": el enlace del producto no sirve: " + r.enlace);
+        exige(r.cta === "Cotizar", nombre + ": no sale el botón de contacto");
+        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "acabados-" + nombre + ".png") });
+        await t.click("#previa .pop-caja.acab .pop-x"); await t.waitForTimeout(300);
+        exige(!(await t.isVisible("#previa .pop-caja.acab")), nombre + ": la ficha no se cierra");
+      };
+      await n.reload(); await n.waitForTimeout(3000); await cerrarAnuncio(n);
+      await n.click('button:has-text("Vista previa")'); await n.waitForTimeout(3500);
+      await probar(n, "previa");
+      await n.keyboard.press("Escape"); await n.waitForTimeout(400);
+      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
+      const t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(4500);
+      await probar(t, "publicado");
+      if (process.env.CAPTURAS) { const ctx = await navegador.newContext(Object.assign({}, devices["iPhone 13"])), m = await ctx.newPage(); await m.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort()); await m.goto(TOURS + "/" + id + "/"); await m.waitForTimeout(4500); await m.tap('#previa .hs-boton[aria-label="Cocina"]').catch(() => {}); await m.waitForTimeout(700); await m.screenshot({ path: path.join(process.env.CAPTURAS, "acabados-celular.png") }); await ctx.close(); }
+      exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await t.context().close(); await n.context().close();
+    });
+
+    // Pedido de Amar (11 nov 2026), funciones para interiores, 4 de 5: dos esferas del mismo lugar (vacío y amueblado,
+    // obra negra y terminado) se comparan jalando una línea; la otra versión no sale en el menú del tour.
+    await paso("Antes y después: se juntan dos esferas, se comparan con una línea y la otra versión no sale en el menú (también publicado)", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Sala antes y después"); await otraEsfera(n, "sala-amueblada", "#d8c3a5", "#8e6e53");
+      exige(await n.$('#subtabs button:has-text("Antes y después")'), "no sale «Antes y después» en Panoramas");
+      await n.click('#subtabs button:has-text("Antes y después")'); await n.waitForTimeout(900); await pasarGuias(n);
+      exige(await n.isVisible("#v-antes"), "no abre Antes y después");
+      await n.click("[data-ad-juntar]"); await n.waitForTimeout(1500);
+      exige(await n.$("#ad-vista .ad-capa .stage canvas"), "la comparación no dibujó la otra versión");
+      const asa = await n.locator("#ad-vista .ad-asa").boundingBox(), vista = await n.locator("#ad-vista").boundingBox();
+      await n.mouse.move(asa.x + asa.width / 2, asa.y + asa.height / 2); await n.mouse.down();
+      for (let k = 1; k <= 8; k++) await n.mouse.move(asa.x + asa.width / 2 - (vista.width * 0.2 * k) / 8, asa.y + asa.height / 2);
+      await n.mouse.up(); await n.waitForTimeout(300);
+      const clip = await n.$eval("#ad-vista .ad-capa", (e) => e.style.clipPath);
+      exige(/inset\(0(px)? 0(px)? 0(px)? 3\d(\.\d+)?%\)/.test(clip), "la línea no se jala: " + clip);
+      await n.click('[data-ad-preset="Vacío|Amueblado"]'); await n.waitForTimeout(500);
+      exige((await n.textContent("#ad-vista .ad-etq.der")) === "Amueblado", "las etiquetas no cambian");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "antes-editor.png") });
+      await n.waitForTimeout(1500);
+      const id = await idTour(n), d = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id), [e1, e2] = d.escenas.map((e) => e.id);
+      exige(d.escenas[0].comparar && d.escenas[0].comparar.id === e2 && d.escenas[0].comparar.der === "Amueblado", "la pareja no se guardó: " + JSON.stringify(d.escenas[0].comparar));
+      const probar = async (t, nombre) => {
+        await t.waitForSelector("#previa .ad-boton:not([hidden])", { timeout: 15000 });
+        exige(/Vacío y amueblado/.test(await t.textContent("#previa .ad-boton")), nombre + ": el botón no dice qué compara");
+        exige(!(await t.$('#pv-ui [data-ir="' + e2 + '"]')) && /01 \/ 01/.test(await t.textContent("#pv-ui").catch(() => "")), nombre + ": la otra versión sale en el menú del tour");
+        await t.click("#previa .ad-boton"); await t.waitForTimeout(1500);
+        exige(await t.$("#previa .ad-capa .stage canvas"), nombre + ": no abrió la comparación");
+        // Girar la esfera: la otra versión gira igual (la línea se queda donde está)
+        const b = await t.locator("#pv-stage").boundingBox();
+        await t.mouse.move(b.x + b.width * 0.25, b.y + b.height * 0.6); await t.mouse.down();
+        for (let k = 1; k <= 8; k++) await t.mouse.move(b.x + b.width * 0.25 + k * 25, b.y + b.height * 0.6);
+        await t.mouse.up(); await t.waitForTimeout(600);
+        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "antes-" + nombre + ".png") });
+        await t.click("#previa .ad-boton"); await t.waitForTimeout(400);
+        exige(!(await t.$("#previa .ad-capa")), nombre + ": la comparación no se cierra");
+      };
+      await n.click('button:has-text("Vista previa")'); await n.waitForTimeout(3500);
+      await probar(n, "previa");
+      await n.keyboard.press("Escape"); await n.waitForTimeout(400);
+      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
+      const t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(4500);
+      await probar(t, "publicado");
+      if (process.env.CAPTURAS) { const ctx = await navegador.newContext(Object.assign({}, devices["iPhone 13"])), m = await ctx.newPage(); await m.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort()); await m.goto(TOURS + "/" + id + "/"); await m.waitForTimeout(4500); await m.tap("#previa .ad-boton").catch(() => {}); await m.waitForTimeout(1500); await m.screenshot({ path: path.join(process.env.CAPTURAS, "antes-celular.png") }); await ctx.close(); }
+      exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await t.context().close(); await n.context().close();
+    });
+
+    // Pedido de Amar (11 nov 2026), funciones para interiores, 5 de 5: cotas en las paredes. Dos puntos en el piso dan el
+    // largo del muro (o uno en el piso y otro arriba, la altura) con la altura de la cámara; o se escribe la medida del plano.
+    await paso("Cotas en paredes: 2 puntos en el piso dan el largo, piso y arriba la altura; la medida escrita manda (también publicado)", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Recámara con cotas");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800); await cerrarGuia(n);
+      exige(await n.isVisible("#add-cota"), "no sale el botón «Cota» en Agregar");
+      const [cx, cy] = await n.evaluate(() => { const e = [...document.querySelectorAll(".capas")].find((x) => x.getClientRects().length && x.getBoundingClientRect().width > 300); const b = e.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
+      await n.click("#add-cota"); await n.waitForTimeout(400); await pasarGuias(n);
+      await n.mouse.click(cx - 220, cy + 210); await n.waitForTimeout(250); await n.mouse.click(cx + 220, cy + 210); await n.waitForTimeout(900);
+      exige(/^Cota 1/.test(await n.textContent("#props-titulo")), "no se creó la cota");
+      const etiqueta = () => n.$$eval(".cota-etq", (l) => l.filter((e) => e.getClientRects().length && getComputedStyle(e).display !== "none").map((e) => e.textContent));
+      const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      await n.waitForTimeout(1200);
+      let d = await leer(); const c1 = Object.values(d.capas).flat().find((c) => c.cota);
+      const plano = ([y, p]) => [Math.sin(y) / Math.tan(p), Math.cos(y) / Math.tan(p)], [ga, gb] = c1.puntos.map(plano), largo = 1.5 * Math.hypot(ga[0] - gb[0], ga[1] - gb[1]);
+      let e = await etiqueta();
+      exige(e.length === 1 && e[0] === largo.toFixed(2) + " m", "la cota no calcula el largo del muro: " + JSON.stringify(e) + " (esperaba " + largo.toFixed(2) + " m)");
+      // Con la cámara más alta todo mide más (proporcional)
+      await n.fill("[data-cota-altura]", "2"); await n.press("[data-cota-altura]", "Tab"); await n.waitForTimeout(700);
+      e = await etiqueta();
+      exige(e[0] === ((largo * 2) / 1.5).toFixed(2) + " m", "la altura de la cámara no cambia la medida: " + JSON.stringify(e));
+      // La medida del plano manda
+      await n.fill('#props input[data-k="cota.medida"]', "4.20 m"); await n.waitForTimeout(600);
+      e = await etiqueta();
+      exige(e[0] === "4.20 m", "la medida escrita no sale en la cota: " + JSON.stringify(e));
+      // Una altura: un punto en el piso y otro justo arriba
+      await n.keyboard.press("Escape"); await n.waitForTimeout(300);
+      await n.click("#add-cota"); await n.waitForTimeout(300);
+      await n.mouse.click(cx, cy + 180); await n.waitForTimeout(250); await n.mouse.click(cx, cy - 160); await n.waitForTimeout(900);
+      e = await etiqueta();
+      exige(e.length === 2 && e.every((x) => / m$/.test(x)), "la altura no se calcula: " + JSON.stringify(e));
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "cotas-editor.png") });
+      await n.keyboard.press("Escape"); await n.waitForTimeout(1200);
+      d = await leer();
+      exige(Object.values(d.capas).flat().filter((c) => c.cota).length === 2 && d.escenas[0].alturaCamara === 2, "las cotas o la altura de la cámara no se guardaron");
+      const probar = async (t, nombre) => {
+        await t.waitForSelector(".cota-etq", { timeout: 15000 }); await t.waitForTimeout(800);
+        const l = await t.$$eval("#previa .cota-etq", (l) => l.filter((e) => getComputedStyle(e).display !== "none").map((e) => e.textContent));
+        exige(l.length === 2 && l.includes("4.20 m"), nombre + ": las cotas no salen en el tour: " + JSON.stringify(l));
+        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "cotas-" + nombre + ".png") });
+      };
+      await n.click('button:has-text("Vista previa")'); await n.waitForTimeout(3500);
+      await probar(n, "previa");
+      await n.keyboard.press("Escape"); await n.waitForTimeout(400);
+      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
+      const t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(4500);
+      await probar(t, "publicado");
+      if (process.env.CAPTURAS) { const ctx = await navegador.newContext(Object.assign({}, devices["iPhone 13"])), m = await ctx.newPage(); await m.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort()); await m.goto(TOURS + "/" + id + "/"); await m.waitForTimeout(4500); await m.screenshot({ path: path.join(process.env.CAPTURAS, "cotas-celular.png") }); await ctx.close(); }
+      exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await t.context().close(); await n.context().close();
+    });
+
     // Pedido de Amar (10 nov 2026): «en edificios, al hacer zoom se borran los textos; que exista la opción de planchar
     // los departamentos para que no se muevan». Rótulo «Planchado en la fachada» y en la foto 360 van en la fachada.
     await paso("Edificio: los nombres de los departamentos no se borran con el zoom, se planchan en la fachada y salen en la foto 360", async () => {
