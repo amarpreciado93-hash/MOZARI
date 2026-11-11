@@ -1273,6 +1273,35 @@ async function capasPesadas(p) {
       await n.context().close();
     }, a);
 
+    // Reporte de OBED (11 nov 2026, Residencial Hualalachi, lote 58): el lado de atrás en 3 tramos cortos dejaba las
+    // medidas encimadas en la ficha. Ahora cada medida que no cabe junto a su lado sale afuera con su línea guía.
+    await paso("Ficha: las medidas de tramos cortos no se enciman y llevan línea guía a su lado", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Medidas encimadas");
+      const id = await idTour(n), d = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id), esc = d.proyecto.escenaInicial || d.escenas[0].id;
+      const suelo = (x, z) => [+Math.atan2(x, z).toFixed(5), +Math.asin(1 / Math.hypot(x, 1, z)).toFixed(5)];
+      const P = [[0, 0], [6, 0], [6, 20], [4.67, 20.3], [1.33, 20.4], [0, 20.1]].map(([x, z]) => suelo(x * 0.08 - 0.24, 1.2 + z * 0.08));
+      d.capas[esc] = (d.capas[esc] || []).concat([{ id: "lote58", tipo: "poligono", nombre: "Lote", visible: true, puntos: P, relleno: { color: "#D5FF40", opacidad: 0.35 }, trazo: { color: "#D5FF40", grosor: 1.5, opacidad: 1 },
+        lote: { numero: "58", manzana: "1", estado: "disponible", area: "118.84", lados: ["6", "20.03", "1.33", "3.34", "1.33", "20.1"], frente: 0 } }]);
+      await n.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }), [id, d]);
+      await n.reload(); await n.waitForTimeout(3000); await cerrarAnuncio(n);
+      await n.click('#nav button:has-text("Panoramas")'); await n.waitForTimeout(600);
+      await n.click('#subtabs button:has-text("Fichas técnicas")'); await n.waitForTimeout(1200); await pasarGuias(n);
+      await n.check('[data-fe="activa"]'); await n.waitForTimeout(400);
+      const op = await n.evaluate(() => { const o = [...document.querySelectorAll("#fe-muestra option")].find((e) => /58/.test(e.textContent)); return o && o.value; });
+      exige(op, "el lote 58 no está en «Ver con»"); await n.selectOption("#fe-muestra", op); await n.waitForTimeout(600);
+      const r = await n.evaluate(() => {
+        const t = [...document.querySelectorAll("#fe-lienzo .fd-medida")], cajas = t.map((e) => e.getBoundingClientRect());
+        let encimadas = 0; for (let i = 0; i < cajas.length; i++) for (let j = i + 1; j < cajas.length; j++) { const a = cajas[i], b = cajas[j]; if (a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1) encimadas++; }
+        return { medidas: t.map((e) => e.textContent), encimadas, guias: document.querySelectorAll("#fe-lienzo .fd-guia").length };
+      });
+      if (process.env.CAPTURAS) await n.locator("#fe-lienzo .fd-plano").screenshot({ path: path.join(process.env.CAPTURAS, "ficha-medidas.png") }).catch(() => {});
+      exige(r.medidas.length === 6, "la ficha no muestra las 6 medidas: " + JSON.stringify(r.medidas));
+      exige(r.encimadas === 0, "hay medidas encimadas: " + r.encimadas);
+      exige(r.guias >= 2, "los tramos cortos no llevan línea guía: " + r.guias);
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await n.context().close();
+    });
+
     // Pedido de Amar (10 nov 2026): «en edificios, al hacer zoom se borran los textos; que exista la opción de planchar
     // los departamentos para que no se muevan». Rótulo «Planchado en la fachada» y en la foto 360 van en la fachada.
     await paso("Edificio: los nombres de los departamentos no se borran con el zoom, se planchan en la fachada y salen en la foto 360", async () => {

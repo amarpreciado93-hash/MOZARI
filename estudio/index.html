@@ -963,6 +963,8 @@
   .ficha-d .fd-plano { display: block; width: 100%; height: auto; margin: 4px 0; }
   .ficha-d .fd-plano polygon { fill: color-mix(in srgb, var(--fd-acento) 14%, #fff); stroke: var(--fd-texto); stroke-width: 2.5; stroke-linejoin: round; }
   .ficha-d .fd-medida { font-size: 12px; fill: var(--fd-texto); text-anchor: middle; dominant-baseline: middle; }
+  .ficha-d .fd-guia { stroke: var(--fd-texto); stroke-width: 0.9; opacity: 0.55; }
+  .ficha-d .fd-guia-punto { fill: var(--fd-acento, var(--fd-texto)); }
   .ficha-d .fd-centro { font-size: 15px; fill: var(--fd-texto); text-anchor: middle; dominant-baseline: middle; font-weight: 600; paint-order: stroke; stroke: color-mix(in srgb, var(--fd-acento) 14%, #fff); stroke-width: 4px; stroke-linejoin: round; }
   .ficha-d .fd-centro.chico { font-size: 12px; font-weight: 400; }
   .ficha-d .fd-datos { display: flex; justify-content: space-between; gap: 12px; font-size: 18px; }
@@ -10831,13 +10833,46 @@ void main(){
     const P2 = S.map(([x, y]) => [x * k + ox, y * k + oy]), cx = P2.reduce((t, q) => t + q[0], 0) / n, cyy = P2.reduce((t, q) => t + q[1], 0) / n;
     const lados = (l.lados || []).map(fmtLado);
     let t = '<svg class="fd-plano" viewBox="0 0 ' + ancho + " " + alto + '" role="img" aria-label="Plano del lote"><polygon points="' + P2.map((q) => q[0].toFixed(1) + "," + q[1].toFixed(1)).join(" ") + '"/>';
-    if (f.medidas) P2.forEach((a, i) => {
-      const v = lados[i]; if (!v) return;
-      const b = P2[(i + 1) % n], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
-      let an = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI; if (an > 90) an -= 180; if (an < -90) an += 180;
-      const dx = mx - cx, dy = my - cyy, d = Math.hypot(dx, dy) || 1;
-      t += '<text class="fd-medida" x="' + (mx + dx / d * 14).toFixed(1) + '" y="' + (my + dy / d * 14).toFixed(1) + '" transform="rotate(' + an.toFixed(1) + " " + (mx + dx / d * 14).toFixed(1) + " " + (my + dy / d * 14).toFixed(1) + ')">' + esc(v) + "</text>";
-    });
+    // Medidas (reporte de OBED, nov 2026: en un lado partido en 3 tramos cortos los números salían encimados).
+    // Cada medida va junto a su lado si cabe; si el lado es corto o choca con otra, sale más afuera, derecha,
+    // con una línea guía que apunta al centro de su tramo. Nunca una encima de otra ni dentro del lote.
+    if (f.medidas) {
+      const fs = 12, anchoTxt = (v) => v.length * fs * 0.56 + 6, altoTxt = fs + 4, ocupado = [];
+      const enLote = (x, y) => { let d = false; for (let i = 0, j = n - 1; i < n; j = i++) { const [xi, yi] = P2[i], [xj, yj] = P2[j]; if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) d = !d; } return d; };
+      const choca = (b, pts) => ocupado.some((o) => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1]) || (pts || [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]], [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2]]).some(([x, y]) => enLote(x, y));
+      const cabe = (b) => b[0] >= 2 && b[1] >= 2 && b[2] <= ancho - 2 && b[3] <= alto - 2;
+      ocupado.push([cx - 34, cyy - 18, cx + 34, cyy + 22]); // el número y la superficie al centro
+      const medidas = P2.map((a, i) => {
+        const v = lados[i]; if (!v) return null;
+        const b = P2[(i + 1) % n], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+        let nx = -(b[1] - a[1]) / L, ny = (b[0] - a[0]) / L; if (nx * (mx - cx) + ny * (my - cyy) < 0) { nx = -nx; ny = -ny; } // hacia afuera
+        let an = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI; if (an > 90) an -= 180; if (an < -90) an += 180;
+        return { v, L, mx, my, nx, ny, an };
+      }).filter(Boolean).sort((p, q) => q.L - p.L);
+      medidas.forEach((m0) => {
+        const w = anchoTxt(m0.v);
+        // 1) Junto a su lado y a lo largo de él, si cabe
+        if (w <= m0.L * 0.9) {
+          const x = m0.mx + m0.nx * 14, y = m0.my + m0.ny * 14, r = (m0.an * Math.PI) / 180, hw = (Math.abs(Math.cos(r)) * w + Math.abs(Math.sin(r)) * altoTxt) / 2, hh = (Math.abs(Math.sin(r)) * w + Math.abs(Math.cos(r)) * altoTxt) / 2;
+          const caja = [x - hw, y - hh, x + hw, y + hh], ux = Math.cos(r), uy = Math.sin(r), esq = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([p, q]) => [x + (ux * w * p) / 2 - (uy * altoTxt * q) / 2, y + (uy * w * p) / 2 + (ux * altoTxt * q) / 2]);
+          if (!choca(caja, esq.concat([[x, y]])) && cabe(caja)) { ocupado.push(caja); t += '<text class="fd-medida" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" transform="rotate(' + m0.an.toFixed(1) + " " + x.toFixed(1) + " " + y.toFixed(1) + ')">' + esc(m0.v) + "</text>"; return; }
+        }
+        // 2) Más afuera, derecha, con su línea guía
+        let mejor = null;
+        for (const dist of [30, 44, 58, 74, 92]) {
+          for (const sh of [0, 18, -18, 36, -36, 54, -54, 72, -72]) {
+            const x = m0.mx + m0.nx * dist - m0.ny * sh, y = m0.my + m0.ny * dist + m0.nx * sh, caja = [x - w / 2, y - altoTxt / 2, x + w / 2, y + altoTxt / 2];
+            if (!choca(caja) && cabe(caja)) { mejor = { x, y, caja }; break; }
+          }
+          if (mejor) break;
+        }
+        if (!mejor) { const x = Math.min(ancho - w / 2 - 2, Math.max(w / 2 + 2, m0.mx + m0.nx * 30)), y = Math.min(alto - altoTxt / 2 - 2, Math.max(altoTxt / 2 + 2, m0.my + m0.ny * 30)); mejor = { x, y, caja: [x - w / 2, y - altoTxt / 2, x + w / 2, y + altoTxt / 2] }; }
+        ocupado.push(mejor.caja);
+        const c0 = mejor.caja, ex = Math.min(c0[2], Math.max(c0[0], m0.mx)), ey = Math.min(c0[3], Math.max(c0[1], m0.my));
+        t += '<line class="fd-guia" x1="' + m0.mx.toFixed(1) + '" y1="' + m0.my.toFixed(1) + '" x2="' + ex.toFixed(1) + '" y2="' + ey.toFixed(1) + '"/><circle class="fd-guia-punto" cx="' + m0.mx.toFixed(1) + '" cy="' + m0.my.toFixed(1) + '" r="2.4"/>' +
+          '<text class="fd-medida" x="' + mejor.x.toFixed(1) + '" y="' + mejor.y.toFixed(1) + '">' + esc(m0.v) + "</text>";
+      });
+    }
     t += '<text class="fd-centro" x="' + cx.toFixed(1) + '" y="' + (cyy - 4).toFixed(1) + '">' + esc(terminos().lote.charAt(0).toUpperCase() + "-") + esc(l.numero || "") + "</text>";
     if (fmtArea(l.area)) t += '<text class="fd-centro chico" x="' + cx.toFixed(1) + '" y="' + (cyy + 14).toFixed(1) + '">' + esc(fmtArea(l.area)) + "</text>";
     return t + "</svg>";
