@@ -167,7 +167,6 @@ export const LABORATORIO = {
   "planos": { nombre: "Plano con radar", texto: "Media → Planos: sube el plano de cada piso (casa, depa, oficina) y pon en él tus esferas con un toque; jalas su cono para que apunte a lo mismo que la esfera. En el tour sale chico en una esquina: el punto de donde estás se ilumina, el cono gira hacia donde miras y tocar otro punto te lleva a esa esfera." },
   "narracion": { nombre: "Narración por espacio", texto: "Media → Audios: sube una voz (MP3, M4A o WAV) para cada esfera, con su subtítulo. En el tour suena sola al llegar a ese espacio, la música baja mientras habla y una pastilla arriba la pausa o la repite. La presentación espera a que termine." },
   "lotes-movil": { nombre: "Disponibilidad desde el celular", texto: "Abre mozari.app en tu celular: elige el tour, toca un lote y márcalo Apartado o Vendido. El tour publicado cambia al momento, sin volver a publicar, y el estudio abierto en la compu no lo regresa. Solo licencias de pago." },
-  "acabados": { nombre: "Ficha de acabados", texto: "En Capas → «Acabado»: un punto sobre el piso, la cubierta o un mueble que abre la ficha de los acabados y muebles de ese lugar, cada uno con su foto, tipo, marca, medida, precio y enlace. Al pie sale el botón de contacto del tour. También como acción de cualquier hotspot." },
   "cotas": { nombre: "Cotas en paredes", texto: "En Capas → «Cota»: tocas el inicio y el final de un muro (en el piso) y Mozari calcula su largo con la altura de la cámara; un punto en el piso y otro arriba da la altura. Si tienes la medida del plano, la escribes y manda esa. Salen en el tour como en un plano." },
 };
 // "pago": las cuentas Pro y Desarrollos (con su plan vigente); "todos" incluye también Gratis
@@ -216,13 +215,13 @@ async function labDe(env, yo) {
 //   novedades/<id>.json  { id, titulo, texto, media, mediaTipo, boton, destino, publico, activa, creada, publicada, vistas }
 //   novedades/<id>.media el video o la imagen del anuncio
 const MAX_MEDIA_NOV = 25 * 1024 * 1024;
-const PUBLICOS_NOV = ["todos", "pagados", "gratis"];
+const PUBLICOS_NOV = ["todos", "pagados", "desarrollos", "gratis"];
 async function listaNovedades(env) {
   const l = await env.R2.list({ prefix: "novedades/", limit: 1000 });
   const ns = await Promise.all(l.objects.filter((o) => o.key.endsWith(".json")).map(async (o) => (await env.R2.get(o.key)).json().catch(() => null)));
   return ns.filter(Boolean).sort((a, b) => String(b.publicada || b.creada).localeCompare(String(a.publicada || a.creada)));
 }
-const paraQuien = (n, plan) => n.publico === "pagados" ? plan.id !== "gratis" : n.publico === "gratis" ? plan.id === "gratis" : true;
+const paraQuien = (n, plan) => n.publico === "pagados" ? plan.id !== "gratis" : n.publico === "desarrollos" ? plan.id === "desarrollos" : n.publico === "gratis" ? plan.id === "gratis" : true;
 async function apiNovedades(request, env, partes, yo, plan) {
   const m = request.method, id = partes[2];
   if (partes.length === 2 && m === "GET") {
@@ -850,7 +849,7 @@ async function api(request, env, partes, yo) {
   }
 
   if (partes[3] === "estados" && partes.length === 4 && m === "PATCH") {
-    if (!yo.admin && plan.marca) return error(403, "Cambiar la disponibilidad desde el celular es de las licencias de pago");
+    if (!yo.admin && plan.id !== "desarrollos") return error(403, "Cambiar la disponibilidad desde el celular es de la licencia Desarrollos");
     if (!(await labDe(env, yo)).includes("lotes-movil")) return error(403, "Función del Laboratorio");
     const c = await request.json().catch(() => ({}));
     const cambios = (Array.isArray(c.cambios) ? c.cambios : []).slice(0, 50).map((x) => ({ mz: String((x && x.mz) || "").slice(0, 40), num: String((x && x.num) || "").slice(0, 40), estado: String((x && x.estado) || "").slice(0, 40) })).filter((x) => x.num && x.estado);

@@ -695,35 +695,6 @@
   .lm-opcion .lm-punto { width: 14px; height: 14px; }
   .lm-opcion small { margin-left: auto; font-weight: 500; font-size: 12px; color: var(--mz-tenue); }
   .lm-vacio { padding: 14px; border-radius: 12px; background: var(--mz-negro); color: var(--mz-tenue); font-size: 13px; text-align: center; }
-  /* Ficha de acabados: editor */
-  .ac-lista { display: grid; gap: 10px; margin: 8px 0; }
-  .ac-item { position: relative; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; padding: 10px 30px 10px 10px; border-radius: 12px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); }
-  .ac-foto { width: 64px; height: 64px; border-radius: 10px; overflow: hidden; display: grid; place-items: center; cursor: pointer; border: 1.5px dashed var(--mz-linea); color: var(--mz-tenue); font-size: 11px; text-align: center; }
-  .ac-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .ac-foto:hover { border-color: var(--mz-lima); }
-  .ac-campos { display: grid; gap: 5px; min-width: 0; }
-  .ac-campos input { width: 100%; box-sizing: border-box; font: 400 12px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); border-radius: 7px; padding: 6px 8px; }
-  .ac-campos input:first-child { font-weight: 600; }
-  .ac-campos input:focus { outline: none; border-color: var(--mz-lima); }
-  .ac-quitar { position: absolute; top: 6px; right: 4px; }
-  /* Ficha de acabados: en el tour */
-  .pop-caja.acab { width: min(440px, 100%); max-height: min(92cqh, 860px); display: flex; flex-direction: column; background: #F6F4F0; color: #1D1C1A; border-radius: 18px; }
-  .pop-caja.acab .pop-x { position: absolute; top: 12px; right: 12px; z-index: 2; background: rgba(29, 28, 26, 0.08); color: #1D1C1A; }
-  .acab-cab { padding: 22px 60px 14px 22px; }
-  .acab-cab small { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #8A857C; }
-  .acab-cab h3 { margin: 4px 0 0; font-size: 24px; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
-  .pop-caja.acab ul { list-style: none; margin: 0; padding: 0 14px 14px; overflow-y: auto; display: grid; gap: 8px; }
-  .pop-caja.acab li { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 14px; align-items: center; padding: 8px; border-radius: 14px; background: #FFFFFF; box-shadow: 0 1px 0 rgba(29, 28, 26, 0.06); }
-  .pop-caja.acab li > img, .acab-sin { width: 88px; height: 88px; border-radius: 10px; object-fit: cover; display: block; background: #E9E5DE; }
-  .acab-sin { display: grid; place-items: center; color: #B4AEA4; }
-  .acab-sin svg { width: 30px; height: 30px; }
-  .pop-caja.acab li div { display: grid; gap: 2px; min-width: 0; }
-  .pop-caja.acab li small { font-size: 10.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #8A857C; }
-  .pop-caja.acab li b { font-size: 15px; font-weight: 600; line-height: 1.25; }
-  .pop-caja.acab li span { font-size: 12.5px; color: #5E5A53; line-height: 1.35; }
-  .pop-caja.acab li em { font-style: normal; font-size: 13.5px; font-weight: 600; margin-top: 2px; }
-  .pop-caja.acab li a { justify-self: start; margin-top: 4px; font-size: 12.5px; font-weight: 600; color: #1D1C1A; text-decoration: none; border-bottom: 1.5px solid currentColor; padding-bottom: 1px; }
-  .acab-cta { margin: 0 14px 14px; padding: 13px; border-radius: 12px; text-align: center; font-weight: 600; font-size: 14px; text-decoration: none; background: #1D1C1A; color: #F6F4F0; }
   /* Narración por espacio: editor */
   .nr-conf { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: center; margin: 4px 0 18px; padding: 12px 16px; border-radius: var(--mz-radio); background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); }
   .nr-conf .interruptor { gap: 12px; }
@@ -2053,7 +2024,6 @@
             <button id="add-pi" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="18" r="2.2"/><path d="M6.6 16.4 12 8h9"/></svg>Punto de interés</button>
             <button id="add-hs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="8.5" stroke-opacity=".5"/></svg>Hotspot</button>
             <button id="add-cota" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 15h16M4 11.5v7M20 11.5v7"/><path d="M8 15v-2M12 15v-3M16 15v-2" stroke-opacity=".6"/></svg>Cota</button>
-            <button id="add-acab" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><path d="M13 16.5h7M16.5 13v7" stroke-linecap="round"/></svg>Acabado</button>
             <button id="add-img" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 16.5 9.5 19 20 15.5V5L9.5 8.5 4 6z"/><path d="m4 13 4-2.5 4 3 3-2 5 2.5" stroke-opacity=".6"/></svg>Imagen 3D</button>
             <input type="file" id="add-img-archivo" accept="image/png,image/jpeg,image/webp" hidden>
           </div>
@@ -2799,7 +2769,7 @@
       '<span class="pi-txt">' + (p.nombre ? "<b>" + esc(p.nombre) + "</b>" : "") + (p.detalle ? "<span>" + esc(p.detalle) + "</span>" : "") + "</span></div></div>";
     if (p.contraste === "caja-clara") el.style.setProperty("--pi-c", p.color.toUpperCase() === "#FFFFFF" ? "#111111" : p.color);
   }
-  const accionDe = (c) => c.accion || (c.tipo === "hotspot" ? "panorama" : c.lote && !loteVacio(c) ? "ficha" : "ninguna");
+  const accionDe = (c) => (c.accion === "acabado" ? "ninguna" : c.accion) || (c.tipo === "hotspot" ? "panorama" : c.lote && !loteVacio(c) ? "ficha" : "ninguna");
   const ACCIONES = [["ninguna", "Nada"], ["panorama", "Ir a un panorama"], ["url", "Abrir enlace"], ["web", "Página en ventana"], ["imagen", "Imagen en ventana"], ["galeria", "Galería de fotos"], ["video", "Video en ventana"]];
   const ICO_ACCION = {
     panorama: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
@@ -2807,7 +2777,6 @@
     web: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M3.5 9h17"/></svg>',
     imagen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m20.5 16-5-5-8 8"/></svg>',
     ninguna: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 11v6M12 7.5v.01"/></svg>',
-    acabado: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><path d="M13 16.5h7M16.5 13v7" stroke-linecap="round"/></svg>',
   };
   // Estilos de hotspot: ícono propio y su manera de "respirar". Clásico usa el ícono de su acción.
   const ESTILOS_HS = {
@@ -2839,7 +2808,7 @@
     if (c.texto) return c.texto;
     const a = accionDe(c);
     if (a === "panorama") return escena(c.destino) ? "Ir a " + escena(c.destino).nombre : "Sin destino";
-    return { url: "Abrir enlace", web: "Ver página", imagen: "Ver imagen", acabado: "Acabados" }[a] || "Información";
+    return { url: "Abrir enlace", web: "Ver página", imagen: "Ver imagen" }[a] || "Información";
   }
   const normYaw = (y) => Math.atan2(Math.sin(y), Math.cos(y));
   // Vista al llegar por un hotspot: "de frente" sigue la dirección del viaje. Se calcula con el
@@ -3374,13 +3343,6 @@
       texto: "<b>Arrástralo</b> en la esfera a su lugar y aquí a la derecha escribe el <b>texto</b>, su tamaño, color y fondo." }] }),
     cota: (repite) => ({ dibuja: true, pasos: [{ el: "#add-cota", titulo: "Nuevo: cotas en las paredes", dur: 5.4, boton: repite ? "Entendido" : "A medir", anim: animCota,
       texto: "Toca el <b>inicio y el final del muro</b>, abajo donde toca el piso, y Mozari calcula su largo. Para una <b>altura</b>: un punto en el piso y otro justo arriba. Si tienes la medida del plano, la escribes a la derecha y manda esa." }] }),
-    acabado: () => ({ pasos: [
-      { el: () => document.querySelector(".cp-hs.elegida, .hs.elegida") || document.querySelector("#props"), titulo: "Nuevo: la ficha de acabados", dur: 4.5,
-        anim: animColocar({ figura: '<circle r="14" fill="#D5FF40"/><g transform="translate(-7 -7)" fill="none" stroke="#0b0b0b" stroke-width="1.8"><rect width="6" height="6" rx="1.2"/><rect x="8" width="6" height="6" rx="1.2"/><rect y="8" width="6" height="6" rx="1.2"/></g>', destino: [250, 128], pasos: "Arrástralo sobre la cubierta o el mueble", final: "Al tocarlo, tu cliente ve sus acabados" }),
-        texto: "<b>Arrastra el punto</b> sobre el piso, la cubierta o el mueble. En <b>Texto</b> le pones el nombre del lugar (por ejemplo «Cocina»): es el título de la ficha." },
-      { el: () => document.querySelector("#props .ac-lista") || $("props"), titulo: "Llena cada material o mueble", anim: animAcab, dur: 4.5,
-        texto: "Por cada uno: <b>foto</b>, tipo, marca, medida, precio y enlace (todo opcional menos el nombre). Con <b>+ Otro acabado</b> agregas más. Abajo de la ficha sale tu botón de contacto." },
-    ] }),
     interes: () => ({ pasos: [{ el: "#props", titulo: "Tu punto de interés ya está en la esfera", dur: 4.5,
       anim: animColocar({ figura: '<circle cx="-30" cy="22" r="5" fill="#D5FF40"/><path d="M-26 18 L-6 -6 L40 -6" fill="none" stroke="#D5FF40" stroke-width="2"/><text x="-2" y="-12" fill="#fff" font-size="11" font-weight="700">Escuela · 5 min</text>', destino: [230, 80], pasos: "Arrástralo sobre el lugar", final: "Escribe su nombre y distancia a la derecha" }),
       texto: "<b>Arrástralo</b> sobre el lugar real (la escuela, la gasolinera…) y escribe aquí su <b>nombre</b> y el dato (tiempo o distancia)." }] }),
@@ -3565,17 +3527,6 @@
       texto: "Cuando tu cliente llega a esa esfera la voz <b>suena sola</b> (en el celular, con su primer toque) y la <b>música baja</b> mientras habla. Arriba sale una pastilla para pausarla o volver a oírla." },
   ];
   const guiaVoz = (repetir) => (repetir ? mostrarGuia("nuevo-narracion", pasosVoz(), { repetir: true }) : guiaNueva("nuevo-narracion", pasosVoz, () => nav.sec + "/" + nav.sub === "media/audios"));
-  // Acabados: la ficha que se arma con cada material
-  function animAcab(svg, t) {
-    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="90" y="12" width="180" height="168" rx="12" fill="#F6F4F0"/><text x="104" y="32" fill="#8A857C" font-size="7.5" font-weight="700" letter-spacing="1.2">ACABADOS</text><text x="104" y="48" fill="#1D1C1A" font-size="14" font-weight="800">Cocina</text>';
-    [["Cubierta", "Cuarzo Calacatta", "$4,800 m²", "#e9e4dc"], ["Gabinetes", "Nogal mate", "", "#8a6a4a"], ["Piso", "Porcelanato 60×120", "$690 m²", "#cfc8bd"]].forEach(([c, n, pr, col], k) => {
-      const a = Math.max(0, Math.min(1, (t - 0.6 - k * 0.9) / 0.5)); if (!a) return;
-      const y = 58 + k * 38;
-      h += '<g opacity="' + a.toFixed(2) + '"><rect x="98" y="' + y + '" width="164" height="34" rx="7" fill="#fff"/><rect x="102" y="' + (y + 4) + '" width="26" height="26" rx="4" fill="' + col + '"/><text x="134" y="' + (y + 12) + '" fill="#8A857C" font-size="6.5" font-weight="700">' + c.toUpperCase() + '</text><text x="134" y="' + (y + 22) + '" fill="#1D1C1A" font-size="8.5" font-weight="700">' + n + "</text>" + (pr ? '<text x="134" y="' + (y + 31) + '" fill="#1D1C1A" font-size="7.5">' + pr + "</text>" : "") + "</g>";
-    });
-    h += pieG(t > 3.2 ? "Foto, marca, medida, precio y enlace" : "Agrega cada material o mueble", t > 3.2);
-    svg.innerHTML = h;
-  }
   // Cotas: 2 puntos en la base del muro dan el largo; piso y arriba, la altura
   function animCota(svg, t) {
     let h = '<rect width="360" height="200" fill="#1a2014"/><path d="M60 30 L300 30 L300 140 L60 140Z" fill="#cfc8bd"/><path d="M0 0 L60 30 L60 140 L0 186Z" fill="#b8b0a4"/><path d="M360 0 L300 30 L300 140 L360 186Z" fill="#b8b0a4"/><path d="M0 186 L60 140 L300 140 L360 186Z" fill="#8a7462"/>';
@@ -4057,7 +4008,7 @@
     const { novedades: lista } = await r.json(), caja = $("cuentas"), n = novEdit && lista.find((x) => x.id === novEdit);
     const cor = await fetch("api/admin/correos", { cache: "no-store" }).then((x) => (x.ok ? x.json() : null)).catch(() => null) || { conf: {}, activo: false, mes: 0, topeMes: 2800 };
     const camps = n ? [] : ((await fetch("api/admin/campanas", { cache: "no-store" }).then((x) => (x.ok ? x.json() : null)).catch(() => null)) || { campanas: [] }).campanas;
-    const PUB = { todos: "Todos", pagados: "Solo Pro y Desarrollos", gratis: "Solo Gratis" };
+    const PUB = { todos: "Todos", pagados: "Solo Pro y Desarrollos", desarrollos: "Solo Desarrollos", gratis: "Solo Gratis" };
     let h = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) + '<div class="nov-admin">';
     if (n) {
       const otro = n.destino && !DESTINOS_NOV.some(([v]) => v === n.destino);
@@ -4501,7 +4452,7 @@
       pintarCuentas();
     }
     // Disponibilidad desde el celular (Laboratorio «lotes-movil»): solo licencias de pago
-    if (enLab("lotes-movil") && (NUBE.admin || !PLAN.marca) && matchMedia("(max-width: 960px)").matches) setTimeout(lotesMovil, 0);
+    if (enLab("lotes-movil") && (NUBE.admin || (PLAN && PLAN.id === "desarrollos")) && matchMedia("(max-width: 960px)").matches) setTimeout(lotesMovil, 0);
     // Desde el cel: se manda el link para abrirlo en la compu (WhatsApp, correo…) o se copia
     $("mv-link").addEventListener("click", async () => {
       const link = location.origin + "/";
@@ -9389,17 +9340,8 @@ void main(){
     img.onerror = () => avisar("No se pudo leer esa imagen. Usa PNG, JPG o WebP.");
     img.src = URL.createObjectURL(f);
   }
-  // Ficha de acabados (Laboratorio «acabados»): un punto que abre la ficha de los materiales y muebles de ese lugar
-  if (enLab("acabados")) $("add-acab").hidden = false;
   if (enLab("cotas")) $("add-cota").hidden = false;
   $("add-cota").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "cota") guiaCapa("cota", () => empezarDibujo("cota")); });
-  $("add-acab").addEventListener("click", () => {
-    if (motorEd.dibujo) terminarDibujo(false);
-    const k = centro();
-    const c = { id: nuevoId(), tipo: "hotspot", nombre: "Acabados", visible: true, yaw: k.yaw, pitch: k.pitch, accion: "acabado", texto: "", acabados: [{}] };
-    cs().push(c); motorEd.elegida = c.id; cambio();
-    setTimeout(() => guiaCapa("acabado", () => avisar("Arrastra el punto sobre el piso, la cubierta o el mueble, y a la derecha llena su ficha")), 400);
-  });
   $("add-hs").addEventListener("click", () => {
     if (motorEd.dibujo) terminarDibujo(false);
     const otra = est.escenas.find((e) => e.id !== motorEd.actual.id);
@@ -9577,7 +9519,7 @@ void main(){
   function grupoAccion(c) {
     const a = accionDe(c), aqui = motorEd.actual.id;
     if (a === "panorama" && !escena(c.destino)) { const o = est.escenas.find((e) => e.id !== aqui); if (o) { c.destino = o.id; guardar(); } }
-    const acciones = (c.lote ? [["ficha", "Ficha del lote"]] : []).concat(ACCIONES, enLab("acabados") || a === "acabado" ? [["acabado", "Ficha de acabados"]] : []);
+    const acciones = (c.lote ? [["ficha", "Ficha del lote"]] : []).concat(ACCIONES);
     let g = '<div class="grupo"><b>Al hacer clic</b>' + campo("Acción", '<select data-k="accion">' + acciones.map(([v, n]) => '<option value="' + v + '"' + (a === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select>");
     if (a === "panorama") {
       g += campo("Panorama", '<select data-k="destino">' + est.escenas.filter((e) => e.id !== aqui).map((e) => '<option value="' + e.id + '"' + (c.destino === e.id ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("") + "</select>");
@@ -9601,17 +9543,6 @@ void main(){
     }
     if (a === "imagen") g += '<div class="img-accion">' + (c.imagen ? '<img src="' + esc(urlArchivo(c.imagen)) + '" alt="Imagen de la acción">' : '<span class="nota">Sin imagen todavía</span>') + '<label class="mini">' + (c.imagen ? "Cambiar imagen" : "Subir imagen") + '<input type="file" accept="image/*" data-subir="imagen" hidden></label></div>';
     if (a === "web") g += '<p class="nota">Si un sitio no se deja mostrar en ventana, el tour ofrece abrirlo en otra pestaña.</p>';
-    if (a === "acabado") {
-      if (!Array.isArray(c.acabados) || !c.acabados.length) c.acabados = [{}];
-      const inp = (i, k, ph, v, tipo) => '<input type="text"' + (tipo ? ' inputmode="' + tipo + '"' : "") + ' maxlength="' + (k === "enlace" ? 400 : 90) + '" data-ac="' + i + "." + k + '" placeholder="' + ph + '" value="' + esc(v || "") + '"' + (k === "categoria" ? ' list="ac-tipos"' : "") + ">";
-      g += '<p class="nota">El título de la ficha es el <b>Texto</b> del hotspot (por ejemplo «Cocina»). Agrega cada material o mueble de este lugar.</p><div class="ac-lista">' + c.acabados.map((x, i) =>
-        '<div class="ac-item"><label class="ac-foto" title="' + (x.foto ? "Cambiar foto" : "Subir foto") + '">' + (x.foto ? '<img src="' + esc(urlArchivo(x.foto)) + '" alt="">' : "<span>+ Foto</span>") + '<input type="file" accept="image/png,image/jpeg,image/webp" data-ac-foto="' + i + '" hidden></label>' +
-        '<div class="ac-campos">' + inp(i, "nombre", "Nombre (Porcelanato Calacatta)", x.nombre) + inp(i, "categoria", "Tipo (Piso, Cubierta, Mueble…)", x.categoria) + inp(i, "marca", "Marca o modelo", x.marca) +
-        inp(i, "detalle", "Medida, color o acabado", x.detalle) + inp(i, "precio", "Precio (opcional)", x.precio) + inp(i, "enlace", "Enlace del producto (opcional)", x.enlace, "url") + "</div>" +
-        '<button class="ojo ac-quitar" data-ac-quitar="' + i + '" aria-label="Quitar este acabado" title="Quitar">✕</button></div>').join("") + "</div>" +
-        '<div class="orden">' + (c.acabados.length < 8 ? '<button class="mini" data-ac-mas>+ Otro acabado</button>' : "") + '<button class="mini" data-guia-capa="acabado">▶ ¿Cómo se usa?</button></div>' +
-        '<datalist id="ac-tipos">' + ["Piso", "Muro", "Cubierta", "Gabinetes", "Mueble", "Iluminación", "Grifería", "Cancelería", "Carpintería", "Textil", "Decoración", "Electrodoméstico"].map((t) => "<option value=\"" + t + "\">").join("") + "</datalist>";
-    }
     if (a !== "ninguna") g += '<p class="nota">Funciona en la Vista previa y en el tour publicado.</p>';
     return g + "</div>";
   }
@@ -10060,40 +9991,6 @@ void main(){
     if (!ev.target.dataset || ev.target.dataset.cotaAltura === undefined || !motorEd) return;
     const v = +ev.target.value; if (!(v >= 0.3 && v <= 5)) { avisar("Escribe la altura en metros, entre 0.3 y 5"); pintarProps(); return; }
     escena(motorEd.actual.id).alturaCamara = +v.toFixed(2); guardar(); motorEd.render(); pintarProps();
-  });
-  // Ficha de acabados: escribir, agregar, quitar y foto de cada material o mueble
-  $("props").addEventListener("input", (ev) => {
-    const k = ev.target.dataset && ev.target.dataset.ac; if (!k) return;
-    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !Array.isArray(c.acabados)) return;
-    const [i, campo] = k.split("."); if (!c.acabados[+i]) return;
-    c.acabados[+i][campo] = ev.target.value.slice(0, campo === "enlace" ? 400 : 90);
-    if (c.vinculo) propagar(c, motorEd.actual.id);
-    guardar();
-  });
-  $("props").addEventListener("click", (ev) => {
-    const mas = ev.target.closest("[data-ac-mas]"), q = ev.target.closest("[data-ac-quitar]");
-    if (!mas && !q) return;
-    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c) return;
-    c.acabados = Array.isArray(c.acabados) ? c.acabados : [];
-    if (mas && c.acabados.length < 8) c.acabados.push({});
-    if (q) { c.acabados.splice(+q.dataset.acQuitar, 1); if (!c.acabados.length) c.acabados.push({}); }
-    if (c.vinculo) propagar(c, motorEd.actual.id);
-    guardar(); pintarProps();
-    if (mas) { const l = $("props").querySelectorAll('[data-ac$=".nombre"]'); if (l.length) l[l.length - 1].focus(); }
-  });
-  $("props").addEventListener("change", async (ev) => {
-    const i = ev.target.dataset && ev.target.dataset.acFoto; if (i === undefined) return;
-    const f = ev.target.files[0], c = motorEd.elegida && buscar(motorEd.elegida); ev.target.value = "";
-    if (!f || !c || !c.acabados || !c.acabados[+i]) return;
-    try {
-      if (MODO === "nube") avisar("Subiendo foto…");
-      const im = await leerImagen(f), k = Math.min(1, 900 / Math.max(im.naturalWidth, im.naturalHeight)), cv = document.createElement("canvas");
-      cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k);
-      const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(im, 0, 0, cv.width, cv.height); URL.revokeObjectURL(im.src);
-      c.acabados[+i].foto = await medio(cv, "image/jpeg", 0.85, "acabado");
-      if (c.vinculo) propagar(c, motorEd.actual.id);
-      guardar(); pintarProps(); avisar("Foto lista");
-    } catch (err) { avisar(err.message || "No se pudo subir la foto"); }
   });
   // Imagen para la acción "Imagen en ventana": se reduce a 1600 px para no pesar de más
   function subirImagenAccion(input) {
@@ -11506,20 +11403,6 @@ void main(){
     return { escena(id) { if (VOZ.id === id && VOZ.estado !== "nada") pintarVoz(); else vozEscena(id); } };
   }
   function callarVoz() { vozTour.pause(); musicaPorVoz(false); VOZ.id = null; VOZ.estado = "nada"; VOZ.oidas.clear(); VOZ.caja = null; }
-  // Ficha de acabados en el tour (Laboratorio «acabados»): los materiales y muebles de ese lugar, con su foto y su enlace
-  function fichaAcabados(c) {
-    const l = (c.acabados || []).filter((x) => x && (x.nombre || x.foto || x.marca));
-    if (!l.length) return "";
-    const sk = est.skin, cta = sk.cta && sk.cta.mostrar && sk.cta.enlace ? urlSegura(sk.cta.enlace) : "";
-    return '<div class="pop-caja acab" role="dialog" aria-label="' + esc(textoHotspot(c)) + '"><button class="pop-x" aria-label="Cerrar">×</button>' +
-      '<div class="acab-cab"><small>' + (l.length === 1 ? "Acabado" : l.length + " acabados") + "</small><h3>" + esc(c.texto || "Acabados") + "</h3></div><ul>" +
-      l.map((x) => { const u = urlSegura(x.enlace);
-        return "<li>" + (x.foto ? '<img src="' + esc(urlArchivo(x.foto)) + '" alt="" loading="lazy">' : '<span class="acab-sin" aria-hidden="true">' + ICO_ACCION.acabado + "</span>") + "<div>" +
-          (x.categoria ? "<small>" + esc(x.categoria) + "</small>" : "") + "<b>" + esc(x.nombre || x.marca || "") + "</b>" +
-          ([x.nombre ? x.marca : "", x.detalle].filter(Boolean).length ? "<span>" + esc([x.nombre ? x.marca : "", x.detalle].filter(Boolean).join(" · ")) + "</span>" : "") +
-          (x.precio ? "<em>" + esc(x.precio) + "</em>" : "") + (u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">Ver producto ↗</a>' : "") + "</div></li>"; }).join("") + "</ul>" +
-      (cta ? '<a class="acab-cta" href="' + esc(cta) + '" target="_blank" rel="noopener">' + esc(sk.cta.texto || "Contactar") + "</a>" : "") + "</div>";
-  }
   // Une un motor con su skin y su piloto automático (vista previa y editor de skin)
   // Siguiente esfera de la presentación: sigue el orden de Panoramas, se salta las marcadas y al final vuelve al inicio (o se detiene)
   function siguientePresentacion(id) {
@@ -11834,7 +11717,6 @@ void main(){
       const a = accionDe(c), url = urlSegura(c.url);
       if (piloto) piloto.interrumpir(true);
       if (a === "ficha" && c.lote) { statsLote(c); pop.innerHTML = fichaLote(c); pop.hidden = false; return; }
-      if (a === "acabado") { const h = fichaAcabados(c); if (!h) return; pop.innerHTML = h; pop.hidden = false; return; }
       if (a === "url") { if (url) window.open(url, "_blank", "noopener"); return; }
       if (a === "web" && url) pop.innerHTML = '<div class="pop-caja web" role="dialog" aria-label="Página"><div class="pop-cab"><a href="' + esc(url) + '" target="_blank" rel="noopener">Abrir en otra pestaña ↗</a><button class="pop-x" aria-label="Cerrar">×</button></div><iframe src="' + esc(url) + '" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe></div>';
       else if (a === "video") {

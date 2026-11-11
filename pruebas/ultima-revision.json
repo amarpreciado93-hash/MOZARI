@@ -1,5 +1,5 @@
 {
- "fecha": "2026-11-11T17:01:45.049Z",
+ "fecha": "2026-11-11T19:07:39.598Z",
  "bien": 85,
  "total": 85,
  "resultados": [
@@ -216,7 +216,7 @@
    "ok": true
   },
   {
-   "nombre": "Ficha de acabados: un punto abre los materiales y muebles de ese lugar con foto, precio y enlace (también publicado)",
+   "nombre": "Ficha de acabados quitada: no sale en Capas, ni como acción de un hotspot, ni en el Laboratorio",
    "ok": true
   },
   {

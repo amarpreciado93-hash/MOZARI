@@ -1453,61 +1453,19 @@ async function capasPesadas(p) {
       await t.context().close(); await n.context().close();
     });
 
-    // Pedido de Amar (11 nov 2026), funciones para interiores, 3 de 5: un punto en la cocina abre la ficha de sus
-    // acabados y muebles (foto, tipo, marca, medida, precio y enlace), con el botón de contacto del tour.
-    await paso("Ficha de acabados: un punto abre los materiales y muebles de ese lugar con foto, precio y enlace (también publicado)", async () => {
-      const n = await pagina(DUENO); await nuevoTour(n, "Cocina con acabados");
+    // Pedido de Amar (11 nov 2026): «quitar lo de acabados, se ve repetitivo y confunde». La Ficha de acabados se quitó
+    // por completo: ni el botón en Capas, ni la acción en los hotspots, ni en el Laboratorio.
+    await paso("Ficha de acabados quitada: no sale en Capas, ni como acción de un hotspot, ni en el Laboratorio", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Sin acabados");
       await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800); await cerrarGuia(n);
-      exige(await n.isVisible("#add-acab"), "no sale el botón «Acabado» en Agregar");
-      await n.click("#add-acab"); await n.waitForTimeout(900);
-      exige(/ficha de acabados/i.test(await n.textContent(".guia-tarjeta").catch(() => "")), "la primera vez no sale el mini tutorial de Acabado"); if (process.env.CAPTURAS) { await n.waitForTimeout(1800); await n.screenshot({ path: path.join(process.env.CAPTURAS, "tutorial-acabado.png") }); } await pasarGuias(n);
-      exige(await n.$('#props [data-ac="0.nombre"]'), "el acabado no abre sus campos en Propiedades");
-      await n.fill('#props input[data-k="texto"]', "Cocina"); await n.waitForTimeout(200);
-      const llenar = async (i, o) => { for (const [k, v] of Object.entries(o)) { await n.fill('#props [data-ac="' + i + "." + k + '"]', v); await n.waitForTimeout(80); } };
-      await llenar(0, { nombre: "Cubierta de cuarzo", categoria: "Cubierta", marca: "Calacatta Gold", detalle: "2 cm · pulido", precio: "$4,800 por m²", enlace: "example.com/cuarzo" });
-      await n.evaluate(async () => { // foto de muestra: veta clara
-        const cv = document.createElement("canvas"); cv.width = 600; cv.height = 600; const x = cv.getContext("2d");
-        x.fillStyle = "#EDEAE4"; x.fillRect(0, 0, 600, 600); x.strokeStyle = "#B9A98E"; x.lineWidth = 3; for (let i = 0; i < 9; i++) { x.beginPath(); x.moveTo(-50, i * 80); x.bezierCurveTo(200, i * 80 + 60, 400, i * 80 - 60, 650, i * 80 + 40); x.stroke(); }
-        const bl = await new Promise((o) => cv.toBlob(o, "image/jpeg", 0.9)), inp = document.querySelector('#props [data-ac-foto="0"]'), dt = new DataTransfer();
-        dt.items.add(new File([bl], "cuarzo.jpg", { type: "image/jpeg" })); inp.files = dt.files; inp.dispatchEvent(new Event("change", { bubbles: true }));
-      });
-      for (let i = 0; i < 20; i++) { await n.waitForTimeout(400); if (await n.$("#props .ac-foto img")) break; }
-      exige(await n.$("#props .ac-foto img"), "la foto del acabado no se subió");
-      await n.click("#props [data-ac-mas]"); await n.waitForTimeout(500);
-      await llenar(1, { nombre: "Gabinetes de nogal", categoria: "Gabinetes", detalle: "Nogal mate · jaladera negra" });
-      await n.waitForTimeout(1500);
-      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "acabados-editor.png") });
-      await n.keyboard.press("Escape"); await n.waitForTimeout(800);
-      const id = await idTour(n), d = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id), hs = Object.values(d.capas).flat().find((c) => c.accion === "acabado");
-      exige(hs && hs.texto === "Cocina" && hs.acabados.length === 2, "la ficha no se guardó: " + JSON.stringify(hs || {}).slice(0, 160));
-      exige(hs.acabados[0].foto && hs.acabados[0].precio === "$4,800 por m²" && hs.acabados[1].detalle === "Nogal mate · jaladera negra", "faltan datos del acabado: " + JSON.stringify(hs.acabados).slice(0, 200));
-      // El contacto del tour (Interfaz) sale al pie de la ficha
-      d.skin = Object.assign({}, d.skin, { cta: Object.assign({}, (d.skin || {}).cta, { mostrar: true, texto: "Cotizar", enlace: "https://wa.me/5214770000000" }) });
-      await n.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }), [id, d]);
-      const probar = async (t, nombre) => {
-        await t.waitForSelector('#previa .hs-boton[aria-label="Cocina"]', { timeout: 15000 }); await t.waitForTimeout(600);
-        await t.click('#previa .hs-boton[aria-label="Cocina"]'); await t.waitForTimeout(700);
-        exige(await t.isVisible("#previa .pop-caja.acab"), nombre + ": el punto no abrió la ficha de acabados");
-        const r = await t.evaluate(() => { const f = document.querySelector("#previa .pop-caja.acab"); return { titulo: f.querySelector("h3").textContent, items: f.querySelectorAll("li").length, foto: !!f.querySelector("li img") && f.querySelector("li img").naturalWidth > 0, enlace: (f.querySelector("li a") || {}).href || "", cta: (f.querySelector(".acab-cta") || {}).textContent || "" }; });
-        exige(r.titulo === "Cocina" && r.items === 2, nombre + ": la ficha no trae sus 2 acabados: " + JSON.stringify(r));
-        exige(r.foto, nombre + ": la foto del acabado no se ve");
-        exige(/^https:\/\/example\.com\/cuarzo/.test(r.enlace), nombre + ": el enlace del producto no sirve: " + r.enlace);
-        exige(r.cta === "Cotizar", nombre + ": no sale el botón de contacto");
-        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "acabados-" + nombre + ".png") });
-        await t.click("#previa .pop-caja.acab .pop-x"); await t.waitForTimeout(300);
-        exige(!(await t.isVisible("#previa .pop-caja.acab")), nombre + ": la ficha no se cierra");
-      };
-      await n.reload(); await n.waitForTimeout(3000); await cerrarAnuncio(n);
-      await n.click('button:has-text("Vista previa")'); await n.waitForTimeout(3500);
-      await probar(n, "previa");
-      await n.keyboard.press("Escape"); await n.waitForTimeout(400);
-      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
-      const t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(4500);
-      await probar(t, "publicado");
-      if (process.env.CAPTURAS) { const ctx = await navegador.newContext(Object.assign({}, devices["iPhone 13"])), m = await ctx.newPage(); await m.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort()); await m.goto(TOURS + "/" + id + "/"); await m.waitForTimeout(4500); await m.tap('#previa .hs-boton[aria-label="Cocina"]').catch(() => {}); await m.waitForTimeout(700); await m.screenshot({ path: path.join(process.env.CAPTURAS, "acabados-celular.png") }); await ctx.close(); }
-      exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
+      exige(!(await n.$("#add-acab")), "sigue el botón «Acabado» en Capas");
+      await n.click("#add-hs"); await n.waitForTimeout(800); await pasarGuias(n);
+      const ops = await n.$$eval('#props [data-k="accion"] option', (o) => o.map((x) => x.value + " " + x.textContent));
+      exige(ops.length > 2 && !ops.some((x) => /acabado/i.test(x)), "la acción «Ficha de acabados» sigue en los hotspots: " + ops.join(", "));
+      const lab = await n.evaluate(() => fetch("api/admin/laboratorio").then((r) => r.json()));
+      exige(!JSON.stringify(lab).includes("acabados"), "«Ficha de acabados» sigue en el Laboratorio");
       exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
-      await t.context().close(); await n.context().close();
+      await n.context().close();
     });
 
     // Pedido de Amar (11 nov 2026), funciones para interiores, 5 de 5: cotas en las paredes. Dos puntos en el piso dan el
@@ -1607,7 +1565,26 @@ async function capasPesadas(p) {
       exige(/Desde el celular/.test(await n.textContent("#toast").catch(() => "")), "la compu no avisó del cambio hecho en el celular");
       exige((await leer()).proyecto.descripcion === "Cambio hecho en la compu", "el cambio de la compu no se guardó");
       exige(!t.errs.length && !n.errs.length, "errores: " + t.errs.concat(n.errs).join(" | ").slice(0, 200));
-      await t.context().close(); await n.context().close();
+      await t.context().close();
+      // Pedido de Amar: solo para la licencia Desarrollos. Aunque esté prendida para «Pro y Desarrollos», Pro no la ve ni puede usarla
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, b) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(b) });
+      exige((await api(n, "api/admin/laboratorio/lotes-movil", J("PUT", { modo: "pago", probadores: [] }))).s === 200, "no se pudo prender para los de pago");
+      const correo = "pro-cel-" + Date.now() + "@prueba.mx", c0 = await pagina(correo); await nuevoTour(c0, "Pro celular"); const suyo = await idTour(c0); await c0.context().close();
+      const cta = ((await api(n, "api/admin/cuentas")).d.cuentas || []).find((x) => x.email === correo);
+      let m = null; // un solo celular (la cuenta tiene tope de dispositivos): se cambia el plan y se recarga
+      const cel = async (plan) => {
+        exige((await api(n, "api/admin/cuentas/" + cta.uid, J("PUT", { plan }))).s === 200, "no se pudo poner en " + plan);
+        if (!m) m = await pagina(correo, Object.assign({}, devices["iPhone 13"])); else await m.reload();
+        await m.waitForTimeout(3000);
+        return { tarjeta: await m.isVisible("#mv-lotes"), patch: (await api(m, "api/tours/" + suyo + "/estados", J("PATCH", { cambios: [{ mz: "A", num: "1", estado: "apartado" }] }))).s };
+      };
+      const pro = await cel("pro");
+      exige(!pro.tarjeta && pro.patch === 403, "una cuenta Pro puede cambiar la disponibilidad desde el celular: " + JSON.stringify(pro));
+      const des = await cel("desarrollos");
+      exige(des.tarjeta && des.patch !== 403, "una cuenta Desarrollos no puede usar la Disponibilidad en el celular: " + JSON.stringify(des));
+      await api(n, "api/admin/laboratorio/lotes-movil", J("PUT", { modo: "yo", probadores: [] }));
+      await m.context().close(); await n.context().close();
     });
 
     // Pedido de Amar (10 nov 2026): «en edificios, al hacer zoom se borran los textos; que exista la opción de planchar
