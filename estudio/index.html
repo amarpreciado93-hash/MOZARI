@@ -1312,6 +1312,14 @@
   .mz-asa.radio { fill: #fff; stroke: #FF2D55; stroke-width: 3; }
   .mz-asa.curva.nueva, .mz-asa.radio.nueva { opacity: 0.6; }
   .mz-linea.curva { stroke: #FF2D55 !important; stroke-dasharray: none !important; stroke-width: 2 !important; }
+  /* Manzana: «Lotes» o «Curvas» arriba de la esfera, para que los puntos verdes y las manijas rojas nunca se encimen */
+  .mz-modo { display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--mz-pastilla); background: var(--mz-vidrio); border: 1px solid var(--mz-linea); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .mz-modo button { display: inline-flex; align-items: center; gap: 7px; padding: 6px 14px; border: 0; border-radius: var(--mz-pastilla); background: transparent; color: var(--mz-texto); font: 500 12px var(--mz-texto-ui); cursor: pointer; }
+  .mz-modo button:hover { background: rgba(255, 255, 255, 0.08); }
+  .mz-modo button i { width: 9px; height: 9px; border-radius: 50%; background: var(--mz-lima); box-shadow: 0 0 0 1.5px var(--mz-negro); }
+  .mz-modo button[data-mz-modo="curvas"] i { background: #FF2D55; }
+  .mz-modo button[aria-pressed="true"] { background: #fff; color: var(--mz-tinta); }
+  .cp-vert.ancla, .mz-ancla { pointer-events: none; fill: #fff; stroke: var(--mz-negro); stroke-width: 1.5; }
   .mz-mas { pointer-events: all; cursor: copy; fill: rgba(11, 11, 11, 0.75); stroke: #fff; stroke-width: 1.2; }
   .mz-mas-t { fill: #fff; font: 700 11px var(--mz-texto-ui); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
   .asa-marco { fill: none; stroke: #fff; stroke-width: 1.2; stroke-dasharray: 5 4; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)); }
@@ -2047,7 +2055,7 @@
         <div class="encuadre" id="encuadre" hidden><i></i></div>
         <div class="drop-fantasma" id="drop-fantasma" hidden><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></i><b id="drop-nombre"></b></div>
         <div class="herr">
-          <div class="grupo-h"><button class="pastilla-v" id="ref-boton" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/></svg>Plano de referencia</button><button class="pastilla-v" id="foto360-boton" hidden title="Descarga esta esfera como foto 360 (JPG 2:1) con los lotes dibujados"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Foto 360 con lotes</button><button class="pastilla-v" id="pt-reproducir" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><span>Reproducir recorrido</span></button></div>
+          <div class="grupo-h"><button class="pastilla-v" id="ref-boton" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/></svg>Plano de referencia</button><button class="pastilla-v" id="foto360-boton" hidden title="Descarga esta esfera como foto 360 (JPG 2:1) con los lotes dibujados"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Foto 360 con lotes</button><button class="pastilla-v" id="pt-reproducir" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg><span>Reproducir recorrido</span></button><div class="mz-modo" id="mz-modo" role="group" aria-label="Qué editar de la manzana" hidden><button data-mz-modo="lotes" aria-pressed="true" title="Mover esquinas y divisiones de los lotes (puntos verdes)"><i></i>Lotes</button><button data-mz-modo="curvas" aria-pressed="false" title="Curvar la calle y redondear esquinas (manijas rojas)"><i></i>Curvas</button></div></div>
           <div class="grupo-h">
             <button class="ico" id="ed-menos" aria-label="Alejar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></button>
             <button class="ico" id="ed-mas" aria-label="Acercar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -2262,6 +2270,9 @@
   const TOUR = MODO === "nube" ? (location.hash.match(/t=([a-z0-9-]+)/) || [])[1] || null : null;
   // Plan de la cuenta (el servidor es quien pone los límites; aquí solo se avisa a tiempo)
   const PLAN = MODO === "nube" && NUBE.plan ? NUBE.plan : null;
+  let PORTA = null; // capas copiadas con Ctrl/⌘+C (Laboratorio «copiar-capas»)
+  const TECLA = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? "⌘" : "Ctrl";
+  const EDMZ = { modo: "lotes" }; // manzana elegida: «lotes» (puntos verdes) o «curvas» (manijas rojas)
   const sinLotif = () => !!(PLAN && !PLAN.lotificacion);
   let avisoLotes = false;
   const tieneLotes = () => Object.values(est.capas || {}).some((l) => (l || []).some((c) => c && c.lote));
@@ -3527,6 +3538,52 @@
       texto: "Cuando tu cliente llega a esa esfera la voz <b>suena sola</b> (en el celular, con su primer toque) y la <b>música baja</b> mientras habla. Arriba sale una pastilla para pausarla o volver a oírla." },
   ];
   const guiaVoz = (repetir) => (repetir ? mostrarGuia("nuevo-narracion", pasosVoz(), { repetir: true }) : guiaNueva("nuevo-narracion", pasosVoz, () => nav.sec + "/" + nav.sub === "media/audios"));
+  // Copiar y pegar capas: de una esfera a otra con Ctrl/⌘+C y Ctrl/⌘+V
+  function animCopiar(svg, t) {
+    const pegado = t > 2.6, u = sv((t - 2.7) / 0.6), tecla = (x, txt, on) => '<rect x="' + x + '" y="150" width="58" height="24" rx="7" fill="' + (on ? "#D5FF40" : "rgba(255,255,255,.12)") + '"/><text x="' + (x + 29) + '" y="166" font-size="12" font-weight="700" fill="' + (on ? "#0b0b0b" : "#fff") + '" text-anchor="middle">' + txt + "</text>";
+    const capa = (dx, op) => '<g opacity="' + op + '" transform="translate(' + dx + ' 0)"><path d="M40 112 L120 104 L132 132 L30 138Z" fill="rgba(213,255,64,.3)" stroke="#D5FF40" stroke-width="2"/><circle cx="82" cy="70" r="11" fill="#D5FF40"/><text x="82" y="74" font-size="11" font-weight="800" fill="#0b0b0b" text-anchor="middle">i</text></g>';
+    let h = '<rect width="360" height="200" fill="#1a2014"/>' +
+      '<rect x="14" y="20" width="156" height="120" rx="10" fill="#4f6a3a"/><rect x="190" y="20" width="156" height="120" rx="10" fill="#3d5a4f"/>' +
+      '<text x="92" y="36" font-size="10" fill="#fff" text-anchor="middle" opacity=".8">Esfera 1</text><text x="268" y="36" font-size="10" fill="#fff" text-anchor="middle" opacity=".8">Esfera 2</text>';
+    h += capa(0, 1) + (pegado ? capa(176, u) : "");
+    if (t > 0.9 && t < 2.6) h += '<path d="M28 100 L136 100 L136 142 L28 142Z" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="4 3"/>';
+    h += tecla(110, TECLA + "+C", t > 1.2 && t < 2.6) + tecla(192, TECLA + "+V", pegado);
+    const c = pegado ? [268 - 20 * (1 - u), 120] : [92 + 8 * sv((t - 0.3) / 0.6), 122];
+    h += CURSOR_G(c[0], c[1]) + pieG(pegado ? "Sale enfrente de ti: acomódala" : "Elige la capa y cópiala", pegado && u >= 1);
+    svg.innerHTML = h;
+  }
+  function pasosCopiar() {
+    return [{ el: '[data-acc="copiar"]', titulo: "Nuevo: copia y pega capas", anim: animCopiar, dur: 4.8,
+      texto: "Elige una o varias capas (una manzana va con sus lotes) y cópialas con <b>" + TECLA + "+C</b>. Ve a otra esfera y pégalas con <b>" + TECLA + "+V</b>: salen enfrente de ti, <b>sin ubicarse en el terreno</b>, para que las acomodes." }];
+  }
+  // Lotes o Curvas: cada quien sus puntos y ya no se enciman
+  function animMzModo(svg, t) {
+    const curvas = t > 2.5, u = curvas ? sv((t - 3.1) / 1.2) : 0, m = curvas ? 0 : sv((t - 0.9) / 0.9);
+    const yF = 150, fy = (x) => { const s = (310 - x) / 260; return yF + 2 * (1 - s) * s * 56 * u; };
+    let h = '<rect width="360" height="200" fill="#1a2014"/>';
+    h += '<rect x="110" y="10" width="140" height="26" rx="13" fill="rgba(11,11,11,.85)" stroke="rgba(213,255,64,.35)"/><rect x="' + (curvas ? 181 : 113) + '" y="13" width="66" height="20" rx="10" fill="#fff"/>' +
+      '<circle cx="127" cy="23" r="4" fill="#D5FF40" stroke="#0b0b0b"/><text x="153" y="27" font-size="11" font-weight="600" fill="' + (curvas ? "#fff" : "#0b0b0b") + '" text-anchor="middle">Lotes</text>' +
+      '<circle cx="195" cy="23" r="4" fill="#FF2D55" stroke="#0b0b0b"/><text x="222" y="27" font-size="11" font-weight="600" fill="' + (curvas ? "#0b0b0b" : "#fff") + '" text-anchor="middle">Curvas</text>';
+    h += '<path d="M60 70 L300 70 L310 ' + yF + ' Q180 ' + (yF + 56 * u).toFixed(1) + ' 50 ' + yF + ' Z" fill="rgba(213,255,64,.16)" stroke="#D5FF40" stroke-width="2"/>';
+    const cortes = [108, 156, 204 + 12 * m, 252];
+    cortes.forEach((x) => { h += '<line x1="' + x + '" y1="70" x2="' + x + '" y2="' + fy(x).toFixed(1) + '" stroke="#D5FF40" stroke-width="1.5" stroke-dasharray="4 4"/>'; });
+    const esq = [[60, 70], [300, 70], [310, yF], [50, yF]];
+    if (!curvas) {
+      esq.forEach(([x, y]) => { h += '<circle cx="' + x + '" cy="' + y + '" r="6" fill="#0b0b0b" stroke="#D5FF40" stroke-width="2"/>'; });
+      cortes.forEach((x) => { h += '<circle cx="' + x + '" cy="70" r="5.5" fill="#D5FF40" stroke="#0b0b0b" stroke-width="1.5"/><circle cx="' + x + '" cy="' + fy(x).toFixed(1) + '" r="5.5" fill="#D5FF40" stroke="#0b0b0b" stroke-width="1.5"/>'; });
+    } else {
+      esq.forEach(([x, y]) => { h += '<circle cx="' + x + '" cy="' + y + '" r="3.5" fill="#fff" stroke="#0b0b0b" stroke-width="1.5"/>'; });
+      const hy = (yF + 28 * u + 12 * u).toFixed(1);
+      h += '<line x1="140" y1="' + hy + '" x2="220" y2="' + hy + '" stroke="#FF2D55" stroke-width="2"/>' + [140, 220].map((x) => '<circle cx="' + x + '" cy="' + hy + '" r="5.5" fill="#FF2D55" stroke="#fff" stroke-width="2"/>').join("");
+    }
+    const c = curvas ? [220 + 30 * (1 - sv((t - 2.6) / 0.5)), t < 3.1 ? yF + 20 : yF + 40 * u + 6] : [204 + 12 * m + 2, yF + 4];
+    h += CURSOR_G(c[0], c[1]) + pieG(curvas ? "Curvas: solo las manijas rojas" : "Lotes: solo los puntos verdes", curvas && u >= 1);
+    svg.innerHTML = h;
+  }
+  function pasosMzModo() {
+    return [{ el: "#mz-modo", titulo: "Nuevo: Lotes o Curvas", anim: animMzModo, dur: 5.2,
+      texto: "Para que los puntos no se encimen: en <b>Lotes</b> mueves los puntos verdes (esquinas y divisiones de los lotes). En <b>Curvas</b> salen solo las <b>manijas rojas</b>, para curvar la calle y redondear las esquinas." }];
+  }
   // Cotas: 2 puntos en la base del muro dan el largo; piso y arriba, la altura
   function animCota(svg, t) {
     let h = '<rect width="360" height="200" fill="#1a2014"/><path d="M60 30 L300 30 L300 140 L60 140Z" fill="#cfc8bd"/><path d="M0 0 L60 30 L60 140 L0 186Z" fill="#b8b0a4"/><path d="M360 0 L300 30 L300 140 L360 186Z" fill="#b8b0a4"/><path d="M0 186 L60 140 L300 140 L360 186Z" fill="#8a7462"/>';
@@ -5448,12 +5505,16 @@
             const sel = document.createElementNS(SVGNS, "path");
             sel.setAttribute("class", "cp-sel"); sel.setAttribute("d", d);
             n.svg.appendChild(sel);
+            const ancla = !!(opciones.verticeAncla && opciones.verticeAncla(c)); // en «Curvas» la esquina solo se ve: se agarran las manijas rojas
+            motor._verts = { id: c.id, l: [] };
             c.puntos.forEach((pt, i) => {
               if (enCam[i].z <= CERCA) return;
               const s = aPantalla(cam, enCam[i]);
               const v = document.createElementNS(SVGNS, "circle");
+              if (ancla) { v.setAttribute("class", "cp-vert ancla"); v.setAttribute("cx", s.x); v.setAttribute("cy", s.y); v.setAttribute("r", 3.5); n.svg.appendChild(v); return; }
+              motor._verts.l.push({ i, x: s.x, y: s.y });
               v.setAttribute("class", "cp-vert"); v.setAttribute("cx", s.x); v.setAttribute("cy", s.y); v.setAttribute("r", 6);
-              v.addEventListener("pointerdown", (ev) => tomar(ev, c, "vertice", i));
+              v.addEventListener("pointerdown", (ev) => { const k = asaCercana(ev); if (k && k.extra !== undefined && motor.elegida === c.id) { empezarExtra(ev, c, k.extra); return; } tomar(ev, c, "vertice", i); });
               v.addEventListener("dblclick", (ev) => {
                 ev.stopPropagation();
                 if (c.manzana) { const F = c.manzana.nFrente; if (i < F ? F <= 2 : c.puntos.length - F <= 2) return; if (i < F) c.manzana.nFrente--; c.puntos.splice(i, 1); opciones.alCambiar(); return; }
@@ -5498,7 +5559,8 @@
             if (rec.length > 1) { const e = document.createElementNS(SVGNS, "path"); e.setAttribute("class", "mz-linea" + (ln.curva ? " curva" : "")); e.setAttribute("d", trazo(cam, rec, false)); extra.appendChild(e); }
           });
           A.asas.forEach((h, i) => {
-            const p = scr(h.pt); if (!p) return;
+            const p = scr(h.pt); h._s = p; if (!p) return;
+            if (h.tipo === "ancla") { const e = document.createElementNS(SVGNS, "circle"); e.setAttribute("class", "mz-ancla"); e.setAttribute("cx", p.x.toFixed(1)); e.setAttribute("cy", p.y.toFixed(1)); e.setAttribute("r", 3.5); extra.appendChild(e); return; }
             if (h.tipo === "mas") {
               const g = document.createElementNS(SVGNS, "g");
               g.innerHTML = '<circle class="mz-mas" data-x="' + i + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="7"></circle><text class="mz-mas-t" x="' + p.x.toFixed(1) + '" y="' + p.y.toFixed(1) + '">+</text>';
@@ -5506,6 +5568,7 @@
             }
             const e = document.createElementNS(SVGNS, "circle");
             e.setAttribute("class", "mz-asa " + (h.tipo === "nodo" || h.tipo === "pin" ? "nodo" : h.tipo === "centro" || h.tipo === "vnodo" ? "centro" : h.tipo === "esq" ? "corte esq" : h.tipo === "curva" || h.tipo === "radio" ? h.tipo + (h.nueva ? " nueva" : "") : "corte")); e.setAttribute("data-x", i);
+            e.setAttribute("data-tipo", h.tipo); if (h.lado) e.setAttribute("data-lado", h.lado);
             e.setAttribute("cx", p.x.toFixed(1)); e.setAttribute("cy", p.y.toFixed(1)); e.setAttribute("r", h.tipo === "nodo" ? 5 : h.tipo === "pin" ? 5.5 : h.tipo === "curva" ? 5 : h.tipo === "radio" ? 5.5 : 6.5);
             extra.appendChild(e);
           });
@@ -5776,14 +5839,39 @@
       if (arrastre && arrastre.modo === "extra" && !arrastre.movido) opciones.alCambiar();
       arrastre = null;
     }
-    if (editable) extra.addEventListener("pointerdown", (ev) => {
-      const t = ev.target.closest("[data-x]"); if (!t || !motor._asasExtra) return;
-      const h = motor._asasExtra[+t.getAttribute("data-x")], c = lista().find((x) => x.id === motor.elegida);
-      if (!h || !c) return;
+    // Puntos encimados: se agarra el más cercano al cursor, no el que quedó arriba (antes era una moneda al aire)
+    function asaCercana(ev) {
+      const r = stage.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+      let mejor = null, dm = 16;
+      // un «+» encimado con un punto cede: el punto gana (el «+» solo agrega nodos)
+      (motor._asasExtra || []).forEach((h, i) => { if (!h._s || h.tipo === "ancla") return; const d = Math.hypot(h._s.x - x, h._s.y - y) + (h.tipo === "mas" ? 7 : 0); if (d < dm) { dm = d; mejor = { extra: i }; } });
+      if (motor._verts && motor._verts.id === motor.elegida) motor._verts.l.forEach((v) => { const d = Math.hypot(v.x - x, v.y - y); if (d < dm) { dm = d; mejor = { vertice: v.i }; } });
+      return mejor;
+    }
+    function empezarExtra(ev, c, idx) {
+      const h = motor._asasExtra && motor._asasExtra[idx]; if (!h || !c) return;
       ev.stopPropagation(); ev.preventDefault();
       const h2 = opciones.tomarAsaExtra ? opciones.tomarAsaExtra(c, h) : h; // "+" crea un nodo y lo arrastra
       arrastre = { c, modo: "extra", h: h2, x: ev.clientX, y: ev.clientY, movido: false };
       programar();
+    }
+    // Antes que todo (fase de captura): si hay un punto de la capa elegida a 10 px, se agarra ese aunque encima
+    // quede un lote (la esquina de la manzana quedaba debajo del lote 1 y el clic se iba al lote)
+    if (editable) stage.addEventListener("pointerdown", (ev) => {
+      if (motor.modo !== "capas" || motor.dibujo || ev.button > 0 || MANO.activa || !motor.elegida) return;
+      const c = lista().find((x) => x.id === motor.elegida); if (!c || (!c.manzana && !c.mzPlano)) return;
+      const r = stage.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top, k = asaCercana(ev);
+      if (!k) return;
+      const s = k.vertice !== undefined ? motor._verts.l.find((v) => v.i === k.vertice) : motor._asasExtra[k.extra]._s;
+      if (!s || Math.hypot(s.x - x, s.y - y) > 10 || (k.extra !== undefined && motor._asasExtra[k.extra].tipo === "mas" && Math.hypot(s.x - x, s.y - y) > 7)) return;
+      if (k.vertice !== undefined) tomar(ev, c, "vertice", k.vertice); else empezarExtra(ev, c, k.extra);
+    }, true);
+    if (editable) extra.addEventListener("pointerdown", (ev) => {
+      const t = ev.target.closest("[data-x]"); if (!t || !motor._asasExtra) return;
+      const c = lista().find((x) => x.id === motor.elegida); if (!c) return;
+      const k = asaCercana(ev);
+      if (k && k.vertice !== undefined) { tomar(ev, c, "vertice", k.vertice); return; }
+      empezarExtra(ev, c, k && k.extra !== undefined ? k.extra : +t.getAttribute("data-x"));
     });
     if (editable) extra.addEventListener("dblclick", (ev) => {
       const t = ev.target.closest("[data-x]"); if (!t || !motor._asasExtra) return;
@@ -6734,7 +6822,8 @@ void main(){
         alCambiar: () => cambio(),
         alSoltar: (c) => { if (c.edificio) { repartirEdificio(c); cambio(); return; } if (c.manzana) { repartirManzana(c); cambio(); return; } if (c.mzPlano) { soltarPlano(c); cambio(); return; } if (c.vinculo) propagar(c, motorEd.actual.id); },
         alArrastrar: (c) => { if (c.edificio) repartirEdificio(c); if (c.manzana) repartirManzana(c); if (c.mzPlano) arrastrarPlano(c); },
-        asasExtra: (c) => (c.edificio ? asasEdificio(c) : c.manzana ? asasManzana(c) : c.mzPlano ? asasPlano(c) : c.camino && !c.cota && enLab("manzana-curvas") ? asasCamino(c) : null),
+        asasExtra: (c) => (c.edificio ? asasEdificio(c) : c.manzana ? modoMz(asasManzana(c)) : c.mzPlano ? modoMz(asasPlano(c)) : c.camino && !c.cota && enLab("manzana-curvas") ? asasCamino(c) : null),
+        verticeAncla: (c) => !!c.manzana && enLab("manzana-curvas") && EDMZ.modo === "curvas",
         tomarAsaExtra: (c, h) => (c.edificio || c.camino ? h : c.mzPlano ? tomarAsaPlano(c, h) : tomarAsaManzana(c, h)),
         moverAsaExtra: (c, h, k) => (c.edificio ? moverAsaEdificio(c, h, k) : c.camino ? moverAsaCamino(c, h, k) : c.mzPlano ? moverAsaPlano(c, h, k) : moverAsaManzana(c, h, k)),
         quitarAsaExtra: (c, h) => (c.edificio ? null : c.camino ? quitarAsaCamino(c, h) : c.mzPlano ? quitarAsaPlano(c, h) : quitarAsaManzana(c, h)),
@@ -7183,6 +7272,7 @@ void main(){
     ["ref-archivo", "ref-archivo2"].forEach((id) => { if ($(id).accept !== acepta) $(id).accept = acepta; });
     $("ref-subir-txt").textContent = enLab("kmz") ? "Subir PDF, imagen o KMZ" : "Subir PDF o imagen";
     $("foto360-boton").hidden = !(MODO === "nube" && enLab("foto360") && nav.sub === "capas");
+    pintarModoMz();
     if (CHIP_LAB && !$("foto360-boton").querySelector(".chip-lab")) $("foto360-boton").insertAdjacentHTML("beforeend", " " + CHIP_LAB);
     $("ref-panel").hidden = !lab || !REF.on;
     if (!lab || !REF.on) return;
@@ -8924,6 +9014,24 @@ void main(){
     viejos.slice(formas.length).forEach((x) => { const i = l.indexOf(x); if (i >= 0) l.splice(i, 1); });
   }
   const geoManzana = new WeakMap();
+  // «Lotes» o «Curvas» (pedido de Amar, nov 2026): los puntos verdes de los lotes y las manijas rojas de las curvas se
+  // encimaban y no sabías cuál ibas a agarrar. Ahora se edita una cosa a la vez: en «Lotes» no salen las manijas rojas;
+  // en «Curvas» solo salen ellas y las esquinas quedan como puntitos blancos de referencia.
+  function modoMz(A) {
+    if (!A || !enLab("manzana-curvas")) return A;
+    const roja = (h) => h.tipo === "curva" || h.tipo === "radio";
+    if (EDMZ.modo !== "curvas") return { lineas: A.lineas.filter((ln) => !ln.curva), asas: A.asas.filter((h) => !roja(h)) };
+    return { lineas: A.lineas, asas: A.asas.filter((h) => roja(h) || h.tipo === "esq" || h.tipo === "pin").map((h) => (roja(h) ? h : { tipo: "ancla", pt: h.pt })) };
+  }
+  function pintarModoMz() {
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida), el = $("mz-modo");
+    const ver = enLab("manzana-curvas") && nav.sub === "capas" && !!c && !!(c.manzana || c.mzPlano);
+    el.hidden = !ver;
+    el.querySelectorAll("[data-mz-modo]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mzModo === EDMZ.modo)));
+    if (ver) guiaNueva("nuevo-mz-modo", pasosMzModo, () => !$("mz-modo").hidden);
+  }
+  function ponerModoMz(m) { if (EDMZ.modo === m) return; EDMZ.modo = m; pintarModoMz(); if (motorEd) motorEd.render(); }
+  $("mz-modo").addEventListener("click", (ev) => { const b = ev.target.closest("[data-mz-modo]"); if (b) ponerModoMz(b.dataset.mzModo); });
   // Asas de la manzana elegida: puntas de cada corte (se deslizan por el frente o el fondo), nodos en
   // medio de los cortes y "+" para agregar nodos (en los cortes y en las orillas del frente y del fondo)
   function asasManzana(c) {
@@ -8937,17 +9045,23 @@ void main(){
       const P = g.camino(k);
       if (g.atras) { // fila de atrás propia: cada corte del frente llega solo a la línea del centro
         const r = g.corteEn(k, g.mdK(k)); lineas.push(r.P.slice(0, r.i).concat([r.pt]));
-        asas.push({ tipo: "corte", lado: "f", k, pt: P[0] });
+        // Su punta en la línea del centro también se mueve (pedido de Amar, nov 2026: ahí estaba el punto blanco
+        // de la línea del centro, encimado, y el lote no se podía acomodar). Ese punto ahora solo va en los lados.
+        asas.push({ tipo: "corte", lado: "f", k, pt: P[0] }, { tipo: "corte", lado: "m", k, pt: r.pt });
         continue;
       }
       lineas.push(P);
       asas.push({ tipo: "corte", lado: "f", k, pt: P[0] }, { tipo: "corte", lado: "b", k, pt: P[P.length - 1] });
       P.slice(1, -1).forEach((pt, j) => asas.push({ tipo: "nodo", k, j, pt }));
-      for (let j = 0; j < P.length - 1; j++) asas.push({ tipo: "mas", que: "corte", k, j, pt: mitad(P[j], P[j + 1]) });
+      for (let j = 0; j < P.length - 1; j++) {
+        // En la manzana doble el centro del corte ya tiene su punto de la línea del centro: el «+» va a un cuarto y a tres cuartos
+        if (m.doble && P.length === 2) { const c0 = mitad(P[0], P[1]); asas.push({ tipo: "mas", que: "corte", k, j, pt: mitad(P[0], c0) }, { tipo: "mas", que: "corte", k, j, pt: mitad(c0, P[1]) }); }
+        else asas.push({ tipo: "mas", que: "corte", k, j, pt: mitad(P[j], P[j + 1]) });
+      }
     }
     if (g.atras) g.atras.forEach((ln, j) => { lineas.push(ln); asas.push({ tipo: "atras", lado: "m", j, pt: ln[0] }, { tipo: "atras", lado: "b", j, pt: ln[1] }); });
     // Manzana doble: un punto en cada cruce de la línea del centro; se arrastra para acercarla al frente o al fondo
-    if (m.doble) for (let k = 0; k <= n; k++) asas.push({ tipo: "centro", k, pt: g.corteEn(k, g.mdK(k)).pt });
+    if (m.doble) for (let k = 0; k <= n; k++) if (!g.atras || k === 0 || k === n) asas.push({ tipo: "centro", k, pt: g.corteEn(k, g.mdK(k)).pt });
     // Los dos lados de la manzana (de la calle de enfrente a la de atrás) también aceptan puntos en medio: terrenos con relieve
     for (const k of [0, n]) {
       const P = g.camino(k);
@@ -9037,6 +9151,15 @@ void main(){
       const t = paramCadena(cadenaSuelo(g.camino(h.k)), k); if (t === null) return;
       if (!Array.isArray(m.centro) || m.centro.length !== m.n + 1) m.centro = Array.from({ length: m.n + 1 }, (_, i) => +g.mdK(i).toFixed(4));
       m.centro[h.k] = +Math.max(0.08, Math.min(0.92, t)).toFixed(4);
+      // Con fila de atrás propia la línea del centro se mueve desde sus dos puntas (en los lados) y queda derecha
+      if (g.atras && (h.k === 0 || h.k === m.n)) for (let i = 1; i < m.n; i++) m.centro[i] = +(m.centro[0] + ((m.centro[m.n] - m.centro[0]) * i) / m.n).toFixed(4);
+    }
+    else if (h.tipo === "corte" && h.lado === "m" && g) { // punta de un corte del frente en la línea del centro: el corte gira sobre su punta del frente
+      const F = g.camino(h.k)[0], f = F && aPlano(F[0], F[1]), q = aPlano(k.yaw, k.pitch), md = g.mdK(h.k); if (!f || !q || !md) return;
+      const B = dePlano([f[0] + (q[0] - f[0]) / md, f[1] + (q[1] - f[1]) / md]); if (!B) return;
+      const t = paramCadena(g.fo, { yaw: B[0], pitch: B[1] }); if (t === null) return;
+      const ant = h.k > 1 ? m.cortes[h.k - 2].b : 0, sig = h.k < m.n - 1 ? m.cortes[h.k].b : 1;
+      m.cortes[h.k - 1].b = Math.max(ant + 0.005, Math.min(sig - 0.005, t));
     }
     else if (h.tipo === "borde") c.puntos[h.i] = [+k.yaw.toFixed(5), +k.pitch.toFixed(5)].concat(c.puntos[h.i].slice(2));
     else if (h.tipo === "curva") {
@@ -9112,6 +9235,8 @@ void main(){
     }
     const nb = ev.target.closest("[data-mz-nb]");
     if (nb) { c.manzana.nB = Math.max(1, Math.min(60, (+c.manzana.nB || c.manzana.n) + +nb.dataset.mzNb)); cambio(); return; }
+    if (ev.target.closest("[data-mz-suave], [data-mz-esquinas]")) EDMZ.modo = "curvas"; // sus manijas rojas salen al momento
+    if (ev.target.closest("[data-mz-recto]")) EDMZ.modo = "lotes";
     if (ev.target.closest("[data-mz-suave]")) { // cada punto de en medio toma la dirección de sus vecinos (curva suave)
       const F = c.manzana.nFrente, L = c.puntos.length;
       c.puntos = c.puntos.map((p, i) => {
@@ -9200,6 +9325,8 @@ void main(){
   $("props").addEventListener("click", (ev) => {
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.mzPlano) return;
     if (ev.target.closest("[data-mzp-soltar]")) { soltarLotesPlano(c); return; }
+    if (ev.target.closest("[data-mzp-esquinas]")) EDMZ.modo = "curvas";
+    if (ev.target.closest("[data-mzp-recto]")) EDMZ.modo = "lotes";
     if (ev.target.closest("[data-mzp-esquinas]")) { c.mzPlano.ctrl.slice(0, 4).forEach((k) => { k.r = 0.15; }); cambio(); avisar("Esquinas redondeadas. Ajusta cada una con su aro rojo."); return; }
     if (ev.target.closest("[data-mzp-recto]")) { c.mzPlano.ctrl.forEach((k) => { delete k.h; delete k.r; }); cambio(); avisar("Sin curvas: la manzana vuelve a su forma del plano"); }
   });
@@ -9637,7 +9764,8 @@ void main(){
   function pintarProps() {
     const cont = $("props");
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
-    if (!c) { $("props-titulo").textContent = "Propiedades"; cont.innerHTML = '<p class="vacio">Selecciona una capa en la lista o sobre la esfera para editarla.</p>'; acordeonProps(cont, null); return; }
+    pintarModoMz();
+    if (!c) { $("props-titulo").textContent = "Propiedades"; cont.innerHTML = '<p class="vacio">Selecciona una capa en la lista o sobre la esfera para editarla.</p>' + (PORTA && enLab("copiar-capas") ? '<div class="acciones"><button class="mini" data-acc="pegar">Pegar ' + (PORTA.n1 === 1 ? "la capa copiada" : PORTA.n1 + " capas copiadas") + " (" + TECLA + '+V)</button></div>' : ""); acordeonProps(cont, null); return; }
     $("props-titulo").textContent = c.lote ? nombreLote(c) : c.edificio ? "Edificio " + (c.edificio.torre || "") : c.manzana || c.mzPlano ? terminos().manzana + " " + ((c.manzana || c.mzPlano).mz || "") : c.cota ? c.nombre || "Cota" : c.camino ? "Ruta" : c.tipo === "interes" ? "Punto de interés" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot", imagen: "Imagen en 3D" }[c.tipo];
     const multi = seleccionadas().length > 1 ? seleccionadas() : null;
     if (multi) $("props-titulo").textContent = multi.length + (c.lote ? " lotes" : " capas") + " seleccionados";
@@ -9679,7 +9807,7 @@ void main(){
         '<div class="orden"><button class="mini" data-mz-parejo>Repartir parejo</button></div>' +
         '<p class="nota">Los lotes se reparten del mismo ancho en el suelo, no en la imagen. Arrastra las esquinas de la manzana para ajustarla: los ' + lotes.length + ' lotes la siguen. Doble clic en una esquina la quita.</p>' +
         '<p class="nota"><b>Ajuste fino:</b> los puntos verdes recorren cada división por el frente o el fondo. Los <b>+</b> agregan un nodo para doblar una división, la orilla o los lados (terrenos con relieve); arrástralo. Doble clic en un nodo blanco lo quita.</p></div>' +
-        (enLab("manzana-curvas") ? '<div class="grupo"><b>Curvas y esquinas ' + CHIP_LAB + '</b><p class="nota"><b style="color:#FF2D55">● Rojas:</b> manijas de curva, como la pluma de Illustrator. Arrástralas para curvar la calle; los lotes la siguen.</p>' +
+        (enLab("manzana-curvas") ? '<div class="grupo"><b>Curvas y esquinas ' + CHIP_LAB + '</b><p class="nota">Arriba de la esfera eliges qué editar: <b>Lotes</b> (los puntos verdes) o <b>Curvas</b> (las manijas rojas). Así nunca se enciman.</p><p class="nota"><b style="color:#FF2D55">● Rojas:</b> manijas de curva, como la pluma de Illustrator. Arrástralas para curvar la calle; los lotes la siguen.</p>' +
           '<p class="nota"><b style="color:#FF2D55">○ Aros rojos:</b> en cada esquina. Jálalo hacia adentro para redondear la esquina, como la banqueta en una bocacalle.</p><p class="nota">Doble clic en una manija o un aro lo quita. Para una curva más fina, agrega puntos con los <b>+</b>.</p>' +
           '<div class="orden"><button class="mini" data-mz-suave>Suavizar toda la orilla</button><button class="mini" data-mz-esquinas>Redondear las 4 esquinas</button><button class="mini" data-mz-recto>Quitar curvas</button></div></div>' : "");
       h += '<div class="grupo"><b>Estado</b><p class="nota">Toca cada lote en la esfera para cambiar su estado, precio y superficie.</p><div class="orden"><button class="mini" data-acc="ir-lotes">Llenar precios y m² desde Excel</button></div></div>';
@@ -9701,7 +9829,7 @@ void main(){
         '<p class="nota"><b>Ajusta cada lote a la foto:</b> los puntos verdes (en la orilla) y los blancos (adentro, donde se juntan las divisiones) se mueven libres; los lotes que los comparten se mueven juntos.</p>' +
         '<p class="nota"><b>Si no cuadra en alguna parte</b> (relieve, perspectiva): arrastra un <b>+</b> de la orilla hasta su lugar en la foto y la manzana se dobla suavemente. Doble clic en un punto blanco lo quita' + (extra ? " (llevas " + extra + ")" : "") + '.</p>' +
         '<div class="orden"><button class="mini" data-mzp-soltar>Soltar los lotes</button></div><p class="nota">«Soltar los lotes» quita la manzana y deja cada lote por su cuenta.</p></div>' +
-        (enLab("manzana-curvas") ? '<div class="grupo"><b>Curvas y esquinas ' + CHIP_LAB + '</b><p class="nota"><b style="color:#FF2D55">● Rojas:</b> manijas de curva, como la pluma de Illustrator. Arrástralas para curvar la orilla; todos los lotes la siguen.</p>' +
+        (enLab("manzana-curvas") ? '<div class="grupo"><b>Curvas y esquinas ' + CHIP_LAB + '</b><p class="nota">Arriba de la esfera eliges qué editar: <b>Lotes</b> (los puntos verdes) o <b>Curvas</b> (las manijas rojas). Así nunca se enciman.</p><p class="nota"><b style="color:#FF2D55">● Rojas:</b> manijas de curva, como la pluma de Illustrator. Arrástralas para curvar la orilla; todos los lotes la siguen.</p>' +
           '<p class="nota"><b style="color:#FF2D55">○ Aros rojos:</b> en cada esquina. Jálalo hacia adentro para redondearla; el lote de la esquina se redondea con ella.</p><p class="nota">Doble clic en una manija o un aro lo quita.</p>' +
           '<div class="orden"><button class="mini" data-mzp-esquinas>Redondear las 4 esquinas</button><button class="mini" data-mzp-recto>Quitar curvas</button></div></div>' : "");
       h += '<div class="grupo"><b>Estado</b><p class="nota">Toca cada lote en la esfera para cambiar su estado, precio y superficie.</p><div class="orden"><button class="mini" data-acc="ir-lotes">Llenar precios y m² desde Excel</button></div></div>';
@@ -9807,10 +9935,11 @@ void main(){
       h += "</div>";
     }
     h += '<div class="grupo"><b>Orden</b><div class="orden"><button class="mini" data-orden="frente">Arriba</button><button class="mini" data-orden="subir">Subir</button><button class="mini" data-orden="bajar">Bajar</button><button class="mini" data-orden="fondo">Abajo</button></div></div>';
-    h += '<div class="acciones"><button class="mini" data-acc="duplicar">Duplicar</button><button class="mini peligro" data-acc="eliminar">Eliminar</button>' + (c.lote ? '<button class="mini" data-acc="quitar-lote">Quitar datos de lote</button>' : "") + "</div>";
+    h += '<div class="acciones"><button class="mini" data-acc="duplicar">Duplicar</button>' + (enLab("copiar-capas") ? '<button class="mini" data-acc="copiar" title="' + TECLA + '+C">Copiar</button>' + (PORTA ? '<button class="mini" data-acc="pegar" title="' + TECLA + '+V">Pegar</button>' : "") : "") + '<button class="mini peligro" data-acc="eliminar">Eliminar</button>' + (c.lote ? '<button class="mini" data-acc="quitar-lote">Quitar datos de lote</button>' : "") + "</div>";
     cont.innerHTML = h;
     acordeonProps(cont, c);
     guiasDeManzana(c);
+    if (enLab("copiar-capas") && est.escenas.length > 1) guiaNueva("nuevo-copiar", pasosCopiar, () => esVisible('[data-acc="copiar"]'));
   }
   function aplicar(el, repintar) {
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
@@ -10060,6 +10189,8 @@ void main(){
     if (a && a.dataset.acc === "ir-lotes") { ir("panoramas", "lotes"); return; }
     if (a && a.dataset.acc === "ir-terreno") { ir("panoramas", "terreno"); return; }
     if (a && a.dataset.acc === "duplicar") duplicar();
+    if (a && a.dataset.acc === "copiar") copiarCapas();
+    if (a && a.dataset.acc === "pegar") pegarCapas();
     if (a && a.dataset.acc === "eliminar") eliminar();
   });
   function ordenar(como) {
@@ -10113,6 +10244,51 @@ void main(){
     if (d.manzana) repartirManzana(d); else repartirPlano(d);
     motorEd.elegida = d.id; seleccion = new Set([d.id]); cambio();
     avisar(terminos().manzana + " " + mz + " lista, a un lado de la original. Jala sus esquinas a su lugar.", 6000);
+  }
+  // Copiar y pegar capas entre esferas (Laboratorio «copiar-capas», pedido de Amar 11 nov 2026). Ctrl/⌘+C copia lo
+  // elegido (una manzana va con sus lotes y sus datos); Ctrl/⌘+V lo pega en la esfera que estás viendo, enfrente de la
+  // cámara: se gira sobre el suelo alrededor del dron (no se deforma) pero NO se ubica en el terreno; tú lo acomodas.
+  function copiarCapas() {
+    const sel = seleccionadas().length > 1 ? seleccionadas() : [buscar(motorEd.elegida)].filter(Boolean);
+    const ids = new Set(sel.map((c) => c.id)), base = sel.filter((c) => !(c.deManzana && ids.has(c.deManzana)));
+    const van = base.filter((c) => !c.deManzana && !c.edificio);
+    if (!van.length) { avisar(base.some((c) => c.edificio) ? "Los edificios todavía no se copian; dibuja otro" : "Este lote es parte de una manzana: selecciona la manzana para copiarla con sus lotes"); return; }
+    const capas = [];
+    van.forEach((c) => { capas.push(JSON.parse(JSON.stringify(c))); if (c.manzana || c.mzPlano) lotesDeManzana(c).forEach((x) => capas.push(JSON.parse(JSON.stringify(x)))); });
+    PORTA = { est, esfera: motorEd.actual.id, capas, n1: van.length, veces: 0 };
+    avisar((van.length === 1 ? "Capa copiada" : van.length + " capas copiadas") + (van.length < base.length ? " (los edificios todavía no se copian)" : "") + ". Ve a otra esfera y pega con " + TECLA + "+V", 5000);
+    pintarProps();
+  }
+  function girarCapa(d, giro) {
+    const co = Math.cos(giro), si = Math.sin(giro), vuelta = (y) => { while (y > Math.PI) y -= 2 * Math.PI; while (y < -Math.PI) y += 2 * Math.PI; return +y.toFixed(5); };
+    const gira = (p) => {
+      const o = p.slice(); o[0] = vuelta(p[0] + giro);
+      if (p.length > 3 && (+p[2] || +p[3])) { const hx = +p[2] || 0, hy = +p[3] || 0; o[2] = +(hx * co + hy * si).toFixed(5); o[3] = +(-hx * si + hy * co).toFixed(5); }
+      return o;
+    };
+    if (Array.isArray(d.puntos)) d.puntos = d.puntos.map(gira);
+    if (typeof d.yaw === "number") d.yaw = vuelta(d.yaw + giro);
+    const m = d.manzana;
+    if (m) { delete m.hov; ["a", "b"].forEach((k) => { if (m.lados && Array.isArray(m.lados[k])) m.lados[k] = m.lados[k].map(gira); }); (m.cortes || []).forEach((x) => { if (x && Array.isArray(x.medios)) x.medios = x.medios.map(gira); }); }
+    if (d.mzPlano) d.mzPlano.ctrl.forEach((k) => { const g = gira([k.s[0], k.s[1]].concat(k.h ? [k.h[0], k.h[1]] : [])); k.s = [g[0], g[1]]; if (k.h) k.h = [g[2], g[3]]; });
+  }
+  function pegarCapas() {
+    if (!PORTA || !motorEd) return;
+    if (PORTA.est !== est) { avisar("Las capas se pegan dentro del mismo tour"); return; }
+    const aqui = motorEd.actual.id, misma = aqui === PORTA.esfera, tops = PORTA.capas.filter((c) => !c.deManzana);
+    // Hacia dónde mira la copia (promedio de sus puntos) y cuánto girarla para que salga enfrente de la cámara
+    let sx = 0, sy = 0;
+    tops.forEach((c) => (Array.isArray(c.puntos) && c.puntos.length ? c.puntos.map((p) => p[0]) : [c.yaw || 0]).forEach((y) => { sx += Math.cos(y); sy += Math.sin(y); }));
+    const desde = Math.atan2(sy, sx);
+    PORTA.veces++;
+    const giro = misma ? 0.05 * PORTA.veces : centro().yaw - desde + 0.05 * (PORTA.veces - 1);
+    const mapa = new Map(), nuevas = PORTA.capas.map((c0) => { const d = JSON.parse(JSON.stringify(c0)); mapa.set(d.id, (d.id = nuevoId())); delete d.vinculo; return d; });
+    nuevas.forEach((d) => { if (d.deManzana) d.deManzana = mapa.get(d.deManzana) || d.deManzana; girarCapa(d, giro); });
+    const l = cs(); nuevas.forEach((d) => l.push(d));
+    nuevas.forEach((d) => { if (d.manzana) repartirManzana(d); else if (d.mzPlano) repartirPlano(d); });
+    const arriba = nuevas.filter((d) => !d.deManzana);
+    seleccion = new Set(arriba.map((d) => d.id)); motorEd.elegida = arriba[0].id; cambio();
+    avisar((arriba.length === 1 ? "Capa pegada" : arriba.length + " capas pegadas") + " enfrente de ti. Acomódala" + (arriba.length === 1 ? "" : "s") + " en su lugar.", 5000);
   }
   function eliminar() {
     const varios = seleccionadas();
@@ -10198,6 +10374,11 @@ void main(){
     if (escribiendo) return;
     if ((ev.key === "Delete" || ev.key === "Backspace") && motorEd.elegida) { ev.preventDefault(); eliminar(); }
     if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "d" && motorEd.elegida) { ev.preventDefault(); duplicar(); }
+    if ((ev.metaKey || ev.ctrlKey) && !ev.shiftKey && !ev.altKey && enLab("copiar-capas")) {
+      const tecla = ev.key.toLowerCase();
+      if (tecla === "c" && motorEd.elegida && !String(window.getSelection ? window.getSelection() : "")) { ev.preventDefault(); copiarCapas(); }
+      if (tecla === "v" && PORTA) { ev.preventDefault(); pegarCapas(); }
+    }
     if (ev.key === "Escape") seleccionar(null);
   });
   // Barra espaciadora = manita (Laboratorio), como en Photoshop: mientras la mantienes, arrastrar gira la esfera

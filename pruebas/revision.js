@@ -26,7 +26,7 @@ const LIB = {
 const DUENO = "amarpreciado93@gmail.com";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -196,7 +196,7 @@ async function capasPesadas(p) {
     // 2. Dueño: tour completo
     const a = await pagina(DUENO);
     // El dueño ya vio los tutoriales nuevos (se prueban con una cuenta Pro); así no estorban a las demás pruebas
-    await a.evaluate((l) => Promise.all(l.map((k) => fetch("api/guias/" + k, { method: "POST" }))), GUIAS_NUEVAS); await a.reload(); await a.waitForTimeout(2500); await cerrarAnuncio(a);
+    await a.evaluate(async (l) => { for (const k of l) await fetch("api/guias/" + k, { method: "POST" }); }, GUIAS_NUEVAS); // uno por uno: en paralelo se pisaban y alguno no quedaba await a.reload(); await a.waitForTimeout(2500); await cerrarAnuncio(a);
     let tour = null;
     await paso("Crear un tour y subir una esfera", async () => { await nuevoTour(a, "Revision"); tour = await idTour(a); exige(tour, "sin id de tour"); }, a);
     await paso("Vista previa del tour", async () => {
@@ -292,6 +292,7 @@ async function capasPesadas(p) {
       await a.click("[data-mz-suave]"); await a.waitForTimeout(500); await a.click("[data-mz-esquinas]"); await a.waitForTimeout(600);
       exige(await a.$$eval(".mz-asa.curva", (l) => l.length) > 0 && await a.$$eval(".mz-asa.radio", (l) => l.length) > 0, "no salen las manijas rojas");
       exige((await lotes(a)).length === cuantos, "cambió la cantidad de lotes");
+      await a.click('[data-mz-modo="lotes"]'); await a.waitForTimeout(400); // de regreso a los puntos verdes
     }, a);
     await paso("Manzana doble y fila de atrás desfasada", async () => {
       const antes = (await lotes(a)).length; // manzana 1 (11 lotes) + manzana 2 (10)
@@ -307,7 +308,8 @@ async function capasPesadas(p) {
       await a.check('[data-fe="activa"]'); await a.waitForTimeout(500);
       exige(await a.$("#fe-lienzo .ficha-d"), "no se dibuja la ficha");
       const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAEklEQVR4nGPgyt/8Hx9mGBkKACvRisEGqcWiAAAAAElFTkSuQmCC", "base64");
-      await a.setInputFiles("#fe-logo2", { name: "inmobiliaria.png", mimeType: "image/png", buffer: png }); await a.waitForTimeout(1800);
+      await a.setInputFiles("#fe-logo2", { name: "inmobiliaria.png", mimeType: "image/png", buffer: png });
+      await a.waitForSelector("#fe-lienzo .fd-logo2", { timeout: 8000 }).catch(() => {}); // se sube y luego se dibuja: a veces tarda más de 2 s
       exige(await a.$("#fe-lienzo .fd-logo2"), "el segundo logo no sale al pie de la ficha");
       await a.click('[data-fe-plantilla="ubicacion"]'); await a.waitForTimeout(400); await a.click('[data-fe-plantilla="banda"]'); await a.waitForTimeout(400);
       exige(await a.$("#fe-lienzo .fd-pie .fd-logo2"), "la banda de color perdió el segundo logo");
@@ -1771,6 +1773,142 @@ async function capasPesadas(p) {
       await n.context().close();
     }, a);
 
+    // Pedido de Amar (11 nov 2026): «los nodos rojos de curvatura y los verdes de los lotes se enciman y no sabes cuál
+    // agarras». Arriba de la esfera: «Lotes» (solo puntos verdes) o «Curvas» (solo manijas rojas); y entre dos puntos
+    // encimados se agarra el más cercano al cursor. Con su mini tutorial la primera vez.
+    await paso("Manzana: «Lotes» o «Curvas» — los puntos verdes y las manijas rojas ya no se enciman", async () => {
+      const d = await pagina(DUENO), correo = "curvas-" + Date.now() + "@prueba.mx", n = await pagina(correo);
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const cta = ((await api(d, "api/admin/cuentas")).d.cuentas || []).find((x) => x.email === correo);
+      exige((await api(d, "api/admin/cuentas/" + cta.uid, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ plan: "pro" }) })).s === 200, "no se pudo poner en Pro");
+      await d.context().close();
+      await n.reload(); await n.waitForTimeout(2500); await cerrarAnuncio(n);
+      await nuevoTour(n, "Lotes o curvas"); await irCapas(n); await n.waitForTimeout(1200); await pasarGuias(n);
+      await n.click("#add-manzana"); await n.waitForTimeout(500); await pasarGuias(n);
+      for (const [x, y] of [[480, 640], [740, 625], [1000, 640]]) { await n.mouse.click(x, y); await n.waitForTimeout(120); }
+      await n.keyboard.press("Enter"); await n.waitForTimeout(400);
+      for (const [x, y] of [[460, 820], [1020, 820]]) { await n.mouse.click(x, y); await n.waitForTimeout(120); }
+      await n.keyboard.press("Enter"); await n.waitForTimeout(1600);
+      // El mini tutorial (puede venir después de otros de la primera vez)
+      let tuto = false;
+      for (let i = 0; i < 8 && !tuto; i++) {
+        const txt = await n.textContent(".guia-tarjeta").catch(() => "");
+        if (/Lotes o Curvas/i.test(txt)) { tuto = true; if (process.env.CAPTURAS) { await n.waitForTimeout(2600); await n.screenshot({ path: path.join(process.env.CAPTURAS, "mz-modo-tutorial.png") }); } }
+        if (txt) { await n.click('.guia-tarjeta [data-guia="seguir"]').catch(() => {}); await n.waitForTimeout(500); } else await n.waitForTimeout(700);
+      }
+      exige(tuto, "la primera vez no sale el mini tutorial de «Lotes o Curvas»");
+      await pasarGuias(n);
+      const leer = async () => Object.values((await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), await idTour(n))).capas).flat();
+      const mz = async () => (await leer()).find((c) => c.manzana);
+      const cuantos = async (sel) => (await n.$$(sel)).length;
+      exige(await n.isVisible("#mz-modo") && (await n.getAttribute('[data-mz-modo="lotes"]', "aria-pressed")) === "true", "no sale el selector «Lotes / Curvas» con Lotes de inicio");
+      // Lotes: solo puntos verdes
+      exige(!(await cuantos("circle.mz-asa.curva")) && !(await cuantos("circle.mz-asa.radio")), "en «Lotes» salen manijas rojas");
+      exige((await cuantos("circle.mz-asa.corte")) > 0 && (await cuantos(".cp-vert:not(.ancla)")) >= 4, "en «Lotes» no salen los puntos verdes");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "mz-modo-lotes.png") });
+      // Agarrar la esquina mueve la esquina, no un corte (el más cercano al cursor gana)
+      const centro = (sel) => n.$$eval(sel, (l) => l.map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+      const antes = await mz(), v = (await centro(".cp-vert:not(.ancla)"))[0];
+      await n.mouse.move(v[0] + 2, v[1] + 1); await n.mouse.down(); await n.mouse.move(v[0] - 25, v[1] + 10, { steps: 6 }); await n.mouse.up(); await n.waitForTimeout(2500);
+      const despues = await mz();
+      exige(JSON.stringify(despues.puntos[0]) !== JSON.stringify(antes.puntos[0]) && JSON.stringify(despues.puntos.slice(1)) === JSON.stringify(antes.puntos.slice(1)), "agarrar la esquina no movió solo la esquina");
+      // Curvas: solo manijas rojas; las esquinas quedan como puntitos de referencia
+      await n.click('[data-mz-modo="curvas"]'); await n.waitForTimeout(1500); await pasarGuias(n); // la primera vez sale el tutorial de las curvas
+      exige((await cuantos("circle.mz-asa.curva")) > 0 && !(await cuantos("circle.mz-asa.corte")) && !(await cuantos("circle.mz-mas")) && !(await cuantos("circle.mz-asa.nodo")), "en «Curvas» siguen los puntos verdes o faltan las manijas rojas");
+      exige((await cuantos(".cp-vert.ancla")) >= 4 && !(await cuantos(".cp-vert:not(.ancla)")), "en «Curvas» las esquinas se pueden agarrar y tapan las manijas");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "mz-modo-curvas.png") });
+      const lotesAntes = (await leer()).filter((c) => c.lote).length, man = await centro("circle.mz-asa.curva");
+      const m0 = man.sort((p, q) => q[1] - p[1])[0];
+      await n.mouse.move(m0[0], m0[1]); await n.mouse.down(); await n.mouse.move(m0[0] + 10, m0[1] + 45, { steps: 8 }); await n.mouse.up(); await n.waitForTimeout(2500);
+      exige((await mz()).puntos.some((p) => p.length > 3 && (p[2] || p[3])), "la manija roja no curvó la orilla");
+      exige((await leer()).filter((c) => c.lote).length === lotesAntes, "al curvar cambió la cantidad de lotes");
+      // De regreso a Lotes: ya no salen las rojas
+      await n.click('[data-mz-modo="lotes"]'); await n.waitForTimeout(500);
+      exige(!(await cuantos("circle.mz-asa.curva")) && (await cuantos("circle.mz-asa.corte")) > 0, "al volver a «Lotes» siguen las manijas rojas");
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await n.context().close();
+    });
+
+    // Pedido de Amar (11 nov 2026, con captura): en la manzana doble con fila de atrás propia, la punta de cada lote del
+    // frente en la línea del centro quedaba tapada por el punto blanco de esa línea y no se podía acomodar el lote.
+    await paso("Manzana doble con fila de atrás propia: la punta de cada lote del frente se mueve por la línea del centro", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Doble desfasada");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800); await cerrarGuia(n);
+      await dibujarManzana(n, [[500, 640], [740, 625], [980, 640]], [[480, 820], [1000, 820]]);
+      await n.click('#lista li:has-text("Manzana 1")', { timeout: 10000 }); await n.waitForTimeout(800);
+      await n.check('[data-k="_mzDoble"]').catch(async () => { await n.click("text=Doble: lotes por los dos lados"); }); await n.waitForTimeout(1000);
+      await n.fill('[data-mz="nB"]', "7"); await n.press('[data-mz="nB"]', "Enter"); await n.waitForTimeout(1200);
+      const centro = (sel) => n.$$eval(sel, (l) => l.map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }));
+      exige((await centro("circle.mz-asa.centro")).length === 2, "con fila de atrás propia, la línea del centro debe moverse solo desde sus dos puntas");
+      const ms = await centro('circle.mz-asa[data-tipo="corte"][data-lado="m"]');
+      exige(ms.length >= 3, "las puntas de los lotes del frente en la línea del centro no tienen punto (" + ms.length + ")");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "doble-desfasada.png") });
+      const leerMz = async () => Object.values((await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), await idTour(n))).capas).flat().find((c) => c.manzana);
+      const antes = await leerMz(), p = ms.sort((a, b) => a[0] - b[0])[Math.floor(ms.length / 2)];
+      await n.mouse.move(p[0], p[1]); await n.mouse.down(); await n.mouse.move(p[0] + 35, p[1] + 2, { steps: 8 }); await n.mouse.up(); await n.waitForTimeout(2500);
+      const despues = await leerMz(), cambio = despues.manzana.cortes.map((x, i) => Math.abs(x.b - antes.manzana.cortes[i].b));
+      exige(cambio.filter((v) => v > 0.004).length === 1 && JSON.stringify(despues.manzana.cortes.map((x) => x.f)) === JSON.stringify(antes.manzana.cortes.map((x) => x.f)), "mover la punta en la línea del centro no acomodó solo ese lote: " + cambio.map((v) => v.toFixed(3)).join(","));
+      exige(JSON.stringify(despues.manzana.cortesAtras) === JSON.stringify(antes.manzana.cortesAtras), "se movieron los lotes de la fila de atrás");
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await n.context().close();
+    });
+
+    // Pedido de Amar (11 nov 2026): copiar capas de una esfera a otra con Ctrl/⌘+C y Ctrl/⌘+V. Salen enfrente de la
+    // cámara, sin ubicarse en el terreno; la manzana va con sus lotes y sus datos. Laboratorio «copiar-capas».
+    await paso("Copiar y pegar capas entre esferas: Ctrl+C / Ctrl+V, la manzana con sus lotes y sus datos", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Copiar capas"); await otraEsfera(n, "segunda", "#9bd", "#7a6");
+      const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      await irCapas(n); await cerrarGuia(n);
+      await dibujarManzana(n, [[480, 640], [740, 625], [1000, 640]], [[460, 820], [1020, 820]]);
+      await n.keyboard.press("Escape"); await n.click("#add-hs"); await n.waitForTimeout(800); await pasarGuias(n); await n.keyboard.press("Escape");
+      await n.waitForTimeout(2500);
+      // Un lote vendido, para ver que sus datos viajan con la manzana
+      let d = await leer(); const e1 = d.escenas.map((e) => e.id).find((k) => (d.capas[k] || []).some((c) => c.manzana)), e2 = d.escenas.map((e) => e.id).find((k) => k !== e1);
+      exige(e1 && e2, "no se dibujó la manzana");
+      const l0 = d.capas[e1].find((c) => c.deManzana && c.iManzana === 0); l0.lote.estado = "vendido";
+      exige((await n.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [id, d])) === 200, "no se pudo marcar el lote");
+      await n.reload(); await n.waitForTimeout(2500); await cerrarAnuncio(n); await irCapas(n); await cerrarGuia(n);
+      if ((await n.$eval("#sel-pano", (s) => s.value)) !== e1) { await n.selectOption("#sel-pano", e1); await n.waitForTimeout(1500); }
+      const antes = (await leer()).capas[e1].length;
+      await n.click('#lista li:has-text("Manzana 1")'); await n.waitForTimeout(600);
+      await n.keyboard.press("Control+c"); await n.waitForTimeout(400);
+      exige(/copiada/i.test(await n.textContent("#toast").catch(() => "")), "Ctrl+C no avisó que se copió");
+      await n.selectOption("#sel-pano", e2); await n.waitForTimeout(1800);
+      await n.keyboard.press("Control+v"); await n.waitForTimeout(2800);
+      exige(/pegada/i.test(await n.textContent("#toast").catch(() => "")), "Ctrl+V no avisó que se pegó");
+      d = await leer();
+      const mzO = d.capas[e1].find((c) => c.manzana), mz2 = (d.capas[e2] || []).find((c) => c.manzana), lotes2 = (d.capas[e2] || []).filter((c) => c.deManzana);
+      exige(mz2 && mz2.id !== mzO.id && mz2.manzana.mz === mzO.manzana.mz, "la manzana no se pegó en la otra esfera");
+      exige(lotes2.length === d.capas[e1].filter((c) => c.deManzana).length && lotes2.every((c) => c.deManzana === mz2.id), "la manzana se pegó sin sus lotes");
+      exige(lotes2.some((c) => c.lote && c.lote.estado === "vendido"), "los lotes pegados perdieron sus datos (el vendido)");
+      exige(d.capas[e1].length === antes, "la esfera de donde se copió cambió");
+      // El hotspot, con el botón «Copiar» de Propiedades
+      await n.selectOption("#sel-pano", e1); await n.waitForTimeout(1500);
+      await n.click('#lista li:has-text("Hotspot")'); await n.waitForTimeout(500);
+      await n.click('#props [data-acc="copiar"]'); await n.waitForTimeout(300);
+      await n.selectOption("#sel-pano", e2); await n.waitForTimeout(1500);
+      await n.keyboard.press("Control+v"); await n.waitForTimeout(2800);
+      d = await leer();
+      exige((d.capas[e2] || []).filter((c) => c.tipo === "hotspot").length === 1, "el hotspot no se pegó");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "copiar-pegado.png") });
+      // Mini tutorial la primera vez (con una cuenta de probador)
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const correo = "copia-" + Date.now() + "@prueba.mx";
+      exige((await api(n, "api/admin/laboratorio/copiar-capas", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ modo: "probadores", probadores: [correo] }) })).s === 200, "no se pudo dar a un probador");
+      const q = await pagina(correo); await nuevoTour(q, "Tutorial copiar"); await otraEsfera(q, "otra", "#9bd", "#7a6"); await irCapas(q); await pasarGuias(q);
+      await q.click("#add-hs"); await q.waitForTimeout(800);
+      let tuto = false;
+      for (let i = 0; i < 8 && !tuto; i++) {
+        const txt = await q.textContent(".guia-tarjeta").catch(() => "");
+        if (/copia y pega/i.test(txt)) { tuto = true; if (process.env.CAPTURAS) { await q.waitForTimeout(3000); await q.screenshot({ path: path.join(process.env.CAPTURAS, "copiar-tutorial.png") }); } }
+        if (txt) { await q.click('.guia-tarjeta [data-guia="seguir"]').catch(() => {}); await q.waitForTimeout(500); } else await q.waitForTimeout(700);
+      }
+      exige(tuto, "la primera vez no sale el mini tutorial de copiar y pegar");
+      await api(n, "api/admin/laboratorio/copiar-capas", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ modo: "yo", probadores: [] }) });
+      exige(!n.errs.length && !q.errs.length, "errores: " + n.errs.concat(q.errs).join(" | ").slice(0, 160));
+      await q.context().close(); await n.context().close();
+    });
+
     // Pedido de Amar (nov 2026): la ruta se curva con manijas, como la pluma de Illustrator
     await paso("Ruta curva: manijas rojas en cada punto, como en Illustrator", async () => {
       const n = await pagina(DUENO); await nuevoTour(n, "Ruta curva");
@@ -1898,7 +2036,10 @@ async function capasPesadas(p) {
       await n.mouse.move(mas[0][0], mas[0][1]); await n.mouse.down(); await n.mouse.move(mas[0][0], mas[0][1] - 15, { steps: 6 }); await n.mouse.up(); await n.waitForTimeout(2500);
       capas = Object.values((await leer()).capas).flat(); mzc = capas.find((c) => c.mzPlano);
       exige(mzc.mzPlano.ctrl.length === 5, "el «+» no agregó un punto para doblar la manzana");
-      // Igual que la manzana normal: redondear esquinas y curvar con las manijas rojas
+      // Igual que la manzana normal: redondear esquinas y curvar con las manijas rojas (en «Curvas»; en «Lotes» no salen)
+      exige(!(await n.$$("circle.mz-asa.curva")).length, "en «Lotes» salen las manijas rojas encima de los puntos verdes");
+      await n.click('[data-mz-modo="curvas"]'); await n.waitForTimeout(500);
+      exige(!(await n.$$("circle.mz-asa.corte")).length && !(await n.$$("circle.mz-mas")).length, "en «Curvas» siguen los puntos verdes y los «+»");
       exige((await n.$$("circle.mz-asa.curva")).length >= 8 && (await n.$$("circle.mz-asa.radio")).length === 4, "la manzana del plano no tiene manijas de curva y aros de esquina");
       let previo = JSON.stringify((await lotes7()).map((c) => c.puntos));
       await n.click("[data-mzp-esquinas]"); await n.waitForTimeout(2500);

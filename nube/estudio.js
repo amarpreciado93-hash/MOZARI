@@ -167,6 +167,7 @@ export const LABORATORIO = {
   "planos": { nombre: "Plano con radar", texto: "Media → Planos: sube el plano de cada piso (casa, depa, oficina) y pon en él tus esferas con un toque; jalas su cono para que apunte a lo mismo que la esfera. En el tour sale chico en una esquina: el punto de donde estás se ilumina, el cono gira hacia donde miras y tocar otro punto te lleva a esa esfera." },
   "narracion": { nombre: "Narración por espacio", texto: "Media → Audios: sube una voz (MP3, M4A o WAV) para cada esfera, con su subtítulo. En el tour suena sola al llegar a ese espacio, la música baja mientras habla y una pastilla arriba la pausa o la repite. La presentación espera a que termine." },
   "lotes-movil": { nombre: "Disponibilidad desde el celular", texto: "Abre mozari.app en tu celular: elige el tour, toca un lote y márcalo Apartado o Vendido. El tour publicado cambia al momento, sin volver a publicar, y el estudio abierto en la compu no lo regresa. Solo licencias de pago." },
+  "copiar-capas": { nombre: "Copiar y pegar capas", texto: "En Capas: elige una o varias capas (una manzana va con sus lotes y sus datos) y cópialas con Ctrl+C (⌘+C en Mac). Ve a otra esfera y pégalas con Ctrl+V: salen enfrente de ti, sin ubicarse en el terreno, para que las acomodes. También con los botones Copiar y Pegar de Propiedades." },
   "cotas": { nombre: "Cotas en paredes", texto: "En Capas → «Cota»: tocas el inicio y el final de un muro (en el piso) y Mozari calcula su largo con la altura de la cámara; un punto en el piso y otro arriba da la altura. Si tienes la medida del plano, la escribes y manda esa. Salen en el tour como en un plano." },
 };
 // "pago": las cuentas Pro y Desarrollos (con su plan vigente); "todos" incluye también Gratis
@@ -763,7 +764,7 @@ async function api(request, env, partes, yo) {
   // Tutoriales guiados: cada cuenta ve el de cada herramienta una sola vez (se anota en su perfil)
   if (partes[1] === "guias" && partes.length === 3 && m === "POST" && /^[a-z0-9-]{2,40}$/.test(partes[2])) {
     const clave = "cuentas/" + yo.uid + "/perfil.json", o = await env.R2.get(clave); if (!o) return error(404, "Sin cuenta");
-    const p = await o.json(); p.guiasVistas = [...new Set((p.guiasVistas || []).concat([partes[2]]))].slice(0, 100);
+    const p = await o.json(); p.guiasVistas = [...new Set((p.guiasVistas || []).concat([partes[2]]))].slice(-300); // los más nuevos se quedan (antes, pasando de 100 ya no se guardaba ninguno y el tutorial salía siempre)
     await env.R2.put(clave, JSON.stringify(p), { httpMetadata: { contentType: "application/json" } });
     return json({ ok: true });
   }
