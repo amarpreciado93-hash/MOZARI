@@ -29,9 +29,9 @@
 
 import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR, conCarga, cargaEnViejos } from "./comun.js";
 import { rutasSesion, cuentaDe, perfil, leerCupo, contarCuentas, firmarLink, verificarLink } from "./sesion.js";
-import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoDeNovedad, correoCampana, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja, CAMPANA, iniciarCampana } from "./correos.js";
+import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoCompra, correoDeNovedad, correoCampana, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja, CAMPANA, iniciarCampana } from "./correos.js";
 import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
-import { apiPagos, webhookMercadoPago, CODIGO, cuponClave } from "./pagos.js";
+import { apiPagos, webhookMercadoPago, webhookStripe, CODIGO, cuponClave } from "./pagos.js";
 import { EmailMessage } from "cloudflare:email";
 import { vigilarRespaldos, apiRespaldos } from "./respaldos.js";
 
@@ -166,8 +166,8 @@ export const LABORATORIO = {
   "lotes-pdf": { nombre: "Lotes desde el PDF", texto: "En el plano de referencia: arrastras un recuadro sobre una manzana del PDF, Mozari arma sus lotes y los colocas en la esfera tocando 4 esquinas. Necesita también «Plano de referencia»." },
   "planos": { nombre: "Plano con radar", texto: "Media → Planos: sube el plano de cada piso (casa, depa, oficina) y pon en él tus esferas con un toque; jalas su cono para que apunte a lo mismo que la esfera. En el tour sale chico en una esquina: el punto de donde estás se ilumina, el cono gira hacia donde miras y tocar otro punto te lleva a esa esfera." },
   "narracion": { nombre: "Narración por espacio", texto: "Media → Audios: sube una voz (MP3, M4A o WAV) para cada esfera, con su subtítulo. En el tour suena sola al llegar a ese espacio, la música baja mientras habla y una pastilla arriba la pausa o la repite. La presentación espera a que termine." },
+  "lotes-movil": { nombre: "Disponibilidad desde el celular", texto: "Abre mozari.app en tu celular: elige el tour, toca un lote y márcalo Apartado o Vendido. El tour publicado cambia al momento, sin volver a publicar, y el estudio abierto en la compu no lo regresa. Solo licencias de pago." },
   "acabados": { nombre: "Ficha de acabados", texto: "En Capas → «Acabado»: un punto sobre el piso, la cubierta o un mueble que abre la ficha de los acabados y muebles de ese lugar, cada uno con su foto, tipo, marca, medida, precio y enlace. Al pie sale el botón de contacto del tour. También como acción de cualquier hotspot." },
-  "antes-despues": { nombre: "Antes y después", texto: "Panoramas → Antes y después: juntas dos esferas del mismo lugar (vacío y amueblado, obra negra y terminado, día y noche). En el tour sale un botón abajo y tu cliente las compara jalando una línea; la otra versión ya no sale en el menú." },
   "cotas": { nombre: "Cotas en paredes", texto: "En Capas → «Cota»: tocas el inicio y el final de un muro (en el piso) y Mozari calcula su largo con la altura de la cámara; un punto en el piso y otro arriba da la altura. Si tienes la medida del plano, la escribes y manda esa. Salen en el tour como en un plano." },
 };
 // "pago": las cuentas Pro y Desarrollos (con su plan vigente); "todos" incluye también Gratis
@@ -186,6 +186,27 @@ async function leerLab(env) {
     return [k, { modo, probadores: Array.isArray(f.probadores) ? f.probadores : [] }];
   }));
 }
+// Disponibilidad desde el celular (Laboratorio «lotes-movil», pedido de Amar 11 nov 2026): cambiar el estado de un
+// lote sin la compu. Se cambia en el borrador Y en el tour publicado (el cliente lo ve al momento, sin volver a
+// publicar). Se anota en tours/<id>/estados-movil.json { "mz|num": { estado, antes, ts } } para que el estudio abierto
+// en la compu (que guarda el proyecto completo) no lo regrese: si su lote todavía trae el estado de «antes», se
+// corrige; si trae otro, es que en la compu lo cambiaron a propósito y manda ese.
+const ESTADOS_BASE = ["disponible", "apartado", "vendido"];
+const llaveLote = (mz, num) => String(mz == null ? "" : mz).trim().toLowerCase() + "|" + String(num == null ? "" : num).trim().toLowerCase();
+function cambiarEstados(p, cambios) {
+  const validos = new Set(ESTADOS_BASE.concat((Array.isArray(p.lotesEstados) ? p.lotesEstados : []).map((e) => e && e.id).filter(Boolean)));
+  const porLlave = new Map(cambios.filter((x) => validos.has(x.estado)).map((x) => [llaveLote(x.mz, x.num), x.estado]));
+  const antes = {}; let n = 0;
+  Object.values(p.capas || {}).forEach((l) => (Array.isArray(l) ? l : []).forEach((c) => {
+    if (!c || !c.lote) return;
+    const k = llaveLote(c.lote.manzana, c.lote.numero), e = porLlave.get(k);
+    if (!e || c.lote.estado === e) return;
+    if (!(k in antes)) antes[k] = c.lote.estado || "disponible";
+    c.lote.estado = e; n++;
+  }));
+  return { n, antes };
+}
+async function leerJSON(env, clave) { const o = await env.R2.get(clave); return o ? o.json().catch(() => null) : null; }
 async function labDe(env, yo) {
   const cfg = await leerLab(env), correo = String(yo.email || "").toLowerCase(), pago = !planDe(yo).marca;
   return Object.keys(cfg).filter((k) => yo.admin || cfg[k].modo === "todos" || (cfg[k].modo === "pago" && pago) || (cfg[k].modo === "probadores" && cfg[k].probadores.includes(correo)));
@@ -476,7 +497,7 @@ async function apiGaleria(request, env, partes) {
 // (IMPORTDATA, cada hora). Sin correos: nombre del cliente y un ID corto. La clave vive en config/ventas-clave
 // y solo la ve el dueño (Panel → api/admin/ventas-link). Sin la clave correcta, no existe.
 const CLAVE_VENTAS = "config/ventas-clave";
-const PLAN_TXT = { pro: "Pro", desarrollos: "Desarrollos", espacio: "Espacio" }, METODO_TXT = { mercadopago: "Mercado Pago", paypal: "PayPal", cupon: "Cupón" };
+const PLAN_TXT = { pro: "Pro", desarrollos: "Desarrollos", espacio: "Espacio" }, METODO_TXT = { mercadopago: "Mercado Pago", paypal: "PayPal", stripe: "Stripe", cupon: "Cupón" };
 async function ventasCsv(request, env) {
   const url = new URL(request.url), o = await env.R2.get(CLAVE_VENTAS), clave = o ? await o.text() : "";
   if (!clave || url.searchParams.get("k") !== clave) return new Response("No existe", { status: 404 });
@@ -523,7 +544,8 @@ async function admin(request, env, partes, yo) {
         if (!o) return error(404, "No existe esa actualización");
         baja = enlaceBaja(base, await firmaBaja(env)(yo.uid));
         correo = correoDeNovedad(await o.json(), yo, base, baja);
-      } else correo = correoBienvenida({ nombre: yo.nombre, base });
+      } else if (["pro", "desarrollos", "espacio"].includes(c.compra)) correo = correoCompra({ nombre: yo.nombre, base, plan: c.compra });
+      else correo = correoBienvenida({ nombre: yo.nombre, base });
       const cuenta = await contador(env);
       const r = await enviar(env, cuenta, { para: yo.email, asunto: "[Prueba] " + correo.asunto, html: correo.html, texto: correo.texto, baja });
       await cuenta.guardar();
@@ -789,16 +811,34 @@ async function api(request, env, partes, yo) {
     if (m === "PUT") {
       const largo = +request.headers.get("content-length") || 0;
       if (largo > MAX_PROYECTO) return error(413, "El proyecto pesa demasiado");
-      const txt = await request.text();
+      let txt = await request.text();
       if (txt.length > MAX_PROYECTO) return error(413, "El proyecto pesa demasiado");
       let p;
       try { p = JSON.parse(txt); } catch (e) { return error(400, "JSON inválido"); }
       if (!p || !p.proyecto || !Array.isArray(p.escenas)) return error(400, "Proyecto incompleto");
+      // Lo que se marcó desde el celular gana sobre un estudio abierto que no se ha enterado
+      const movil = await leerJSON(env, base + "estados-movil.json"), corregidos = [], cargado = String(request.headers.get("x-cargado") || "").slice(0, 30);
+      if (movil && Object.keys(movil).length) {
+        let cambio = false;
+        Object.values(p.capas || {}).forEach((l) => (Array.isArray(l) ? l : []).forEach((c) => {
+          if (!c || !c.lote) return;
+          const k = llaveLote(c.lote.manzana, c.lote.numero), r = movil[k];
+          if (!r) return;
+          const actual = c.lote.estado || "disponible";
+          // El estudio dice cuándo abrió el tour: si fue después del cambio en el celular, ya lo vio y lo que trae manda
+          if (cargado && cargado > r.ts) { r.listo = true; return; }
+          if (actual !== r.estado && (cargado || actual === r.antes)) { c.lote.estado = r.estado; cambio = true; if (!corregidos.some((x) => x.k === k)) corregidos.push({ k, mz: c.lote.manzana || "", num: c.lote.numero || "", estado: r.estado }); }
+          else if (actual !== r.antes) r.listo = true; // ya coincide o lo cambiaron a propósito en la compu
+        }));
+        Object.keys(movil).forEach((k) => { if (movil[k].listo) delete movil[k]; });
+        await env.R2.put(base + "estados-movil.json", JSON.stringify(movil), { httpMetadata: { contentType: "application/json" } });
+        if (cambio) txt = JSON.stringify(p);
+      }
       if (!pasa(plan.esferas, p.escenas.length)) return limite(plan.marca ? "Tu cuenta de prueba incluye " + plan.esferas + " esferas por tour. Para practicar más, borra una que ya no uses, o pasa a Pro para subir sin límite." : "Tu plan " + plan.nombre + " incluye " + plan.esferas + " esferas por tour. Mejora tu plan para subir más.", "esferas");
       await env.R2.put(base + "proyecto.json", txt, { httpMetadata: { contentType: tipoDe("x.json") } });
       const portada = typeof p.proyecto.thumbnail === "string" && rutaValida(p.proyecto.thumbnail) ? p.proyecto.thumbnail : "";
       await guardarIndice(env, uid, id, { nombre: p.proyecto.nombre || "Tour", escenas: p.escenas.length, inicial: p.proyecto.escenaInicial || "", portada });
-      return json({ ok: true });
+      return json(corregidos.length ? { ok: true, estados: corregidos } : { ok: true });
     }
     if (m === "DELETE") {
       const n = await borrarPrefijo(env, base) + await borrarPrefijo(env, "publicado/" + id + "/");
@@ -809,6 +849,26 @@ async function api(request, env, partes, yo) {
     return error(405, "Método no permitido");
   }
 
+  if (partes[3] === "estados" && partes.length === 4 && m === "PATCH") {
+    if (!yo.admin && plan.marca) return error(403, "Cambiar la disponibilidad desde el celular es de las licencias de pago");
+    if (!(await labDe(env, yo)).includes("lotes-movil")) return error(403, "Función del Laboratorio");
+    const c = await request.json().catch(() => ({}));
+    const cambios = (Array.isArray(c.cambios) ? c.cambios : []).slice(0, 50).map((x) => ({ mz: String((x && x.mz) || "").slice(0, 40), num: String((x && x.num) || "").slice(0, 40), estado: String((x && x.estado) || "").slice(0, 40) })).filter((x) => x.num && x.estado);
+    if (!cambios.length) return error(400, "Sin cambios");
+    const borrador = await leerJSON(env, base + "proyecto.json");
+    if (!borrador) return error(404, "No existe ese tour");
+    const r1 = cambiarEstados(borrador, cambios);
+    if (r1.n) await env.R2.put(base + "proyecto.json", JSON.stringify(borrador), { httpMetadata: { contentType: tipoDe("x.json") } });
+    const pub = await leerJSON(env, "publicado/" + id + "/proyecto.json");
+    let r2 = { n: 0 };
+    if (pub) { r2 = cambiarEstados(pub, cambios); if (r2.n) await env.R2.put("publicado/" + id + "/proyecto.json", JSON.stringify(pub), { httpMetadata: { contentType: tipoDe("x.json"), cacheControl: "no-cache" } }); }
+    if (r1.n) {
+      const movil = (await leerJSON(env, base + "estados-movil.json")) || {}, ts = new Date().toISOString();
+      cambios.forEach((x) => { const k = llaveLote(x.mz, x.num); if (k in r1.antes) movil[k] = { estado: x.estado, antes: movil[k] && movil[k].antes ? movil[k].antes : r1.antes[k], ts }; });
+      await env.R2.put(base + "estados-movil.json", JSON.stringify(movil), { httpMetadata: { contentType: "application/json" } });
+    }
+    return json({ ok: true, borrador: r1.n, publicado: r2.n, enTour: !!pub });
+  }
   // Descargar el tour publicado para subirlo a otro hosting: la página, el proyecto y la lista de archivos.
   // El estudio baja cada archivo y arma el .zip en la compu del usuario (el servidor no hace el trabajo pesado).
   if (partes[3] === "descargar" && partes.length === 4 && m === "GET") {
@@ -951,6 +1011,7 @@ export default {
     if (s) return s;
 
     if (url.pathname === "/webhooks/mercadopago") return webhookMercadoPago(request, env);
+    if (url.pathname === "/webhooks/stripe") return webhookStripe(request, env);
 
     // Links cortos para compartir: mozari.app/planes, /pro y /desarrollos
     const corto = { "/planes": "/#planes", "/precios": "/#planes", "/pro": "/entrar?comprar=pro", "/desarrollos": "/entrar?comprar=desarrollos" }[url.pathname.replace(/\/$/, "")];

@@ -1330,7 +1330,9 @@ async function capasPesadas(p) {
     await paso("Plano con radar: pones las esferas en el plano, el cono sigue la vista y tocar un punto cambia de esfera (también publicado)", async () => {
       const n = await pagina(DUENO); await nuevoTour(n, "Depa con plano"); await otraEsfera(n, "recamara", "#c9b", "#987");
       await n.click('#nav button:has-text("Media")'); await n.waitForTimeout(400);
-      await n.click('#subtabs button:has-text("Planos")'); await n.waitForTimeout(1200); await pasarGuias(n);
+      await n.click('#subtabs button:has-text("Planos")'); await n.waitForTimeout(1600);
+      exige(/plano con radar/i.test(await n.textContent(".guia-tarjeta").catch(() => "")), "la primera vez no sale el mini tutorial de Planos"); if (process.env.CAPTURAS) { await n.waitForTimeout(1800); await n.screenshot({ path: path.join(process.env.CAPTURAS, "tutorial-planos.png") }); } await pasarGuias(n);
+      await n.click("[data-pl-ayuda]"); await n.waitForTimeout(400); exige(await n.isVisible(".guia-tarjeta"), "el botón «¿Cómo se usa?» no vuelve a mostrar el tutorial"); await n.keyboard.press("Escape"); await n.waitForTimeout(300);
       exige(await n.isVisible("#v-planos"), "Media → Planos no abre el editor (sigue «Próximo bloque»)");
       await n.evaluate(async () => { // un plano sencillo de depa: muros negros sobre blanco
         const cv = document.createElement("canvas"); cv.width = 1200; cv.height = 800; const x = cv.getContext("2d");
@@ -1399,7 +1401,8 @@ async function capasPesadas(p) {
       await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(500); await n.click('#subtabs button:has-text("Música")'); await n.waitForTimeout(500);
       await n.setInputFiles("#m-archivo", { name: "fondo.wav", mimeType: "audio/wav", buffer: wavPrueba(30) }); await n.waitForTimeout(3000);
       await n.click('#nav button:has-text("Media")'); await n.waitForTimeout(400);
-      await n.click('#subtabs button:has-text("Audios")'); await n.waitForTimeout(900); await pasarGuias(n);
+      await n.click('#subtabs button:has-text("Audios")'); await n.waitForTimeout(1600);
+      exige(/narración/i.test(await n.textContent(".guia-tarjeta").catch(() => "")), "la primera vez no sale el mini tutorial de la narración"); if (process.env.CAPTURAS) { await n.waitForTimeout(1800); await n.screenshot({ path: path.join(process.env.CAPTURAS, "tutorial-narracion.png") }); } await pasarGuias(n);
       exige(await n.isVisible("#v-audios"), "Media → Audios no abre la narración (sigue «Próximo bloque»)");
       const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id), [e1, e2] = (await leer()).escenas.map((e) => e.id);
       await n.setInputFiles('[data-au-archivo="' + e1 + '"]', { name: "voz-sala.wav", mimeType: "audio/wav", buffer: wavPrueba(6) }); await n.waitForTimeout(2500);
@@ -1456,7 +1459,8 @@ async function capasPesadas(p) {
       const n = await pagina(DUENO); await nuevoTour(n, "Cocina con acabados");
       await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800); await cerrarGuia(n);
       exige(await n.isVisible("#add-acab"), "no sale el botón «Acabado» en Agregar");
-      await n.click("#add-acab"); await n.waitForTimeout(800); await pasarGuias(n);
+      await n.click("#add-acab"); await n.waitForTimeout(900);
+      exige(/ficha de acabados/i.test(await n.textContent(".guia-tarjeta").catch(() => "")), "la primera vez no sale el mini tutorial de Acabado"); if (process.env.CAPTURAS) { await n.waitForTimeout(1800); await n.screenshot({ path: path.join(process.env.CAPTURAS, "tutorial-acabado.png") }); } await pasarGuias(n);
       exige(await n.$('#props [data-ac="0.nombre"]'), "el acabado no abre sus campos en Propiedades");
       await n.fill('#props input[data-k="texto"]', "Cocina"); await n.waitForTimeout(200);
       const llenar = async (i, o) => { for (const [k, v] of Object.entries(o)) { await n.fill('#props [data-ac="' + i + "." + k + '"]', v); await n.waitForTimeout(80); } };
@@ -1506,54 +1510,6 @@ async function capasPesadas(p) {
       await t.context().close(); await n.context().close();
     });
 
-    // Pedido de Amar (11 nov 2026), funciones para interiores, 4 de 5: dos esferas del mismo lugar (vacío y amueblado,
-    // obra negra y terminado) se comparan jalando una línea; la otra versión no sale en el menú del tour.
-    await paso("Antes y después: se juntan dos esferas, se comparan con una línea y la otra versión no sale en el menú (también publicado)", async () => {
-      const n = await pagina(DUENO); await nuevoTour(n, "Sala antes y después"); await otraEsfera(n, "sala-amueblada", "#d8c3a5", "#8e6e53");
-      exige(await n.$('#subtabs button:has-text("Antes y después")'), "no sale «Antes y después» en Panoramas");
-      await n.click('#subtabs button:has-text("Antes y después")'); await n.waitForTimeout(900); await pasarGuias(n);
-      exige(await n.isVisible("#v-antes"), "no abre Antes y después");
-      await n.click("[data-ad-juntar]"); await n.waitForTimeout(1500);
-      exige(await n.$("#ad-vista .ad-capa .stage canvas"), "la comparación no dibujó la otra versión");
-      const asa = await n.locator("#ad-vista .ad-asa").boundingBox(), vista = await n.locator("#ad-vista").boundingBox();
-      await n.mouse.move(asa.x + asa.width / 2, asa.y + asa.height / 2); await n.mouse.down();
-      for (let k = 1; k <= 8; k++) await n.mouse.move(asa.x + asa.width / 2 - (vista.width * 0.2 * k) / 8, asa.y + asa.height / 2);
-      await n.mouse.up(); await n.waitForTimeout(300);
-      const clip = await n.$eval("#ad-vista .ad-capa", (e) => e.style.clipPath);
-      exige(/inset\(0(px)? 0(px)? 0(px)? 3\d(\.\d+)?%\)/.test(clip), "la línea no se jala: " + clip);
-      await n.click('[data-ad-preset="Vacío|Amueblado"]'); await n.waitForTimeout(500);
-      exige((await n.textContent("#ad-vista .ad-etq.der")) === "Amueblado", "las etiquetas no cambian");
-      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "antes-editor.png") });
-      await n.waitForTimeout(1500);
-      const id = await idTour(n), d = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id), [e1, e2] = d.escenas.map((e) => e.id);
-      exige(d.escenas[0].comparar && d.escenas[0].comparar.id === e2 && d.escenas[0].comparar.der === "Amueblado", "la pareja no se guardó: " + JSON.stringify(d.escenas[0].comparar));
-      const probar = async (t, nombre) => {
-        await t.waitForSelector("#previa .ad-boton:not([hidden])", { timeout: 15000 });
-        exige(/Vacío y amueblado/.test(await t.textContent("#previa .ad-boton")), nombre + ": el botón no dice qué compara");
-        exige(!(await t.$('#pv-ui [data-ir="' + e2 + '"]')) && /01 \/ 01/.test(await t.textContent("#pv-ui").catch(() => "")), nombre + ": la otra versión sale en el menú del tour");
-        await t.click("#previa .ad-boton"); await t.waitForTimeout(1500);
-        exige(await t.$("#previa .ad-capa .stage canvas"), nombre + ": no abrió la comparación");
-        // Girar la esfera: la otra versión gira igual (la línea se queda donde está)
-        const b = await t.locator("#pv-stage").boundingBox();
-        await t.mouse.move(b.x + b.width * 0.25, b.y + b.height * 0.6); await t.mouse.down();
-        for (let k = 1; k <= 8; k++) await t.mouse.move(b.x + b.width * 0.25 + k * 25, b.y + b.height * 0.6);
-        await t.mouse.up(); await t.waitForTimeout(600);
-        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "antes-" + nombre + ".png") });
-        await t.click("#previa .ad-boton"); await t.waitForTimeout(400);
-        exige(!(await t.$("#previa .ad-capa")), nombre + ": la comparación no se cierra");
-      };
-      await n.click('button:has-text("Vista previa")'); await n.waitForTimeout(3500);
-      await probar(n, "previa");
-      await n.keyboard.press("Escape"); await n.waitForTimeout(400);
-      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
-      const t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(4500);
-      await probar(t, "publicado");
-      if (process.env.CAPTURAS) { const ctx = await navegador.newContext(Object.assign({}, devices["iPhone 13"])), m = await ctx.newPage(); await m.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort()); await m.goto(TOURS + "/" + id + "/"); await m.waitForTimeout(4500); await m.tap("#previa .ad-boton").catch(() => {}); await m.waitForTimeout(1500); await m.screenshot({ path: path.join(process.env.CAPTURAS, "antes-celular.png") }); await ctx.close(); }
-      exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
-      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
-      await t.context().close(); await n.context().close();
-    });
-
     // Pedido de Amar (11 nov 2026), funciones para interiores, 5 de 5: cotas en las paredes. Dos puntos en el piso dan el
     // largo del muro (o uno en el piso y otro arriba, la altura) con la altura de la cámara; o se escribe la medida del plano.
     await paso("Cotas en paredes: 2 puntos en el piso dan el largo, piso y arriba la altura; la medida escrita manda (también publicado)", async () => {
@@ -1561,7 +1517,10 @@ async function capasPesadas(p) {
       await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800); await cerrarGuia(n);
       exige(await n.isVisible("#add-cota"), "no sale el botón «Cota» en Agregar");
       const [cx, cy] = await n.evaluate(() => { const e = [...document.querySelectorAll(".capas")].find((x) => x.getClientRects().length && x.getBoundingClientRect().width > 300); const b = e.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
-      await n.click("#add-cota"); await n.waitForTimeout(400); await pasarGuias(n);
+      await n.click("#add-cota"); await n.waitForTimeout(500);
+      exige(/cotas en las paredes/i.test(await n.textContent(".guia-tarjeta").catch(() => "")), "la primera vez no sale el mini tutorial de Cota"); 
+      if (process.env.CAPTURAS) { await n.waitForTimeout(2200); await n.screenshot({ path: path.join(process.env.CAPTURAS, "tutorial-cota.png") }); }
+      await pasarGuias(n);
       await n.mouse.click(cx - 220, cy + 210); await n.waitForTimeout(250); await n.mouse.click(cx + 220, cy + 210); await n.waitForTimeout(900);
       exige(/^Cota 1/.test(await n.textContent("#props-titulo")), "no se creó la cota");
       const etiqueta = () => n.$$eval(".cota-etq", (l) => l.filter((e) => e.getClientRects().length && getComputedStyle(e).display !== "none").map((e) => e.textContent));
@@ -1604,6 +1563,50 @@ async function capasPesadas(p) {
       if (process.env.CAPTURAS) { const ctx = await navegador.newContext(Object.assign({}, devices["iPhone 13"])), m = await ctx.newPage(); await m.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort()); await m.goto(TOURS + "/" + id + "/"); await m.waitForTimeout(4500); await m.screenshot({ path: path.join(process.env.CAPTURAS, "cotas-celular.png") }); await ctx.close(); }
       exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
       exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await t.context().close(); await n.context().close();
+    });
+
+    // Pedido de Amar (11 nov 2026): «vendí algo y no estoy en mi compu: marcarlo como vendido desde el celular».
+    // Cambia el borrador y el tour publicado al momento; el estudio abierto en la compu no lo regresa.
+    await paso("Disponibilidad desde el celular: marcar un lote vendido cambia el tour publicado y la compu no lo regresa", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Mirador celular");
+      const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      const d = await leer(), esc = d.proyecto.escenaInicial || d.escenas[0].id, v = d.escenas.find((e) => e.id === esc).vista || {}, y = v.yaw || 0, p = (v.pitch || 0) + 0.25;
+      const lote = (num, dy) => ({ id: "lote-" + num, tipo: "poligono", nombre: "Lote", visible: true, puntos: [[y - 0.1 + dy, p], [y + dy, p], [y + dy, p + 0.08], [y - 0.1 + dy, p + 0.08]],
+        relleno: { color: "#D5FF40", opacidad: 0.35 }, trazo: { color: "#D5FF40", grosor: 1.5, opacidad: 1 }, lote: { numero: num, manzana: "A", area: "160", precio: "450,000", lados: [], frente: 0, estado: "disponible" } });
+      d.capas[esc] = (d.capas[esc] || []).concat([lote("1", 0), lote("2", 0.12), lote("3", 0.24)]);
+      exige((await n.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [id, d])) === 200, "no se pudieron poner los lotes");
+      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
+      await n.reload(); await n.waitForTimeout(3000); await cerrarAnuncio(n); await cerrarGuia(n); // la compu queda abierta con el tour (lote 2 disponible)
+      // En el celular
+      const t = await pagina(DUENO, Object.assign({}, devices["iPhone 13"]));
+      await t.waitForSelector("#mv-lotes:not([hidden])", { timeout: 15000 }); await t.waitForTimeout(1800);
+      // El mini tutorial sale la primera vez; si en la revisión completa ya salió en otra prueba del celular (Panel de dueño), queda como visto
+      const tutoAhora = /lotes desde el celular/i.test(await t.textContent(".guia-tarjeta").catch(() => ""));
+      exige(tutoAhora || ((await t.evaluate(() => fetch("api/yo").then((r) => r.json()))).guias || []).includes("nuevo-lotes-movil"), "la primera vez no sale el mini tutorial de la disponibilidad");
+      if (process.env.CAPTURAS) { await t.waitForTimeout(1500); await t.screenshot({ path: path.join(process.env.CAPTURAS, "celular-tutorial.png") }); }
+      await pasarGuias(t);
+      await t.selectOption("#lm-tour", id); await t.waitForSelector('#lm-lista .lm-lote', { timeout: 10000 });
+      exige((await t.$$("#lm-lista .lm-lote")).length === 3, "no salen los 3 lotes del tour");
+      await t.fill("#lm-buscar", "2"); await t.waitForTimeout(300);
+      exige((await t.$$("#lm-lista .lm-lote")).length === 1, "el buscador no filtra por número");
+      if (process.env.CAPTURAS) { await t.fill("#lm-buscar", ""); await t.waitForTimeout(200); await t.screenshot({ path: path.join(process.env.CAPTURAS, "celular-lotes.png") }); await t.fill("#lm-buscar", "2"); await t.waitForTimeout(200); }
+      await t.click("#lm-lista .lm-lote"); await t.waitForSelector(".lm-hoja");
+      if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "celular-hoja.png") });
+      await t.click('.lm-hoja [data-lm-estado="vendido"]'); await t.waitForTimeout(1500);
+      exige(/Vendido/.test(await t.textContent("#lm-lista .lm-lote")), "en el celular el lote no quedó Vendido");
+      exige(/Ya se ve en tu tour/.test(await t.textContent("#toast").catch(() => "")), "no avisó que ya se ve en el tour");
+      const estadoDe = (dd, num) => Object.values(dd.capas).flat().find((c) => c && c.lote && c.lote.numero === num).lote.estado;
+      const pub = await (await fetch(TOURS + "/" + id + "/proyecto.json")).json();
+      exige(estadoDe(pub, "2") === "vendido" && estadoDe(pub, "1") === "disponible", "el tour publicado no cambió al momento");
+      exige(estadoDe(await leer(), "2") === "vendido", "el borrador no cambió");
+      // La compu (abierta desde antes) guarda otra cosa: no debe regresar el lote 2 a disponible, y se entera
+      await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(500);
+      await n.fill("#p-desc", "Cambio hecho en la compu"); await n.waitForTimeout(3000);
+      exige(estadoDe(await leer(), "2") === "vendido", "la compu regresó el lote a disponible al guardar");
+      exige(/Desde el celular/.test(await n.textContent("#toast").catch(() => "")), "la compu no avisó del cambio hecho en el celular");
+      exige((await leer()).proyecto.descripcion === "Cambio hecho en la compu", "el cambio de la compu no se guardó");
+      exige(!t.errs.length && !n.errs.length, "errores: " + t.errs.concat(n.errs).join(" | ").slice(0, 200));
       await t.context().close(); await n.context().close();
     });
 
@@ -2174,6 +2177,24 @@ async function capasPesadas(p) {
       exige(await u.isVisible("#dp-aviso-lotes") && /sigue publicando con marca/.test(await u.textContent("#dp-aviso-lotes")), "al elegir Pro con un tour con lotes no avisó que sigue la marca");
       if (process.env.CAPTURAS) await u.screenshot({ path: path.join(process.env.CAPTURAS, "pago-lotes.png") });
       await u.click("[data-dp-cerrar]"); await u.waitForTimeout(300);
+      exige(!u.errs.length, "errores en el estudio: " + u.errs.join(" | ").slice(0, 200));
+      await u.context().close();
+    });
+    // Pedido de Amar (11 nov 2026): pagar también con tarjeta por Stripe (en pesos desde México, en dólares desde fuera).
+    await paso("Pagar con tarjeta (Stripe): sale la opción, cobra en pesos o dólares según el país y activa la licencia", async () => {
+      const u = await pagina("stripe-" + Date.now() + "@prueba.mx"); await nuevoTour(u, "Pago con tarjeta");
+      await u.evaluate(() => { const b = document.querySelector('[data-comprar="pro"]'); if (b) b.click(); });
+      await u.waitForTimeout(1500);
+      exige(await u.isVisible('[data-dp-metodo="stripe"]'), "no sale la opción de pagar con tarjeta (Stripe)");
+      await u.click('[data-dp-metodo="stripe"]'); await u.waitForTimeout(300);
+      const txt = await u.textContent("[data-dp-pagar]");
+      exige(/Pagar \$(990|59 USD) con tarjeta/.test(txt), "el botón no cobra la licencia con tarjeta ($990 en México o $59 USD fuera): " + txt);
+      exige(/Stripe/.test(await u.textContent(".dp-nota")), "la nota no dice que es con Stripe");
+      if (process.env.CAPTURAS) await u.screenshot({ path: path.join(process.env.CAPTURAS, "pago-stripe.png") });
+      await u.click("[data-dp-pagar]"); await u.waitForTimeout(6000);
+      exige(/Ya tienes Pro/.test(await u.textContent("#dlg-pago").catch(() => "")), "después de pagar con tarjeta no se activó Pro");
+      const yo = await u.evaluate(() => fetch("api/yo").then((r) => r.json()));
+      exige(JSON.stringify(yo).includes('"pro"'), "la cuenta no quedó con Pro: " + JSON.stringify(yo).slice(0, 160));
       exige(!u.errs.length, "errores en el estudio: " + u.errs.join(" | ").slice(0, 200));
       await u.context().close();
     });

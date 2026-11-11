@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-11T06:42:13.530Z",
- "bien": 84,
- "total": 84,
+ "fecha": "2026-11-11T17:01:45.049Z",
+ "bien": 85,
+ "total": 85,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -220,11 +220,11 @@
    "ok": true
   },
   {
-   "nombre": "Antes y después: se juntan dos esferas, se comparan con una línea y la otra versión no sale en el menú (también publicado)",
+   "nombre": "Cotas en paredes: 2 puntos en el piso dan el largo, piso y arriba la altura; la medida escrita manda (también publicado)",
    "ok": true
   },
   {
-   "nombre": "Cotas en paredes: 2 puntos en el piso dan el largo, piso y arriba la altura; la medida escrita manda (también publicado)",
+   "nombre": "Disponibilidad desde el celular: marcar un lote vendido cambia el tour publicado y la compu no lo regresa",
    "ok": true
   },
   {
@@ -273,6 +273,10 @@
   },
   {
    "nombre": "Al comprar con un tour con lotes: sugiere Desarrollos y avisa que con Pro sigue la marca",
+   "ok": true
+  },
+  {
+   "nombre": "Pagar con tarjeta (Stripe): sale la opción, cobra en pesos o dólares según el país y activa la licencia",
    "ok": true
   },
   {

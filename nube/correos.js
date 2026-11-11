@@ -75,6 +75,33 @@ export function correoBienvenida({ nombre, base }) {
   return { asunto: (n ? n + ", bienvenido" : "Bienvenido") + " a Mozari", html: plantilla({ base, preencabezado: "Tu cuenta ya está lista. Así haces tu primer tour 360.", cuerpo, pie, portada: base + FOTOS.bienvenida }), texto };
 }
 
+// Gracias por tu compra (pedido de Amar, 11 nov 2026): le llega a quien paga una licencia o espacio, siempre
+// (no depende del interruptor de la bienvenida). Lo más importante: volver a publicar para quitar la marca.
+const LO_QUE_INCLUYE = {
+  pro: ["Tus tours salen sin marca de agua", "Esferas sin límite y 10 GB para tus fotos", "Descargas tu tour para el hosting de tu cliente"],
+  desarrollos: ["Todo lo de Pro, con 50 GB", "Lotificación: manzanas, lotes, fichas técnicas y masterplan", "Tus tours con lotes salen sin marca de agua"],
+  espacio: ["10 GB más para tus fotos 360, para siempre"],
+};
+export function correoCompra({ nombre, base, plan }) {
+  const n = primerNombre(nombre), hola = n ? n + ", gracias" : "Gracias", nom = { pro: "Pro", desarrollos: "Desarrollos", espacio: "+10 GB de espacio" }[plan] || "tu compra";
+  const licencia = plan === "pro" || plan === "desarrollos", items = LO_QUE_INCLUYE[plan] || [];
+  const lista = items.map((t) => '<tr><td valign="top" width="26" style="padding:0 10px 10px 0;font:700 15px/1.5 ' + FUENTE + ";color:" + TINTA + '">✓</td><td style="padding:0 0 10px;font:400 15px/1.5 ' + FUENTE + ";color:" + TEXTO + '">' + esc(t) + "</td></tr>").join("");
+  const cuerpo =
+    '<h1 style="margin:0 0 14px;font:700 26px/1.25 ' + FUENTE + ";color:" + TINTA + '">' + esc(hola) + " por tu compra</h1>" +
+    '<p style="margin:0 0 22px">' + (licencia ? "Tu licencia <b>" + esc(nom) + "</b> ya está activa. Es de pago único: es tuya y no vence." : "Tus <b>" + esc(nom) + "</b> ya están en tu cuenta.") + "</p>" +
+    (lista ? '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 18px">' + lista + "</table>" : "") +
+    (licencia ? '<p style="margin:0 0 24px;padding:16px 18px;border-radius:14px;background:' + FONDO + ';font-size:15px;line-height:1.55"><b>Importante:</b> los tours que ya publicaste conservan la marca de agua hasta que los <b>vuelvas a publicar</b>. Entra a cada uno, ve a <b>Publicar → Web</b> y toca <b>Publicar</b>. El link sigue siendo el mismo.</p>' : "") +
+    '<div style="padding:0 0 26px">' + boton("Ir a Mozari", base + "/") + "</div>" +
+    '<p style="margin:0 0 4px">Si te atoras, en el estudio está el <b>manual</b> (el librito de arriba) y el botón para <b>reportar un error</b>. Si algo de tu pago no cuadra, contesta este correo.</p>' +
+    '<p style="margin:22px 0 0">Gracias por confiar en Mozari,<br><b>Amar Preciado</b><br><span style="color:' + TENUE + ';font-size:14px">Creador de Mozari</span></p>';
+  const pie = "Te llegó este correo porque compraste en mozari.app.<br>Mozari · León, Guanajuato, México";
+  const texto = hola + " por tu compra\n\n" + (licencia ? "Tu licencia " + nom + " ya está activa. Es de pago único: es tuya y no vence." : "Tus " + nom + " ya están en tu cuenta.") + "\n\n" +
+    items.map((t) => "- " + t).join("\n") + (items.length ? "\n\n" : "") +
+    (licencia ? "Importante: los tours que ya publicaste conservan la marca de agua hasta que los vuelvas a publicar. Entra a cada uno, ve a Publicar → Web y toca Publicar. El link sigue siendo el mismo.\n\n" : "") +
+    "Ir a Mozari: " + base + "/\n\nSi algo de tu pago no cuadra, contesta este correo.\n\nGracias por confiar en Mozari,\nAmar Preciado\nCreador de Mozari";
+  return { asunto: licencia ? (n ? n + ", tu" : "Tu") + " licencia " + nom + " de Mozari ya está activa" : "Gracias por tu compra en Mozari", html: plantilla({ base, preencabezado: licencia ? "Ya puedes publicar sin marca de agua. Esto es lo que sigue." : "Ya tienes más espacio en Mozari.", cuerpo, pie, portada: base + FOTOS.bienvenida }), texto };
+}
+
 // Novedad: título, texto (con saltos de línea), imagen opcional y un botón
 // Novedad (la misma que se anuncia dentro del estudio): cada renglón del texto es un punto
 export function correoNovedad({ nombre, base, etiqueta, titulo, texto, imagen, boton: btn, destino, baja }) {
@@ -131,7 +158,13 @@ export function correoCampana({ nombre, base, link, pct, vence, baja }) {
 // ---------- Envío ----------
 // Topes para no tener sorpresas en el cobro: el plan de Cloudflare incluye 3,000 correos al mes.
 // Nunca se pasa de 2,800 al mes ni de 300 al día; lo que falte se manda al día siguiente (o al otro mes).
-export const TOPE_MES = 2800, TOPE_DIA = 300, LOTE = 40;
+export const TOPE_MES = 2800, TOPE_DIA = 190, LOTE = 40;
+// Cloudflare Email Sending (beta) deja mandar 200 al día (contando los avisos al dueño). Las campañas y las
+// actualizaciones se detienen en 150 al día, así siempre quedan lugares para la bienvenida y el correo de compra.
+export const TOPE_MASIVO_DIA = 150;
+// Cada hora el reloj manda solo 6 (≈144 al día, repartidos): así en cualquier ventana de 24 h de Cloudflare
+// sobra lugar para los correos de bienvenida y de compra, sin importar a qué hora reinicia su cuota.
+export const POR_HORA_MASIVO = 6;
 const CONF = "config/correos.json", PERFIL = (uid) => "cuentas/" + uid + "/perfil.json";
 const JSONH = { httpMetadata: { contentType: "application/json" } };
 export async function leerConf(env) {
@@ -199,6 +232,7 @@ export async function avanzarCola(env, id, base, firma, cuantos = LOTE) {
   while (c.pendientes.length && cuantos-- > 0) {
     const uid = c.pendientes[0], op = await env.R2.get(PERFIL(uid)), p = op ? await op.json().catch(() => null) : null;
     if (p && p.email && !p.bloqueado && !p.noNovedades) {
+      if (cuenta.mes >= TOPE_MES || cuenta.dia >= TOPE_MASIVO_DIA) break; // lo demás en la siguiente hora (o mañana)
       const baja = enlaceBaja(base, await firma(uid)), m = correoDeNovedad(n, p, base, baja);
       const r = await enviar(env, cuenta, { para: p.email, asunto: m.asunto, html: m.html, texto: m.texto, baja });
       if (r === "tope") break;
@@ -216,7 +250,7 @@ export async function avanzarColas(env, base, firma) {
   const l = await env.R2.list({ prefix: "correos/cola/", limit: 100 });
   for (const o of l.objects) {
     const id = o.key.slice(13, -5);
-    const r = await avanzarCola(env, id, base, firma, LOTE * 2).catch(() => null);
+    const r = await avanzarCola(env, id, base, firma, POR_HORA_MASIVO).catch(() => null);
     if (r && r.pendientes.length) break; // llegó al tope o a la tanda: lo demás en la siguiente hora
   }
 }
@@ -259,7 +293,7 @@ async function avanzarCampana(env, c, base, firma, cuantos) {
       if (!p || p.bloqueado || p.noNovedades || planDe(p).id !== "gratis") omitir = true; else nombre = p.nombre;
     }
     if (omitir) { c.omitidos++; c.pendientes.shift(); continue; }
-    if (cuenta.mes >= TOPE_MES || cuenta.dia >= TOPE_DIA) break; // lo demás en la siguiente hora (o mañana)
+    if (cuenta.mes >= TOPE_MES || cuenta.dia >= TOPE_MASIVO_DIA) break; // lo demás en la siguiente hora (o mañana)
     const codigo = await nuevoCupon(env, k, it.e);
     if (!codigo) { c.fallas++; c.pendientes.shift(); continue; }
     const baja = enlaceBaja(base, await firma(it.u ? it.u : { bajaCorreo: it.e }));

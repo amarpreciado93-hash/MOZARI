@@ -51,7 +51,7 @@
   [hidden] { display: none !important; }
   html[data-modo="tour"] .app, html[data-modo="tour"] .movil { display: none !important; }
   html, body { height: 100%; }
-  body { background: var(--mz-fondo); color: var(--mz-texto); font-family: var(--mz-texto-ui); overflow: hidden; font-size: 13px; }
+  body { margin: 0; background: var(--mz-fondo); color: var(--mz-texto); font-family: var(--mz-texto-ui); overflow: hidden; font-size: 13px; } /* sin el margen de 8px del navegador: la app no se recorre ni deja una franja arriba */
   button, input, select { font-family: inherit; }
   button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--mz-lima); outline-offset: 2px; }
 
@@ -122,7 +122,7 @@
   /* Tutoriales guiados: foco sobre lo que hay que picar y una tarjeta de vidrio que explica */
   .guia-foco { position: fixed; z-index: 9998; border-radius: 14px; pointer-events: none; box-shadow: 0 0 0 3px #D5FF40, 0 0 0 9999px rgba(0, 0, 0, 0.55); transition: all 0.35s cubic-bezier(.2, .8, .2, 1); }
   .guia-foco.sin { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55); width: 0 !important; height: 0 !important; }
-  .guia-tarjeta { position: fixed; z-index: 9999; width: min(380px, calc(100vw - 32px)); padding: 18px; border-radius: 22px; color: #fff; display: grid; gap: 12px;
+  .guia-tarjeta { position: fixed; z-index: 9999; box-sizing: border-box; width: min(418px, calc(100vw - 32px)); padding: 18px; border-radius: 22px; color: #fff; display: grid; gap: 12px;
     border: 1px solid rgba(255, 255, 255, 0.22); background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0.09)), rgba(14, 15, 13, 0.55);
     -webkit-backdrop-filter: blur(30px) saturate(190%); backdrop-filter: blur(30px) saturate(190%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 24px 60px rgba(0, 0, 0, 0.45); animation: nov-entra 0.4s cubic-bezier(.2, .9, .25, 1.15) both; }
   .guia-tarjeta h3 { margin: 0; font-size: 17px; font-weight: 700; }
@@ -669,36 +669,32 @@
   .cp-cota .cota-tics line { stroke-width: 2; stroke-linecap: round; }
   .cota-etq { position: absolute; left: 0; top: 0; transform-origin: 0 0; padding: 3px 9px; border-radius: 7px; background: rgba(11, 11, 11, 0.8); color: #fff; font: 600 13px/1.3 var(--mz-texto-ui); letter-spacing: 0.01em; white-space: nowrap; pointer-events: none; font-variant-numeric: tabular-nums; }
   .cota-etq.falta { background: rgba(11, 11, 11, 0.55); color: rgba(255, 255, 255, 0.75); font-weight: 500; font-style: italic; }
-  /* Antes y después: editor */
-  .ad-ed { height: 100%; display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 0; }
-  .ad-centro { position: relative; min-width: 0; min-height: 0; padding: 18px; background: var(--mz-negro); }
-  .ad-vista { position: relative; width: 100%; height: 100%; border-radius: 14px; overflow: hidden; background: #000; isolation: isolate; }
-  .ad-vista > .stage { position: absolute; inset: 0; isolation: isolate; }
-  .ad-vacio { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; padding: 30px; text-align: center; color: var(--mz-tenue); font-size: 14px; line-height: 1.6; background: var(--mz-negro); }
-  .ad-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-  .ad-lista li { display: grid; grid-template-columns: 78px minmax(0, 1fr) 28px; gap: 10px; align-items: center; padding: 6px; border-radius: 12px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); cursor: pointer; }
-  .ad-lista li[aria-current="true"] { border-color: var(--mz-lima); }
-  .ad-par { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; border-radius: 7px; overflow: hidden; }
-  .ad-par img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
-  .ad-lista b { display: block; font-weight: 500; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ad-lista small { font-size: 11px; color: var(--mz-tenue); }
-  .ad-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-  /* Antes y después: la comparación (editor y tour) */
-  .ad-capa { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-  .ad-capa > .stage { position: absolute; inset: 0; pointer-events: none; }
-  .ad-capa .capas, .ad-capa .cp-svg { display: none; }
-  .ad-linea { position: absolute; top: 0; bottom: 0; z-index: 4; width: 0; pointer-events: none; }
-  .ad-linea::before { content: ""; position: absolute; top: 0; bottom: 0; left: -1px; width: 2px; background: #fff; box-shadow: 0 0 10px rgba(0, 0, 0, 0.45); }
-  .ad-asa { position: absolute; top: 50%; left: 0; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; background: #fff; color: #0B0B0B; display: grid; place-items: center; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35); cursor: ew-resize; pointer-events: auto; touch-action: none; }
-  .ad-asa svg { width: 24px; height: 24px; }
-  .ad-etq { position: absolute; top: calc(50% - 64px); padding: 5px 11px; border-radius: 999px; background: rgba(11, 11, 11, 0.72); color: #fff; font: 600 11.5px var(--mz-texto-ui); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; pointer-events: none; }
-  .ad-etq.izq { right: 12px; } .ad-etq.der { left: 12px; }
-  .ad-boton { position: absolute; z-index: 32; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 26px); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px 10px 12px; border-radius: 999px; border: 0; cursor: pointer; pointer-events: auto; background: rgba(11, 11, 11, 0.78); color: #fff; font: 600 13px var(--mz-texto-ui); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28); white-space: nowrap; }
-  .ad-boton svg { width: 18px; height: 18px; color: var(--sk-acento, #D5FF40); }
-  .ad-boton[aria-pressed="true"] { background: #fff; color: #0B0B0B; }
-  .ad-boton[aria-pressed="true"] svg { color: #0B0B0B; }
-  .sk--v .ad-boton { bottom: auto; top: 92px; } /* en el celular abajo están el nombre, las flechas y el plano */
-  .sk--v:has(.ad-boton:not([hidden])) .nr { top: 148px; }
+  /* Disponibilidad desde el celular */
+  .lm { display: grid; gap: 12px; }
+  .lm h2 { margin: 0; font-size: 18px; }
+  .lm select, .lm input[type="search"] { width: 100%; box-sizing: border-box; font: 500 15px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 12px; padding: 11px 12px; }
+  .lm-resumen { display: flex; flex-wrap: wrap; gap: 6px; }
+  .lm-resumen span { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); font-size: 12px; }
+  .lm-resumen b { font-size: 14px; }
+  .lm-punto { width: 9px; height: 9px; border-radius: 50%; background: var(--c); flex: none; }
+  .lm-mzs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .lm-mzs button { flex: none; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--mz-linea-neutra); background: none; color: var(--mz-texto); font: 500 13px var(--mz-texto-ui); }
+  .lm-mzs button[aria-pressed="true"] { background: var(--mz-lima); color: var(--mz-negro); border-color: var(--mz-lima); }
+  .lm-lista { display: grid; gap: 6px; }
+  .lm-lista h3 { margin: 8px 0 0; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mz-tenue); }
+  .lm-lote { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%; padding: 12px 12px 12px 14px; border-radius: 14px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-negro); color: var(--mz-texto); text-align: left; font-family: var(--mz-texto-ui); cursor: pointer; }
+  .lm-lote b { font-size: 15px; font-weight: 600; display: block; }
+  .lm-lote small { font-size: 12px; color: var(--mz-tenue); }
+  .lm-est { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--mz-texto); border: 1px solid color-mix(in srgb, var(--c) 55%, transparent); white-space: nowrap; }
+  .lm-hoja { position: fixed; inset: 0; z-index: 60; display: grid; align-items: end; background: rgba(0, 0, 0, 0.55); }
+  .lm-hoja > div { display: grid; gap: 10px; padding: 20px 16px calc(env(safe-area-inset-bottom, 0px) + 18px); border-radius: 22px 22px 0 0; background: var(--mz-superficie); border-top: 1px solid var(--mz-linea-neutra); }
+  .lm-hoja h3 { margin: 0 0 4px; font-size: 18px; }
+  .lm-hoja p { margin: 0 0 6px; font-size: 13px; color: var(--mz-tenue); }
+  .lm-opcion { display: flex; align-items: center; gap: 12px; width: 100%; padding: 15px 16px; border-radius: 14px; border: 1.5px solid var(--mz-linea-neutra); background: var(--mz-negro); color: var(--mz-texto); font: 600 16px var(--mz-texto-ui); text-align: left; cursor: pointer; }
+  .lm-opcion[aria-pressed="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, var(--mz-negro)); }
+  .lm-opcion .lm-punto { width: 14px; height: 14px; }
+  .lm-opcion small { margin-left: auto; font-weight: 500; font-size: 12px; color: var(--mz-tenue); }
+  .lm-vacio { padding: 14px; border-radius: 12px; background: var(--mz-negro); color: var(--mz-tenue); font-size: 13px; text-align: center; }
   /* Ficha de acabados: editor */
   .ac-lista { display: grid; gap: 10px; margin: 8px 0; }
   .ac-item { position: relative; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; padding: 10px 30px 10px 10px; border-radius: 12px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); }
@@ -1045,6 +1041,7 @@
   .pago-monto { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; cursor: help; }
   .pago-via { font-style: normal; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 99px; border: 1px solid var(--mz-linea-neutra); color: var(--mz-tenue); }
   .pago-via.paypal { color: #7FB2FF; border-color: rgba(127, 178, 255, 0.4); }
+  .pago-via.stripe { color: #A99BFF; border-color: rgba(169, 155, 255, 0.4); }
   .pago-via.mercadopago { color: #6FD3F5; border-color: rgba(111, 211, 245, 0.4); }
   .pago-monto small, .pago-nada { font-size: 11px; color: var(--mz-tenue); }
   .lt-ps text { font-family: var(--lt-fuente, var(--mz-texto-ui)); font-size: 40px; fill: var(--lt-color, #fff); paint-order: stroke; stroke: var(--lt-trazo, rgba(0, 0, 0, 0.62)); stroke-width: var(--lt-trazo-g, 3px); stroke-linejoin: round; pointer-events: none; }
@@ -1978,14 +1975,6 @@
         <div class="rejilla" id="fotos-lista"></div>
       </div>
     </section>
-    <!-- Panoramas / Antes y después (Laboratorio «antes-despues»): dos versiones del mismo espacio, con una línea para compararlas -->
-    <section data-vista="panoramas/antes" class="ad-ed" id="v-antes" hidden>
-      <aside class="ed-panel" aria-label="Antes y después">
-        <header><h3>Antes y después</h3><p class="nota">Junta dos esferas del mismo lugar (vacío y amueblado, obra negra y terminado, de día y de noche). En el tour tu cliente las compara jalando una línea.</p></header>
-        <div class="props" id="ad-panel"></div>
-      </aside>
-      <div class="ad-centro"><div class="ad-vista" id="ad-vista"><div class="stage" id="ad-stage"></div><div class="ad-vacio" id="ad-vacio" hidden></div></div></div>
-    </section>
     <!-- Media / Audios (Laboratorio «narracion»): la voz de cada espacio suena al llegar a su esfera -->
     <section data-vista="media/audios" id="v-audios" hidden>
       <div class="contenido" style="max-width:1040px">
@@ -2194,6 +2183,7 @@
 <!-- ======================= MÓVIL ======================= -->
 <div class="movil">
   <div class="logo-m"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg><b>MOZARI</b><span class="beta">BETA</span></div>
+  <div class="tarjeta lm" id="mv-lotes" hidden></div>
   <div class="tarjeta" id="mv-compu" hidden>
     <h2 style="margin:0;font-size:18px">Mozari se usa en computadora</h2>
     <p class="nota">Para crear tus tours, entra a <b>mozari.app</b> desde tu compu con esta misma cuenta de Google. Ahí te espera tu plan Gratis.</p>
@@ -2327,6 +2317,8 @@
   // =================== DATOS ===================
   const VACIO = () => ({ version: 2, proyecto: { nombre: "", escenaInicial: "", musica: { volumen: 0.6, repetir: true } }, escenas: [], capas: {} });
   let base, meta = {};
+  // Cuándo se abrió el tour: así el servidor sabe si un cambio de disponibilidad hecho desde el celular ya se vio aquí
+  const CARGADO = new Date().toISOString();
   try {
     if (MODO === "nube" && TOUR) {
       const r = await fetch("api/tours/" + TOUR, { cache: "no-store" });
@@ -2914,11 +2906,15 @@
     enviando = true;
     const txt = pendienteNube; pendienteNube = null;
     try {
-      const r = await fetch("api/tours/" + TOUR, { method: "PUT", headers: { "content-type": "application/json" }, body: txt });
+      const r = await fetch("api/tours/" + TOUR, { method: "PUT", headers: { "content-type": "application/json", "x-cargado": CARGADO }, body: txt });
       if (r.status === 401) { $("b-estado").textContent = "Tu sesión terminó: vuelve a entrar"; pendienteNube = pendienteNube || txt; }
       else if (r.status === 403) { const e = await r.json().catch(() => ({})); $("b-estado").textContent = "No se guardó: límite de tu plan"; avisar(e.error || "Llegaste al límite de tu plan"); }
       else if (!r.ok) throw new Error(r.status);
-      else $("b-estado").textContent = pendienteNube === null ? "Guardado en la nube" : "Guardando…";
+      else {
+        $("b-estado").textContent = pendienteNube === null ? "Guardado en la nube" : "Guardando…";
+        const d = await r.json().catch(() => ({}));
+        if (Array.isArray(d.estados) && d.estados.length) estadosDelCelular(d.estados);
+      }
     } catch (e) {
       pendienteNube = pendienteNube || txt;
       $("b-estado").textContent = "Sin conexión, reintentando…";
@@ -2926,6 +2922,17 @@
     }
     enviando = false;
     if (pendienteNube !== null) { clearTimeout(tNube); tNube = setTimeout(enviarNube, 300); }
+  }
+  // Disponibilidad cambiada desde el celular mientras este estudio estaba abierto: se pone aquí también
+  function estadosDelCelular(lista) {
+    const k = (mz, num) => String(mz == null ? "" : mz).trim().toLowerCase() + "|" + String(num == null ? "" : num).trim().toLowerCase();
+    const m = new Map(lista.map((x) => [k(x.mz, x.num), x.estado]));
+    Object.values(est.capas).flat().forEach((c) => { if (c && c.lote && m.has(k(c.lote.manzana, c.lote.numero))) c.lote.estado = m.get(k(c.lote.manzana, c.lote.numero)); });
+    guardar();
+    if (motorEd) { motorEd.construir(); pintarCapas(); }
+    if (nav.sec + "/" + nav.sub === "panoramas/lotes") pintarLotes();
+    const x = lista[0], nombre = estadosLote().find((e) => e.id === x.estado);
+    avisar("Desde el celular: " + (lista.length === 1 ? terminos().lote + " " + x.num + (x.mz ? " (" + terminos().manzana + " " + x.mz + ")" : "") + " quedó " + (nombre ? nombre.nombre : x.estado) : lista.length + " " + plural(terminos().lote).toLowerCase() + " cambiaron de estado"), 6000);
   }
   window.addEventListener("beforeunload", (ev) => { if (MODO === "nube" && (pendienteNube !== null || enviando)) { ev.preventDefault(); ev.returnValue = ""; } });
   function viajarHistorial(atras) {
@@ -3011,9 +3018,8 @@
   $("nav").addEventListener("click", (ev) => { const b = ev.target.closest("[data-sec]"); if (b) ir(b.dataset.sec); });
   $("subtabs").addEventListener("click", (ev) => { const b = ev.target.closest("[data-sub]"); if (b) ir(nav.sec, b.dataset.sub); });
 
-  const SIN_ESFERAS = ["panoramas/mapa", "panoramas/capas", "panoramas/piloto", "panoramas/terreno", "panoramas/antes", "skin/h", "skin/v"];
+  const SIN_ESFERAS = ["panoramas/mapa", "panoramas/capas", "panoramas/piloto", "panoramas/terreno", "skin/h", "skin/v"];
   if (enLab("estadisticas")) SECCIONES.find((x) => x.id === "publicar").subs.push(["estadisticas", "Estadísticas"]);
-  if (enLab("antes-despues")) SECCIONES.find((x) => x.id === "panoramas").subs.splice(4, 0, ["antes", "Antes y después"]);
   // Secciones de «Próximo bloque» que ya existen en el Laboratorio: [función, sección]
   const LAB_VISTAS = { "media/planos": ["planos", "v-planos"], "media/audios": ["narracion", "v-audios"] };
   function ir(sec, sub) {
@@ -3035,7 +3041,6 @@
     Object.entries(LAB_VISTAS).forEach(([k, [lab, el]]) => { if (clave === k && !enLab(lab)) $(el).hidden = true; }); // sin el Laboratorio sigue «Próximo bloque»
     if (antes === "media/planos" && clave !== antes) cerrarPlanos();
     if (antes === "media/audios" && clave !== antes) cerrarAudios();
-    if (antes === "panoramas/antes" && clave !== antes) cerrarAntes();
     $("sel-pano-wrap").hidden = !enEditor;
     $("proximo").classList.remove("ancho");
     if (clave === "publicar/web" && MODO === "nube") { pintarPublicar(); }
@@ -3055,7 +3060,6 @@
     if (clave === "media/videos") pintarVideos();
     if (clave === "media/planos" && enLab("planos")) requestAnimationFrame(abrirPlanos);
     if (clave === "media/audios" && enLab("narracion")) pintarAudios();
-    if (clave === "panoramas/antes") requestAnimationFrame(abrirAntes);
     if (clave === "panoramas/mapa") requestAnimationFrame(() => mapa.dibujar());
     if (enEditor) abrirEditor(edPano || P().escenaInicial, sub);
     if (clave === "panoramas/terreno") requestAnimationFrame(abrirTerreno);
@@ -3255,7 +3259,7 @@
     const elDe = (p) => (typeof p.el === "function" ? p.el() : p.el ? document.querySelector(p.el) : null);
     const colocar = () => {
       if (!guiaActual) return;
-      const p = pasos[guiaActual.i], el = elDe(p), W = innerWidth, H = innerHeight, tw = tarjeta.offsetWidth, th = tarjeta.offsetHeight;
+      const p = pasos[guiaActual.i], el = elDe(p), W = Math.min(innerWidth, document.documentElement.clientWidth || innerWidth), H = innerHeight, tw = tarjeta.offsetWidth, th = tarjeta.offsetHeight;
       if (!el || !el.getClientRects().length) { foco.classList.add("sin"); foco.style.left = W / 2 + "px"; foco.style.top = H / 2 + "px"; tarjeta.style.left = (W - tw) / 2 + "px"; tarjeta.style.top = Math.max(16, (H - th) / 2) + "px"; return; }
       foco.classList.remove("sin");
       const r = el.getBoundingClientRect(), m = 6;
@@ -3263,6 +3267,7 @@
       let x = r.right + 18, y = r.top;
       if (x + tw > W - 16) { x = r.left - tw - 18; }
       if (x < 16) { x = Math.min(Math.max(16, r.left), W - tw - 16); y = r.bottom + 16; if (y + th > H - 16) y = r.top - th - 16; }
+      x = W - tw < 48 ? (W - tw) / 2 : Math.max(16, Math.min(x, W - tw - 16)); // en el celular, centrada y nunca fuera de la pantalla
       tarjeta.style.left = x + "px"; tarjeta.style.top = Math.max(16, Math.min(y, H - th - 16)) + "px";
     };
     guiaActual.colocar = colocar;
@@ -3367,6 +3372,15 @@
     texto: () => ({ pasos: [{ el: "#props", titulo: "Tu texto ya está en la esfera", dur: 4.5,
       anim: animColocar({ figura: '<rect x="-46" y="-13" width="92" height="26" rx="6" fill="rgba(0,0,0,.45)"/><text y="5" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Club house</text>', destino: [250, 70], pasos: "Arrástralo a su lugar", final: "Escribe el texto y su estilo a la derecha" }),
       texto: "<b>Arrástralo</b> en la esfera a su lugar y aquí a la derecha escribe el <b>texto</b>, su tamaño, color y fondo." }] }),
+    cota: (repite) => ({ dibuja: true, pasos: [{ el: "#add-cota", titulo: "Nuevo: cotas en las paredes", dur: 5.4, boton: repite ? "Entendido" : "A medir", anim: animCota,
+      texto: "Toca el <b>inicio y el final del muro</b>, abajo donde toca el piso, y Mozari calcula su largo. Para una <b>altura</b>: un punto en el piso y otro justo arriba. Si tienes la medida del plano, la escribes a la derecha y manda esa." }] }),
+    acabado: () => ({ pasos: [
+      { el: () => document.querySelector(".cp-hs.elegida, .hs.elegida") || document.querySelector("#props"), titulo: "Nuevo: la ficha de acabados", dur: 4.5,
+        anim: animColocar({ figura: '<circle r="14" fill="#D5FF40"/><g transform="translate(-7 -7)" fill="none" stroke="#0b0b0b" stroke-width="1.8"><rect width="6" height="6" rx="1.2"/><rect x="8" width="6" height="6" rx="1.2"/><rect y="8" width="6" height="6" rx="1.2"/></g>', destino: [250, 128], pasos: "Arrástralo sobre la cubierta o el mueble", final: "Al tocarlo, tu cliente ve sus acabados" }),
+        texto: "<b>Arrastra el punto</b> sobre el piso, la cubierta o el mueble. En <b>Texto</b> le pones el nombre del lugar (por ejemplo «Cocina»): es el título de la ficha." },
+      { el: () => document.querySelector("#props .ac-lista") || $("props"), titulo: "Llena cada material o mueble", anim: animAcab, dur: 4.5,
+        texto: "Por cada uno: <b>foto</b>, tipo, marca, medida, precio y enlace (todo opcional menos el nombre). Con <b>+ Otro acabado</b> agregas más. Abajo de la ficha sale tu botón de contacto." },
+    ] }),
     interes: () => ({ pasos: [{ el: "#props", titulo: "Tu punto de interés ya está en la esfera", dur: 4.5,
       anim: animColocar({ figura: '<circle cx="-30" cy="22" r="5" fill="#D5FF40"/><path d="M-26 18 L-6 -6 L40 -6" fill="none" stroke="#D5FF40" stroke-width="2"/><text x="-2" y="-12" fill="#fff" font-size="11" font-weight="700">Escuela · 5 min</text>', destino: [230, 80], pasos: "Arrástralo sobre el lugar", final: "Escribe su nombre y distancia a la derecha" }),
       texto: "<b>Arrástralo</b> sobre el lugar real (la escuela, la gasolinera…) y escribe aquí su <b>nombre</b> y el dato (tiempo o distancia)." }] }),
@@ -3475,6 +3489,107 @@
     h += '<rect x="130" y="124" width="100" height="3" rx="2" fill="rgba(255,255,255,.15)"/><rect x="130" y="124" width="' + (100 * sv(u)).toFixed(1) + '" height="3" rx="2" fill="#D5FF40"/>' + pieG(u >= 1 ? "Tu cliente ve su marca desde el primer segundo" : "Así carga tu tour, sin Mozari", u >= 1);
     svg.innerHTML = h;
   }
+  // =================== MINI TUTORIALES DE LAS FUNCIONES PARA INTERIORES (nov 2026) ===================
+  // Regla de Amar: toda función nueva lleva su mini tutorial la primera vez que se usa (y un botón para volver a verlo).
+  const PLANO_G = (x, y, w, h) => '<g transform="translate(' + x + " " + y + ')"><rect width="' + w + '" height="' + h + '" rx="6" fill="#F4F2EC"/><path d="M6 6h' + (w - 12) + "v" + (h - 12) + "h-" + (w - 12) + 'Z M' + (w * 0.5) + " 6v" + (h * 0.38) + " M" + (w * 0.5) + " " + (h * 0.6) + "v" + (h * 0.4 - 6) + " M" + (w * 0.5) + " " + (h * 0.55) + "h" + (w * 0.5 - 6) + '" fill="none" stroke="#2a2a2a" stroke-width="3"/></g>';
+  const CONO_G = (x, y, a, r, op) => { const q = (g) => (x + Math.sin(((a + g) * Math.PI) / 180) * r).toFixed(1) + " " + (y - Math.cos(((a + g) * Math.PI) / 180) * r).toFixed(1); return '<path d="M' + x + " " + y + "L" + q(-35) + "A" + r + " " + r + " 0 0 1 " + q(35) + 'Z" fill="#D5FF40" fill-opacity="' + (op || 0.55) + '" stroke="rgba(0,0,0,.5)" stroke-width="1"/>'; };
+  const PIN_G = (x, y, yo) => '<circle cx="' + x + '" cy="' + y + '" r="' + (yo ? 6 : 4.5) + '" fill="' + (yo ? "#D5FF40" : "#fff") + '" stroke="#0b0b0b" stroke-width="1.8"/>' + (yo ? '<circle cx="' + x + '" cy="' + y + '" r="1.8" fill="#0b0b0b"/>' : "");
+  // Planos 1: eliges la esfera abajo y tocas dónde está en el plano
+  function animPlano1(svg, t) {
+    let h = '<rect width="360" height="200" fill="#1a2014"/>' + PLANO_G(70, 14, 220, 128);
+    const sel = t > 1.1, puesto = t > 2.6;
+    [0, 1].forEach((k) => (h += '<rect x="' + (120 + k * 66) + '" y="152" width="56" height="30" rx="5" fill="' + (k ? "#9a8a7a" : "#6a9fb0") + '" stroke="' + (sel && k === 0 ? "#D5FF40" : "transparent") + '" stroke-width="2.5"/>'));
+    if (puesto) h += PIN_G(124, 92, true) + '<text x="124" y="80" fill="#0b0b0b" font-size="9" font-weight="700" text-anchor="middle">Sala</text>';
+    const c = t < 1.0 ? [320 - 172 * sv(t / 1.0), 185 - 18 * sv(t / 1.0)] : t < 2.5 ? [148 + (124 - 148) * sv((t - 1.3) / 1.1), 167 + (92 - 167) * sv((t - 1.3) / 1.1)] : [124, 92];
+    if ((t > 0.95 && t < 1.25) || (t > 2.45 && t < 2.8)) h += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="11" fill="rgba(255,255,255,.25)"/>';
+    h += CURSOR_G(c[0] + 2, c[1] + 2) + pieG(puesto ? "Listo: la esfera ya está en el plano" : sel ? "2 · Toca en el plano dónde está" : "1 · Elige la esfera abajo", puesto);
+    svg.innerHTML = h;
+  }
+  // Planos 2: jalas el círculo del cono hasta que apunte a lo mismo que ves en la esfera de la derecha
+  function animPlano2(svg, t) {
+    const a = -70 + 160 * sv((t - 0.8) / 2.2), r = 46, x = 92, y = 112, gx = x + Math.sin((a * Math.PI) / 180) * r, gy = y - Math.cos((a * Math.PI) / 180) * r;
+    let h = '<rect width="360" height="200" fill="#1a2014"/>' + PLANO_G(14, 22, 160, 150) + CONO_G(x, y, a, r) + '<line x1="' + x + '" y1="' + y + '" x2="' + gx.toFixed(1) + '" y2="' + gy.toFixed(1) + '" stroke="#0b0b0b" stroke-width="1.2" stroke-dasharray="3 2"/><circle cx="' + gx.toFixed(1) + '" cy="' + gy.toFixed(1) + '" r="6" fill="#0b0b0b" stroke="#D5FF40" stroke-width="2"/>' + PIN_G(x, y, true);
+    h += '<rect x="190" y="22" width="156" height="150" rx="8" fill="#6a9fb0"/><rect x="190" y="104" width="156" height="68" fill="#5f8a4a"/><rect x="' + (240 + 30 * Math.sin((a * Math.PI) / 90)).toFixed(1) + '" y="62" width="46" height="62" fill="#3b2f25" stroke="#fff" stroke-width="1.5"/><text x="268" y="40" fill="#fff" font-size="9" text-anchor="middle">La esfera</text>';
+    h += CURSOR_G(gx + 3, gy + 3) + pieG(t > 3.2 ? "Listo: el cono mira a lo mismo que la esfera" : "Jala el círculo del cono", t > 3.2);
+    svg.innerHTML = h;
+  }
+  // Planos 3: en el tour el plano va en la esquina, el cono gira con la vista y otro punto te lleva ahí
+  function animPlano3(svg, t) {
+    const giro = 60 * Math.sin(t * 1.4);
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="10" y="10" width="340" height="170" rx="8" fill="#6a9fb0"/><rect x="10" y="110" width="340" height="70" fill="#5f8a4a"/>';
+    for (let k = 0; k < 9; k++) { const x = 10 + ((k * 46 - giro * 2 + 1000) % 414) - 20; h += '<rect x="' + x.toFixed(1) + '" y="70" width="18" height="40" fill="rgba(0,0,0,.25)"/>'; }
+    const cambio = t > 3.6;
+    h += PLANO_G(252, 108, 90, 62) + CONO_G(cambio ? 320 : 278, cambio ? 126 : 150, giro, 22, 0.7) + PIN_G(278, 150, !cambio) + PIN_G(320, 126, cambio);
+    const c = t < 2.8 ? [200, 60] : [200 + (320 - 200) * sv((t - 2.8) / 0.7), 60 + (126 - 60) * sv((t - 2.8) / 0.7)];
+    if (t > 3.4 && t < 3.8) h += '<circle cx="320" cy="126" r="10" fill="rgba(255,255,255,.35)"/>';
+    h += CURSOR_G(c[0] + 2, c[1] + 2) + pieG(cambio ? "Tocar otro punto te lleva a esa esfera" : "El cono gira hacia donde miras", cambio);
+    svg.innerHTML = h;
+  }
+  const pasosPlanos = () => [
+    { el: () => document.querySelector(".pl-subir") || $("pl-panel"), titulo: "Nuevo: el plano con radar", anim: animPlano1, dur: 4.2,
+      texto: "<b>Sube el plano</b> del piso (un render, foto o captura del PDF). Luego <b>elige una esfera</b> en la tira de abajo y <b>toca en el plano</b> dónde se tomó. Arrastra el punto para moverlo." },
+    { el: () => (esVisible("#pl-svg") ? $("pl-lienzo") : document.querySelector(".pl-der")), titulo: "Gira el cono", anim: animPlano2, dur: 4.5,
+      texto: "Gira la esfera de la derecha y <b>jala el círculo del cono</b> hasta que apunte a lo mismo que ves ahí. Así el radar marca bien hacia dónde mira tu cliente." },
+    { el: "#abrir-previa", titulo: "Así lo ve tu cliente", anim: animPlano3, dur: 5,
+      texto: "En el tour sale chico en la esquina que elijas: su punto se ilumina, el cono gira cuando mueve la vista y <b>tocar otro punto</b> lo lleva a esa esfera. Revísalo en <b>Vista previa</b>." },
+  ];
+  const guiaPlanos = (repetir) => (repetir ? mostrarGuia("nuevo-planos", pasosPlanos(), { repetir: true }) : guiaNueva("nuevo-planos", pasosPlanos, () => nav.sec + "/" + nav.sub === "media/planos"));
+  // Narración 1: subes la voz de cada esfera
+  function animVoz1(svg, t) {
+    const lista = t > 2.3;
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="20" y="40" width="320" height="76" rx="10" fill="#222" stroke="' + (lista ? "#D5FF40" : "rgba(255,255,255,.15)") + '"/><rect x="32" y="52" width="80" height="52" rx="6" fill="#6a9fb0"/><text x="124" y="68" fill="#fff" font-size="12" font-weight="700">Sala</text>';
+    h += lista ? '<text x="124" y="88" fill="#D5FF40" font-size="10">🔊 0:42 · voz-sala.mp3</text>' : '<rect x="124" y="78" width="84" height="22" rx="11" fill="none" stroke="#fff"/><text x="166" y="93" fill="#fff" font-size="9.5" font-weight="600" text-anchor="middle">+ Subir voz</text>';
+    if (t > 1.1 && !lista) { const u = sv((t - 1.1) / 1.1); h += '<g transform="translate(' + (290 - 100 * u).toFixed(1) + " " + (160 - 66 * u).toFixed(1) + ')" opacity="' + (1 - Math.max(0, u - 0.8) * 5).toFixed(2) + '"><rect x="-34" y="-11" width="68" height="22" rx="5" fill="#D5FF40"/><text y="4" fill="#0b0b0b" font-size="9" font-weight="700" text-anchor="middle">voz.mp3</text></g>'; }
+    if (lista) for (let k = 0; k < 18; k++) h += '<rect x="' + (250 + k * 4.4) + '" y="' + (78 - 8 * Math.abs(Math.sin(t * 6 + k))).toFixed(1) + '" width="2.6" height="' + (16 * Math.abs(Math.sin(t * 6 + k)) + 2).toFixed(1) + '" fill="#D5FF40"/>';
+    const c = t < 1 ? [320 - 140 * sv(t), 185 - 92 * sv(t)] : [180, 93];
+    h += (t < 1.2 ? CURSOR_G(c[0], c[1]) : "") + pieG(lista ? "Una voz por espacio, con su subtítulo" : "Sube el MP3 de cada esfera", lista);
+    svg.innerHTML = h;
+  }
+  // Narración 2: en el tour suena sola al llegar, con subtítulo, y la música baja
+  function animVoz2(svg, t) {
+    const habla = t > 0.8 && t < 4.4, m = habla ? 0.25 : 1;
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="10" y="10" width="340" height="170" rx="8" fill="#6a9fb0"/><rect x="10" y="110" width="340" height="70" fill="#8a7462"/>';
+    if (habla) {
+      h += '<rect x="90" y="22" width="180" height="40" rx="20" fill="rgba(11,11,11,.8)"/><circle cx="110" cy="42" r="12" fill="#D5FF40"/><rect x="106" y="36" width="3" height="12" fill="#0b0b0b"/><rect x="112" y="36" width="3" height="12" fill="#0b0b0b"/>';
+      for (let k = 0; k < 3; k++) h += '<rect x="' + (130 + k * 5) + '" y="' + (38 - 4 * Math.abs(Math.sin(t * 7 + k))).toFixed(1) + '" width="3" height="' + (6 + 8 * Math.abs(Math.sin(t * 7 + k))).toFixed(1) + '" fill="#D5FF40"/>';
+      h += '<text x="150" y="40" fill="#fff" font-size="9" font-weight="700">Narración · Sala</text><text x="130" y="54" fill="#fff" font-size="8.5">' + "Esta es la sala, con doble altura…".slice(0, Math.floor((t - 0.8) * 14)) + "</text>";
+    }
+    h += '<g transform="translate(300 150)"><text x="0" y="-6" fill="#fff" font-size="8" text-anchor="middle">♫ música</text><rect x="-20" y="0" width="40" height="5" rx="2.5" fill="rgba(255,255,255,.25)"/><rect x="-20" y="0" width="' + (40 * m).toFixed(1) + '" height="5" rx="2.5" fill="#fff"/></g>';
+    h += pieG(habla ? "Al llegar suena sola y la música baja" : "Llega a la sala…", habla);
+    svg.innerHTML = h;
+  }
+  const pasosVoz = () => [
+    { el: () => (document.querySelector("#au-lista [data-au-archivo]") || {}).parentNode || $("au-lista"), titulo: "Nuevo: la narración de cada espacio", anim: animVoz1, dur: 3.6,
+      texto: "Graba en tu celular lo que dirías en cada espacio («Esta es la sala…») y <b>súbelo aquí</b> en MP3, M4A o WAV. A un lado escribe el <b>subtítulo</b> para quien ve el tour sin sonido." },
+    { el: "#au-conf", titulo: "Así suena en el tour", anim: animVoz2, dur: 5,
+      texto: "Cuando tu cliente llega a esa esfera la voz <b>suena sola</b> (en el celular, con su primer toque) y la <b>música baja</b> mientras habla. Arriba sale una pastilla para pausarla o volver a oírla." },
+  ];
+  const guiaVoz = (repetir) => (repetir ? mostrarGuia("nuevo-narracion", pasosVoz(), { repetir: true }) : guiaNueva("nuevo-narracion", pasosVoz, () => nav.sec + "/" + nav.sub === "media/audios"));
+  // Acabados: la ficha que se arma con cada material
+  function animAcab(svg, t) {
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="90" y="12" width="180" height="168" rx="12" fill="#F6F4F0"/><text x="104" y="32" fill="#8A857C" font-size="7.5" font-weight="700" letter-spacing="1.2">ACABADOS</text><text x="104" y="48" fill="#1D1C1A" font-size="14" font-weight="800">Cocina</text>';
+    [["Cubierta", "Cuarzo Calacatta", "$4,800 m²", "#e9e4dc"], ["Gabinetes", "Nogal mate", "", "#8a6a4a"], ["Piso", "Porcelanato 60×120", "$690 m²", "#cfc8bd"]].forEach(([c, n, pr, col], k) => {
+      const a = Math.max(0, Math.min(1, (t - 0.6 - k * 0.9) / 0.5)); if (!a) return;
+      const y = 58 + k * 38;
+      h += '<g opacity="' + a.toFixed(2) + '"><rect x="98" y="' + y + '" width="164" height="34" rx="7" fill="#fff"/><rect x="102" y="' + (y + 4) + '" width="26" height="26" rx="4" fill="' + col + '"/><text x="134" y="' + (y + 12) + '" fill="#8A857C" font-size="6.5" font-weight="700">' + c.toUpperCase() + '</text><text x="134" y="' + (y + 22) + '" fill="#1D1C1A" font-size="8.5" font-weight="700">' + n + "</text>" + (pr ? '<text x="134" y="' + (y + 31) + '" fill="#1D1C1A" font-size="7.5">' + pr + "</text>" : "") + "</g>";
+    });
+    h += pieG(t > 3.2 ? "Foto, marca, medida, precio y enlace" : "Agrega cada material o mueble", t > 3.2);
+    svg.innerHTML = h;
+  }
+  // Cotas: 2 puntos en la base del muro dan el largo; piso y arriba, la altura
+  function animCota(svg, t) {
+    let h = '<rect width="360" height="200" fill="#1a2014"/><path d="M60 30 L300 30 L300 140 L60 140Z" fill="#cfc8bd"/><path d="M0 0 L60 30 L60 140 L0 186Z" fill="#b8b0a4"/><path d="M360 0 L300 30 L300 140 L360 186Z" fill="#b8b0a4"/><path d="M0 186 L60 140 L300 140 L360 186Z" fill="#8a7462"/>';
+    const A = [70, 140], B = [290, 140], C = [180, 140], D = [180, 30];
+    const largo = t > 1.9, alto = t > 3.9;
+    const tic = (x1, y1, x2, y2) => '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="#fff" stroke-width="2"/>';
+    if (t > 0.9) h += '<circle cx="70" cy="140" r="4" fill="#D5FF40" stroke="#0b0b0b"/>';
+    if (largo) h += '<line x1="70" y1="132" x2="290" y2="132" stroke="rgba(0,0,0,.4)" stroke-width="4"/><line x1="70" y1="132" x2="290" y2="132" stroke="#fff" stroke-width="2"/>' + tic(70, 125, 70, 139) + tic(290, 125, 290, 139) + '<rect x="156" y="112" width="48" height="16" rx="4" fill="rgba(11,11,11,.85)"/><text x="180" y="124" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">4.20 m</text>';
+    if (alto) h += '<line x1="240" y1="140" x2="240" y2="30" stroke="#fff" stroke-width="2"/>' + tic(233, 140, 247, 140) + tic(233, 30, 247, 30) + '<g transform="translate(232 85) rotate(-90)"><rect x="-24" y="-16" width="48" height="16" rx="4" fill="rgba(11,11,11,.85)"/><text y="-4" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">2.60 m</text></g>';
+    const ruta = [[0, [330, 190]], [0.9, A], [1.8, B], [2.9, [240, 140]], [3.8, [240, 30]], [5, [330, 190]]];
+    let c = ruta[0][1]; for (let k = 1; k < ruta.length; k++) { const [t0, p0] = ruta[k - 1], [t1, p1] = ruta[k]; if (t >= t0 && t < t1) { const u = sv((t - t0) / (t1 - t0)); c = [p0[0] + (p1[0] - p0[0]) * u, p0[1] + (p1[1] - p0[1]) * u]; } else if (t >= t1) c = p1; }
+    h += CURSOR_G(c[0], c[1]) + pieG(alto ? "Uno en el piso y otro arriba: la altura" : largo ? "Listo: Mozari calcula el largo" : "Toca el inicio y el final del muro, en el piso", largo);
+    svg.innerHTML = h;
+  }
   // Capas: los dos botones nuevos de arriba (plano de referencia y foto 360)
   const guiaCapasNuevas = () => guiaNueva("nuevo-capas", () => [
     esVisible("#ref-boton") && { el: "#ref-boton", titulo: "Nuevo: plano de referencia", anim: animRef, dur: 4.5,
@@ -3503,6 +3618,8 @@
   function guiasDeSeccion(clave) {
     if (MODO !== "nube") return;
     if (clave === "panoramas/capas") guiaCapasNuevas();
+    if (clave === "media/planos" && enLab("planos")) guiaPlanos();
+    if (clave === "media/audios" && enLab("narracion")) guiaVoz();
     if (clave === "panoramas/lotes" && enLab("fichas")) guiaNueva("nuevo-fichas", [{ el: "#ficha-editor", titulo: "Nuevo: la ficha del lote con tu marca",
       texto: "Diseña lo que ve tu cliente al tocar un lote: <b>logo</b>, colores, tipografía, el plano del lote y su ubicación. Elige una plantilla y prende <b>Usar esta ficha en el tour</b>." }], () => nav.sub === "lotes" && esVisible("#ficha-editor"));
     if (/^publicar\//.test(clave) && enLab("estadisticas")) guiaNueva("nuevo-estadisticas", [{ el: () => [...document.querySelectorAll("#subtabs button")].find((b) => /Estad/.test(b.textContent)),
@@ -4149,7 +4266,7 @@
     avisar(r && r.ok ? "Reporte actualizado" : "No se pudo actualizar"); if (r && r.ok) pintarReportes();
   });
   // Lo que pagó cada cuenta y por dónde (Mercado Pago en pesos, PayPal en dólares)
-  const METODO_TXT = { mercadopago: "Mercado Pago", paypal: "PayPal", cupon: "Link de regalo" };
+  const METODO_TXT = { mercadopago: "Mercado Pago", paypal: "PayPal", stripe: "Stripe", cupon: "Link de regalo" };
   const dinero = (n, mon) => "$" + Number(n || 0).toLocaleString("es-MX", { maximumFractionDigits: 2 }) + " " + (mon || "MXN");
   const sumaPorMoneda = (pagos) => pagos.reduce((t, x) => { const m = x.moneda || "MXN"; t[m] = (t[m] || 0) + (+x.monto || 0); return t; }, {});
   function pagoDe(c) {
@@ -4248,7 +4365,9 @@
   const COBRO = { pro: 990, desarrollos: 4990, espacio: 390 }, COBRO_USD = { pro: 59, desarrollos: 299, espacio: 25 };
   // Cómo paga: Mercado Pago en pesos (México) o PayPal en dólares (resto del mundo). Se sugiere según el país.
   let preciosPago = null;
-  const enUSD = () => pago.metodo === "paypal";
+  // Stripe: con tarjeta (y OXXO) en pesos desde México, en dólares desde fuera
+  const stripeUSD = () => !!(preciosPago && preciosPago.pais && preciosPago.pais !== "MX");
+  const enUSD = () => pago.metodo === "paypal" || (pago.metodo === "stripe" && stripeUSD());
   const tablaPago = () => (enUSD() ? COBRO_USD : COBRO);
   const QUE_INCLUYE = {
     pro: ["Tours y esferas sin límite", "Hosting incluido: 10 GB", "Sin la marca de Mozari en tours sin lotes"],
@@ -4278,13 +4397,14 @@
     if ($("dlg-pago").open) pintarPago();
   }
   const pesos = (n) => "$" + n.toLocaleString("es-MX") + (enUSD() ? " USD" : "");
-  const NOM_METODO = { mercadopago: "Mercado Pago", paypal: "PayPal" };
-  const notaPago = () => enUSD() ? "Pago con PayPal en dólares: tarjeta de crédito o débito, o tu saldo de PayPal." : "Tarjeta, OXXO o saldo de Mercado Pago. Precios en pesos mexicanos.";
+  const NOM_METODO = { mercadopago: "Mercado Pago", paypal: "PayPal", stripe: "tarjeta" };
+  const notaPago = () => pago.metodo === "stripe" ? "Pago seguro con Stripe: tarjeta de crédito o débito, o Apple Pay" + (enUSD() ? ", en dólares." : ", en pesos mexicanos.") : enUSD() ? "Pago con PayPal en dólares: tarjeta de crédito o débito, o tu saldo de PayPal." : "Tarjeta, OXXO o saldo de Mercado Pago. Precios en pesos mexicanos.";
   const elegirMetodo = () => {
     const m = preciosPago && preciosPago.metodos;
     const otro = enUSD() ? "mercadopago" : "paypal";
-    return '<div class="dp-metodo" role="group" aria-label="Forma de pago">' + ["mercadopago", "paypal"].map((k) =>
-      '<button data-dp-metodo="' + k + '" aria-pressed="' + (pago.metodo === k) + '"' + (m && !m[k] ? " disabled" : "") + "><b>" + NOM_METODO[k] + "</b><small>" + (k === "paypal" ? "Fuera de México · USD" : "México · MXN") + "</small></button>").join("") + "</div>";
+    const ks = ["mercadopago", "paypal"].concat(m && m.stripe ? ["stripe"] : []);
+    return '<div class="dp-metodo" role="group" aria-label="Forma de pago"' + (ks.length === 3 ? ' style="grid-template-columns:repeat(3,1fr)"' : "") + ">" + ks.map((k) =>
+      '<button data-dp-metodo="' + k + '" aria-pressed="' + (pago.metodo === k) + '"' + (m && !m[k] ? " disabled" : "") + "><b>" + (k === "stripe" ? "Tarjeta" : NOM_METODO[k]) + "</b><small>" + (k === "stripe" ? "Stripe · " + (stripeUSD() ? "USD" : "MXN") : k === "paypal" ? "Fuera de México · USD" : "México · MXN") + "</small></button>").join("") + "</div>";
   };
   function pintarPago() {
     if (pago.plan === "espacio") {
@@ -4353,8 +4473,8 @@
     const me = ev.target.closest("[data-dp-metodo]"); if (me && !me.disabled) { pago.metodo = me.dataset.dpMetodo; pintarPago(); return; }
     const b = ev.target.closest("[data-dp-pagar]");
     if (b) {
-      b.disabled = true; b.textContent = "Abriendo " + NOM_METODO[pago.metodo] + "…";
-      const r = await fetch("api/pagos/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ plan: pago.plan, metodo: pago.metodo, cupon: cuponPago ? cuponPago.codigo : "" }) }).catch(() => null);
+      b.disabled = true; b.textContent = pago.metodo === "stripe" ? "Abriendo el pago seguro…" : "Abriendo " + NOM_METODO[pago.metodo] + "…";
+      const r = await fetch("api/pagos/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ plan: pago.plan, metodo: pago.metodo, moneda: enUSD() ? "USD" : "MXN", cupon: cuponPago ? cuponPago.codigo : "" }) }).catch(() => null);
       const d = r ? await r.json().catch(() => ({})) : {};
       if (!r || !r.ok || !d.url) { b.disabled = false; pintarPago(); avisar(d.error || "No se pudo abrir el pago. Intenta de nuevo."); return; }
       location.href = d.url;
@@ -4380,6 +4500,8 @@
       $("mv-compu").hidden = true;
       pintarCuentas();
     }
+    // Disponibilidad desde el celular (Laboratorio «lotes-movil»): solo licencias de pago
+    if (enLab("lotes-movil") && (NUBE.admin || !PLAN.marca) && matchMedia("(max-width: 960px)").matches) setTimeout(lotesMovil, 0);
     // Desde el cel: se manda el link para abrirlo en la compu (WhatsApp, correo…) o se copia
     $("mv-link").addEventListener("click", async () => {
       const link = location.origin + "/";
@@ -4387,6 +4509,116 @@
       try { await navigator.clipboard.writeText(link); avisar("Link copiado: " + link); } catch (e) { avisar(link); }
     });
   }
+  // =================== DISPONIBILIDAD DESDE EL CELULAR (Laboratorio «lotes-movil», pedido de Amar 11 nov 2026) ===================
+  // Vendiste un lote y no estás en la compu: aquí eliges el tour, tocas el lote y lo marcas apartado o vendido.
+  // Se cambia en el borrador y en el tour publicado al momento (el servidor lo hace con PATCH …/estados).
+  const LM = { tours: [], id: "", d: null, buscar: "", mz: "" };
+  const llaveLM = (mz, num) => String(mz == null ? "" : mz).trim().toLowerCase() + "|" + String(num == null ? "" : num).trim().toLowerCase();
+  const lotesDeTour = (d) => {
+    const m = new Map();
+    Object.values(d.capas || {}).forEach((l) => (Array.isArray(l) ? l : []).forEach((c) => {
+      if (!c || !c.lote || (!String(c.lote.numero || "").trim() && !String(c.lote.manzana || "").trim())) return;
+      const k = llaveLM(c.lote.manzana, c.lote.numero);
+      if (!m.has(k)) m.set(k, { k, mz: String(c.lote.manzana || ""), num: String(c.lote.numero || ""), estado: c.lote.estado || "disponible", area: c.lote.area || "", precio: c.lote.precio || "" });
+    }));
+    const n = (v) => { const x = parseFloat(v); return isFinite(x) ? x : Infinity; };
+    return [...m.values()].sort((a, b) => a.mz.localeCompare(b.mz, "es", { numeric: true }) || n(a.num) - n(b.num) || a.num.localeCompare(b.num, "es", { numeric: true }));
+  };
+  const estadosLM = () => (LM.d && Array.isArray(LM.d.lotesEstados) && LM.d.lotesEstados.length ? LM.d.lotesEstados : ESTADOS_DEF);
+  const termLM = () => { const t = (LM.d && LM.d.proyecto && LM.d.proyecto.terminos) || {}; return { lote: t.lote || TERMINOS_DEF.lote, manzana: t.manzana || TERMINOS_DEF.manzana }; };
+  async function lotesMovil() {
+    const c = $("mv-lotes"); c.hidden = false;
+    document.querySelector(".movil .logo-m").after(c); // arriba de todo: es lo que se usa con prisa
+    c.innerHTML = "<h2>Disponibilidad</h2><p class=\"nota\">Cargando tus tours…</p>";
+    const r = await fetch("api/tours", { cache: "no-store" }).catch(() => null), d = r && r.ok ? await r.json().catch(() => ({})) : {};
+    LM.tours = d.tours || [];
+    let ult = ""; try { ult = localStorage.getItem("mz-lm-tour") || ""; } catch (e) { /* sin almacenamiento */ }
+    LM.id = LM.tours.some((t) => t.id === ult) ? ult : (LM.tours[0] || {}).id || "";
+    if (LM.id) await abrirLM(LM.id); else pintarLM();
+    guiaNueva("nuevo-lotes-movil", pasosLM, () => !$("mv-lotes").hidden);
+  }
+  async function abrirLM(id) {
+    LM.id = id; LM.d = null; LM.mz = ""; LM.buscar = ""; pintarLM(true);
+    try { localStorage.setItem("mz-lm-tour", id); } catch (e) { /* sin almacenamiento */ }
+    const r = await fetch("api/tours/" + id, { cache: "no-store" }).catch(() => null);
+    LM.d = r && r.ok ? await r.json().catch(() => null) : null;
+    pintarLM();
+  }
+  function pintarLM(cargando) {
+    const c = $("mv-lotes"), T = termLM(), E = estadosLM();
+    let h = "<h2>Disponibilidad</h2><p class=\"nota\">Vendiste o apartaste algo? Márcalo aquí y tu tour publicado cambia al momento.</p>";
+    if (!LM.tours.length) { c.innerHTML = h + '<div class="lm-vacio">Aún no tienes tours.</div>'; return; }
+    h += '<select id="lm-tour" aria-label="Tour">' + LM.tours.map((t) => '<option value="' + esc(t.id) + '"' + (t.id === LM.id ? " selected" : "") + ">" + esc(t.nombre || "Tour") + "</option>").join("") + "</select>";
+    if (cargando || !LM.d) { c.innerHTML = h + '<div class="lm-vacio">' + (cargando ? "Cargando…" : "No se pudo abrir este tour.") + "</div>"; return; }
+    const lotes = lotesDeTour(LM.d);
+    if (!lotes.length) { c.innerHTML = h + '<div class="lm-vacio">Este tour no tiene ' + esc(plural(T.lote).toLowerCase()) + ".</div>"; return; }
+    const cuenta = {}; lotes.forEach((x) => (cuenta[x.estado] = (cuenta[x.estado] || 0) + 1));
+    h += '<div class="lm-resumen">' + E.filter((e) => cuenta[e.id]).map((e) => '<span style="--c:' + esc(e.color) + '"><i class="lm-punto"></i>' + esc(e.nombre) + " <b>" + cuenta[e.id] + "</b></span>").join("") + "</div>";
+    const mzs = [...new Set(lotes.map((x) => x.mz))];
+    if (mzs.length > 1) h += '<div class="lm-mzs">' + ['<button data-lm-mz="" aria-pressed="' + !LM.mz + '">Todas</button>'].concat(mzs.map((m) => '<button data-lm-mz="' + esc(m) + '" aria-pressed="' + (LM.mz === m) + '">' + esc(T.manzana + " " + (m || "—")) + "</button>")).join("") + "</div>";
+    h += '<input type="search" id="lm-buscar" inputmode="numeric" placeholder="Busca por número" value="' + esc(LM.buscar) + '">';
+    const ver = lotes.filter((x) => (!LM.mz || x.mz === LM.mz) && (!LM.buscar || x.num.toLowerCase().includes(LM.buscar.toLowerCase())));
+    let grupo = null, lista = "";
+    ver.forEach((x) => {
+      if (mzs.length > 1 && x.mz !== grupo) { grupo = x.mz; lista += "<h3>" + esc(T.manzana + " " + (x.mz || "—")) + "</h3>"; }
+      const e = E.find((y) => y.id === x.estado) || E[0];
+      lista += '<button class="lm-lote" data-lm="' + esc(x.k) + '"><span><b>' + esc(T.lote + " " + x.num) + "</b><small>" + [x.mz ? T.manzana + " " + x.mz : "", x.area ? x.area + " m²" : "", x.precio ? "$" + esc(x.precio) : ""].filter(Boolean).map(esc).join(" · ") + '</small></span><span class="lm-est" style="--c:' + esc(e.color) + '"><i class="lm-punto"></i>' + esc(e.nombre) + "</span></button>";
+    });
+    c.innerHTML = h + '<div class="lm-lista" id="lm-lista">' + (lista || '<div class="lm-vacio">Ningún ' + esc(T.lote.toLowerCase()) + " con ese número.</div>") + "</div>";
+  }
+  function hojaLM(k) {
+    const x = lotesDeTour(LM.d).find((y) => y.k === k); if (!x) return;
+    const T = termLM(), hoja = document.createElement("div");
+    hoja.className = "lm-hoja"; hoja.setAttribute("role", "dialog");
+    hoja.innerHTML = "<div><h3>" + esc(T.lote + " " + x.num) + (x.mz ? " · " + esc(T.manzana + " " + x.mz) : "") + "</h3><p>Toca su nuevo estado.</p>" +
+      estadosLM().map((e) => '<button class="lm-opcion" data-lm-estado="' + esc(e.id) + '" aria-pressed="' + (e.id === x.estado) + '" style="--c:' + esc(e.color) + '"><i class="lm-punto"></i>' + esc(e.nombre) + (e.id === x.estado ? "<small>Así está</small>" : "") + "</button>").join("") +
+      '<button class="btn-sec" data-lm-cerrar style="margin-top:4px">Cancelar</button></div>';
+    document.body.appendChild(hoja);
+    hoja.addEventListener("click", async (ev) => {
+      if (ev.target === hoja || ev.target.closest("[data-lm-cerrar]")) { hoja.remove(); return; }
+      const b = ev.target.closest("[data-lm-estado]"); if (!b || b.disabled) return;
+      if (b.dataset.lmEstado === x.estado) { hoja.remove(); return; }
+      hoja.querySelectorAll("button").forEach((y) => (y.disabled = true)); b.innerHTML += "<small>Guardando…</small>";
+      const r = await fetch("api/tours/" + LM.id + "/estados", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ cambios: [{ mz: x.mz, num: x.num, estado: b.dataset.lmEstado }] }) }).catch(() => null);
+      const d = r ? await r.json().catch(() => ({})) : {};
+      hoja.remove();
+      if (!r || !r.ok) { avisar(d.error || "No se pudo cambiar. Revisa tu internet e intenta de nuevo."); return; }
+      Object.values(LM.d.capas || {}).forEach((l) => (Array.isArray(l) ? l : []).forEach((c) => { if (c && c.lote && llaveLM(c.lote.manzana, c.lote.numero) === k) c.lote.estado = b.dataset.lmEstado; }));
+      pintarLM();
+      const e = estadosLM().find((y) => y.id === b.dataset.lmEstado);
+      avisar(T.lote + " " + x.num + " quedó " + (e ? e.nombre : b.dataset.lmEstado) + (d.enTour ? ". Ya se ve en tu tour." : ". Se verá en tu tour cuando lo publiques."), 5000);
+    });
+  }
+  $("mv-lotes").addEventListener("click", (ev) => {
+    const l = ev.target.closest("[data-lm]"); if (l) { hojaLM(l.dataset.lm); return; }
+    const m = ev.target.closest("[data-lm-mz]"); if (m) { LM.mz = m.dataset.lmMz; pintarLM(); }
+  });
+  $("mv-lotes").addEventListener("change", (ev) => { if (ev.target.id === "lm-tour") abrirLM(ev.target.value); });
+  $("mv-lotes").addEventListener("input", (ev) => {
+    if (ev.target.id !== "lm-buscar") return;
+    LM.buscar = ev.target.value.trim(); const pos = ev.target.selectionStart;
+    pintarLM(); const i = $("lm-buscar"); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch (e) { /* nada */ } }
+  });
+  // Mini tutorial de la primera vez (regla de Amar: toda función nueva lleva el suyo)
+  function animLM(svg, t) {
+    const hoja = t > 1.2 && t < 3.6, vendido = t >= 3.3;
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="120" y="6" width="120" height="188" rx="16" fill="#0b0b0b" stroke="rgba(255,255,255,.3)"/><text x="132" y="28" fill="#fff" font-size="10" font-weight="700">Disponibilidad</text>';
+    [["Lote 11", "Disponible", "#22B573"], ["Lote 12", vendido ? "Vendido" : "Disponible", vendido ? "#E5484D" : "#22B573"], ["Lote 13", "Apartado", "#F5A524"]].forEach(([n, e, c], i) => {
+      const y = 40 + i * 30;
+      h += '<rect x="128" y="' + y + '" width="104" height="24" rx="7" fill="#1c1f19" stroke="' + (i === 1 && t > 0.8 && t < 1.3 ? "#D5FF40" : "rgba(255,255,255,.12)") + '"/><text x="135" y="' + (y + 15) + '" fill="#fff" font-size="8.5" font-weight="600">' + n + '</text><rect x="183" y="' + (y + 6) + '" width="44" height="12" rx="6" fill="' + c + '" fill-opacity=".25" stroke="' + c + '"/><text x="205" y="' + (y + 15) + '" fill="#fff" font-size="6.5" text-anchor="middle">' + e + "</text>";
+    });
+    if (hoja) {
+      h += '<rect x="120" y="110" width="120" height="84" rx="14" fill="#232622"/>';
+      [["Disponible", "#22B573"], ["Apartado", "#F5A524"], ["Vendido", "#E5484D"]].forEach(([e, c], i) => (h += '<rect x="128" y="' + (118 + i * 24) + '" width="104" height="19" rx="6" fill="' + (i === 2 && t > 2.9 ? c : "#0b0b0b") + '" fill-opacity="' + (i === 2 && t > 2.9 ? 0.35 : 1) + '" stroke="' + c + '"/><circle cx="137" cy="' + (127.5 + i * 24) + '" r="3" fill="' + c + '"/><text x="144" y="' + (131 + i * 24) + '" fill="#fff" font-size="8" font-weight="600">' + e + "</text>"));
+    }
+    const c = t < 0.9 ? [300 - 110 * sv(t / 0.9), 180 - 98 * sv(t / 0.9)] : t < 2.9 ? [190 + (180 - 190) * sv((t - 1.6) / 1.2), 82 + (172 - 82) * sv((t - 1.6) / 1.2)] : [180, 172];
+    h += (t < 3.5 ? CURSOR_G(c[0], c[1]) : "") + pieG(vendido ? "Listo: tu tour ya dice Vendido" : t > 1.2 ? "Elige Apartado o Vendido" : "Toca el lote", vendido);
+    svg.innerHTML = h;
+  }
+  const pasosLM = () => [
+    { el: () => $("lm-lista") || $("mv-lotes"), titulo: "Nuevo: tus lotes desde el celular", anim: animLM, dur: 4.6,
+      texto: "Elige el tour, <b>toca el lote</b> y márcalo <b>Apartado</b> o <b>Vendido</b>. Tu tour publicado cambia al momento, sin volver a publicar. Usa el buscador para encontrar el número rápido." },
+  ];
   // Al volver del escaparate (?comprar=) o de Mercado Pago (?pago=)
   if (MODO === "nube") {
     const q = new URLSearchParams(location.search);
@@ -9160,13 +9392,13 @@ void main(){
   // Ficha de acabados (Laboratorio «acabados»): un punto que abre la ficha de los materiales y muebles de ese lugar
   if (enLab("acabados")) $("add-acab").hidden = false;
   if (enLab("cotas")) $("add-cota").hidden = false;
-  $("add-cota").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "cota") empezarDibujo("cota"); });
+  $("add-cota").addEventListener("click", () => { const era = motorEd.dibujo && motorEd.dibujo.tipo; if (motorEd.dibujo) terminarDibujo(false); if (era !== "cota") guiaCapa("cota", () => empezarDibujo("cota")); });
   $("add-acab").addEventListener("click", () => {
     if (motorEd.dibujo) terminarDibujo(false);
     const k = centro();
     const c = { id: nuevoId(), tipo: "hotspot", nombre: "Acabados", visible: true, yaw: k.yaw, pitch: k.pitch, accion: "acabado", texto: "", acabados: [{}] };
     cs().push(c); motorEd.elegida = c.id; cambio();
-    avisar("Arrastra el punto sobre el piso, la cubierta o el mueble, y a la derecha llena su ficha");
+    setTimeout(() => guiaCapa("acabado", () => avisar("Arrastra el punto sobre el piso, la cubierta o el mueble, y a la derecha llena su ficha")), 400);
   });
   $("add-hs").addEventListener("click", () => {
     if (motorEd.dibujo) terminarDibujo(false);
@@ -9377,7 +9609,7 @@ void main(){
         '<div class="ac-campos">' + inp(i, "nombre", "Nombre (Porcelanato Calacatta)", x.nombre) + inp(i, "categoria", "Tipo (Piso, Cubierta, Mueble…)", x.categoria) + inp(i, "marca", "Marca o modelo", x.marca) +
         inp(i, "detalle", "Medida, color o acabado", x.detalle) + inp(i, "precio", "Precio (opcional)", x.precio) + inp(i, "enlace", "Enlace del producto (opcional)", x.enlace, "url") + "</div>" +
         '<button class="ojo ac-quitar" data-ac-quitar="' + i + '" aria-label="Quitar este acabado" title="Quitar">✕</button></div>').join("") + "</div>" +
-        (c.acabados.length < 8 ? '<div class="orden"><button class="mini" data-ac-mas>+ Otro acabado</button></div>' : "") +
+        '<div class="orden">' + (c.acabados.length < 8 ? '<button class="mini" data-ac-mas>+ Otro acabado</button>' : "") + '<button class="mini" data-guia-capa="acabado">▶ ¿Cómo se usa?</button></div>' +
         '<datalist id="ac-tipos">' + ["Piso", "Muro", "Cubierta", "Gabinetes", "Mueble", "Iluminación", "Grifería", "Cancelería", "Carpintería", "Textil", "Decoración", "Electrodoméstico"].map((t) => "<option value=\"" + t + "\">").join("") + "</datalist>";
     }
     if (a !== "ninguna") g += '<p class="nota">Funciona en la Vista previa y en el tour publicado.</p>';
@@ -9579,7 +9811,7 @@ void main(){
         '<p class="nota" id="cota-nota">' + (v ? "Mozari la calcula: <b>" + v.toFixed(2) + " m</b>, con la cámara a " + alturaCamara(aqui).toFixed(2) + " m del piso. Si tienes la medida del plano, escríbela y manda esa." : "Para que Mozari la calcule, pon los 2 puntos en el piso (el largo de un muro) o uno en el piso y otro justo arriba (una altura). Si no, escribe la medida.") + "</p>" +
         campo("Altura de la cámara", '<input type="number" min="0.3" max="5" step="0.05" data-cota-altura value="' + alturaCamara(aqui).toFixed(2) + '">') +
         '<p class="nota">A qué altura del piso estaba la cámara en esta esfera (en metros). Vale para todas sus cotas.</p>' +
-        campo("Color", campoColor("camino.color", c.camino.color)) + "</div>";
+        campo("Color", campoColor("camino.color", c.camino.color)) + '<button class="mini tr-como" data-guia-capa="cota">▶ ¿Cómo se usa? Ver animación</button></div>';
     }
     else if (c.camino) {
       const k = c.camino;
@@ -9817,6 +10049,12 @@ void main(){
   }
   $("props").addEventListener("focusin", (ev) => { const i = ev.target.dataset && ev.target.dataset.lado; if (i !== undefined && motorEd) { motorEd.ladoResaltado = { id: motorEd.elegida, i: +i }; motorEd.render(); } });
   $("props").addEventListener("focusout", (ev) => { if (ev.target.dataset && ev.target.dataset.lado !== undefined && motorEd) { motorEd.ladoResaltado = null; motorEd.render(); } });
+  // Volver a ver el tutorial de una herramienta de Capas
+  $("props").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-guia-capa]"); if (!b) return;
+    const g = GUIAS_CAPAS[b.dataset.guiaCapa] && GUIAS_CAPAS[b.dataset.guiaCapa](true);
+    if (g) mostrarGuia("capa-" + b.dataset.guiaCapa, g.pasos, { repetir: true });
+  });
   // Cotas: la altura de la cámara de la esfera (vale para todas sus cotas)
   $("props").addEventListener("change", (ev) => {
     if (!ev.target.dataset || ev.target.dataset.cotaAltura === undefined || !motorEd) return;
@@ -11049,7 +11287,7 @@ void main(){
     ui.style.setProperty("--sk-radio-img", Math.max(0, sk.radio - 8) + "px");
     const btn = (k, etq, cls) => '<button class="sk-btn ' + cls + '" data-sk="' + k + '" aria-label="' + etq + '">' + ICO_SK[k] + "</button>";
     const c = {
-      sk, vertical, escenas: escenasTour(),
+      sk, vertical, escenas: est.escenas,
       logo: sk.logo.tipo === "propio" && sk.logo.img ? '<span class="sk-logo"><img src="' + esc(urlArchivo(sk.logo.img)) + '" alt=""></span>' : sk.logo.tipo === "mozari" ? '<span class="sk-logo"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg></span>' : "",
       botones: (cls) => (sk.botones.musica && o.hayMusica ? btn("musica", "Silenciar música", cls) : "") + (sk.botones.zoom ? btn("menos", "Alejar", cls) + btn("mas", "Acercar", cls) : "") + (sk.botones.limpiar ? btn("limpiar", "Ocultar puntos y lotes", cls) : "") + (sk.botones.pantalla ? btn("pantalla", "Pantalla completa", cls) : ""),
       cerrar: (cls) => (o.cerrable ? btn("cerrar", "Cerrar vista previa", cls) : ""),
@@ -11079,7 +11317,7 @@ void main(){
       if (pie) pie.insertAdjacentHTML("beforeend", h.replace('class="sk-credito"', 'class="sk-credito en-panel"')); else ui.insertAdjacentHTML("beforeend", h);
     }
     let actualId = null;
-    const ids = escenasTour().map((e) => e.id);
+    const ids = est.escenas.map((e) => e.id);
     const irRel = (d) => { if (!actualId || !o.motor()) return; const i = ids.indexOf(actualId); o.motor().mostrar(ids[(i + d + ids.length) % ids.length]); };
     ui.onclick = (ev) => {
       const it = ev.target.closest("[data-ir]");
@@ -11268,56 +11506,6 @@ void main(){
     return { escena(id) { if (VOZ.id === id && VOZ.estado !== "nada") pintarVoz(); else vozEscena(id); } };
   }
   function callarVoz() { vozTour.pause(); musicaPorVoz(false); VOZ.id = null; VOZ.estado = "nada"; VOZ.oidas.clear(); VOZ.caja = null; }
-  // Antes y después (Laboratorio «antes-despues»): la esfera tiene su otra versión (escena.comparar = { id, izq, der, auto }).
-  // La otra versión no sale en el menú del tour; se ve encima, recortada por una línea que se jala.
-  const esAlterna = (id) => est.escenas.some((e) => e.comparar && e.comparar.id === id && e.id !== id && escena(e.comparar.id));
-  const escenasTour = () => est.escenas.filter((e) => !esAlterna(e.id));
-  const parDe = (id) => { const e = escena(id), c = e && e.comparar; return c && c.id && c.id !== id && escena(c.id) ? c : null; };
-  const ICO_AD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg>';
-  function comparador(zona, motorA, par) {
-    const capa = document.createElement("div"); capa.className = "ad-capa"; capa.innerHTML = '<div class="stage"></div>';
-    const linea = document.createElement("div"); linea.className = "ad-linea";
-    linea.innerHTML = '<span class="ad-etq izq">' + esc(par.izq || "Antes") + '</span><span class="ad-etq der">' + esc(par.der || "Después") + '</span><button class="ad-asa" aria-label="Jala para comparar">' + ICO_AD + "</button>";
-    zona.appendChild(capa); zona.appendChild(linea);
-    const mB = crearMotor(capa.firstChild, { editable: false, sinHotspots: true, sinAcciones: true });
-    const vA = motorA.view();
-    mB.mostrar(par.id, 0, vA ? { yaw: vA.yaw(), pitch: vA.pitch(), fov: vA.fov() } : undefined);
-    let x = 0.5, arr = null;
-    const poner = () => { capa.style.clipPath = "inset(0 0 0 " + (x * 100).toFixed(2) + "%)"; linea.style.left = (x * 100).toFixed(2) + "%"; };
-    const sync = () => { const a = motorA.view(), b = mB.view(); if (a && b) b.setParameters({ yaw: a.yaw(), pitch: a.pitch(), fov: a.fov() }); };
-    const asa = linea.querySelector(".ad-asa");
-    asa.addEventListener("pointerdown", (ev) => { ev.preventDefault(); ev.stopPropagation(); arr = ev.pointerId; try { asa.setPointerCapture(ev.pointerId); } catch (e) { /* nada */ } });
-    asa.addEventListener("pointermove", (ev) => { if (arr !== ev.pointerId) return; const r = zona.getBoundingClientRect(); x = Math.max(0.02, Math.min(0.98, (ev.clientX - r.left) / r.width)); poner(); });
-    const soltar = (ev) => { if (arr === ev.pointerId) arr = null; };
-    asa.addEventListener("pointerup", soltar); asa.addEventListener("pointercancel", soltar);
-    ["click", "wheel", "touchstart"].forEach((t) => asa.addEventListener(t, (ev) => ev.stopPropagation(), { passive: true }));
-    poner(); sync();
-    return { sync, mover(k) { x = k; poner(); }, get x() { return x; }, destruir() { mB.destruir(); capa.remove(); linea.remove(); } };
-  }
-  // En el tour: un botón abajo al centro abre y cierra la comparación de la esfera donde estás
-  function botonComparar(ui, motorDe, zona) {
-    const st = zona._ad || (zona._ad = { comp: null, id: null });
-    if (!est.escenas.some((e) => parDe(e.id))) return { escena() {}, vista() {} };
-    const b = document.createElement("button"); b.className = "ad-boton"; b.hidden = true; b.dataset.ad = "";
-    ui.appendChild(b);
-    const pintar = () => {
-      const par = st.id && parDe(st.id); b.hidden = !par; if (!par) return;
-      b.setAttribute("aria-pressed", !!st.comp);
-      b.innerHTML = ICO_AD + (st.comp ? "Cerrar comparación" : esc(par.izq || "Antes") + " y " + esc((par.der || "Después").toLowerCase()));
-    };
-    const cerrar = () => { if (st.comp) { st.comp.destruir(); st.comp = null; } };
-    const abrir = () => { const par = parDe(st.id), m = motorDe(); if (!par || !m || st.comp) return; st.comp = comparador(zona, m, par); };
-    b.addEventListener("click", (ev) => { ev.stopPropagation(); if (st.comp) cerrar(); else abrir(); pintar(); });
-    ["pointerdown", "wheel", "touchstart"].forEach((t) => b.addEventListener(t, (ev) => ev.stopPropagation(), { passive: true }));
-    pintar();
-    return {
-      escena(id) {
-        if (st.id !== id) { cerrar(); st.id = id; const par = parDe(id); if (par && par.auto) abrir(); }
-        pintar();
-      },
-      vista() { if (st.comp) st.comp.sync(); },
-    };
-  }
   // Ficha de acabados en el tour (Laboratorio «acabados»): los materiales y muebles de ese lugar, con su foto y su enlace
   function fichaAcabados(c) {
     const l = (c.acabados || []).filter((x) => x && (x.nombre || x.foto || x.marca));
@@ -11335,7 +11523,7 @@ void main(){
   // Une un motor con su skin y su piloto automático (vista previa y editor de skin)
   // Siguiente esfera de la presentación: sigue el orden de Panoramas, se salta las marcadas y al final vuelve al inicio (o se detiene)
   function siguientePresentacion(id) {
-    const l = escenasTour(), i = l.findIndex((e) => e.id === id), pr = P().presentacion || {};
+    const l = est.escenas, i = l.findIndex((e) => e.id === id), pr = P().presentacion || {};
     for (let k = 1; k <= l.length; k++) {
       const j = i + k;
       if (j >= l.length && pr.alTerminar === "detener") return null;
@@ -11689,9 +11877,9 @@ void main(){
       stage.style.setProperty("--hs-color", est.skin.acento);
       stage.style.setProperty("--hs-sobre", textoSobre(est.skin.acento));
       api = renderSkin(ui, Object.assign({}, o, { orientacion, motor: () => motor }));
-      const mini = miniPlano(ui, () => motor), voz = o.narrar ? pastillaVoz(ui) : { escena() {} }, comp = o.narrar ? botonComparar(ui, () => motor, stage.parentNode) : { escena() {}, vista() {} };
-      const e0 = api.escena, v0 = api.vista; // el plano con radar, la narración y el antes y después siguen a la esfera
-      api.escena = (id) => { e0(id); mini.escena(id); voz.escena(id); comp.escena(id); }; api.vista = (v) => { v0(v); mini.vista(v); comp.vista(); };
+      const mini = miniPlano(ui, () => motor), voz = o.narrar ? pastillaVoz(ui) : { escena() {} };
+      const e0 = api.escena, v0 = api.vista; // el plano con radar y la narración siguen a la esfera
+      api.escena = (id) => { e0(id); mini.escena(id); voz.escena(id); }; api.vista = (v) => { v0(v); mini.vista(v); };
       if (actualId) api.escena(actualId); if (motor) api.vista(motor.view()); };
     pintar(o.orientacion);
     motor = crearMotor(stage, {
@@ -11710,7 +11898,6 @@ void main(){
       destruir() {
         if (piloto) piloto.detener();
         clearInterval(reloj); EVENTOS.forEach((e) => zona.removeEventListener(e, tocar));
-        if (zona._ad && zona._ad.comp) { zona._ad.comp.destruir(); zona._ad.comp = null; } if (zona._ad) zona._ad.id = null;
         motor.destruir(); motor = null; ui.innerHTML = ""; ui.onclick = null; pop.remove();
       },
     };
@@ -11871,70 +12058,6 @@ void main(){
   const orientacionPantalla = () => (window.innerWidth < window.innerHeight ? "v" : "h");
   // =================== MEDIA: FOTOS ===================
   // Biblioteca del tour: se suben una vez (reducidas a 2400 px) y se usan en cualquier capa.
-  // =================== PANORAMAS: ANTES Y DESPUÉS (Laboratorio «antes-despues», pedido de Amar 11 nov 2026) ===================
-  // Parejas de esferas del mismo lugar. La principal guarda comparar = { id: la otra, izq, der, auto }.
-  const AD = { sel: null, motor: null, comp: null, nuevoA: "", nuevoB: "" };
-  const AD_PRESETS = [["Antes", "Después"], ["Vacío", "Amueblado"], ["Obra negra", "Terminado"], ["Día", "Noche"]];
-  const parejas = () => est.escenas.filter((e) => parDe(e.id));
-  function abrirAntes() {
-    if (!AD.sel || !parDe(AD.sel)) AD.sel = (parejas()[0] || {}).id || null;
-    pintarAntes();
-  }
-  function cerrarAntes() { if (AD.comp) { AD.comp.destruir(); AD.comp = null; } if (AD.motor) { AD.motor.destruir(); AD.motor = null; } }
-  function vistaAntes() {
-    const par = AD.sel && parDe(AD.sel);
-    $("ad-vacio").hidden = !!par;
-    if (!par) { cerrarAntes(); $("ad-vacio").innerHTML = est.escenas.length < 2 ? "Sube al menos 2 esferas del mismo lugar en Panoramas → Lista." : "Elige a la izquierda la esfera y su otra versión, y toca <b>Juntar</b>.<br>Aquí la comparas como la verá tu cliente."; return; }
-    if (!AD.motor) AD.motor = crearMotor($("ad-stage"), { editable: false, sinHotspots: true, sinAcciones: true, alMoverVista: () => AD.comp && AD.comp.sync() });
-    const x = AD.comp ? AD.comp.x : 0.5;
-    if (AD.comp) { AD.comp.destruir(); AD.comp = null; }
-    if (!AD.motor.actual || AD.motor.actual.id !== AD.sel) AD.motor.mostrar(AD.sel, 0);
-    AD.comp = comparador($("ad-vista"), AD.motor, par); AD.comp.mover(x);
-  }
-  function pintarAntes() {
-    const ps = parejas(), libres = est.escenas.filter((e) => !parDe(e.id) && !esAlterna(e.id));
-    if (!libres.some((e) => e.id === AD.nuevoA)) AD.nuevoA = (libres[0] || {}).id || "";
-    if (!libres.some((e) => e.id === AD.nuevoB) || AD.nuevoB === AD.nuevoA) AD.nuevoB = (libres.find((e) => e.id !== AD.nuevoA) || {}).id || "";
-    const opc = (l, v) => l.map((e) => '<option value="' + e.id + '"' + (e.id === v ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("");
-    let h = '<div class="grupo"><b>Tus parejas</b>' + (ps.length ? '<ul class="ad-lista">' + ps.map((e) => { const c = e.comparar;
-      return '<li data-ad="' + e.id + '" aria-current="' + (e.id === AD.sel) + '"><div class="ad-par"><img src="' + thumbDe(e.id) + '" alt=""><img src="' + thumbDe(c.id) + '" alt=""></div><div><b>' + esc(e.nombre) + "</b><small>" + esc(c.izq || "Antes") + " / " + esc(c.der || "Después") + " · con " + esc(nombreDe(c.id)) + '</small></div><button class="ojo" data-ad-quitar="' + e.id + '" aria-label="Separar ' + esc(e.nombre) + '" title="Separar">✕</button></li>'; }).join("") + "</ul>" : '<p class="nota">Aún no juntas ninguna.</p>') + "</div>";
-    h += '<div class="grupo"><b>Nueva pareja</b>' + (libres.length >= 2
-      ? campo("Esfera", '<select data-ad-nuevo="A">' + opc(libres, AD.nuevoA) + "</select>") + campo("Otra versión", '<select data-ad-nuevo="B">' + opc(libres.filter((e) => e.id !== AD.nuevoA), AD.nuevoB) + "</select>") +
-        '<button class="btn-sec" data-ad-juntar>Juntar</button><p class="nota">La otra versión ya no sale en el menú del tour: solo al comparar.</p>'
-      : '<p class="nota">Necesitas 2 esferas sueltas del mismo lugar. Súbelas en Panoramas → Lista.</p>') + "</div>";
-    const par = AD.sel && parDe(AD.sel);
-    if (par) {
-      h += '<div class="grupo"><b>' + esc(nombreDe(AD.sel)) + "</b>" + campo("Izquierda", '<input type="text" maxlength="24" data-ad-k="izq" value="' + esc(par.izq || "Antes") + '">') + campo("Derecha", '<input type="text" maxlength="24" data-ad-k="der" value="' + esc(par.der || "Después") + '">') +
-        '<div class="ad-presets">' + AD_PRESETS.map(([a, b]) => '<button class="mini" data-ad-preset="' + esc(a) + "|" + esc(b) + '">' + esc(a) + " / " + esc(b) + "</button>").join("") + "</div>" +
-        '<label class="interruptor"><b>Abrir comparando al llegar</b><input type="checkbox" class="toggle" data-ad-k="auto"' + (par.auto ? " checked" : "") + "></label>" +
-        '<p class="nota">Para que coincidan, las dos fotos deben tomarse desde el mismo punto y a la misma altura. En Piloto automático deja su vista de inicio mirando a lo mismo.</p></div>';
-    }
-    $("ad-panel").innerHTML = h;
-    vistaAntes();
-  }
-  $("ad-panel").addEventListener("click", (ev) => {
-    const q = ev.target.closest("[data-ad-quitar]"), j = ev.target.closest("[data-ad-juntar]"), pr = ev.target.closest("[data-ad-preset]"), li = ev.target.closest("[data-ad]");
-    if (q) { const e = escena(q.dataset.adQuitar); delete e.comparar; if (AD.sel === e.id) AD.sel = null; guardar(); abrirAntes(); avisar(e.nombre + " ya no tiene antes y después"); return; }
-    if (j) {
-      const a = escena(AD.nuevoA), b = escena(AD.nuevoB); if (!a || !b || a === b) return;
-      a.comparar = { id: b.id, izq: "Antes", der: "Después" }; AD.sel = a.id; guardar(); pintarAntes();
-      avisar("Listo: jala la línea para comparar " + a.nombre + " con " + b.nombre); return;
-    }
-    if (pr) { const par = parDe(AD.sel); if (!par) return; const [a, b] = pr.dataset.adPreset.split("|"); par.izq = a; par.der = b; guardar(); pintarAntes(); return; }
-    if (li && !ev.target.closest("button")) { AD.sel = li.dataset.ad; pintarAntes(); }
-  });
-  $("ad-panel").addEventListener("change", (ev) => {
-    const t = ev.target;
-    if (t.dataset.adNuevo === "A") { AD.nuevoA = t.value; pintarAntes(); return; }
-    if (t.dataset.adNuevo === "B") { AD.nuevoB = t.value; return; }
-    if (t.dataset.adK === "auto") { const par = parDe(AD.sel); if (par) { par.auto = t.checked; guardar(); } }
-  });
-  $("ad-panel").addEventListener("input", (ev) => {
-    const k = ev.target.dataset.adK; if (k !== "izq" && k !== "der") return;
-    const par = parDe(AD.sel); if (!par) return;
-    par[k] = ev.target.value.trim().slice(0, 24); guardar();
-    const etq = document.querySelector("#ad-vista .ad-etq." + k); if (etq) etq.textContent = par[k] || (k === "izq" ? "Antes" : "Después");
-  });
   // =================== MEDIA: NARRACIÓN POR ESPACIO (Laboratorio «narracion», pedido de Amar 11 nov 2026) ===================
   // Cada esfera puede llevar su voz (MP3, M4A o WAV) y un subtítulo. En el tour suena sola al llegar a esa esfera y la
   // música de fondo baja mientras habla. P().narracion: { musicaBaja, unaVez }; escena.narracion: { archivo, nombre, peso, duracion, texto }
@@ -11946,7 +12069,7 @@ void main(){
     const C = narrConf(), con = est.escenas.filter((e) => e.narracion && e.narracion.archivo).length;
     $("au-conf").innerHTML = '<label class="interruptor"><b>Bajar la música mientras habla</b><input type="checkbox" class="toggle" data-au-conf="musicaBaja"' + (C.musicaBaja ? " checked" : "") + "></label>" +
       '<label class="interruptor"><b>Solo la primera vez que entra</b><input type="checkbox" class="toggle" data-au-conf="unaVez"' + (C.unaVez ? " checked" : "") + "></label>" +
-      '<span class="chip-dato">' + con + " de " + est.escenas.length + (est.escenas.length === 1 ? " esfera" : " esferas") + " con voz</span>";
+      '<button class="mini" data-au-ayuda>▶ ¿Cómo se usa?</button><span class="chip-dato">' + con + " de " + est.escenas.length + (est.escenas.length === 1 ? " esfera" : " esferas") + " con voz</span>";
     const subir = (e, txt, cls) => '<label class="' + cls + '">' + txt + '<input type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,.mp3,.m4a,.wav" data-au-archivo="' + e.id + '" hidden></label>';
     $("au-lista").innerHTML = est.escenas.length ? est.escenas.map((e) => {
       const n = e.narracion && e.narracion.archivo ? e.narracion : null, suena = vozPruebaId === e.id && !vozPrueba.paused;
@@ -11958,6 +12081,7 @@ void main(){
   }
   function cerrarAudios() { vozPrueba.pause(); vozPruebaId = null; }
   $("v-audios").addEventListener("click", (ev) => {
+    if (ev.target.closest("[data-au-ayuda]")) { guiaVoz(true); return; }
     const pl = ev.target.closest("[data-au-play]"), q = ev.target.closest("[data-au-quitar]");
     if (pl) {
       const id = pl.dataset.auPlay, n = escena(id).narracion;
@@ -12013,7 +12137,7 @@ void main(){
     const C = planosConf(), pl = planoSel();
     const cuantos = (x) => Object.keys(x.pins || {}).filter(existeEsf).length;
     let h = '<div class="grupo"><b>Tus planos</b>' + (C.lista.length ? '<ul class="pl-lista">' + C.lista.map((x) => '<li data-pl="' + x.id + '" aria-current="' + (x === pl) + '"><img src="' + esc(urlArchivo(x.archivo)) + '" alt=""><div><input type="text" maxlength="40" data-pl-nombre="' + x.id + '" value="' + esc(x.nombre) + '" aria-label="Nombre del plano"><small>' + cuantos(x) + (cuantos(x) === 1 ? " esfera" : " esferas") + '</small></div><button class="ojo" data-pl-borrar="' + x.id + '" aria-label="Quitar ' + esc(x.nombre) + '">✕</button></li>').join("") + "</ul>" : '<p class="nota">Aún no hay planos. Sube una imagen del plano: un render, una foto o la captura del PDF.</p>') +
-      '<label class="btn-sec pl-subir">+ Subir plano<input type="file" id="pl-archivo" accept="image/png,image/jpeg,image/webp" hidden></label></div>';
+      '<label class="btn-sec pl-subir">+ Subir plano<input type="file" id="pl-archivo" accept="image/png,image/jpeg,image/webp" hidden></label><button class="mini tr-como" data-pl-ayuda>▶ ¿Cómo se usa? Ver animación</button></div>';
     if (pl) {
       const puesto = PN.esf && pl.pins && pl.pins[PN.esf];
       h += '<div class="grupo"><b>Cómo se usa</b><ol class="tr-guia"><li><b>Elige una esfera</b> en la tira de abajo.</li><li><b>Toca en el plano</b> dónde está. Arrastra el punto para moverlo.</li><li><b>Gira la esfera</b> de la derecha y jala el círculo del cono hasta que apunte a lo mismo.</li></ol>' +
@@ -12103,6 +12227,7 @@ void main(){
   $("pl-panel").addEventListener("click", (ev) => {
     const borrar = ev.target.closest("[data-pl-borrar]");
     if (borrar) { const C = planosConf(), x = C.lista.find((y) => y.id === borrar.dataset.plBorrar); C.lista = C.lista.filter((y) => y !== x); if (PN.sel === borrar.dataset.plBorrar) PN.sel = null; guardar(); pintarPlanos(); avisar((x ? x.nombre : "Plano") + " quitado"); return; }
+    if (ev.target.closest("[data-pl-ayuda]")) { guiaPlanos(true); return; }
     if (ev.target.closest("[data-pl-quitar]")) { const pl = planoSel(); if (pl && pl.pins) delete pl.pins[PN.esf]; guardar(); pintarPlanos(); return; }
     const li = ev.target.closest("[data-pl]");
     if (li && !ev.target.closest("input")) { PN.sel = li.dataset.pl; pintarPlanos(); }

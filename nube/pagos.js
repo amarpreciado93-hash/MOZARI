@@ -12,17 +12,54 @@
 // PayPal: se crea una orden con el monto en USD, el cliente la aprueba en PayPal y al regresar el servidor
 // la CAPTURA (ahí se cobra); solo si quedó COMPLETED, en USD y por el monto exacto, se activa la licencia.
 // Si el cliente no regresa, la orden no se captura y no se le cobra nada.
+// Stripe (pedido de Amar, 11 nov 2026): tarjeta (y OXXO en México) por Stripe Checkout, en pesos o en dólares.
+// Se crea una sesión con el monto exacto; al regresar (y en /webhooks/stripe) el servidor CONSULTA la sesión
+// a Stripe con nuestra llave y solo si está pagada, por el monto, la moneda y la orden correctos, se activa.
+// Secretos: STRIPE_SECRET_KEY (obligatorio) y STRIPE_WEBHOOK_SECRET (firma del aviso; sin él igual se consulta).
 // Sin secretos y con DEV=1 (solo en la computadora) los pagos se simulan.
 
 import { json, error } from "./comun.js";
 import { perfil } from "./sesion.js";
 import { PLANES, COBROS, COBROS_USD, PERIODOS, sumarMeses, montoLicencia, ESPACIO_PAQUETE } from "./planes.js";
+import { contador, enviar, correoCompra } from "./correos.js";
 
 const MP = "https://api.mercadopago.com";
 const ordenClave = (ref) => "pagos/" + ref + ".json";
 const REF = /^mz-[a-z0-9]{6,40}$/;
 const simulado = (env) => !env.MP_ACCESS_TOKEN && env.DEV === "1";
 const ppSimulado = (env) => !(env.PAYPAL_CLIENT_ID && env.PAYPAL_SECRET) && env.DEV === "1";
+const stSimulado = (env) => !env.STRIPE_SECRET_KEY && env.DEV === "1";
+const ST = "https://api.stripe.com/v1";
+// Stripe recibe formularios: { a: { b: 1 } } → a[b]=1
+function formulario(o, pre, out = []) {
+  for (const [k, v] of Object.entries(o)) {
+    const n = pre ? pre + "[" + k + "]" : k;
+    if (v === undefined || v === null) continue;
+    if (typeof v === "object") formulario(v, n, out); else out.push(encodeURIComponent(n) + "=" + encodeURIComponent(String(v)));
+  }
+  return out.join("&");
+}
+async function stripe(env, ruta, datos, idem) {
+  const h = { authorization: "Bearer " + env.STRIPE_SECRET_KEY };
+  if (datos) { h["content-type"] = "application/x-www-form-urlencoded"; if (idem) h["idempotency-key"] = idem; }
+  const r = await fetch(ST + ruta, { method: datos ? "POST" : "GET", headers: h, body: datos ? formulario(datos) : undefined });
+  const d = await r.json().catch(() => ({}));
+  return { ok: r.ok, status: r.status, d };
+}
+// Consulta la sesión de Stripe de una orden y, si ya está pagada por lo correcto, activa la licencia
+async function revisarStripe(env, orden) {
+  if (orden.aplicado || !/^cs_[A-Za-z0-9_]{8,200}$/.test(orden.stripe || "")) return orden;
+  const r = await stripe(env, "/checkout/sessions/" + orden.stripe);
+  const ses = r.d || {};
+  if (!r.ok) return orden;
+  if (ses.payment_status === "paid") {
+    const ok = ses.client_reference_id === orden.ref && String(ses.currency || "").toUpperCase() === orden.moneda && Math.abs(+ses.amount_total - Math.round(orden.monto * 100)) < 1;
+    if (!ok) { orden.estado = "revisar"; orden.nota = "Monto, moneda u orden no coinciden"; await guardar(env, ordenClave(orden.ref), orden); return orden; }
+    return activar(env, orden, ses.payment_intent || ses.id);
+  }
+  if (ses.status === "complete" && ses.payment_status === "unpaid") { orden.estado = "pendiente"; await guardar(env, ordenClave(orden.ref), orden); } // OXXO: se acredita después
+  return orden;
+}
 const PP = (env) => (env.PAYPAL_ENV === "sandbox" ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com");
 let ppToken = null;
 async function paypal(env, ruta, opciones = {}) {
@@ -83,6 +120,15 @@ async function activar(env, orden, pagoId) {
   await guardar(env, "cuentas/" + p.uid + "/perfil.json", p);
   Object.assign(orden, { estado: "aprobado", aplicado: ahora.toISOString(), pago: String(pagoId), vence: p.vence || null });
   await guardar(env, ordenClave(orden.ref), orden);
+  // Correo de «gracias por tu compra» (una vez por orden; si falla, el pago queda igual)
+  if (!orden.correo && p.email && env.ENVIOS) {
+    try {
+      const cuenta = await contador(env), c = correoCompra({ nombre: p.nombre, base: "https://" + (env.DOMINIO || "mozari.app"), plan: orden.plan });
+      const r = await enviar(env, cuenta, { para: p.email, asunto: c.asunto, html: c.html, texto: c.texto });
+      await cuenta.guardar();
+      if (r === "ok") { orden.correo = new Date().toISOString(); await guardar(env, ordenClave(orden.ref), orden); }
+    } catch (e) { /* sin correo, pero con su licencia */ }
+  }
   // Cupón usado: cuenta un uso y la cuenta ya no lo puede volver a usar
   if (orden.cupon) {
     const cupon = await leer(env, cuponClave(orden.cupon));
@@ -143,7 +189,7 @@ export async function apiPagos(request, env, partes, yo) {
     const pais = (request.cf && request.cf.country) || "";
     const precios = (mon) => ({ pro: montoLicencia(yo, "pro", mon), desarrollos: montoLicencia(yo, "desarrollos", mon), espacio: montoLicencia(yo, "espacio", mon) });
     return json({ pais, sugerido: pais && pais !== "MX" ? "paypal" : "mercadopago", mxn: precios("MXN"), usd: precios("USD"),
-      metodos: { mercadopago: !!env.MP_ACCESS_TOKEN || simulado(env), paypal: !!(env.PAYPAL_CLIENT_ID && env.PAYPAL_SECRET) || ppSimulado(env) } });
+      metodos: { mercadopago: !!env.MP_ACCESS_TOKEN || simulado(env), paypal: !!(env.PAYPAL_CLIENT_ID && env.PAYPAL_SECRET) || ppSimulado(env), stripe: !!env.STRIPE_SECRET_KEY || stSimulado(env) } });
   }
 
   // Revisa un cupón y devuelve los precios con descuento para esta cuenta
@@ -176,8 +222,8 @@ export async function apiPagos(request, env, partes, yo) {
     if (!COBROS[c.plan]) return error(400, "Plan inválido");
     c.periodo = "unico";
     if (yo.admin) return error(400, "Tu cuenta ya tiene todo incluido");
-    const conPayPal = c.metodo === "paypal";
-    const lista = montoLicencia(yo, c.plan, conPayPal ? "USD" : "MXN");
+    const conPayPal = c.metodo === "paypal", conStripe = c.metodo === "stripe", moneda = conPayPal || (conStripe && c.moneda === "USD") ? "USD" : "MXN";
+    const lista = montoLicencia(yo, c.plan, moneda);
     if (!lista) return error(400, "Ya tienes esa licencia");
     let cupon = null, montoHoy = lista;
     if (c.cupon) {
@@ -185,10 +231,26 @@ export async function apiPagos(request, env, partes, yo) {
       const motivo = motivoCupon(cupon, c.plan, yo.uid);
       if (motivo) return error(400, motivo);
       if (cupon.pct >= 100) return error(400, "Este link activa tu licencia sin pagar: usa Activar");
-      montoHoy = conDescuento(lista, cupon.pct, conPayPal ? "USD" : "MXN");
+      montoHoy = conDescuento(lista, cupon.pct, moneda);
     }
     const conCupon = cupon ? { cupon: cupon.codigo, descuento: cupon.pct, montoLista: lista } : {};
     const ref = "mz-" + Date.now().toString(36) + crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
+    if (conStripe) {
+      if (!env.STRIPE_SECRET_KEY && !stSimulado(env)) return error(503, "El pago con tarjeta aún no está activo. Usa Mercado Pago o PayPal.");
+      const nombre = c.plan === "espacio" ? "Mozari +10 GB de espacio" : "Mozari " + PLANES[c.plan].nombre + " · licencia de pago único";
+      const orden = Object.assign({ ref, uid: yo.uid, email: yo.email, plan: c.plan, periodo: "unico", monto: montoHoy, moneda, metodo: "stripe", estado: "creado", creado: new Date().toISOString() }, conCupon);
+      await guardar(env, ordenClave(ref), orden);
+      if (stSimulado(env)) return json({ ref, url: url.origin + "/api/pagos/simular?ref=" + ref });
+      const r = await stripe(env, "/checkout/sessions", {
+        mode: "payment", client_reference_id: ref, customer_email: yo.email, locale: "es-419",
+        line_items: { 0: { quantity: 1, price_data: { currency: moneda.toLowerCase(), unit_amount: Math.round(montoHoy * 100), product_data: { name: nombre } } } },
+        metadata: { ref, plan: c.plan }, payment_intent_data: { metadata: { ref } },
+        success_url: url.origin + "/?pago=ok&metodo=stripe&external_reference=" + ref, cancel_url: url.origin + "/?pago=error",
+      }, ref);
+      if (!r.ok || !r.d.url) return error(502, "Stripe no respondió" + (r.d && r.d.error && r.d.error.message ? ": " + r.d.error.message : ". Intenta de nuevo en un momento."));
+      orden.stripe = r.d.id; await guardar(env, ordenClave(ref), orden);
+      return json({ ref, url: r.d.url });
+    }
     if (conPayPal) {
       if (!(env.PAYPAL_CLIENT_ID && env.PAYPAL_SECRET) && !ppSimulado(env)) return error(503, "El pago con PayPal aún no está activo. Usa Mercado Pago o escríbenos.");
       const nombre = c.plan === "espacio" ? "Mozari +10 GB de espacio" : "Mozari " + PLANES[c.plan].nombre + " · licencia de pago único";
@@ -239,11 +301,12 @@ export async function apiPagos(request, env, partes, yo) {
     if (!orden && REF.test(c.ref || "")) orden = await leer(env, ordenClave(c.ref));
     if (!orden || orden.uid !== yo.uid) return error(404, "No encontramos ese pago");
     if (orden.metodo === "paypal" && !orden.aplicado && env.PAYPAL_CLIENT_ID) orden = await capturarPayPal(env, orden).catch(() => orden);
+    if (orden.metodo === "stripe" && !orden.aplicado && env.STRIPE_SECRET_KEY) orden = await revisarStripe(env, orden).catch(() => orden);
     return json(resumen(orden));
   }
 
   // Solo en la computadora: hace como que Mercado Pago aprobó el pago
-  if (partes[2] === "simular" && m === "GET" && (simulado(env) || ppSimulado(env))) {
+  if (partes[2] === "simular" && m === "GET" && (simulado(env) || ppSimulado(env) || stSimulado(env))) {
     const ref = url.searchParams.get("ref") || "";
     const orden = REF.test(ref) ? await leer(env, ordenClave(ref)) : null;
     if (!orden || orden.uid !== yo.uid) return error(404, "No existe esa orden");
@@ -263,6 +326,32 @@ export async function webhookMercadoPago(request, env) {
   if (tipo === "payment" && id) {
     try { await revisarPago(env, id); }
     catch (e) { return new Response("reintentar", { status: 500 }); }
+  }
+  return new Response("ok");
+}
+
+// /webhooks/stripe (público: Stripe avisa aquí cuando se paga, también un OXXO días después). Se revisa la firma si hay
+// secreto y, de todos modos, la sesión se vuelve a consultar a Stripe con nuestra llave: el aviso nunca activa nada solo.
+async function firmaStripe(env, cuerpo, cabecera) {
+  if (!env.STRIPE_WEBHOOK_SECRET) return true;
+  const partes = Object.fromEntries(String(cabecera || "").split(",").map((x) => x.split("=")).filter((x) => x.length === 2).map(([k, v]) => [k.trim(), v.trim()]));
+  const t = +partes.t, v1 = String(cabecera || "").split(",").filter((x) => x.trim().startsWith("v1=")).map((x) => x.trim().slice(3));
+  if (!t || !v1.length || Math.abs(Date.now() / 1000 - t) > 600) return false;
+  const llave = await crypto.subtle.importKey("raw", new TextEncoder().encode(env.STRIPE_WEBHOOK_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const f = [...new Uint8Array(await crypto.subtle.sign("HMAC", llave, new TextEncoder().encode(t + "." + cuerpo)))].map((x) => x.toString(16).padStart(2, "0")).join("");
+  return v1.includes(f);
+}
+export async function webhookStripe(request, env) {
+  if (!env.STRIPE_SECRET_KEY || request.method !== "POST") return new Response("ok");
+  const cuerpo = await request.text();
+  if (!(await firmaStripe(env, cuerpo, request.headers.get("stripe-signature")))) return new Response("firma", { status: 400 });
+  let ev = {}; try { ev = JSON.parse(cuerpo); } catch (e) { return new Response("ok"); }
+  const ses = (ev.data && ev.data.object) || {};
+  if (/^checkout\.session\.(completed|async_payment_succeeded)$/.test(ev.type || "") && REF.test(ses.client_reference_id || "")) {
+    try {
+      const orden = await leer(env, ordenClave(ses.client_reference_id));
+      if (orden && orden.metodo === "stripe" && orden.stripe === ses.id) await revisarStripe(env, orden);
+    } catch (e) { return new Response("reintentar", { status: 500 }); }
   }
   return new Response("ok");
 }
