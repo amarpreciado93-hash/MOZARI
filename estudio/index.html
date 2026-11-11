@@ -633,6 +633,96 @@
   .tr-lado.espera .stage { filter: brightness(0.6); transition: filter 0.2s; }
   @keyframes tr-toca { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
   @media (prefers-reduced-motion: reduce) { .tr-lado.toca::after { animation: none; } }
+  /* Planos con radar (Laboratorio «planos») */
+  .planos-ed { height: 100%; display: grid; grid-template-columns: 290px minmax(0, 1fr) 330px; min-height: 0; }
+  .pl-centro { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-width: 0; min-height: 0; background: var(--mz-negro); }
+  .pl-lienzo { position: relative; display: grid; place-items: center; min-height: 0; overflow: hidden; padding: 20px; }
+  .pl-caja { position: relative; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4); touch-action: none; }
+  .pl-caja img { display: block; width: 100%; height: 100%; object-fit: fill; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+  .pl-svg { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+  .pl-svg .pl-pin { cursor: grab; }
+  .pl-svg .pl-pin circle { fill: #fff; stroke: #0B0B0B; }
+  .pl-svg .pl-pin.yo circle { fill: var(--mz-lima); }
+  .pl-svg .pl-pin text { fill: #0B0B0B; font: 600 1px var(--mz-texto-ui); paint-order: stroke; stroke: #fff; text-anchor: middle; pointer-events: none; }
+  .pl-svg .pl-giro { fill: #0B0B0B; stroke: var(--mz-lima); cursor: grab; }
+  .pl-svg .pl-cono { stroke: rgba(11, 11, 11, 0.6); stroke-linejoin: round; }
+  .pl-quitar { justify-self: start; margin-top: 4px; }
+  .pl-vacio { color: var(--mz-tenue); text-align: center; line-height: 1.6; font-size: 14px; max-width: 360px; }
+  .pl-tira { display: flex; gap: 8px; overflow-x: auto; padding: 10px 14px; border-top: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); }
+  .pl-esf { flex: none; width: 112px; display: grid; gap: 5px; padding: 5px; border-radius: 10px; border: 1.5px solid transparent; background: none; color: var(--mz-texto); cursor: pointer; text-align: left; font: 500 11px var(--mz-texto-ui); }
+  .pl-esf img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 7px; display: block; }
+  .pl-esf span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pl-esf[aria-pressed="true"] { border-color: var(--mz-lima); background: var(--mz-lima-suave); }
+  .pl-esf.puesta span::before { content: "● "; color: var(--mz-lima); }
+  .pl-der .pl-esfera { position: relative; flex: 1; min-height: 0; }
+  .pl-der .pl-esfera .stage { position: absolute; inset: 0; }
+  .pl-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .pl-lista li { display: grid; grid-template-columns: 46px minmax(0, 1fr) 28px; gap: 10px; align-items: center; padding: 6px; border-radius: 12px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); cursor: pointer; }
+  .pl-lista li[aria-current="true"] { border-color: var(--mz-lima); }
+  .pl-lista img { width: 46px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 7px; background: #fff; display: block; }
+  .pl-lista input { width: 100%; font: 500 12px var(--mz-texto-ui); color: var(--mz-texto); background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 3px 5px; }
+  .pl-lista input:focus { outline: none; border-color: var(--mz-linea); background: var(--mz-superficie); }
+  .pl-lista small { display: block; font-size: 11px; color: var(--mz-tenue); padding-left: 5px; }
+  .pl-subir { justify-self: start; }
+  /* Narración por espacio: editor */
+  .nr-conf { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: center; margin: 4px 0 18px; padding: 12px 16px; border-radius: var(--mz-radio); background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); }
+  .nr-conf .interruptor { gap: 12px; }
+  .nr-conf .chip-dato { margin-left: auto; }
+  .nr-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .nr-fila { display: grid; grid-template-columns: 132px minmax(0, 1fr) minmax(0, 1.25fr); gap: 16px; align-items: center; padding: 10px; border-radius: var(--mz-radio); background: var(--mz-superficie); border: 1px solid var(--mz-linea-neutra); }
+  .nr-fila.con { border-color: rgba(213, 255, 64, 0.45); }
+  .nr-fila > img { width: 132px; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 10px; display: block; }
+  .nr-info { display: grid; gap: 6px; min-width: 0; }
+  .nr-info b { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nr-info small { font-size: 12px; color: var(--mz-tenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nr-fila.con .nr-info small { color: var(--mz-lima); }
+  .nr-acc { display: flex; flex-wrap: wrap; gap: 6px; }
+  .nr-acc label { display: inline-flex; align-items: center; }
+  .nr-fila textarea { box-sizing: border-box; width: 100%; min-height: 66px; resize: vertical; font: 400 13px/1.45 var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 10px; padding: 8px 10px; }
+  .nr-fila textarea:focus { outline: none; border-color: var(--mz-lima); }
+  @media (max-width: 900px) { .nr-fila { grid-template-columns: 96px minmax(0, 1fr); } .nr-fila > img { width: 96px; } .nr-fila textarea { grid-column: 1 / -1; } }
+  /* Narración por espacio: en el tour (la pastilla de arriba al centro) */
+  .nr { position: absolute; z-index: 31; left: 50%; top: 80px; transform: translateX(-50%); pointer-events: auto; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; align-items: center; width: max-content; max-width: min(540px, calc(100% - 32px)); padding: 7px 18px 9px 7px; border-radius: 24px; background: rgba(11, 11, 11, 0.78); color: #fff; font-family: var(--mz-texto-ui); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28); overflow: hidden; }
+  .nr-play { grid-row: 1 / span 2; width: 36px; height: 36px; border-radius: 50%; border: 0; padding: 0; display: grid; place-items: center; cursor: pointer; background: var(--sk-acento, #D5FF40); color: var(--sk-sobre, #0B0B0B); }
+  .nr-play svg { width: 16px; height: 16px; }
+  .nr-tit { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nr-tit span { opacity: 0.7; font-weight: 500; }
+  .nr-ondas { display: inline-flex; gap: 2px; align-items: flex-end; height: 12px; }
+  .nr-ondas i { width: 2.5px; height: 100%; border-radius: 2px; background: var(--sk-acento, #D5FF40); transform-origin: bottom; transform: scaleY(0.35); }
+  .nr.sonando .nr-ondas i { animation: nr-onda 0.9s ease-in-out infinite; }
+  .nr.sonando .nr-ondas i:nth-child(2) { animation-delay: -0.3s; } .nr.sonando .nr-ondas i:nth-child(3) { animation-delay: -0.6s; }
+  @keyframes nr-onda { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+  .nr-sub { font-size: 13px; line-height: 1.4; margin-top: 2px; white-space: normal; text-wrap: pretty; }
+  .nr-barra { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--sk-acento, #D5FF40); transform-origin: left; transform: scaleX(0); }
+  .nr.chica { padding-right: 14px; }
+  .nr.chica .nr-play { width: 30px; height: 30px; }
+  .nr.chica .nr-tit { font-weight: 500; font-size: 12px; }
+  .nr.espera .nr-play { animation: nr-late 1.6s ease-in-out infinite; }
+  @keyframes nr-late { 0%, 100% { box-shadow: 0 0 0 0 rgba(213, 255, 64, 0.55); } 60% { box-shadow: 0 0 0 9px rgba(213, 255, 64, 0); } }
+  .sk--v .nr { top: 92px; }
+  @media (prefers-reduced-motion: reduce) { .nr.sonando .nr-ondas i, .nr.espera .nr-play { animation: none; } }
+  /* El plano chico en el tour */
+  .mp { position: absolute; z-index: 30; display: grid; gap: 8px; pointer-events: auto; }
+  .mp-abajo-der { right: 16px; bottom: 96px; justify-items: end; }
+  .mp-abajo-izq { left: 16px; bottom: 96px; justify-items: start; }
+  .mp-arriba-der { right: 16px; top: 76px; justify-items: end; }
+  .mp-arriba-izq { left: 16px; top: 76px; justify-items: start; }
+  .mp-abajo-der, .mp-abajo-izq { grid-auto-flow: row; }
+  .mp-abajo-der .mp-boton, .mp-abajo-izq .mp-boton { order: 2; }
+  .mp-boton { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.28); background: rgba(11, 11, 11, 0.72); color: #fff; display: grid; place-items: center; cursor: pointer; padding: 0; }
+  .mp-boton svg { width: 20px; height: 20px; }
+  .mp-caja { position: relative; width: clamp(140px, 22vw, 250px); border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); }
+  .mp-caja img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+  .mp-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .mp-svg [data-mp] { cursor: pointer; }
+  .mp-svg .mp-punto { fill: #fff; stroke: #0B0B0B; }
+  .mp-svg .mp-pin.yo .mp-punto { fill: var(--sk-acento, #D5FF40); }
+  .mp-svg .mp-pin[data-mp]:hover .mp-punto { fill: var(--sk-acento, #D5FF40); }
+  .mp-svg .mp-toque { fill: transparent; stroke: none; }
+  .mp-svg .mp-cono path { stroke: rgba(11, 11, 11, 0.6); stroke-linejoin: round; }
+  .mp-nombre { position: absolute; left: 8px; top: 8px; z-index: 1; padding: 3px 8px; border-radius: 999px; background: rgba(11, 11, 11, 0.72); color: #fff; font: 600 10.5px var(--mz-texto-ui); }
+  .escena-limpia .mp { display: none; }
+  .mp.cerrado .mp-caja { display: none; }
   .tr-esf, .tr-puntos { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
   .tr-esf li { display: grid; grid-template-columns: 46px minmax(0, 1fr) 28px; gap: 10px; align-items: center; padding: 6px; border-radius: 12px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); }
   .tr-esf img { width: 46px; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 7px; display: block; }
@@ -1824,6 +1914,27 @@
         <div class="rejilla" id="fotos-lista"></div>
       </div>
     </section>
+    <!-- Media / Audios (Laboratorio «narracion»): la voz de cada espacio suena al llegar a su esfera -->
+    <section data-vista="media/audios" id="v-audios" hidden>
+      <div class="contenido" style="max-width:1040px">
+        <h1>Narración por espacio</h1>
+        <p class="sub">Sube una voz para cada esfera («Esta es la sala, con doble altura y luz todo el día…»). Suena sola cuando tu cliente llega a ese espacio, con su subtítulo para quien lo ve sin sonido. La música de fondo vive en Proyecto → Música.</p>
+        <div class="nr-conf" id="au-conf"></div>
+        <ul class="nr-lista" id="au-lista"></ul>
+      </div>
+    </section>
+    <!-- Media / Planos (Laboratorio «planos»): el plano de cada piso con sus esferas y el radar del tour -->
+    <section data-vista="media/planos" class="planos-ed" id="v-planos" hidden>
+      <aside class="ed-panel" aria-label="Planos">
+        <header><h3>Planos</h3><p class="nota">Sube el plano de cada piso y pon en él tus esferas. En el tour sale chico, con un radar que gira hacia donde mira tu cliente.</p></header>
+        <div class="props" id="pl-panel"></div>
+      </aside>
+      <div class="pl-centro"><div class="pl-lienzo" id="pl-lienzo"></div><div class="pl-tira" id="pl-tira"></div></div>
+      <aside class="ed-panel der pl-der" aria-label="Esfera">
+        <header><h3 id="pl-esf-titulo">Esfera</h3><p class="nota">Gira la esfera y acomoda el cono del plano (su círculo) para que apunte a lo mismo que ves aquí.</p></header>
+        <div class="pl-esfera"><div class="stage" id="pl-stage"></div></div>
+      </aside>
+    </section>
     <section data-vista="panoramas/lista" hidden>
       <div class="contenido" style="max-width:none">
         <h1>Panoramas</h1>
@@ -2808,6 +2919,8 @@
 
   const SIN_ESFERAS = ["panoramas/mapa", "panoramas/capas", "panoramas/piloto", "panoramas/terreno", "skin/h", "skin/v"];
   if (enLab("estadisticas")) SECCIONES.find((x) => x.id === "publicar").subs.push(["estadisticas", "Estadísticas"]);
+  // Secciones de «Próximo bloque» que ya existen en el Laboratorio: [función, sección]
+  const LAB_VISTAS = { "media/planos": ["planos", "v-planos"], "media/audios": ["narracion", "v-audios"] };
   function ir(sec, sub) {
     // En la nube, sin tour abierto solo existe Mis Tours
     if (MODO === "nube" && !TOUR && sec !== "tours") { avisar("Abre o crea un tour primero"); sec = "tours"; sub = "todos"; }
@@ -2824,13 +2937,16 @@
     if (antes.startsWith("skin/") && sec !== "skin") cerrarSkin();
     if (antes === "panoramas/terreno" && clave !== antes) cerrarTerreno();
     document.querySelectorAll("#contenedor > section").forEach((s) => (s.hidden = !s.dataset.vista.split(" ").includes(clave)));
+    Object.entries(LAB_VISTAS).forEach(([k, [lab, el]]) => { if (clave === k && !enLab(lab)) $(el).hidden = true; }); // sin el Laboratorio sigue «Próximo bloque»
+    if (antes === "media/planos" && clave !== antes) cerrarPlanos();
+    if (antes === "media/audios" && clave !== antes) cerrarAudios();
     $("sel-pano-wrap").hidden = !enEditor;
     $("proximo").classList.remove("ancho");
     if (clave === "publicar/web" && MODO === "nube") { pintarPublicar(); }
     else if (clave === "publicar/estadisticas" && MODO === "nube") { pintarEstadisticas(); }
     else if (clave === "publicar/compartir" && MODO === "nube") { pintarCompartir(); }
 
-    else if (PROXIMO[clave]) {
+    else if (PROXIMO[clave] && !(LAB_VISTAS[clave] && enLab(LAB_VISTAS[clave][0]))) {
       const [ico, t, d] = PROXIMO[clave];
       $("proximo").innerHTML = '<div class="icono">' + ico + "</div><span class=\"etiq\">Próximo bloque</span><h1>" + t + "</h1><p>" + d + "</p>";
       $("v-proximo").hidden = false;
@@ -2841,6 +2957,8 @@
     if (clave === "panoramas/lista") pintarLista();
     if (clave === "media/fotos") pintarFotos();
     if (clave === "media/videos") pintarVideos();
+    if (clave === "media/planos" && enLab("planos")) requestAnimationFrame(abrirPlanos);
+    if (clave === "media/audios" && enLab("narracion")) pintarAudios();
     if (clave === "panoramas/mapa") requestAnimationFrame(() => mapa.dibujar());
     if (enEditor) abrirEditor(edPano || P().escenaInicial, sub);
     if (clave === "panoramas/terreno") requestAnimationFrame(abrirTerreno);
@@ -10790,6 +10908,152 @@ void main(){
     };
   }
 
+  // Plano con radar en el tour (Laboratorio «planos»): el plano del piso donde estás, tu punto encendido y un cono
+  // que gira hacia donde miras. Tocar otro punto te lleva a esa esfera. Se oculta en esferas que no están en un plano.
+  let MP_N = 0;
+  function miniPlano(ui, motorDe) {
+    const C = P().planos, nada = { escena() {}, vista() {} };
+    const lista = C && Array.isArray(C.lista) ? C.lista.filter((x) => x && x.archivo && x.pins && Object.keys(x.pins).some((id) => est.escenas.some((e) => e.id === id))) : [];
+    if (!lista.length) return nada;
+    const caja = document.createElement("div"), gid = "mp-grad-" + ++MP_N;
+    if (ui._mpCerrado === undefined) ui._mpCerrado = C.abierto === false;
+    caja.className = "mp mp-" + (/^(abajo|arriba)-(der|izq)$/.test(C.esquina) ? C.esquina : "abajo-der") + (ui._mpCerrado ? " cerrado" : "");
+    caja.hidden = true;
+    ui.appendChild(caja);
+    let plano = null, actual = null, ang = 0;
+    const claro = textoSobre(est.skin.acento || "#D5FF40") === NEGRO; // un acento claro sobre el plano blanco necesita más color
+    const tam = () => { const w = caja.querySelector(".mp-caja"); return 1000 / ((w && w.clientWidth) || 220); };
+    function dibujar() {
+      const Hn = (1000 * plano.alto) / plano.ancho, u = tam(), r = 58 * u, q = (g) => (Math.sin((g * Math.PI) / 180) * r).toFixed(1) + " " + (-Math.cos((g * Math.PI) / 180) * r).toFixed(1);
+      let h = '<defs><radialGradient id="' + gid + '" cx="0" cy="0" r="' + r.toFixed(1) + '" gradientUnits="userSpaceOnUse"><stop offset="0" style="stop-color:var(--sk-acento,#D5FF40);stop-opacity:' + (claro ? 1 : 0.8) + '"/><stop offset="1" style="stop-color:var(--sk-acento,#D5FF40);stop-opacity:' + (claro ? 0.4 : 0.1) + '"/></radialGradient></defs>';
+      const yo = plano.pins[actual];
+      if (yo) h += '<g class="mp-cono" transform="translate(' + (yo.x * 1000).toFixed(1) + " " + (yo.y * Hn).toFixed(1) + ") rotate(" + ang.toFixed(1) + ')"><path d="M0 0L' + q(-35) + "A" + r.toFixed(1) + " " + r.toFixed(1) + " 0 0 1 " + q(35) + 'Z" fill="url(#' + gid + ')" stroke-width="' + (1.3 * u).toFixed(2) + '"/></g>';
+      Object.entries(plano.pins).forEach(([id, p]) => {
+        if (!est.escenas.some((e) => e.id === id)) return;
+        const es = id === actual;
+        h += '<g class="mp-pin' + (es ? " yo" : "") + '"' + (es ? "" : ' data-mp="' + id + '"') + "><title>" + esc(nombreDe(id)) + "</title>" +
+          (es ? "" : '<circle class="mp-toque" cx="' + (p.x * 1000).toFixed(1) + '" cy="' + (p.y * Hn).toFixed(1) + '" r="' + (16 * u).toFixed(1) + '"/>') +
+          '<circle class="mp-punto" cx="' + (p.x * 1000).toFixed(1) + '" cy="' + (p.y * Hn).toFixed(1) + '" r="' + ((es ? 7 : 5) * u).toFixed(1) + '" stroke-width="' + (2 * u).toFixed(1) + '"/>' +
+          (es ? '<circle cx="' + (p.x * 1000).toFixed(1) + '" cy="' + (p.y * Hn).toFixed(1) + '" r="' + (2.4 * u).toFixed(1) + '" fill="#0B0B0B"/>' : "") + "</g>";
+      });
+      caja.querySelector(".mp-svg").innerHTML = h;
+    }
+    function armar() {
+      const Hn = Math.round((1000 * plano.alto) / plano.ancho);
+      caja.innerHTML = '<button class="mp-boton" data-mp-boton aria-label="' + (ui._mpCerrado ? "Ver el plano" : "Ocultar el plano") + '" aria-expanded="' + !ui._mpCerrado + '">' + ICO.plano + "</button>" +
+        '<div class="mp-caja">' + (lista.length > 1 ? '<span class="mp-nombre">' + esc(plano.nombre || "Plano") + "</span>" : "") + '<img src="' + esc(urlArchivo(plano.archivo)) + '" alt="Plano: ' + esc(plano.nombre || "") + '" draggable="false"><svg class="mp-svg" viewBox="0 0 1000 ' + Hn + '" preserveAspectRatio="none"></svg></div>';
+      const img = caja.querySelector("img");
+      if (!img.complete) img.addEventListener("load", () => plano && dibujar(), { once: true });
+    }
+    caja.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      if (ev.target.closest("[data-mp-boton]")) {
+        ui._mpCerrado = caja.classList.toggle("cerrado");
+        const b = caja.querySelector("[data-mp-boton]"); b.setAttribute("aria-expanded", !ui._mpCerrado); b.setAttribute("aria-label", ui._mpCerrado ? "Ver el plano" : "Ocultar el plano");
+        if (!ui._mpCerrado) dibujar();
+        return;
+      }
+      const pin = ev.target.closest("[data-mp]"), m = motorDe();
+      if (pin && m && pin.dataset.mp !== actual) m.mostrar(pin.dataset.mp, 900);
+    });
+    ["pointerdown", "wheel", "touchstart"].forEach((e) => caja.addEventListener(e, (ev) => ev.stopPropagation(), { passive: true }));
+    return {
+      escena(id) {
+        actual = id;
+        const p = lista.find((x) => x.pins[id]);
+        caja.hidden = !p;
+        if (!p) return;
+        if (p !== plano) { plano = p; armar(); }
+        const m = motorDe(); if (m && m.view) ang = (m.view().yaw() * 180) / Math.PI + (+plano.pins[id].giro || 0);
+        dibujar();
+      },
+      vista(v) {
+        if (!plano || !v || !plano.pins[actual]) return;
+        ang = (v.yaw() * 180) / Math.PI + (+plano.pins[actual].giro || 0);
+        const g = caja.querySelector(".mp-cono"), yo = plano.pins[actual];
+        if (g) g.setAttribute("transform", "translate(" + (yo.x * 1000).toFixed(1) + " " + (yo.y * (1000 * plano.alto) / plano.ancho).toFixed(1) + ") rotate(" + ang.toFixed(1) + ")");
+      },
+    };
+  }
+  // Narración por espacio en el tour (Laboratorio «narracion»): al llegar a una esfera con voz, suena sola (o con el
+  // primer toque, si el navegador no deja sonar sin tocar) y la música baja. La pastilla de arriba la pausa o la repite.
+  const vozTour = new Audio(); vozTour.preload = "auto";
+  const VOZ = { id: null, estado: "nada", oidas: new Set(), caja: null, volMusica: null, musicaPausada: false, esperando: false, ocultar: 0 };
+  const vozSonando = () => !vozTour.paused && !vozTour.ended;
+  const ICO_VOZ = { play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>', pausa: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/></svg>', otra: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5"/><path d="M4 4v4.5h4.5"/></svg>' };
+  function musicaPorVoz(baja) {
+    if (baja) {
+      if ((P().narracion || {}).musicaBaja === false || audioTour.paused || VOZ.volMusica !== null) return;
+      VOZ.volMusica = audioTour.volume; const meta = VOZ.volMusica * 0.2;
+      audioTour.volume = meta;
+      if (Math.abs(audioTour.volume - meta) > 0.02) { audioTour.pause(); VOZ.musicaPausada = true; } // iPhone: no deja cambiar el volumen, se pausa
+    } else if (VOZ.volMusica !== null) {
+      audioTour.volume = VOZ.volMusica; VOZ.volMusica = null;
+      if (VOZ.musicaPausada) { VOZ.musicaPausada = false; if (!$("previa").hidden && document.visibilityState !== "hidden") audioTour.play().catch(() => {}); }
+    }
+  }
+  function pintarVoz() {
+    const c = VOZ.caja; if (!c || !c.isConnected) return;
+    clearTimeout(VOZ.ocultar);
+    const e = VOZ.id && escena(VOZ.id), n = e && e.narracion && e.narracion.archivo ? e.narracion : null;
+    c.hidden = !n || VOZ.estado === "nada";
+    if (c.hidden) return;
+    const chica = VOZ.estado === "oida", grande = VOZ.estado === "sonando" || VOZ.estado === "pausa";
+    c.className = "nr " + VOZ.estado + (chica ? " chica" : ""); c.dataset.esfera = VOZ.id;
+    const ico = VOZ.estado === "sonando" ? ICO_VOZ.pausa : chica ? ICO_VOZ.otra : ICO_VOZ.play, etq = VOZ.estado === "sonando" ? "Pausar la narración" : chica ? "Volver a escuchar" : "Escuchar la narración";
+    c.innerHTML = '<button class="nr-play" data-voz aria-label="' + etq + '">' + ico + "</button>" +
+      '<div class="nr-tit">' + (grande ? '<span class="nr-ondas" aria-hidden="true"><i></i><i></i><i></i></span>' : "") + (VOZ.estado === "espera" ? "Escuchar <span>· " + esc(e.nombre) + "</span>" : chica ? "Volver a escuchar" : "Narración <span>· " + esc(e.nombre) + "</span>") + "</div>" +
+      (grande && n.texto ? '<div class="nr-sub">' + esc(n.texto) + "</div>" : "") + (grande ? '<i class="nr-barra"></i>' : "");
+    barraVoz();
+  }
+  function barraVoz() { const b = VOZ.caja && VOZ.caja.querySelector(".nr-barra"); if (b && vozTour.duration) b.style.transform = "scaleX(" + Math.min(1, vozTour.currentTime / vozTour.duration).toFixed(3) + ")"; }
+  vozTour.addEventListener("play", () => { VOZ.estado = "sonando"; if (VOZ.id) VOZ.oidas.add(VOZ.id); musicaPorVoz(true); pintarVoz(); });
+  vozTour.addEventListener("pause", () => { if (vozTour.ended) return; if (VOZ.estado === "sonando") VOZ.estado = "pausa"; musicaPorVoz(false); pintarVoz(); });
+  vozTour.addEventListener("ended", () => { VOZ.estado = "oida"; musicaPorVoz(false); pintarVoz(); });
+  vozTour.addEventListener("timeupdate", barraVoz);
+  function tocarVoz() {
+    if (vozSonando()) { vozTour.pause(); return; }
+    if (VOZ.estado === "oida" || vozTour.ended) vozTour.currentTime = 0;
+    vozTour.play().catch(() => {});
+  }
+  // Los navegadores no dejan sonar sin un toque: la voz espera al primer toque del cliente (como la música)
+  function esperarToqueVoz() {
+    if (VOZ.esperando) return;
+    VOZ.esperando = true;
+    const EV = ["pointerup", "touchend", "click", "keydown"], quitar = () => { VOZ.esperando = false; EV.forEach((x) => document.removeEventListener(x, arrancar, true)); };
+    function arrancar(ev) {
+      quitar();
+      if (ev.target && ev.target.closest && ev.target.closest("[data-voz]")) return; // el botón de la pastilla hace lo suyo
+      if (VOZ.estado === "espera" && !$("previa").hidden && document.visibilityState !== "hidden") vozTour.play().catch(() => {});
+    }
+    EV.forEach((x) => document.addEventListener(x, arrancar, true));
+  }
+  function vozEscena(id) {
+    if (VOZ.id !== id && !vozTour.paused) vozTour.pause();
+    VOZ.id = id;
+    const e = escena(id), n = e && e.narracion && e.narracion.archivo ? e.narracion : null;
+    if (!n) { VOZ.estado = "nada"; pintarVoz(); return; }
+    const url = urlArchivo(n.archivo);
+    if (vozTour.dataset.url !== url) { vozTour.src = url; vozTour.dataset.url = url; } else vozTour.currentTime = 0;
+    if ((P().narracion || {}).unaVez !== false && VOZ.oidas.has(id)) { VOZ.estado = "oida"; pintarVoz(); return; }
+    VOZ.estado = "espera"; pintarVoz();
+    // Empieza cuando ya se ve la esfera (no debajo de la pantalla de carga)
+    const t0 = Date.now(), arranca = () => {
+      if (VOZ.id !== id || VOZ.estado !== "espera" || !vozTour.paused) return;
+      if (!$("pv-carga").hidden && Date.now() - t0 < 12000) { setTimeout(arranca, 250); return; }
+      vozTour.play().catch(() => { if (VOZ.id === id && vozTour.paused) { VOZ.estado = "espera"; pintarVoz(); esperarToqueVoz(); } });
+    };
+    arranca();
+  }
+  function pastillaVoz(ui) {
+    if (!est.escenas.some((e) => e.narracion && e.narracion.archivo)) return { escena() {} };
+    const c = document.createElement("div"); c.className = "nr"; c.hidden = true; c.setAttribute("role", "status");
+    c.addEventListener("click", (ev) => { ev.stopPropagation(); if (ev.target.closest("[data-voz]")) tocarVoz(); });
+    ["pointerdown", "wheel", "touchstart"].forEach((x) => c.addEventListener(x, (ev) => ev.stopPropagation(), { passive: true }));
+    ui.appendChild(c); VOZ.caja = c;
+    return { escena(id) { if (VOZ.id === id && VOZ.estado !== "nada") pintarVoz(); else vozEscena(id); } };
+  }
+  function callarVoz() { vozTour.pause(); musicaPorVoz(false); VOZ.id = null; VOZ.estado = "nada"; VOZ.oidas.clear(); VOZ.caja = null; }
   // Une un motor con su skin y su piloto automático (vista previa y editor de skin)
   // Siguiente esfera de la presentación: sigue el orden de Panoramas, se salta las marcadas y al final vuelve al inicio (o se detiene)
   function siguientePresentacion(id) {
@@ -11083,6 +11347,7 @@ void main(){
       if (!pr || !pr.activa || !motor || !actualId) return;
       if (!pop.hidden) { tQuieto = Date.now(); return; }
       if ((escena(actualId).presentacion || "avanza") !== "avanza") return;
+      if (o.narrar && vozSonando()) { tQuieto = Date.now(); return; } // deja terminar la narración
       const pl = escena(actualId).piloto, dPiloto = pl && pl.activo && pl.puntos.length ? pl.puntos.reduce((t, p) => t + (+p.viaje || 0) + (+p.pausa || 0), 1.5) : 0;
       if (Date.now() - tQuieto < Math.max(pr.segundos || 60, dPiloto) * 1000) return; // deja terminar el piloto automático
       const sig = siguientePresentacion(actualId);
@@ -11144,7 +11409,10 @@ void main(){
     const pintar = (orientacion) => {
       stage.style.setProperty("--hs-color", est.skin.acento);
       stage.style.setProperty("--hs-sobre", textoSobre(est.skin.acento));
-      api = renderSkin(ui, Object.assign({}, o, { orientacion, motor: () => motor })); if (actualId) api.escena(actualId); if (motor) api.vista(motor.view()); };
+      api = renderSkin(ui, Object.assign({}, o, { orientacion, motor: () => motor }));
+      const mini = miniPlano(ui, () => motor), voz = o.narrar ? pastillaVoz(ui) : { escena() {} }, e0 = api.escena, v0 = api.vista; // el plano con radar y la narración siguen a la esfera
+      api.escena = (id) => { e0(id); mini.escena(id); voz.escena(id); }; api.vista = (v) => { v0(v); mini.vista(v); };
+      if (actualId) api.escena(actualId); if (motor) api.vista(motor.view()); };
     pintar(o.orientacion);
     motor = crearMotor(stage, {
       editable: false,
@@ -11314,13 +11582,205 @@ void main(){
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
       if (!audioTour.paused) { audioTour.pause(); musicaPausadaPorSalir = true; }
+      if (vozSonando()) vozTour.pause(); // la narración se queda en pausa; se sigue con su botón
       document.querySelectorAll("video, audio").forEach((m) => { try { if (m !== audioTour && !m.paused) m.pause(); } catch (e) { /* nada */ } });
     } else if (musicaPausadaPorSalir) { musicaPausadaPorSalir = false; if (!$("previa").hidden) audioTour.play().catch(() => {}); }
   });
-  window.addEventListener("pagehide", () => { try { audioTour.pause(); } catch (e) { /* nada */ } });
+  window.addEventListener("pagehide", () => { try { audioTour.pause(); vozTour.pause(); } catch (e) { /* nada */ } });
   const orientacionPantalla = () => (window.innerWidth < window.innerHeight ? "v" : "h");
   // =================== MEDIA: FOTOS ===================
   // Biblioteca del tour: se suben una vez (reducidas a 2400 px) y se usan en cualquier capa.
+  // =================== MEDIA: NARRACIÓN POR ESPACIO (Laboratorio «narracion», pedido de Amar 11 nov 2026) ===================
+  // Cada esfera puede llevar su voz (MP3, M4A o WAV) y un subtítulo. En el tour suena sola al llegar a esa esfera y la
+  // música de fondo baja mientras habla. P().narracion: { musicaBaja, unaVez }; escena.narracion: { archivo, nombre, peso, duracion, texto }
+  const narrConf = () => { const p = P(); if (!p.narracion || typeof p.narracion !== "object") p.narracion = {}; const c = p.narracion; if (c.musicaBaja === undefined) c.musicaBaja = true; if (c.unaVez === undefined) c.unaVez = true; return c; };
+  const durTxt = (x) => (!x || !isFinite(x) ? "" : Math.floor(x / 60) + ":" + String(Math.round(x % 60)).padStart(2, "0"));
+  const vozPrueba = new Audio(); let vozPruebaId = null;
+  vozPrueba.addEventListener("ended", () => { vozPruebaId = null; if (nav.sec + "/" + nav.sub === "media/audios") pintarAudios(); });
+  function pintarAudios() {
+    const C = narrConf(), con = est.escenas.filter((e) => e.narracion && e.narracion.archivo).length;
+    $("au-conf").innerHTML = '<label class="interruptor"><b>Bajar la música mientras habla</b><input type="checkbox" class="toggle" data-au-conf="musicaBaja"' + (C.musicaBaja ? " checked" : "") + "></label>" +
+      '<label class="interruptor"><b>Solo la primera vez que entra</b><input type="checkbox" class="toggle" data-au-conf="unaVez"' + (C.unaVez ? " checked" : "") + "></label>" +
+      '<span class="chip-dato">' + con + " de " + est.escenas.length + (est.escenas.length === 1 ? " esfera" : " esferas") + " con voz</span>";
+    const subir = (e, txt, cls) => '<label class="' + cls + '">' + txt + '<input type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,.mp3,.m4a,.wav" data-au-archivo="' + e.id + '" hidden></label>';
+    $("au-lista").innerHTML = est.escenas.length ? est.escenas.map((e) => {
+      const n = e.narracion && e.narracion.archivo ? e.narracion : null, suena = vozPruebaId === e.id && !vozPrueba.paused;
+      return '<li class="nr-fila' + (n ? " con" : "") + '" data-au="' + e.id + '"><img src="' + thumbDe(e.id) + '" alt="" loading="lazy"><div class="nr-info"><b>' + esc(e.nombre) + "</b><small>" +
+        (n ? "🔊 " + [durTxt(n.duracion), esc(n.nombre || "Voz")].filter(Boolean).join(" · ") : "Sin narración") + '</small><div class="nr-acc">' +
+        (n ? '<button class="mini" data-au-play="' + e.id + '">' + (suena ? "❚❚ Pausar" : "▶ Escuchar") + "</button>" + subir(e, "Cambiar", "mini") + '<button class="mini" data-au-quitar="' + e.id + '">Quitar</button>' : subir(e, "+ Subir voz", "btn-sec")) +
+        '</div></div><textarea maxlength="240" data-au-texto="' + e.id + '" placeholder="Subtítulo (opcional): lo que dice la voz, para quien ve el tour sin sonido" aria-label="Subtítulo de ' + esc(e.nombre) + '">' + esc((e.narracion && e.narracion.texto) || "") + "</textarea></li>";
+    }).join("") : '<li class="nota">Primero sube tus esferas en Panoramas → Lista.</li>';
+  }
+  function cerrarAudios() { vozPrueba.pause(); vozPruebaId = null; }
+  $("v-audios").addEventListener("click", (ev) => {
+    const pl = ev.target.closest("[data-au-play]"), q = ev.target.closest("[data-au-quitar]");
+    if (pl) {
+      const id = pl.dataset.auPlay, n = escena(id).narracion;
+      if (vozPruebaId === id && !vozPrueba.paused) vozPrueba.pause();
+      else { if (vozPruebaId !== id) { vozPrueba.src = urlArchivo(n.archivo); vozPruebaId = id; } vozPrueba.play().catch(() => avisar("No se pudo reproducir la voz")); }
+      setTimeout(pintarAudios, 60); return;
+    }
+    if (q) { const e = escena(q.dataset.auQuitar); if (vozPruebaId === e.id) cerrarAudios(); const t = e.narracion && e.narracion.texto; if (t) e.narracion = { texto: t }; else delete e.narracion; guardar(); pintarAudios(); avisar("Narración quitada de " + e.nombre); }
+  });
+  $("v-audios").addEventListener("input", (ev) => {
+    const id = ev.target.dataset.auTexto; if (!id) return;
+    const e = escena(id); e.narracion = Object.assign(e.narracion || {}, { texto: ev.target.value.slice(0, 240) }); guardar();
+  });
+  $("v-audios").addEventListener("change", async (ev) => {
+    const t = ev.target;
+    if (t.dataset.auConf) { narrConf()[t.dataset.auConf] = t.checked; guardar(); return; }
+    const id = t.dataset.auArchivo, f = t.files && t.files[0];
+    if (!id || !f) return;
+    t.value = "";
+    const ext = (f.name.split(".").pop() || "").toLowerCase(), tipo = { mp3: "mp3", m4a: "m4a", wav: "wav" }[ext] || { "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/wav": "wav", "audio/x-wav": "wav" }[f.type];
+    if (!tipo) { avisar("Usa un archivo MP3, M4A o WAV"); return; }
+    if (f.size > 15 * 1048576) { avisar("La voz pesa más de 15 MB. Usa un MP3 más ligero."); return; }
+    if (MODO !== "nube") { avisar("La narración se sube con tu tour en la nube"); return; }
+    avisar("Subiendo la voz…");
+    try {
+      const duracion = await new Promise((ok) => { const a = new Audio(), u = URL.createObjectURL(f), fin = (d) => { URL.revokeObjectURL(u); ok(d); }; a.preload = "metadata"; a.onloadedmetadata = () => fin(isFinite(a.duration) ? +a.duration.toFixed(1) : 0); a.onerror = () => fin(0); setTimeout(() => fin(0), 6000); a.src = u; });
+      const ruta = "archivos/voz-" + Date.now().toString(36) + "." + tipo;
+      await subirArchivo(ruta, f);
+      const e = escena(id); if (!e) return;
+      if (vozPruebaId === id) cerrarAudios();
+      e.narracion = Object.assign(e.narracion || {}, { archivo: ruta, nombre: f.name.slice(0, 80), peso: f.size, duracion });
+      guardar(); pintarAudios(); avisar("Voz lista en " + e.nombre + ". Pruébala en Vista previa.");
+    } catch (err) { avisar(err.message || "No se pudo subir la voz"); }
+  });
+  // =================== MEDIA: PLANOS CON RADAR (Laboratorio «planos», pedido de Amar 11 nov 2026) ===================
+  // El plano de cada piso (casa, depa, oficina) con sus esferas como puntos. En el tour sale chico, el punto de la
+  // esfera donde estás se ilumina y un cono gira hacia donde miras; tocar otro punto lleva a esa esfera.
+  // giro: cuánto hay que sumarle al yaw de la esfera para que el cono apunte bien en el plano (0° = arriba del plano).
+  const planosConf = () => { const p = P(); if (!p.planos || typeof p.planos !== "object") p.planos = {}; const c = p.planos; if (!Array.isArray(c.lista)) c.lista = []; if (!c.esquina) c.esquina = "abajo-der"; if (c.abierto === undefined) c.abierto = true; return c; };
+  const PN = { sel: null, esf: null, motor: null, arr: null };
+  const planoSel = () => { const l = planosConf().lista; return l.find((x) => x.id === PN.sel) || l[0] || null; };
+  const existeEsf = (id) => est.escenas.some((e) => e.id === id);
+  const gradosPl = (a) => ((((a + 180) % 360) + 360) % 360) - 180;
+  function abrirPlanos() {
+    const pl = planoSel(); PN.sel = pl ? pl.id : null;
+    if (!PN.esf || !existeEsf(PN.esf)) PN.esf = (pl && Object.keys(pl.pins || {}).find(existeEsf)) || (est.escenas[0] || {}).id || null;
+    if (!PN.motor && est.escenas.length) PN.motor = crearMotor($("pl-stage"), { editable: false, sinHotspots: true, sinAcciones: true, alMoverVista: () => pintarConos() });
+    if (PN.motor && PN.esf && (!PN.motor.actual || PN.motor.actual.id !== PN.esf)) PN.motor.mostrar(PN.esf, 0);
+    pintarPlanos();
+  }
+  function cerrarPlanos() { if (PN.motor) { PN.motor.destruir(); PN.motor = null; } PN.arr = null; }
+  function pintarPlanos() {
+    const C = planosConf(), pl = planoSel();
+    const cuantos = (x) => Object.keys(x.pins || {}).filter(existeEsf).length;
+    let h = '<div class="grupo"><b>Tus planos</b>' + (C.lista.length ? '<ul class="pl-lista">' + C.lista.map((x) => '<li data-pl="' + x.id + '" aria-current="' + (x === pl) + '"><img src="' + esc(urlArchivo(x.archivo)) + '" alt=""><div><input type="text" maxlength="40" data-pl-nombre="' + x.id + '" value="' + esc(x.nombre) + '" aria-label="Nombre del plano"><small>' + cuantos(x) + (cuantos(x) === 1 ? " esfera" : " esferas") + '</small></div><button class="ojo" data-pl-borrar="' + x.id + '" aria-label="Quitar ' + esc(x.nombre) + '">✕</button></li>').join("") + "</ul>" : '<p class="nota">Aún no hay planos. Sube una imagen del plano: un render, una foto o la captura del PDF.</p>') +
+      '<label class="btn-sec pl-subir">+ Subir plano<input type="file" id="pl-archivo" accept="image/png,image/jpeg,image/webp" hidden></label></div>';
+    if (pl) {
+      const puesto = PN.esf && pl.pins && pl.pins[PN.esf];
+      h += '<div class="grupo"><b>Cómo se usa</b><ol class="tr-guia"><li><b>Elige una esfera</b> en la tira de abajo.</li><li><b>Toca en el plano</b> dónde está. Arrastra el punto para moverlo.</li><li><b>Gira la esfera</b> de la derecha y jala el círculo del cono hasta que apunte a lo mismo.</li></ol>' +
+        (puesto ? '<button class="mini pl-quitar" data-pl-quitar>Quitar «' + esc(nombreDe(PN.esf)) + '» del plano</button>' : "") + "</div>";
+    }
+    h += '<div class="grupo"><b>En el tour</b>' + campo("Esquina", '<select data-pl-conf="esquina">' + [["abajo-der", "Abajo a la derecha"], ["abajo-izq", "Abajo a la izquierda"], ["arriba-der", "Arriba a la derecha"], ["arriba-izq", "Arriba a la izquierda"]].map(([v, n]) => '<option value="' + v + '"' + (C.esquina === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select>") +
+      '<label class="interruptor"><b>Abierto al empezar</b><input type="checkbox" class="toggle" data-pl-conf="abierto"' + (C.abierto ? " checked" : "") + "></label>" +
+      '<p class="nota">Sale en las esferas que pusiste en un plano. Tu cliente toca un punto y pasa a esa esfera. Revísalo en Vista previa.</p></div>';
+    $("pl-panel").innerHTML = h;
+    const L = $("pl-lienzo");
+    if (!pl) { L.dataset.pl = ""; L.innerHTML = '<div class="pl-vacio">Sube el plano de tu casa, depa u oficina.<br>Luego pones en él cada esfera y el tour muestra dónde está tu cliente y hacia dónde mira.</div>'; $("pl-tira").innerHTML = ""; return; }
+    if (L.dataset.pl !== pl.id || !$("pl-caja")) { L.dataset.pl = pl.id; L.innerHTML = '<div class="pl-caja" id="pl-caja"><img src="' + esc(urlArchivo(pl.archivo)) + '" alt="" draggable="false"><svg class="pl-svg" id="pl-svg" viewBox="0 0 1000 ' + Math.round((1000 * pl.alto) / pl.ancho) + '" preserveAspectRatio="none"></svg></div>'; }
+    $("pl-tira").innerHTML = est.escenas.map((e) => '<button class="pl-esf' + (pl.pins && pl.pins[e.id] ? " puesta" : "") + '" data-pl-esf="' + e.id + '" aria-pressed="' + (e.id === PN.esf) + '" title="' + esc(e.nombre) + '"><img src="' + thumbDe(e.id) + '" alt="" loading="lazy"><span>' + esc(e.nombre) + "</span></button>").join("");
+    $("pl-esf-titulo").textContent = PN.esf ? nombreDe(PN.esf) : "Esfera";
+    ajustarPlano();
+  }
+  function ajustarPlano() {
+    const pl = planoSel(), L = $("pl-lienzo"), caja = $("pl-caja");
+    if (!pl || !caja || !L.clientWidth) return;
+    const k = Math.min((L.clientWidth - 40) / pl.ancho, (L.clientHeight - 40) / pl.alto);
+    caja.style.width = Math.max(50, pl.ancho * k) + "px"; caja.style.height = Math.max(50, pl.alto * k) + "px";
+    pintarConos();
+  }
+  new ResizeObserver(() => { if (nav.sec + "/" + nav.sub === "media/planos") ajustarPlano(); }).observe($("pl-lienzo"));
+  // Un cono de 70° con su punta en (x, y) que apunta al ángulo a (grados, 0 = arriba, a la derecha positivo)
+  const conoPl = (x, y, a, R, clase, relleno) => { const r = (g) => ((a + g) * Math.PI) / 180, p = (g) => (x + Math.sin(r(g)) * R).toFixed(1) + " " + (y - Math.cos(r(g)) * R).toFixed(1); return '<path class="' + clase + '" d="M' + x.toFixed(1) + " " + y.toFixed(1) + "L" + p(-35) + "A" + R + " " + R + " 0 0 1 " + p(35) + 'Z" fill="' + relleno + '"/>'; };
+  const yawEsf = (id) => (PN.motor && PN.motor.actual && PN.motor.actual.id === id ? PN.motor.view().yaw() : (vistaDe(id) || {}).yaw || 0);
+  function pintarConos() {
+    const pl = planoSel(), svg = $("pl-svg"), caja = $("pl-caja");
+    if (!pl || !svg || !caja) return;
+    const Hn = (1000 * pl.alto) / pl.ancho, u = 1000 / (caja.clientWidth || 600); // unidades del plano por pixel
+    let h = '<defs><radialGradient id="pl-grad"><stop offset="0" stop-color="#D5FF40" stop-opacity=".85"/><stop offset="1" stop-color="#D5FF40" stop-opacity=".08"/></radialGradient></defs>';
+    const pins = Object.entries(pl.pins || {}).filter(([id]) => existeEsf(id));
+    pins.forEach(([id, p]) => {
+      if (id !== PN.esf) return;
+      const x = p.x * 1000, y = p.y * Hn, a = (yawEsf(id) * 180) / Math.PI + (+p.giro || 0), R = 70 * u;
+      h += conoPl(x, y, a, R, "pl-cono", "url(#pl-grad)").replace("<path ", '<path stroke-width="' + (1.3 * u).toFixed(2) + '" ');
+      const tx = x + Math.sin((a * Math.PI) / 180) * R, ty = y - Math.cos((a * Math.PI) / 180) * R;
+      h += '<line x1="' + x.toFixed(1) + '" y1="' + y.toFixed(1) + '" x2="' + tx.toFixed(1) + '" y2="' + ty.toFixed(1) + '" stroke="#0B0B0B" stroke-width="' + (1.5 * u).toFixed(2) + '" stroke-dasharray="' + (4 * u).toFixed(1) + " " + (3 * u).toFixed(1) + '"/>';
+      h += '<circle class="pl-giro" data-pl-giro="' + id + '" cx="' + tx.toFixed(1) + '" cy="' + ty.toFixed(1) + '" r="' + (9 * u).toFixed(1) + '" stroke-width="' + (3 * u).toFixed(1) + '"><title>Jala para girar</title></circle>';
+    });
+    pins.forEach(([id, p]) => {
+      const yo = id === PN.esf, x = p.x * 1000, y = p.y * Hn, r = (yo ? 11 : 8) * u;
+      h += '<g class="pl-pin' + (yo ? " yo" : "") + '" data-pl-pin="' + id + '"><title>' + esc(nombreDe(id)) + '</title><circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + r.toFixed(1) + '" stroke-width="' + (2.5 * u).toFixed(1) + '"/>' +
+        '<text x="' + x.toFixed(1) + '" y="' + (y - r - 6 * u).toFixed(1) + '" style="font-size:' + (11 * u).toFixed(1) + "px;stroke-width:" + (3 * u).toFixed(1) + 'px">' + esc(nombreDe(id)) + "</text></g>";
+    });
+    svg.innerHTML = h;
+  }
+  const puntoPl = (ev) => { const r = $("pl-svg").getBoundingClientRect(); return [Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)), Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height))]; };
+  function elegirEsfPl(id) {
+    PN.esf = id;
+    if (PN.motor && id && (!PN.motor.actual || PN.motor.actual.id !== id)) PN.motor.mostrar(id, 300);
+    pintarPlanos();
+  }
+  $("pl-lienzo").addEventListener("pointerdown", (ev) => {
+    const pl = planoSel(), svg = $("pl-svg");
+    if (!pl || !svg || !svg.contains(ev.target)) return;
+    ev.preventDefault();
+    const g = ev.target.closest("[data-pl-giro]"), pin = ev.target.closest("[data-pl-pin]");
+    if (g) { PN.arr = { tipo: "giro", id: g.dataset.plGiro }; return; }
+    if (pin) { if (pin.dataset.plPin !== PN.esf) elegirEsfPl(pin.dataset.plPin); PN.arr = { tipo: "pin", id: pin.dataset.plPin }; return; }
+    if (!PN.esf) { avisar("Elige una esfera abajo del plano"); return; }
+    pl.pins = pl.pins || {};
+    // Una esfera va en un solo plano: si estaba en otro, se mueve a este
+    planosConf().lista.forEach((x) => { if (x !== pl && x.pins) delete x.pins[PN.esf]; });
+    const [x, y] = puntoPl(ev), antes = pl.pins[PN.esf];
+    pl.pins[PN.esf] = { x: +x.toFixed(4), y: +y.toFixed(4), giro: antes ? antes.giro || 0 : 0 };
+    PN.arr = { tipo: "pin", id: PN.esf, nuevo: !antes };
+    pintarConos();
+  });
+  window.addEventListener("pointermove", (ev) => {
+    if (!PN.arr) return;
+    const pl = planoSel(), p = pl && pl.pins && pl.pins[PN.arr.id];
+    if (!p) return;
+    const [x, y] = puntoPl(ev);
+    if (PN.arr.tipo === "pin") { p.x = +x.toFixed(4); p.y = +y.toFixed(4); }
+    else { const r = $("pl-svg").getBoundingClientRect(), dx = (x - p.x) * r.width, dy = (y - p.y) * r.height; if (Math.hypot(dx, dy) < 4) return; const a = (Math.atan2(dx, -dy) * 180) / Math.PI; p.giro = +gradosPl(a - (yawEsf(PN.arr.id) * 180) / Math.PI).toFixed(1); }
+    pintarConos();
+  });
+  window.addEventListener("pointerup", () => {
+    if (!PN.arr) return;
+    const nuevo = PN.arr.nuevo, id = PN.arr.id;
+    PN.arr = null; guardar(); pintarPlanos();
+    if (nuevo) avisar(nombreDe(id) + " ya está en el plano. Ahora gira el cono con su círculo.");
+  });
+  $("pl-tira").addEventListener("click", (ev) => { const b = ev.target.closest("[data-pl-esf]"); if (b) elegirEsfPl(b.dataset.plEsf); });
+  $("pl-panel").addEventListener("click", (ev) => {
+    const borrar = ev.target.closest("[data-pl-borrar]");
+    if (borrar) { const C = planosConf(), x = C.lista.find((y) => y.id === borrar.dataset.plBorrar); C.lista = C.lista.filter((y) => y !== x); if (PN.sel === borrar.dataset.plBorrar) PN.sel = null; guardar(); pintarPlanos(); avisar((x ? x.nombre : "Plano") + " quitado"); return; }
+    if (ev.target.closest("[data-pl-quitar]")) { const pl = planoSel(); if (pl && pl.pins) delete pl.pins[PN.esf]; guardar(); pintarPlanos(); return; }
+    const li = ev.target.closest("[data-pl]");
+    if (li && !ev.target.closest("input")) { PN.sel = li.dataset.pl; pintarPlanos(); }
+  });
+  $("pl-panel").addEventListener("change", async (ev) => {
+    const t = ev.target, C = planosConf();
+    if (t.dataset.plNombre) { const x = C.lista.find((y) => y.id === t.dataset.plNombre); if (x) { x.nombre = t.value.trim().slice(0, 40) || x.nombre; guardar(); } return; }
+    if (t.dataset.plConf === "esquina") { C.esquina = t.value; guardar(); return; }
+    if (t.dataset.plConf === "abierto") { C.abierto = t.checked; guardar(); return; }
+    if (t.id === "pl-archivo" && t.files[0]) {
+      const f = t.files[0]; t.value = "";
+      try {
+        avisar("Subiendo el plano…");
+        const im = await leerImagen(f), k = Math.min(1, 2400 / Math.max(im.naturalWidth, im.naturalHeight)), cv = document.createElement("canvas");
+        cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k);
+        const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(im, 0, 0, cv.width, cv.height); URL.revokeObjectURL(im.src);
+        const png = /png/i.test(f.type), archivo = await medio(cv, png ? "image/png" : "image/jpeg", 0.9, "plano");
+        const x = { id: "pl" + Date.now().toString(36), nombre: f.name.replace(/\.[a-z0-9]+$/i, "").slice(0, 40) || "Plano", archivo, ancho: cv.width, alto: cv.height, pins: {} };
+        C.lista.push(x); PN.sel = x.id; guardar(); pintarPlanos();
+        avisar("Plano listo. Elige una esfera abajo y toca en el plano dónde está.");
+      } catch (err) { avisar(err.message || "No se pudo subir el plano"); }
+    }
+  });
   function pintarFotos() {
     const fs = est.media.fotos;
     $("fotos-lista").innerHTML = fs.map((x) =>
@@ -11646,7 +12106,7 @@ void main(){
     $("pv-carga").textContent = "Cargando…";
     // Vista previa del estudio: la misma pantalla de carga con la marca que verá el tour publicado
     if (MODO !== "tour") { $("previa").querySelectorAll(".splash.en-previa").forEach((x) => x.remove()); cargaMarca = cargaMarcaPrevia(); if (cargaMarca) $("previa").appendChild(cargaMarca); }
-    audioPrueba.pause(); $("m-play").innerHTML = ICO_PLAY;
+    audioPrueba.pause(); $("m-play").innerHTML = ICO_PLAY; cerrarAudios();
     const g = ++previaGen;
     await precarga.inicial(P().escenaInicial, (x) => {
       if (g !== previaGen) return;
@@ -11655,7 +12115,7 @@ void main(){
     if (g !== previaGen || $("previa").hidden) return;
     orientPv = orientacionPantalla();
     tourPv = crearTour($("pv-stage"), $("pv-ui"), {
-      orientacion: orientPv, cerrable: MODO !== "tour", alCerrar: cerrarPrevia, hayMusica: !!musicaUrl,
+      orientacion: orientPv, cerrable: MODO !== "tour", alCerrar: cerrarPrevia, hayMusica: !!musicaUrl, narrar: true,
       alMusica: () => { if (audioTour.paused) { musicaSilenciada = false; audioTour.play().catch(() => {}); return true; } musicaSilenciada = true; audioTour.pause(); return false; },
       alPantalla: () => {
         const el = $("previa");
@@ -11696,7 +12156,7 @@ void main(){
     });
   }
   function cerrarPrevia() {
-    audioTour.pause();
+    audioTour.pause(); callarVoz();
     try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { /* nada */ }
     previaGen++; precarga.parar();
     if (cargaMarca && MODO !== "tour") { cargaMarca.remove(); cargaMarca = null; }

@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-11T01:35:29.714Z",
- "bien": 79,
- "total": 79,
+ "fecha": "2026-11-11T06:06:25.148Z",
+ "bien": 81,
+ "total": 81,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -205,6 +205,14 @@
   },
   {
    "nombre": "Ficha: las medidas de tramos cortos no se enciman y llevan línea guía a su lado",
+   "ok": true
+  },
+  {
+   "nombre": "Plano con radar: pones las esferas en el plano, el cono sigue la vista y tocar un punto cambia de esfera (también publicado)",
+   "ok": true
+  },
+  {
+   "nombre": "Narración por espacio: la voz de cada esfera suena al llegar, baja la música y se puede repetir (también publicado)",
    "ok": true
   },
   {

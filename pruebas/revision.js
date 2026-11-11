@@ -95,6 +95,29 @@ async function nuevoTour(p, nombre) {
   exige(await p.$("#pano-lista [data-abrir]"), "la esfera no terminó de subir");
   await p.waitForTimeout(1500);
 }
+// Una esfera más en el tour abierto (Panoramas → Lista)
+async function otraEsfera(p, nombre, cielo, suelo) {
+  const antes = (await p.$$("#pano-lista [data-abrir]")).length;
+  await p.click('#nav button:has-text("Panoramas")'); await p.waitForTimeout(300); await p.click('#subtabs button:has-text("Lista")'); await p.waitForTimeout(500);
+  await p.evaluate(async ([nombre, cielo, suelo]) => {
+    const cv = document.createElement("canvas"); cv.width = 4096; cv.height = 2048; const x = cv.getContext("2d");
+    x.fillStyle = cielo; x.fillRect(0, 0, 4096, 1024); x.fillStyle = suelo; x.fillRect(0, 1024, 4096, 1024);
+    const bl = await new Promise((o) => cv.toBlob(o, "image/jpeg", 0.85));
+    const inp = document.querySelector("#subir-zona input[type=file]"), dt = new DataTransfer(); dt.items.add(new File([bl], nombre + ".jpg", { type: "image/jpeg" }));
+    inp.files = dt.files; inp.dispatchEvent(new Event("change", { bubbles: true }));
+  }, [nombre, cielo, suelo]);
+  for (let i = 0; i < 45; i++) { await p.waitForTimeout(1000); if ((await p.$$("#pano-lista [data-abrir]")).length > antes) break; }
+  exige((await p.$$("#pano-lista [data-abrir]")).length > antes, "la esfera «" + nombre + "» no terminó de subir");
+  await p.waitForTimeout(800);
+}
+// Un WAV de prueba (tono suave) de tantos segundos
+function wavPrueba(seg) {
+  const sr = 8000, k = Math.round(sr * seg), wav = Buffer.alloc(44 + k * 2);
+  wav.write("RIFF", 0); wav.writeUInt32LE(36 + k * 2, 4); wav.write("WAVE", 8); wav.write("fmt ", 12); wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(sr, 24); wav.writeUInt32LE(sr * 2, 28); wav.writeUInt16LE(2, 32); wav.writeUInt16LE(16, 34); wav.write("data", 36); wav.writeUInt32LE(k * 2, 40);
+  for (let i = 0; i < k; i++) wav.writeInt16LE(Math.round(Math.sin(i / 6) * 1500), 44 + i * 2);
+  return wav;
+}
 const capas = async (p) => (await p.$$eval("#lista li", (l) => l.map((x) => x.innerText.trim().split("\n")[0]))).reverse();
 const lotes = async (p) => (await capas(p)).filter((t) => /^Lote/.test(t));
 async function irCapas(p) { await p.click('#nav button:has-text("Panoramas")'); await p.waitForTimeout(300); await p.click('#subtabs button:has-text("Capas")'); await p.waitForTimeout(1500); }
@@ -1300,6 +1323,131 @@ async function capasPesadas(p) {
       exige(r.guias >= 2, "los tramos cortos no llevan línea guía: " + r.guias);
       exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
       await n.context().close();
+    });
+
+    // Pedido de Amar (11 nov 2026), funciones para interiores, 1 de 5: el plano del piso con las esferas como puntos;
+    // en el tour sale chico, el punto de donde estás se ilumina, un cono gira hacia donde miras y tocar otro punto te lleva ahí.
+    await paso("Plano con radar: pones las esferas en el plano, el cono sigue la vista y tocar un punto cambia de esfera (también publicado)", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Depa con plano"); await otraEsfera(n, "recamara", "#c9b", "#987");
+      await n.click('#nav button:has-text("Media")'); await n.waitForTimeout(400);
+      await n.click('#subtabs button:has-text("Planos")'); await n.waitForTimeout(1200); await pasarGuias(n);
+      exige(await n.isVisible("#v-planos"), "Media → Planos no abre el editor (sigue «Próximo bloque»)");
+      await n.evaluate(async () => { // un plano sencillo de depa: muros negros sobre blanco
+        const cv = document.createElement("canvas"); cv.width = 1200; cv.height = 800; const x = cv.getContext("2d");
+        x.fillStyle = "#fff"; x.fillRect(0, 0, 1200, 800); x.strokeStyle = "#222"; x.lineWidth = 14; x.strokeRect(40, 40, 1120, 720);
+        x.beginPath(); x.moveTo(600, 40); x.lineTo(600, 330); x.moveTo(600, 470); x.lineTo(600, 760); x.moveTo(600, 420); x.lineTo(1160, 420); x.stroke();
+        x.fillStyle = "#555"; x.font = "600 34px sans-serif"; x.fillText("SALA", 230, 420); x.fillText("RECÁMARA", 780, 250); x.fillText("COCINA", 800, 600);
+        const bl = await new Promise((o) => cv.toBlob(o, "image/png"));
+        const inp = document.getElementById("pl-archivo"), dt = new DataTransfer(); dt.items.add(new File([bl], "Planta depa.png", { type: "image/png" }));
+        inp.files = dt.files; inp.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      for (let i = 0; i < 20; i++) { await n.waitForTimeout(500); if (await n.$("#pl-caja img")) break; }
+      exige(await n.$("#pl-caja img"), "el plano no se subió");
+      await n.waitForTimeout(800);
+      const caja = await n.locator("#pl-svg").boundingBox(), en = (fx, fy) => [caja.x + caja.width * fx, caja.y + caja.height * fy];
+      await n.click("#pl-tira [data-pl-esf] >> nth=0"); await n.waitForTimeout(500);
+      await n.mouse.click(...en(0.27, 0.58)); await n.waitForTimeout(500);
+      // El círculo del cono: jalarlo a la derecha del punto hace que el cono apunte a la derecha (90°)
+      const g = await n.locator("[data-pl-giro]").boundingBox(), [px, py] = en(0.27, 0.58);
+      await n.mouse.move(g.x + g.width / 2, g.y + g.height / 2); await n.mouse.down();
+      for (let k = 1; k <= 8; k++) await n.mouse.move(g.x + g.width / 2 + ((px + 120 - g.x - g.width / 2) * k) / 8, g.y + g.height / 2 + ((py - g.y - g.height / 2) * k) / 8);
+      await n.mouse.up(); await n.waitForTimeout(400);
+      await n.click("#pl-tira [data-pl-esf] >> nth=1"); await n.waitForTimeout(800);
+      await n.mouse.click(...en(0.74, 0.3)); await n.waitForTimeout(800);
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "plano-editor.png") });
+      const id = await idTour(n), d = await n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      const pl = ((d.proyecto.planos || {}).lista || [])[0], [e1, e2] = d.escenas.map((e) => e.id);
+      exige(pl && pl.archivo && pl.ancho === 1200 && pl.alto === 800, "el plano no se guardó: " + JSON.stringify(pl).slice(0, 120));
+      exige(pl.pins[e1] && pl.pins[e2], "no se guardaron las 2 esferas en el plano: " + JSON.stringify(pl.pins));
+      exige(Math.abs(pl.pins[e1].x - 0.27) < 0.02 && Math.abs(pl.pins[e1].y - 0.58) < 0.02, "el punto quedó en otro lugar: " + JSON.stringify(pl.pins[e1]));
+      const yaw0 = ((d.escenas[0].vista || {}).yaw || 0) * 180 / Math.PI, giro = (((pl.pins[e1].giro + yaw0 - 90) % 360) + 540) % 360 - 180;
+      exige(Math.abs(giro) < 8, "el cono no quedó apuntando a donde se jaló: giro " + pl.pins[e1].giro);
+      // En la vista previa: plano chico, punto encendido y cono que gira con la vista
+      const probar = async (t, raiz, nombre) => {
+        await t.waitForSelector(raiz + " .mp:not([hidden]) .mp-pin.yo", { timeout: 15000 });
+        const ang = () => t.$eval(raiz + " .mp-cono", (e) => +(e.getAttribute("transform").match(/rotate\(([-\d.]+)/) || [])[1]);
+        const a0 = await ang(), b = await t.locator(raiz.replace("-ui", "-stage")).boundingBox();
+        await t.mouse.move(b.x + b.width * 0.35, b.y + b.height * 0.5); await t.mouse.down();
+        for (let k = 1; k <= 10; k++) await t.mouse.move(b.x + b.width * 0.35 + k * 30, b.y + b.height * 0.5);
+        await t.mouse.up(); await t.waitForTimeout(900);
+        const a1 = await ang();
+        exige(Math.abs(a1 - a0) > 10, nombre + ": el cono no gira al mover la vista (" + a0 + " → " + a1 + ")");
+        exige((await t.$eval(raiz + " [data-mp]", (e) => e.dataset.mp)) === e2, nombre + ": el otro punto no es la otra esfera");
+        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "plano-" + nombre + ".png") });
+        await t.click(raiz + " [data-mp]"); await t.waitForTimeout(2500);
+        exige((await t.$eval(raiz + " [data-mp]", (e) => e.dataset.mp)) === e1, nombre + ": tocar el punto no llevó a la otra esfera");
+        if (process.env.CAPTURAS) await t.locator(raiz + " .mp-caja").screenshot({ path: path.join(process.env.CAPTURAS, "plano-" + nombre + "-zoom.png") });
+        await t.click(raiz + " [data-mp-boton]"); await t.waitForTimeout(300);
+        exige(!(await t.isVisible(raiz + " .mp-caja")), nombre + ": el botón no esconde el plano");
+      };
+      await n.click('button:has-text("Vista previa")'); await n.waitForTimeout(3500);
+      await probar(n, "#pv-ui", "previa");
+      await n.keyboard.press("Escape"); await n.waitForTimeout(500);
+      await n.click('#nav button:has-text("Publicar")'); await n.waitForTimeout(500); await n.click('#subtabs button:has-text("Web")'); await n.waitForTimeout(800); await n.click("#pub-publicar"); await n.waitForTimeout(3500);
+      const t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(4500);
+      await probar(t, "#pv-ui", "publicado");
+      if (process.env.CAPTURAS) { const ctx = await navegador.newContext(Object.assign({}, devices["iPhone 13"])), m = await ctx.newPage(); await m.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort()); await m.goto(TOURS + "/" + id + "/"); await m.waitForTimeout(5000); await m.screenshot({ path: path.join(process.env.CAPTURAS, "plano-celular.png") }); await ctx.close(); }
+      exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await t.context().close(); await n.context().close();
+    });
+
+    // Pedido de Amar (11 nov 2026), funciones para interiores, 2 de 5: una voz por espacio que suena al llegar a la esfera,
+    // con subtítulo; la música baja mientras habla, la presentación espera y una pastilla la pausa o la repite.
+    await paso("Narración por espacio: la voz de cada esfera suena al llegar, baja la música y se puede repetir (también publicado)", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Depa narrado"); await otraEsfera(n, "recamara", "#c9b", "#987");
+      await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(500); await n.click('#subtabs button:has-text("Música")'); await n.waitForTimeout(500);
+      await n.setInputFiles("#m-archivo", { name: "fondo.wav", mimeType: "audio/wav", buffer: wavPrueba(30) }); await n.waitForTimeout(3000);
+      await n.click('#nav button:has-text("Media")'); await n.waitForTimeout(400);
+      await n.click('#subtabs button:has-text("Audios")'); await n.waitForTimeout(900); await pasarGuias(n);
+      exige(await n.isVisible("#v-audios"), "Media → Audios no abre la narración (sigue «Próximo bloque»)");
+      const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id), [e1, e2] = (await leer()).escenas.map((e) => e.id);
+      await n.setInputFiles('[data-au-archivo="' + e1 + '"]', { name: "voz-sala.wav", mimeType: "audio/wav", buffer: wavPrueba(6) }); await n.waitForTimeout(2500);
+      await n.fill('[data-au-texto="' + e1 + '"]', "Esta es la sala, con doble altura y luz todo el día."); await n.waitForTimeout(300);
+      await n.setInputFiles('[data-au-archivo="' + e2 + '"]', { name: "voz-recamara.wav", mimeType: "audio/wav", buffer: wavPrueba(3) }); await n.waitForTimeout(2500);
+      exige((await n.$$(".nr-fila.con")).length === 2, "no quedaron las 2 esferas con voz");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "narracion-editor.png") });
+      const d = await leer(), n1 = d.escenas[0].narracion || {};
+      exige(n1.archivo && /^archivos\/voz-/.test(n1.archivo) && Math.abs(n1.duracion - 6) < 0.3, "la voz no se guardó bien: " + JSON.stringify(n1).slice(0, 140));
+      exige(/doble altura/.test(n1.texto || ""), "el subtítulo no se guardó");
+      // En el tour: espera al primer toque (o suena sola), baja la música, sigue en la otra esfera y al volver se puede repetir
+      const probar = async (t, nombre) => {
+        await t.waitForSelector("#pv-ui .nr:not([hidden])", { timeout: 15000 });
+        await t.waitForSelector("#pv-carga", { state: "hidden", timeout: 15000 }); await t.waitForTimeout(400);
+        if (await t.$("#pv-ui .nr.espera")) await t.click("#pv-ui [data-voz]");
+        await t.waitForSelector("#pv-ui .nr.sonando", { timeout: 5000 });
+        exige(/doble altura/.test(await t.textContent("#pv-ui .nr-sub")), nombre + ": no sale el subtítulo");
+        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "narracion-" + nombre + ".png") });
+        const vol = () => t.evaluate(() => (window.__medios || []).filter((m) => /musica-/.test(m.src)).map((m) => [m.paused, +m.volume.toFixed(2)])[0] || null);
+        const v = await vol();
+        exige(!v || v[0] || v[1] < 0.3, nombre + ": la música no bajó mientras habla: " + JSON.stringify(v));
+        await t.waitForSelector("#pv-ui .nr.chica", { timeout: 9000 });
+        const v2 = await vol();
+        exige(!v || (v2 && v2[1] > 0.3), nombre + ": la música no regresó al terminar la voz: " + JSON.stringify(v2));
+        await t.click('#pv-ui [data-sk="next"]');
+        await t.waitForSelector('#pv-ui .nr.sonando[data-esfera="' + e2 + '"]', { timeout: 5000 }).catch(() => {});
+        exige(await t.$('#pv-ui .nr.sonando[data-esfera="' + e2 + '"]'), nombre + ": en la otra esfera no suena su voz");
+        await t.waitForSelector("#pv-ui .nr.chica", { timeout: 6000 });
+        await t.click('#pv-ui [data-sk="prev"]'); await t.waitForTimeout(2500);
+        exige(await t.$("#pv-ui .nr.chica"), nombre + ": al volver a la sala la voz se repitió sola (debe ser solo la primera vez)");
+        await t.click("#pv-ui [data-voz]"); await t.waitForSelector("#pv-ui .nr.sonando", { timeout: 4000 });
+        await t.click("#pv-ui [data-voz]"); await t.waitForSelector("#pv-ui .nr.pausa", { timeout: 4000 });
+      };
+      await n.addInitScript(() => { window.__medios = []; const p = HTMLMediaElement.prototype.play; HTMLMediaElement.prototype.play = function () { if (!window.__medios.includes(this)) window.__medios.push(this); return p.apply(this, arguments); }; });
+      await n.reload(); await n.waitForTimeout(3000); await cerrarAnuncio(n);
+      await n.click('button:has-text("Vista previa")'); await n.waitForTimeout(3500);
+      await probar(n, "previa");
+      await n.keyboard.press("Escape"); await n.waitForTimeout(500);
+      exige(!(await n.evaluate(() => (window.__medios || []).some((m) => !m.paused))), "al cerrar la vista previa la voz o la música siguieron sonando");
+      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
+      const t = await pagina(null);
+      await t.addInitScript(() => { window.__medios = []; const p = HTMLMediaElement.prototype.play; HTMLMediaElement.prototype.play = function () { if (!window.__medios.includes(this)) window.__medios.push(this); return p.apply(this, arguments); }; });
+      await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(4500);
+      await probar(t, "publicado");
+      if (process.env.CAPTURAS) { const ctx = await navegador.newContext(Object.assign({}, devices["iPhone 13"])), m = await ctx.newPage(); await m.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort()); await m.goto(TOURS + "/" + id + "/"); await m.waitForTimeout(4500); await m.tap("#pv-ui [data-voz]").catch(() => {}); await m.waitForTimeout(600); await m.screenshot({ path: path.join(process.env.CAPTURAS, "narracion-celular.png") }); await ctx.close(); }
+      exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await t.context().close(); await n.context().close();
     });
 
     // Pedido de Amar (10 nov 2026): «en edificios, al hacer zoom se borran los textos; que exista la opción de planchar
