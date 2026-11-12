@@ -964,17 +964,20 @@ async function api(request, env, partes, yo) {
     const desc = (typeof pr.descripcion === "string" && pr.descripcion.replace(/\s+/g, " ").trim().slice(0, 200)) || "Recorrido virtual 360";
     const pon = (v) => ({ element: (el) => el.setAttribute("content", v) });
     const quita = { element: (el) => el.remove() };
-    const pagina = await env.ASSETS.fetch(new Request(new URL("/", request.url)));
-    const html = await conCarga(new HTMLRewriter(), p, pr.cargaPropia === undefined && (await cargaEnViejos(env).catch(() => false)))
+    // Marca blanca (pedido de OBED y Amar, nov 2026): la página es recorrido.html (solo el visor, compacto y sin
+    // ninguna mención a la plataforma), con la carga del proyecto, sin íconos ni vista previa que lleven a mozari.app
+    const pagina = await env.ASSETS.fetch(new Request(new URL("/recorrido.html", request.url)));
+    const html = await conCarga(new HTMLRewriter(), p, false, true)
       .on("body", { element: (el) => { el.setAttribute("data-modo", "tour"); el.setAttribute("data-exportado", "1"); } })
       .on("title", { element: (el) => el.setInnerContent(nombre) })
       .on('meta[property="og:title"]', pon(nombre)).on('meta[property="og:site_name"]', pon(nombre))
       .on('meta[property="og:description"]', pon(desc)).on('meta[name="description"]', pon(desc))
       .on('meta[property^="og:image"]', quita).on('meta[name="twitter:image"]', quita).on('meta[property="og:url"]', quita)
-      .on('link[href^="/"]', { element: (el) => el.setAttribute("href", "https://mozari.app" + el.getAttribute("href")) })
+      .on('link[href^="/"]', quita).on('meta[name="theme-color"]', quita)
       // Las librerías viajan dentro del .zip, junto al index.html
       .on('script[src^="/lib/"]', { element: (el) => el.setAttribute("src", el.getAttribute("src").slice(1)) })
       .transform(pagina).text();
+    if (p.proyecto) delete p.proyecto.marcaMozari; // el proyecto.json del .zip tampoco nombra a la plataforma
     return json({ nombre, html, proyecto: p, archivos, librerias: ["lib/marzipano.js", "lib/d3.min.js"], bytes: archivos.reduce((s, a) => s + a.bytes, 0) });
   }
 

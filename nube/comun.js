@@ -44,10 +44,11 @@ export async function cargaEnViejos(env) {
   const c = (o ? await o.json().catch(() => ({})) : {}) || {}, f = c["carga-logo"];
   return !(+c._v >= 2 && f && (f.modo === "yo" || f.modo === "probadores"));
 }
-export function datosCarga(p, viejos = false) {
+// forzar: el tour descargado para otro hosting (marca blanca) siempre lleva la carga del proyecto, nunca la de la plataforma
+export function datosCarga(p, viejos = false, forzar = false) {
   const pr = (p && p.proyecto) || {};
-  if (pr.marcaMozari !== false && pr.marcaMozari !== undefined) return null;
-  if (!(pr.cargaPropia === true || (pr.cargaPropia === undefined && pr.marcaMozari === false && viejos))) return null;
+  if (!forzar && pr.marcaMozari !== false && pr.marcaMozari !== undefined) return null;
+  if (!forzar && !(pr.cargaPropia === true || (pr.cargaPropia === undefined && pr.marcaMozari === false && viejos))) return null;
   const sk = (p && p.skin) || {}, lg = sk.logo || {}, f = pr.ficha || {};
   const color = (c, d) => (HEX.test(c || "") ? c : d);
   let img = "", fondo = color(sk.panel, "#111111"), acento = color(sk.acento, "#FFFFFF");
@@ -59,8 +60,8 @@ export function datosCarga(p, viejos = false) {
   return { img, fondo, acento, texto, nombre };
 }
 const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-export function conCarga(rw, p, viejos = false) {
-  const d = datosCarga(p, viejos);
+export function conCarga(rw, p, viejos = false, forzar = false) {
+  const d = datosCarga(p, viejos, forzar);
   if (!d) return rw;
   const centro = (d.img ? '<img class="splash-logo" src="' + d.img + '" alt="">' : "") + (d.nombre ? '<b class="splash-nombre">' + escHtml(d.nombre) + "</b>" : "") + '<div class="splash-barra"><i></i></div>';
   return rw

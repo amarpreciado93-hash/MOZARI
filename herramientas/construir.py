@@ -25,3 +25,7 @@ doc = (
 assert doc.count("<body") == 1 and doc.count("</head>") == 1
 open(dst, "w", encoding="utf-8").write(doc)
 print("ok", dst, len(doc))
+
+# El tour para otro hosting (marca blanca): recorrido.html, al lado de index.html. Necesita node y terser.
+import os, subprocess
+subprocess.run(["node", os.path.join(os.path.dirname(os.path.abspath(__file__)), "exportable.mjs"), dst, os.path.join(os.path.dirname(dst) or ".", "recorrido.html")], check=True)

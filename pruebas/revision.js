@@ -793,6 +793,12 @@ async function capasPesadas(p) {
       exige(nombres.some((n) => n.endsWith("/lib/marzipano.js")) && nombres.some((n) => n.endsWith("/lib/d3.min.js")), "el zip no trae las librerías del visor");
       const ix = new TextDecoder().decode(zip[nombres.find((n) => n.endsWith("/index.html"))]);
       exige(ix.includes('src="lib/marzipano.js"') && !/cdn\.jsdelivr|unpkg\.com|cdnjs/.test(ix), "el index.html del zip todavía pide librerías a otro servidor");
+      // Marca blanca (pedido de OBED, licencia Desarrollos): nada en el .zip nombra a la plataforma ni lleva a ella
+      const textos = nombres.filter((n) => /\.(html|json|txt|js)$/.test(n) && !/\/lib\//.test(n)).map((n) => [n, new TextDecoder().decode(zip[n])]);
+      const marca = textos.filter(([, t]) => /mozari|r360/i.test(t)).map(([n, t]) => n + ": " + (t.match(/.{0,30}(mozari|r360).{0,30}/i) || [""])[0]);
+      exige(!marca.length, "el .zip todavía nombra a la plataforma: " + marca.join(" | ").slice(0, 220));
+      exige(!/<link[^>]+href="\//.test(ix) && !/og:image|og:url/.test(ix), "el index.html del zip trae íconos o vista previa de la plataforma");
+      exige(ix.length < 1000000 && !/"cap":\s*"1\. Empezar"/.test(ix), "el index.html del zip trae el manual o los comentarios del estudio");
     }, a);
     // El .zip subido a otro hosting: se descomprime en una carpeta, la sirve un servidor aparte (como el cPanel del
     // cliente) y el tour tiene que abrir completo sin pedirle nada a Mozari

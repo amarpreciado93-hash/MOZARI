@@ -3644,7 +3644,7 @@
   let libZip = null;
   const cargarZip = () => libZip || (libZip = new Promise((ok, mal) => { const sc = document.createElement("script"); sc.src = "/lib/fflate.js"; sc.onload = () => ok(window.fflate); sc.onerror = () => { libZip = null; mal(new Error("zip")); }; document.head.appendChild(sc); }));
   const LEEME_ZIP = (nombre, carpeta) => [
-    nombre, "Recorrido virtual 360 hecho con Mozari (mozari.app)", "",
+    nombre, "Recorrido virtual 360", "",
     "CÓMO SUBIRLO A TU HOSTING", "",
     "1. Sube la carpeta «" + carpeta + "» completa a tu sitio:",
     "   cPanel → Administrador de archivos → public_html, o por FTP (FileZilla).",
@@ -3654,7 +3654,7 @@
     "IMPORTANTE", "",
     "- No se abre con doble clic: necesita estar en un servidor (tu hosting).",
     "- Necesita internet: carga su motor 3D y tipografías de la web.",
-    "- Si cambias algo en Mozari, publica y descarga de nuevo. Esta copia no se actualiza sola.", "",
+    "- Si cambias algo del recorrido, publícalo y descárgalo de nuevo. Esta copia no se actualiza sola.", "",
   ].join("\r\n");
   async function descargarTour(b) {
     const texto = b.textContent;
