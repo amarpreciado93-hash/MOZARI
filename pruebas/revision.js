@@ -2003,6 +2003,64 @@ async function capasPesadas(p) {
       exige(!n.errs.length, n.errs.join(" | ").slice(0, 200));
       await n.context().close();
     });
+    // Pedido de Amar (12 nov 2026, video para Facebook): la foto 360 en la cuenta de prueba hasta que acaba el Buen Fin
+    // (17 de noviembre), con una marca chiquita «Hecho con Mozari». Después, la cuenta de prueba va a comprar.
+    await paso("Foto 360 en cuenta de prueba: hasta el Buen Fin, con marca chiquita; después pide licencia y con licencia sale sin marca", async () => {
+      const correo = "foto360-prueba-" + Date.now() + "@prueba.mx";
+      const J = (m, b) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(b) });
+      const lab = (modo) => a.evaluate(([r, o]) => fetch(r, o).then((x) => x.status), ["api/admin/laboratorio/foto360", J("PUT", { modo, probadores: [] })]);
+      exige((await lab("todos")) === 200, "no se pudo dar la foto 360 a todos"); // así está en mozari.app
+      // La fecha del navegador se recorre (el tiempo sigue corriendo): durante el Buen Fin y después
+      const fecha = (p, iso) => p.evaluate((t) => { const real = window.__ahoraReal || (window.__ahoraReal = Date.now.bind(Date)); const dif = t - real(); Date.now = () => real() + dif; }, Date.parse(iso));
+      const n = await pagina(correo);
+      try {
+        await fecha(n, "2026-11-14T18:00:00Z");
+        await nuevoTour(n, "Foto para Facebook"); await irCapas(n); await n.waitForTimeout(800);
+        let dice = false; const vistos = [];
+        for (let i = 0; i < 8; i++) {
+          const t = await n.textContent(".guia-tarjeta").catch(() => "");
+          if (t) vistos.push(t.slice(0, 50));
+          if (/17 de noviembre/.test(t || "") && /Hecho con Mozari/.test(t)) dice = true;
+          if (t) { await n.click('.guia-tarjeta [data-guia="seguir"]').catch(() => {}); await n.waitForTimeout(450); } else await n.waitForTimeout(600);
+        }
+        exige(await n.isVisible("#foto360-boton"), "la cuenta de prueba no tiene el botón «Foto 360 con lotes»");
+        exige(dice, "la guía de Capas no le dice a la cuenta de prueba que la tiene hasta el 17 de noviembre con la marca: " + vistos.join(" | "));
+        const medir = async (descarga) => {
+          const b64 = fs.readFileSync(await descarga.path()).toString("base64");
+          return n.evaluate(async (b64) => {
+            const bm = await createImageBitmap(await (await fetch("data:image/jpeg;base64," + b64)).blob()), cv = document.createElement("canvas");
+            cv.width = bm.width; cv.height = bm.height; const x = cv.getContext("2d"); x.drawImage(bm, 0, 0);
+            const W = cv.width, H = cv.height, cx = W / 2, cy = H * (0.5 + 18 / 180), rw = W * 9 / 360, rh = H * 5 / 180;
+            const d = x.getImageData(Math.round(cx - rw), Math.round(cy - rh), Math.round(2 * rw), Math.round(2 * rh)).data;
+            let oscuro = 0, blanco = 0;
+            for (let o = 0; o < d.length; o += 4) { const L = 0.3 * d[o] + 0.59 * d[o + 1] + 0.11 * d[o + 2]; if (L < 75) oscuro++; else if (L > 235) blanco++; }
+            return { W, H, oscuro, blanco, total: d.length / 4 };
+          }, b64);
+        };
+        const [d1] = await Promise.all([n.waitForEvent("download", { timeout: 180000 }), n.click("#foto360-boton")]);
+        const con = await medir(d1);
+        if (process.env.CAPTURAS) fs.copyFileSync(await d1.path(), path.join(process.env.CAPTURAS, "foto360-marca-prueba.jpg"));
+        exige(con.oscuro > 800 && con.blanco > 80, "la foto de la cuenta de prueba no lleva la marca «Hecho con Mozari»: " + JSON.stringify(con));
+        exige(con.oscuro < con.total * 0.4, "la marca salió demasiado grande: " + JSON.stringify(con));
+        // Ya pasó el Buen Fin: el botón lleva a comprar y no descarga nada
+        await fecha(n, "2026-11-19T12:00:00Z");
+        let bajo = false; const vigila = () => { bajo = true; }; n.on("download", vigila);
+        await n.click("#foto360-boton"); await n.waitForTimeout(2500);
+        n.off("download", vigila);
+        exige(!bajo && (await n.evaluate(() => document.getElementById("dlg-pago").open)), "después del Buen Fin la cuenta de prueba sigue descargando la foto 360 o no le ofrece la licencia");
+        await n.keyboard.press("Escape"); await n.waitForTimeout(400);
+        // Con licencia: sin marca
+        const cta = (await a.evaluate(() => fetch("api/admin/cuentas").then((r) => r.json()))).cuentas.find((x) => x.email === correo);
+        exige((await a.evaluate(([r, o]) => fetch(r, o).then((x) => x.status), ["api/admin/cuentas/" + cta.uid, J("PUT", { plan: "pro" })])) === 200, "no se pudo poner en Pro");
+        await n.reload(); await n.waitForTimeout(2500); await cerrarAnuncio(n); await fecha(n, "2026-11-19T12:00:00Z");
+        await irCapas(n); await n.waitForTimeout(800); await pasarGuias(n);
+        const [d2] = await Promise.all([n.waitForEvent("download", { timeout: 180000 }), n.click("#foto360-boton")]);
+        const sin = await medir(d2);
+        console.log("    cuenta de prueba: " + JSON.stringify(con) + " · con licencia: " + JSON.stringify(sin));
+        exige(sin.oscuro < 50, "con licencia la foto 360 todavía lleva la marca: " + JSON.stringify(sin));
+        exige(!n.errs.length, n.errs.join(" | ").slice(0, 200));
+      } finally { await lab("pago"); await n.context().close(); }
+    }, a);
     await paso("Ruta curva: manijas rojas en cada punto, como en Illustrator", async () => {
       const n = await pagina(DUENO); await nuevoTour(n, "Ruta curva");
       await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800);

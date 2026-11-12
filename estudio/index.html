@@ -2298,6 +2298,11 @@
   const tieneLotes = () => Object.values(est.capas || {}).some((l) => (l || []).some((c) => c && c.lote));
   // ¿Este tour sale con marca de agua? Gratis siempre; Pro si tiene lotes (la lotificación es de Desarrollos)
   const conMarcaPrueba = () => MODO === "nube" && !!PLAN && !NUBE.admin && (!!PLAN.marca || (sinLotif() && tieneLotes()));
+  // Foto 360 con lotes en la cuenta de prueba (pedido de Amar, 12 nov 2026): se puede usar hasta que acaba el Buen Fin
+  // (del 13 al 17 de noviembre de 2026; termina a medianoche del centro de México, UTC-6) y sale con una marca chiquita.
+  const FIN_FOTO360_PRUEBA = Date.parse("2026-11-18T06:00:00Z");
+  const foto360Prueba = () => MODO === "nube" && !!PLAN && !NUBE.admin && !!PLAN.marca;
+  const foto360Vencida = () => foto360Prueba() && Date.now() >= FIN_FOTO360_PRUEBA;
   // Un tour descargado vive en el hosting del usuario: sus links a Mozari van a mozari.app
   const ESCAPARATE = (MODO === "tour" ? (document.body.dataset.exportado ? "https://mozari.app/" : "https://" + location.host.replace(/^tours\./, "").replace(/^mozari-tours\./, "mozari-estudio.") + "/") : "") + "escaparate#planes";
   // Tu cuenta (arriba a la derecha): foto de Google, nombre y Salir
@@ -3623,7 +3628,8 @@
     esVisible("#ref-boton") && { el: "#ref-boton", titulo: "Nuevo: plano de referencia", anim: animRef, dur: 4.5,
       texto: "Abre tu <b>masterplan</b> (PDF o imagen) en una ventanita para trazar manzanas y lotes viéndolo. Solo tú lo ves; tus clientes no." },
     esVisible("#foto360-boton") && { el: "#foto360-boton", titulo: "Nuevo: foto 360 con lotes",
-      texto: "Descarga esta esfera como <b>foto 360</b> (JPG 2:1) con los lotes dibujados, lista para subir a Facebook, Google Fotos o cualquier visor 360." },
+      texto: "Descarga esta esfera como <b>foto 360</b> (JPG 2:1) con los lotes dibujados, lista para subir a Facebook, Google Fotos o cualquier visor 360." +
+        (foto360Prueba() && !foto360Vencida() ? " En tu cuenta de prueba la tienes <b>hasta el 17 de noviembre</b>, con una marca chiquita «Hecho con Mozari»." : "") },
   ].filter(Boolean), () => nav.sub === "capas");
   // Al abrir el plano de referencia por primera vez
   const guiaRefUso = () => guiaNueva("nuevo-referencia", () => [
@@ -7296,7 +7302,10 @@ void main(){
       }
       await new Promise((ok) => setTimeout(ok, 0));
     }
-    // 6. JPG con los datos 360 (XMP GPano) y descarga
+    // 6. Cuenta de prueba: la marca «Hecho con Mozari», chiquita, abajo al centro de la vista con que abre Facebook
+    const marca = foto360Prueba();
+    if (marca) marcaFoto360(ox, W, H);
+    // 7. JPG con los datos 360 (XMP GPano) y descarga
     const blob = await new Promise((ok) => out.toBlob(ok, "image/jpeg", 0.9));
     const xmp = '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:GPano="http://ns.google.com/photos/1.0/panorama/" GPano:ProjectionType="equirectangular" GPano:UsePanoramaViewer="True" GPano:FullPanoWidthPixels="' + W + '" GPano:FullPanoHeightPixels="' + H + '" GPano:CroppedAreaImageWidthPixels="' + W + '" GPano:CroppedAreaImageHeightPixels="' + H + '" GPano:CroppedAreaLeftPixels="0" GPano:CroppedAreaTopPixels="0"/></rdf:RDF></x:xmpmeta>';
     const cab = new TextEncoder().encode("http://ns.adobe.com/xap/1.0/\0" + xmp), app1 = new Uint8Array(4 + cab.length);
@@ -7305,8 +7314,47 @@ void main(){
     const nombre = (nombreDe(id) || "esfera").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w-]+/g, "-").toLowerCase();
     const aE = document.createElement("a"); aE.href = URL.createObjectURL(final); aE.download = nombre + "-lotes-360.jpg"; document.body.appendChild(aE); aE.click(); aE.remove();
     setTimeout(() => URL.revokeObjectURL(aE.href), 4000);
-    avisar("Foto 360 lista (" + W + "×" + H + "). Se reconoce como 360 en Facebook y Google Fotos.");
-    return { W, H, peso: final.size };
+    avisar("Foto 360 lista (" + W + "×" + H + "). Se reconoce como 360 en Facebook y Google Fotos." + (marca ? " Lleva la marca «Hecho con Mozari»; con tu licencia sale sin marca." : ""), marca ? 7000 : undefined);
+    return { W, H, peso: final.size, marca };
+  }
+  // La marca va en un plano de frente a la cámara (proyección rectilínea): en el visor 360 se ve derecha, sin deformarse.
+  // Mide unos 13° de ancho, centrada en la vista con que abre la foto (centro de la imagen) y 18° abajo del horizonte (se ve aunque el visor abra con poco campo de vista).
+  function marcaFoto360(ox, W, H) {
+    const mw = 760, mh = 150, m = document.createElement("canvas"); m.width = mw; m.height = mh;
+    const g = m.getContext("2d"), r = mh / 2;
+    g.fillStyle = "rgba(11,11,11,0.62)"; g.beginPath(); g.moveTo(r, 0); g.arcTo(mw, 0, mw, mh, r); g.arcTo(mw, mh, 0, mh, r); g.arcTo(0, mh, 0, 0, r); g.arcTo(0, 0, mw, 0, r); g.closePath(); g.fill();
+    const iso = document.getElementById("iso"), lado = 92;
+    if (iso) { g.save(); g.translate(44, (mh - lado) / 2); g.scale(lado / 613, lado / 613); g.fillStyle = "#D5FF40"; g.fill(new Path2D(iso.getAttribute("d"))); g.restore(); }
+    g.fillStyle = "#fff"; g.textBaseline = "middle";
+    const fam = getComputedStyle(document.body).fontFamily || "sans-serif";
+    let fs = 58; g.font = "500 " + fs + "px " + fam;
+    const txt = "Hecho con Mozari", x0 = 44 + lado + 30, maxw = mw - x0 - 50;
+    while (g.measureText(txt).width > maxw && fs > 30) { fs -= 2; g.font = "500 " + fs + "px " + fam; }
+    g.fillText(txt, x0, mh / 2 + 3);
+    const sd = g.getImageData(0, 0, mw, mh).data;
+    const el = -18 * Math.PI / 180, F = [0, Math.sin(el), Math.cos(el)], Rr = [1, 0, 0], Up = [0, Math.cos(el), -Math.sin(el)];
+    const hw = Math.tan(6.5 * Math.PI / 180), hh = hw * mh / mw;
+    const aXY = (u, v) => { const d = [F[0] + u * Rr[0] + v * Up[0], F[1] + u * Rr[1] + v * Up[1], F[2] + u * Rr[2] + v * Up[2]], L = Math.hypot(...d); return [(Math.atan2(d[0], d[2]) / (2 * Math.PI) + 0.5) * W, (0.5 - Math.asin(d[1] / L) / Math.PI) * H]; };
+    const esq = [[-hw, hh], [hw, hh], [hw, -hh], [-hw, -hh]].map(([u, v]) => aXY(u, v));
+    const xa = Math.max(0, Math.floor(Math.min(...esq.map((e) => e[0]))) - 2), xb = Math.min(W, Math.ceil(Math.max(...esq.map((e) => e[0]))) + 2);
+    const ya = Math.max(0, Math.floor(Math.min(...esq.map((e) => e[1]))) - 2), yb = Math.min(H, Math.ceil(Math.max(...esq.map((e) => e[1]))) + 2);
+    const img = ox.getImageData(xa, ya, xb - xa, yb - ya), dd = img.data;
+    for (let yy = ya; yy < yb; yy++) for (let xx = xa; xx < xb; xx++) {
+      let al = 0, cr = 0, cg = 0, cb = 0;
+      for (let sy = 0; sy < 3; sy++) for (let sx = 0; sx < 3; sx++) { // 3×3 muestras por pixel: orillas suaves
+        const yw = ((xx + (sx + 0.5) / 3) / W - 0.5) * 2 * Math.PI, p = (0.5 - (yy + (sy + 0.5) / 3) / H) * Math.PI;
+        const d = [Math.sin(yw) * Math.cos(p), Math.sin(p), Math.cos(yw) * Math.cos(p)], t = d[0] * F[0] + d[1] * F[1] + d[2] * F[2];
+        if (t <= 0) continue;
+        const u = (d[0] * Rr[0] + d[1] * Rr[1] + d[2] * Rr[2]) / t, v = (d[0] * Up[0] + d[1] * Up[1] + d[2] * Up[2]) / t;
+        const px = Math.floor((u / hw * 0.5 + 0.5) * mw), py = Math.floor((0.5 - v / hh * 0.5) * mh);
+        if (px < 0 || py < 0 || px >= mw || py >= mh) continue;
+        const o = (py * mw + px) * 4, a = sd[o + 3] / 255; al += a; cr += sd[o] * a; cg += sd[o + 1] * a; cb += sd[o + 2] * a;
+      }
+      if (al <= 0) continue;
+      const o = ((yy - ya) * (xb - xa) + (xx - xa)) * 4, A = al / 9;
+      dd[o] = dd[o] * (1 - A) + (cr / al) * A; dd[o + 1] = dd[o + 1] * (1 - A) + (cg / al) * A; dd[o + 2] = dd[o + 2] * (1 - A) + (cb / al) * A;
+    }
+    ox.putImageData(img, xa, ya);
   }
   // =================== PLANO DE REFERENCIA (Laboratorio) ===================
   // El masterplan (PDF o imagen) en una ventanita arriba a la izquierda, para trazar viéndolo. Se guarda
@@ -7322,6 +7370,9 @@ void main(){
     ["ref-archivo", "ref-archivo2"].forEach((id) => { if ($(id).accept !== acepta) $(id).accept = acepta; });
     $("ref-subir-txt").textContent = enLab("kmz") ? "Subir PDF, imagen o KMZ" : "Subir PDF o imagen";
     $("foto360-boton").hidden = !(MODO === "nube" && enLab("foto360") && nav.sub === "capas");
+    $("foto360-boton").title = foto360Vencida() ? "La foto 360 con lotes es de los planes de pago"
+      : foto360Prueba() ? "Descarga esta esfera como foto 360 con los lotes. En tu cuenta de prueba, hasta el 17 de noviembre y con la marca «Hecho con Mozari»"
+      : "Descarga esta esfera como foto 360 (JPG 2:1) con los lotes dibujados";
     pintarModoMz();
     if (CHIP_LAB && !$("foto360-boton").querySelector(".chip-lab")) $("foto360-boton").insertAdjacentHTML("beforeend", " " + CHIP_LAB);
     $("ref-panel").hidden = !lab || !REF.on;
@@ -7421,6 +7472,7 @@ void main(){
   $("ref-boton").addEventListener("click", () => { REF.on = !REF.on; pintarRef(); if (REF.on) guiaRefUso(); });
   $("foto360-boton").addEventListener("click", async () => {
     const b = $("foto360-boton"); if (b.disabled || !motorEd || !motorEd.actual) return;
+    if (foto360Vencida()) { avisar("La foto 360 con lotes es de los planes de pago. Con tu licencia sale sin marca."); abrirPago("pro"); return; }
     b.disabled = true;
     try { await foto360ConLotes(motorEd.actual.id); } catch (e) { avisar("No se pudo armar la foto 360: " + (e.message || e)); }
     b.disabled = false;

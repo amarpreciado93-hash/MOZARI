@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-12T13:33:51.989Z",
- "bien": 90,
- "total": 90,
+ "fecha": "2026-11-12T16:57:45.462Z",
+ "bien": 91,
+ "total": 91,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -261,6 +261,10 @@
   },
   {
    "nombre": "Piloto en pantalla baja: la lista de puntos se recorre entera y «Agregar punto» siempre se ve",
+   "ok": true
+  },
+  {
+   "nombre": "Foto 360 en cuenta de prueba: hasta el Buen Fin, con marca chiquita; después pide licencia y con licencia sale sin marca",
    "ok": true
   },
   {
