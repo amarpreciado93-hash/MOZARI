@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-12T19:25:40.239Z",
- "bien": 90,
- "total": 91,
+ "fecha": "2026-11-12T22:26:46.522Z",
+ "bien": 92,
+ "total": 92,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -273,8 +273,7 @@
   },
   {
    "nombre": "Laboratorio · lotes desde el PDF: recuadro sobre la manzana y 4 esquinas en la esfera",
-   "ok": false,
-   "motivo": "la foto 360 no trae los datos 360 (XMP)"
+   "ok": true
   },
   {
    "nombre": "Plano de referencia: las letras dibujadas con líneas no cortan los lotes y el PDF trae su calificación",
@@ -286,6 +285,10 @@
   },
   {
    "nombre": "La música del tour se pausa al irse a otra app y sigue al regresar (no se queda sonando)",
+   "ok": true
+  },
+  {
+   "nombre": "Sonido al abrir: pregunta «Activar sonido / Sin sonido», «Sin sonido» se respeta y un arrastre no la deja muda",
    "ok": true
   },
   {

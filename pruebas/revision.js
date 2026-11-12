@@ -26,7 +26,7 @@ const LIB = {
 const DUENO = "amarpreciado93@gmail.com";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -2373,6 +2373,61 @@ async function capasPesadas(p) {
       exige(!(await sonando()), "la música silenciada volvió a sonar al regresar al tour");
       exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 200));
       await t.context().close();
+    });
+    // Pedido de Amar (nov 2026): los audios no arrancaban al pasar el tour. Los navegadores no dejan sonar sin un toque;
+    // al abrir se pregunta «Activar sonido / Sin sonido». En iPhone soltar un arrastre no cuenta: se sigue esperando.
+    await paso("Sonido al abrir: pregunta «Activar sonido / Sin sonido», «Sin sonido» se respeta y un arrastre no la deja muda", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Tour con sonido");
+      await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(500);
+      await n.click('#subtabs button:has-text("Música")'); await n.waitForTimeout(500);
+      exige(await n.isChecked("#m-preguntar"), "«Preguntar al abrir» no viene prendido");
+      await n.setInputFiles("#m-archivo", { name: "fondo.wav", mimeType: "audio/wav", buffer: wavPrueba(20) }); await n.waitForTimeout(3500);
+      const id = await idTour(n);
+      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
+      // Un navegador que no deja sonar sin un toque de verdad (como Safari): play() falla hasta que el visitante toca
+      const visitante = async () => {
+        const t = await pagina(null);
+        await t.addInitScript(() => {
+          window.__medios = []; window.__toque = false; const p = HTMLMediaElement.prototype.play; // la prueba dice cuándo un toque «cuenta»
+          HTMLMediaElement.prototype.play = function () { if (!window.__medios.includes(this)) window.__medios.push(this); if (!window.__toque) return Promise.reject(new DOMException("sin toque", "NotAllowedError")); return p.apply(this, arguments); };
+        });
+        await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(5000);
+        return t;
+      };
+      const sonando = (t) => t.evaluate(() => (window.__medios || []).some((m) => !m.paused));
+      // 1. Sale el aviso y «Sin sonido» se respeta aunque después toque la esfera
+      let t = await visitante();
+      exige(await t.isVisible(".son-pide"), "al abrir el tour no salió el aviso «Activar sonido / Sin sonido»");
+      if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "sonido-aviso.png") });
+      await t.evaluate(() => { window.__toque = true; }); await t.click('.son-pide [data-son="no"]'); await t.waitForTimeout(800);
+      exige(!(await t.isVisible(".son-pide")) && !(await sonando(t)), "«Sin sonido» no cerró el aviso o sonó la música");
+      await t.mouse.click(700, 450); await t.waitForTimeout(1200);
+      exige(!(await sonando(t)), "después de «Sin sonido», tocar la esfera prendió la música");
+      await t.click('[data-sk="musica"]'); await t.waitForTimeout(800);
+      exige(await sonando(t), "el botón de música no la prendió después de «Sin sonido»");
+      exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 200));
+      await t.context().close();
+      // 2. «Activar sonido» suena
+      t = await visitante();
+      await t.evaluate(() => { window.__toque = true; }); await t.click('.son-pide [data-son="si"]'); await t.waitForTimeout(1000);
+      exige(await sonando(t) && !(await t.isVisible(".son-pide")), "«Activar sonido» no prendió la música");
+      await t.context().close();
+      // 3. Sin contestar: un arrastre (que no cuenta como toque) no la deja muda para siempre; el siguiente toque sí suena
+      t = await visitante();
+      await t.mouse.move(500, 500); await t.mouse.down(); await t.mouse.move(650, 520, { steps: 6 }); await t.mouse.up(); await t.waitForTimeout(600);
+      exige(!(await sonando(t)), "la prueba esperaba que el arrastre no contara como toque");
+      await t.evaluate(() => { window.__toque = true; }); await t.mouse.click(700, 450); await t.waitForTimeout(1200);
+      exige(await sonando(t), "después de arrastrar la esfera, el siguiente toque ya no prendió la música (se rendía al primero)");
+      exige(!(await t.isVisible(".son-pide")), "el aviso se quedó aunque ya suena la música");
+      await t.context().close();
+      // 4. Apagado en Proyecto → Música: no pregunta
+      await n.click("#m-preguntar"); await n.waitForTimeout(1200);
+      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar otra vez");
+      t = await visitante();
+      exige(!(await t.isVisible(".son-pide")), "con «Preguntar al abrir» apagado salió el aviso");
+      await t.context().close();
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
     });
     // Pedido de un usuario de Perú (nov 2026): allá se dice «Reservado», no «Apartado». Los nombres de los estados se editan.
     await paso("Estados de los lotes con el nombre de cada país: «Apartado» se cambia a «Reservado» y sale en el tour", async () => {
