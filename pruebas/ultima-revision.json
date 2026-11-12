@@ -1,10 +1,14 @@
 {
- "fecha": "2026-11-11T21:23:16.339Z",
- "bien": 86,
- "total": 88,
+ "fecha": "2026-11-12T01:52:03.419Z",
+ "bien": 89,
+ "total": 89,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
+   "ok": true
+  },
+  {
+   "nombre": "Contrata tu tour 360: mapa con 95 ciudades y 17 países; la solicitud llega al panel y al cliente su correo",
    "ok": true
   },
   {
@@ -57,8 +61,7 @@
   },
   {
    "nombre": "Laboratorio · ficha diseñada del lote",
-   "ok": false,
-   "motivo": "el segundo logo no sale al pie de la ficha"
+   "ok": true
   },
   {
    "nombre": "Laboratorio · interiorismo: ficha técnica con plano, datos y planes de pago que recalculan el precio",
@@ -254,8 +257,7 @@
   },
   {
    "nombre": "Copiar y pegar capas entre esferas: Ctrl+C / Ctrl+V, la manzana con sus lotes y sus datos",
-   "ok": false,
-   "motivo": "Cannot read properties of undefined (reading 'lote')"
+   "ok": true
   },
   {
    "nombre": "Ruta curva: manijas rojas en cada punto, como en Illustrator",

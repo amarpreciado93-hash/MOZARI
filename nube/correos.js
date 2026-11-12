@@ -66,12 +66,12 @@ export function correoBienvenida({ nombre, base }) {
     '<div style="padding:0 0 28px">' + boton("Crear mi primer tour", base + "/") + "</div>" +
     '<p style="margin:0 0 18px;padding:16px 18px;border-radius:14px;background:' + FONDO + ';font-size:14px;line-height:1.55">Tu cuenta de prueba te deja practicar con <b>tours sin límite</b>, de hasta 5 esferas cada uno, con la marca de agua de Mozari. Cuando quieras publicar sin marca, pasa a Pro desde el estudio.</p>' +
     '<p style="margin:0 0 4px">Si te atoras, en el estudio está el <b>manual</b> (el librito de arriba) y el botón para <b>reportar un error</b>. Lo leemos todo.</p>' +
-    '<p style="margin:22px 0 0">Nos vemos dentro,<br><b>Amar Preciado</b><br><span style="color:' + TENUE + ';font-size:14px">Creador de Mozari</span></p>';
+    '<p style="margin:22px 0 0">Nos vemos dentro,<br><b>El equipo de Mozari</b></p>';
   const pie = "Te llegó este correo porque creaste tu cuenta en mozari.app.<br>Mozari · León, Guanajuato, México";
   const texto = hola + ", bienvenido a Mozari\n\nQué bueno que ya estás aquí. En Mozari haces tours virtuales 360 desde tu navegador: subes tus fotos, les pones tu marca y compartes un link.\n\n" +
     "Tu primer tour, en 3 pasos:\n" + PASOS.map(([t, d], i) => (i + 1) + ". " + t + ". " + d).join("\n") + "\n\nCrear mi primer tour: " + base + "/\n\n" +
     "Tu cuenta de prueba te deja practicar con tours sin límite, de hasta 5 esferas cada uno, con la marca de agua de Mozari. Cuando quieras publicar sin marca, pasa a Pro desde el estudio.\n\n" +
-    "Si te atoras, en el estudio está el manual (el librito de arriba) y el botón para reportar un error.\n\nNos vemos dentro,\nAmar Preciado\nCreador de Mozari\n\n—\nTe llegó este correo porque creaste tu cuenta en mozari.app.";
+    "Si te atoras, en el estudio está el manual (el librito de arriba) y el botón para reportar un error.\n\nNos vemos dentro,\nEl equipo de Mozari\n\n—\nTe llegó este correo porque creaste tu cuenta en mozari.app.";
   return { asunto: (n ? n + ", bienvenido" : "Bienvenido") + " a Mozari", html: plantilla({ base, preencabezado: "Tu cuenta ya está lista. Así haces tu primer tour 360.", cuerpo, pie, portada: base + FOTOS.bienvenida }), texto };
 }
 
@@ -93,13 +93,31 @@ export function correoCompra({ nombre, base, plan }) {
     (licencia ? '<p style="margin:0 0 24px;padding:16px 18px;border-radius:14px;background:' + FONDO + ';font-size:15px;line-height:1.55"><b>Importante:</b> los tours que ya publicaste conservan la marca de agua hasta que los <b>vuelvas a publicar</b>. Entra a cada uno, ve a <b>Publicar → Web</b> y toca <b>Publicar</b>. El link sigue siendo el mismo.</p>' : "") +
     '<div style="padding:0 0 26px">' + boton("Ir a Mozari", base + "/") + "</div>" +
     '<p style="margin:0 0 4px">Si te atoras, en el estudio está el <b>manual</b> (el librito de arriba) y el botón para <b>reportar un error</b>. Si algo de tu pago no cuadra, contesta este correo.</p>' +
-    '<p style="margin:22px 0 0">Gracias por confiar en Mozari,<br><b>Amar Preciado</b><br><span style="color:' + TENUE + ';font-size:14px">Creador de Mozari</span></p>';
+    '<p style="margin:22px 0 0">Gracias por confiar en Mozari,<br><b>El equipo de Mozari</b></p>';
   const pie = "Te llegó este correo porque compraste en mozari.app.<br>Mozari · León, Guanajuato, México";
   const texto = hola + " por tu compra\n\n" + (licencia ? "Tu licencia " + nom + " ya está activa. Es de pago único: es tuya y no vence." : "Tus " + nom + " ya están en tu cuenta.") + "\n\n" +
     items.map((t) => "- " + t).join("\n") + (items.length ? "\n\n" : "") +
     (licencia ? "Importante: los tours que ya publicaste conservan la marca de agua hasta que los vuelvas a publicar. Entra a cada uno, ve a Publicar → Web y toca Publicar. El link sigue siendo el mismo.\n\n" : "") +
-    "Ir a Mozari: " + base + "/\n\nSi algo de tu pago no cuadra, contesta este correo.\n\nGracias por confiar en Mozari,\nAmar Preciado\nCreador de Mozari";
+    "Ir a Mozari: " + base + "/\n\nSi algo de tu pago no cuadra, contesta este correo.\n\nGracias por confiar en Mozari,\nEl equipo de Mozari";
   return { asunto: licencia ? (n ? n + ", tu" : "Tu") + " licencia " + nom + " de Mozari ya está activa" : "Gracias por tu compra en Mozari", html: plantilla({ base, preencabezado: licencia ? "Ya puedes publicar sin marca de agua. Esto es lo que sigue." : "Ya tienes más espacio en Mozari.", cuerpo, pie, portada: base + FOTOS.bienvenida }), texto };
+}
+
+// Contrata tu tour 360 (escaparate): a quien pide una cotización le llega que ya la recibimos
+export const TIPOS_COTIZACION = { terreno: "Terreno o desarrollo con lotes", casa: "Casa o departamento", negocio: "Hotel o negocio", otro: "Otro" };
+export function correoCotizacion({ nombre, base, sol }) {
+  const n = primerNombre(nombre), hola = n ? n + ", recibimos tu solicitud" : "Recibimos tu solicitud";
+  const filas = [["Qué", TIPOS_COTIZACION[sol.tipo] || sol.tipo], ["Dónde", [sol.ciudad, sol.pais].filter(Boolean).join(", ")], ["Tamaño", sol.tamano], ["Para cuándo", sol.cuando]].filter(([, v]) => v);
+  const tabla = filas.map(([k, v]) => '<tr><td style="padding:6px 14px 6px 0;font:400 14px/1.5 ' + FUENTE + ";color:" + TENUE + ';white-space:nowrap" valign="top">' + esc(k) + '</td><td style="padding:6px 0;font:600 14px/1.5 ' + FUENTE + ";color:" + TINTA + '">' + esc(v) + "</td></tr>").join("");
+  const cuerpo =
+    '<h1 style="margin:0 0 14px;font:700 26px/1.25 ' + FUENTE + ";color:" + TINTA + '">' + esc(hola) + "</h1>" +
+    '<p style="margin:0 0 20px">Un operador de la red Mozari revisa tu proyecto y te mandamos tu cotización en <b>menos de 24 horas</b>, por WhatsApp o por este correo.</p>' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px;padding:14px 18px;border-radius:14px;background:' + FONDO + '">' + tabla + "</table>" +
+    '<p style="margin:0 0 4px">Si quieres agregar algo (un plano, fotos o la ubicación), contesta este correo.</p>' +
+    '<p style="margin:22px 0 0">Gracias por escribirnos,<br><b>El equipo de Mozari</b></p>';
+  const pie = "Te llegó este correo porque pediste una cotización en mozari.app.<br>Mozari · León, Guanajuato, México";
+  const texto = hola + "\n\nUn operador de la red Mozari revisa tu proyecto y te mandamos tu cotización en menos de 24 horas, por WhatsApp o por este correo.\n\n" +
+    filas.map(([k, v]) => k + ": " + v).join("\n") + "\n\nSi quieres agregar algo (un plano, fotos o la ubicación), contesta este correo.\n\nGracias por escribirnos,\nEl equipo de Mozari";
+  return { asunto: (n ? n + ", recibimos" : "Recibimos") + " tu solicitud de tour 360", html: plantilla({ base, preencabezado: "Te mandamos tu cotización en menos de 24 horas.", cuerpo, pie }), texto };
 }
 
 // Novedad: título, texto (con saltos de línea), imagen opcional y un botón
@@ -146,12 +164,12 @@ export function correoCampana({ nombre, base, link, pct, vence, baja }) {
     '<p style="margin:0 0 16px;font-weight:600;color:' + TINTA + '">Así se hace un tour en Mozari:</p>' +
     '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">' + pasos + "</table>" +
     '<p style="margin:0 0 18px;padding:16px 18px;border-radius:14px;background:' + FONDO + ';font-size:14px;line-height:1.55">¿Primero quieres probar? Entra y practica con tu cuenta de prueba: tours sin límite, de hasta 5 esferas cada uno, con la marca de agua de Mozari. Tu descuento te espera.</p>' +
-    '<p style="margin:22px 0 0">Nos vemos dentro,<br><b>Amar Preciado</b><br><span style="color:' + TENUE + ';font-size:14px">Creador de Mozari · R360</span></p>';
+    '<p style="margin:22px 0 0">Nos vemos dentro,<br><b>El equipo de Mozari</b></p>';
   const pie = "Te llegó porque tomaste un curso o te registraste con R360 o en mozari.app.<br>" +
     '<a href="' + esc(baja) + '" style="color:' + TENUE + '">Ya no quiero recibir correos de Mozari</a> · Mozari · León, Guanajuato, México';
   const texto = "Ya salió Mozari\n\n" + hola + "\n\nMozari es el software que hicimos en R360 para hacer tours virtuales 360: subes tus esferas, las conectas, dibujas tus lotes y compartes un link. Ya está abierto, y mientras dure la beta tienes un descuento para entrar.\n\n" +
     pct + " % de descuento en Pro o Desarrollos. Tu link es personal y se usa una vez" + (fecha ? "; vale hasta el " + fecha : "") + ":\n" + link + "\n\n" +
-    "¿Primero quieres probar? Entra y practica con tu cuenta de prueba: tours sin límite, de hasta 5 esferas cada uno.\n\nNos vemos dentro,\nAmar Preciado\nCreador de Mozari · R360\n\n—\nYa no quiero recibir correos de Mozari: " + baja;
+    "¿Primero quieres probar? Entra y practica con tu cuenta de prueba: tours sin límite, de hasta 5 esferas cada uno.\n\nNos vemos dentro,\nEl equipo de Mozari\n\n—\nYa no quiero recibir correos de Mozari: " + baja;
   return { asunto: (n ? n + ", ya" : "Ya") + " salió Mozari: " + pct + " % de descuento en la beta", html: plantilla({ base, preencabezado: "Tu link personal con " + pct + " % de descuento en Pro o Desarrollos.", cuerpo, pie, portada: base + FOTOS.bienvenida }), texto };
 }
 

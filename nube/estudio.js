@@ -29,7 +29,7 @@
 
 import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR, conCarga, cargaEnViejos } from "./comun.js";
 import { rutasSesion, cuentaDe, perfil, leerCupo, contarCuentas, firmarLink, verificarLink } from "./sesion.js";
-import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoCompra, correoDeNovedad, correoCampana, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja, CAMPANA, iniciarCampana } from "./correos.js";
+import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoCompra, correoCotizacion, TIPOS_COTIZACION, correoDeNovedad, correoCampana, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja, CAMPANA, iniciarCampana } from "./correos.js";
 import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
 import { apiPagos, webhookMercadoPago, webhookStripe, CODIGO, cuponClave } from "./pagos.js";
 import { EmailMessage } from "cloudflare:email";
@@ -97,6 +97,50 @@ async function usoDe(env, uid, forzar) {
 }
 const gb = (b) => (b / 1024 ** 3).toFixed(b < 10 * 1024 ** 3 ? 1 : 0) + " GB";
 const limite = (mensaje, que) => json({ error: mensaje, limite: que }, 403);
+
+// ---------- Contrata tu tour 360 (pedido de Amar, 11 nov 2026) ----------
+// Desde el escaparate (sin cuenta): la solicitud se guarda en cotizaciones/<id>.json, al cliente le llega que ya se
+// recibió y al dueño un aviso con todo (y un link a WhatsApp). En el Panel de dueño → Solicitudes cambia su estado.
+const ESTADOS_COT = ["nueva", "cotizada", "ganada", "perdida"], COT_DIA_IP = 5;
+async function huellaCorta(t) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(t))); return [...new Uint8Array(b)].slice(0, 10).map((x) => x.toString(16).padStart(2, "0")).join(""); }
+async function cotizar(request, env, url) {
+  if (request.method === "GET") return json({ pais: (request.cf && request.cf.country) || "" });
+  if (request.method !== "POST") return error(405, "Método no permitido");
+  const origen = request.headers.get("origin");
+  if (origen && origen !== url.origin) return error(403, "Origen no permitido");
+  const c = await request.json().catch(() => null); if (!c || typeof c !== "object") return error(400, "Solicitud inválida");
+  const t = (k, n) => String(c[k] == null ? "" : c[k]).replace(/\s+/g, " ").trim().slice(0, n);
+  // Trampa para robots: el campo escondido lleno o el formulario enviado en menos de 3 s. Se contesta «ok» y no se guarda.
+  if (t("sitio", 60) || (+c.tiempo > 0 && +c.tiempo < 3000)) return json({ ok: true });
+  const sol = { tipo: TIPOS_COTIZACION[c.tipo] ? c.tipo : "", pais: t("pais", 40), ciudad: t("ciudad", 80), tamano: t("tamano", 80), cuando: t("cuando", 40), nombre: t("nombre", 80),
+    whatsapp: t("whatsapp", 30), correo: t("correo", 120).toLowerCase(), mas: String(c.mas == null ? "" : c.mas).trim().slice(0, 800) };
+  if (!sol.tipo || !sol.pais || !sol.ciudad || !sol.nombre || sol.whatsapp.replace(/\D/g, "").length < 8 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sol.correo)) return error(400, "Revisa los datos de tu solicitud");
+  const hoy = new Date().toISOString().slice(0, 10), tope = "cotizaciones-tope/" + hoy + "/" + (await huellaCorta(request.headers.get("cf-connecting-ip") || "local"));
+  const n = +((await (await env.R2.get(tope))?.text()) || 0);
+  if (n >= COT_DIA_IP) return error(429, "Ya recibimos tus solicitudes de hoy. Te contactamos pronto.");
+  await env.R2.put(tope, String(n + 1));
+  const id = new Date().toISOString().replace(/\D/g, "").slice(0, 14) + "-" + crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
+  Object.assign(sol, { id, fecha: new Date().toISOString(), estado: "nueva", paisRed: (request.cf && request.cf.country) || "" });
+  await env.R2.put("cotizaciones/" + id + ".json", JSON.stringify(sol), { httpMetadata: { contentType: "application/json" } });
+  const base = "https://" + (env.DOMINIO || url.hostname), m = correoCotizacion({ nombre: sol.nombre, base, sol });
+  await enviar(env, await contador(env), { para: sol.correo, asunto: m.asunto, html: m.html, texto: m.texto }).catch(() => null);
+  await avisarCotizacion(env, sol, url);
+  return json({ ok: true, id });
+}
+async function avisarCotizacion(env, sol, url) {
+  if (!env.CORREO || !env.ADMIN) return;
+  try {
+    const dom = env.DOMINIO || url.hostname, de = "reportes@" + dom, wa = sol.whatsapp.replace(/\D/g, "");
+    const asunto = "Mozari · Solicitud de tour 360: " + (TIPOS_COTIZACION[sol.tipo] || sol.tipo) + " en " + sol.ciudad + ", " + sol.pais;
+    const cuerpo = "Nueva solicitud de tour 360\n\nQué: " + (TIPOS_COTIZACION[sol.tipo] || sol.tipo) + "\nDónde: " + sol.ciudad + ", " + sol.pais + "\nTamaño: " + (sol.tamano || "—") + "\nPara cuándo: " + (sol.cuando || "—") +
+      "\n\nNombre: " + sol.nombre + "\nWhatsApp: " + sol.whatsapp + " (https://wa.me/" + wa + ")\nCorreo: " + sol.correo + (sol.mas ? "\n\nComentarios:\n" + sol.mas : "") +
+      "\n\nContesta este correo para escribirle. Está en tu Panel de dueño → Solicitudes: https://" + dom + "/";
+    const raw = ["From: Mozari <" + de + ">", "To: " + env.ADMIN, "Reply-To: " + sol.correo, "Subject: =?UTF-8?B?" + b64utf8(asunto) + "?=",
+      "Message-ID: <cot-" + sol.id + "@" + dom + ">", "Date: " + new Date().toUTCString(), "MIME-Version: 1.0",
+      "Content-Type: text/plain; charset=UTF-8", "Content-Transfer-Encoding: base64", "", b64utf8(cuerpo).replace(/.{76}/g, "$&\r\n")].join("\r\n");
+    await env.CORREO.send(new EmailMessage(de, env.ADMIN, raw));
+  } catch (e) { /* la solicitud ya quedó guardada aunque el aviso falle */ }
+}
 
 // ---------- Reportes de error ----------
 // Cada reporte se guarda en reportes/<id>.json (y su imagen en reportes/<id>.jpg). Si el Worker tiene el
@@ -641,6 +685,27 @@ async function admin(request, env, partes, yo) {
       return json({ ok: true, funcion: c[partes[3]] });
     }
   }
+  if (partes[2] === "cotizaciones") {
+    if (partes.length === 3 && m === "GET") {
+      const out = []; let cur;
+      do {
+        const l = await env.R2.list({ prefix: "cotizaciones/", cursor: cur, limit: 1000 });
+        l.objects.forEach((o) => { if (o.key.endsWith(".json")) out.push(o.key); });
+        cur = l.truncated ? l.cursor : undefined;
+      } while (cur);
+      out.sort().reverse();
+      return json({ cotizaciones: await Promise.all(out.slice(0, 300).map(async (k) => (await env.R2.get(k)).json())) });
+    }
+    const id = partes[3] || "";
+    if (!/^[0-9]{14}-[a-z0-9]{2,16}$/.test(id) || partes.length !== 4 || m !== "PUT") return error(400, "Solicitud inválida");
+    const o = await env.R2.get("cotizaciones/" + id + ".json"); if (!o) return error(404, "No existe");
+    const sol = await o.json(), c = await request.json().catch(() => ({}));
+    if (ESTADOS_COT.includes(c.estado)) sol.estado = c.estado;
+    if (typeof c.nota === "string") sol.nota = c.nota.slice(0, 500);
+    sol.cambio = new Date().toISOString();
+    await env.R2.put("cotizaciones/" + id + ".json", JSON.stringify(sol), { httpMetadata: { contentType: "application/json" } });
+    return json({ cotizacion: sol });
+  }
   if (partes[2] === "reportes") {
     if (partes.length === 3 && m === "GET") {
       const out = []; let cur;
@@ -995,6 +1060,8 @@ export default {
     // Aviso si un tour publicado se cerró solo en un celular (público, sin sesión)
     if (segs[0] === "c" && segs.length === 2 && request.method === "POST") return registrarCaida(request, env, segs[1]);
 
+    // Contrata tu tour 360 (escaparate, sin sesión): el país del visitante y la solicitud de cotización
+    if (url.pathname === "/cotizar") return cotizar(request, env, url);
     // Ventas para la hoja de Google (con su clave, sin sesión)
     if (url.pathname === "/ventas.csv" && request.method === "GET") return ventasCsv(request, env);
     // Tours hechos con Mozari: la lista pública para el sitio (sin sesión)

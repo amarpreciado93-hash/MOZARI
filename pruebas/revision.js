@@ -193,6 +193,52 @@ async function capasPesadas(p) {
       exige(/Pro/.test(t) && /Desarrollos/.test(t) && /Gratis/.test(t), "no se ven los planes");
     }, visita);
 
+    // Pedido de Amar (11 nov 2026): «Contrata tu tour 360» hasta abajo del sitio. Mapa de Latinoamérica con las 95 ciudades
+    // de la red de operadores (de su hoja COLEGAS: solo ciudad y país), 17 banderas, fotos de su carpeta de marca y la
+    // solicitud de cotización: le llega al cliente un correo, al dueño un aviso y queda en el Panel de dueño → Solicitudes.
+    await paso("Contrata tu tour 360: mapa con 95 ciudades y 17 países; la solicitud llega al panel y al cliente su correo", async () => {
+      const v = await pagina(null); await v.goto(ESTUDIO + "/"); await v.waitForTimeout(1200);
+      await v.$eval("#contrata", (e) => e.scrollIntoView()); await v.waitForTimeout(1500);
+      exige((await v.$$("#puntos-mapa circle")).length === 95, "el mapa no trae las 95 ciudades");
+      exige((await v.textContent(".paises-lista")).split("·").length === 17, "no salen los 17 países");
+      await v.hover('#puntos-mapa circle[data-c^="Lima"]'); await v.waitForTimeout(300);
+      exige(/Lima, Perú/.test(await v.textContent("#mapa-dato")), "al pasar por un punto no sale su ciudad");
+      exige(!/\+?\d{7,}|@/.test(await v.$eval("#mapa", (e) => e.innerHTML)), "el mapa trae datos de los operadores (teléfono o correo)");
+      await v.click("[data-cotizar]"); await v.waitForTimeout(500);
+      exige(await v.isVisible("#dlg-cot") && await v.isVisible("#cot-form") && !(await v.isVisible("#cot-listo")), "no abre el formulario de cotización");
+      await v.click("#cot-enviar"); await v.waitForTimeout(300);
+      exige(/Elige qué quieres mostrar/.test(await v.textContent("#cot-error")), "sin datos no avisa qué falta");
+      const correo = "cliente-" + Date.now() + "@prueba.mx";
+      await v.click('.opciones input[value="terreno"] + span'); await v.selectOption('#cot-form [name="pais"]', "México");
+      await v.fill('#cot-form [name="ciudad"]', "León"); await v.fill('#cot-form [name="tamano"]', "5 hectáreas, 80 lotes");
+      await v.fill('#cot-form [name="nombre"]', "Ana Prueba"); await v.fill('#cot-form [name="whatsapp"]', "+52 477 123 4567"); await v.fill('#cot-form [name="correo"]', correo);
+      await v.fill('#cot-form [name="mas"]', "Ya tengo el plano en PDF"); await v.waitForTimeout(2600);
+      if (process.env.CAPTURAS) await v.screenshot({ path: path.join(process.env.CAPTURAS, "contrata-formulario.png") });
+      await v.click("#cot-enviar"); await v.waitForTimeout(2500);
+      exige(await v.isVisible("#cot-listo") && /Listo, Ana/.test(await v.textContent("#cot-listo")), "no confirmó la solicitud: " + (await v.textContent("#cot-error").catch(() => "")));
+      // Robots: el campo escondido lleno se contesta «ok» pero no se guarda
+      const trampa = await v.evaluate(() => fetch("cotizar", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tipo: "casa", pais: "Perú", ciudad: "Lima", nombre: "Robot", whatsapp: "+51 999 999 999", correo: "robot@prueba.mx", sitio: "http://spam" }) }).then((r) => r.status));
+      exige(trampa === 200, "la trampa para robots no respondió");
+      await v.context().close();
+      // Correo al cliente (Email Service simulado: queda en el registro de wrangler)
+      await espera(1500);
+      const reg = fs.readFileSync(path.join(DATOS, "worker-estudio.log"), "utf8").split("send_email binding called").slice(1).filter((b) => b.includes("To: " + correo));
+      exige(reg.length === 1 && /recibimos tu solicitud/i.test(reg[0]), "al cliente no le llegó su correo de que se recibió");
+      // Panel de dueño → Solicitudes
+      const d = await pagina(DUENO);
+      const l = (await d.evaluate(() => fetch("api/admin/cotizaciones").then((r) => r.json()))).cotizaciones;
+      exige(l.length === 1 && l[0].correo === correo && l[0].estado === "nueva" && l[0].ciudad === "León" && !l.some((x) => x.nombre === "Robot"), "la solicitud no quedó guardada bien: " + JSON.stringify(l).slice(0, 200));
+      await d.click('#nav button:has-text("Mis Tours")'); await d.waitForTimeout(800);
+      await d.click("#ver-cuentas"); await d.waitForTimeout(1200);
+      await d.click('[data-dueno="solicitudes"]'); await d.waitForTimeout(1200);
+      exige(/León, México/.test(await d.textContent("#cuentas")) && await d.$('#cuentas a[href^="https://wa.me/524771234567"]'), "la solicitud no sale en el Panel de dueño con su WhatsApp");
+      if (process.env.CAPTURAS) await d.screenshot({ path: path.join(process.env.CAPTURAS, "panel-solicitudes.png") });
+      await d.selectOption("[data-sol]", "cotizada"); await d.waitForTimeout(1200);
+      exige((await d.evaluate(() => fetch("api/admin/cotizaciones").then((r) => r.json()))).cotizaciones[0].estado === "cotizada", "no se guardó el estado de la solicitud");
+      exige(!d.errs.length, "errores: " + d.errs.join(" | ").slice(0, 160));
+      await d.context().close();
+    });
+
     // 2. Dueño: tour completo
     const a = await pagina(DUENO);
     // El dueño ya vio los tutoriales nuevos (se prueban con una cuenta Pro); así no estorban a las demás pruebas
@@ -1858,8 +1904,13 @@ async function capasPesadas(p) {
     await paso("Copiar y pegar capas entre esferas: Ctrl+C / Ctrl+V, la manzana con sus lotes y sus datos", async () => {
       const n = await pagina(DUENO); await nuevoTour(n, "Copiar capas"); await otraEsfera(n, "segunda", "#9bd", "#7a6");
       const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
-      await irCapas(n); await cerrarGuia(n);
-      await dibujarManzana(n, [[480, 640], [740, 625], [1000, 640]], [[460, 820], [1020, 820]]);
+      await irCapas(n); await n.waitForTimeout(800); await pasarGuias(n);
+      await n.keyboard.press("Escape"); await n.click("#add-manzana"); await n.waitForTimeout(500); await pasarGuias(n);
+      for (const [x, y] of [[500, 640], [740, 625], [980, 640]]) { await n.mouse.click(x, y); await n.waitForTimeout(120); }
+      await n.keyboard.press("Enter"); await n.waitForTimeout(400);
+      for (const [x, y] of [[480, 820], [1000, 820]]) { await n.mouse.click(x, y); await n.waitForTimeout(120); }
+      await n.keyboard.press("Enter"); await n.waitForTimeout(1600); await pasarGuias(n);
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "copiar-manzana.png") });
       await n.keyboard.press("Escape"); await n.click("#add-hs"); await n.waitForTimeout(800); await pasarGuias(n); await n.keyboard.press("Escape");
       await n.waitForTimeout(2500);
       // Un lote vendido, para ver que sus datos viajan con la manzana

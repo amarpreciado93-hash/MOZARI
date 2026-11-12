@@ -3851,7 +3851,7 @@
   // Panel del dueño: todas las cuentas y su plan (para dar acceso a tus alumnos)
   let vistaDueno = "cuentas";
   const TAB_DUENO = (k, txt, color) => '<button class="mini' + (vistaDueno === k ? " primario" : "") + '" data-dueno="' + k + '"><i class="tab-punto" style="--c:' + color + '"></i>' + txt + "</button>";
-  const TABS_DUENO = (n) => '<div class="rep-tabs">' + TAB_DUENO("cuentas", "Cuentas", "#3DDC84") + TAB_DUENO("links", "Links de regalo y descuento", "#F5BE4E") + TAB_DUENO("reportes", "Reportes" + (n ? " (" + n + " nuevos)" : ""), n ? "#FF5A5F" : "#FF9A9E") +
+  const TABS_DUENO = (n) => '<div class="rep-tabs">' + TAB_DUENO("cuentas", "Cuentas", "#3DDC84") + TAB_DUENO("links", "Links de regalo y descuento", "#F5BE4E") + TAB_DUENO("reportes", "Reportes" + (n ? " (" + n + " nuevos)" : ""), n ? "#FF5A5F" : "#FF9A9E") + TAB_DUENO("solicitudes", "Solicitudes de tour", "#3FC3B4") +
     TAB_DUENO("laboratorio", "Laboratorio", "#B48CFF") + TAB_DUENO("novedades", "Actualizaciones", "#6DB4FF") + TAB_DUENO("galeria", "Tours en la web", "#FFB020") + TAB_DUENO("respaldos", "Respaldos", "#8FA6AD") + "</div>";
   // Links de un solo uso: cada alumno recibe el suyo (licencia de regalo o descuento)
   const TIPOS_LINK = { "pro-100": ["Pro de regalo", 100, ["pro"]], "des-100": ["Desarrollos de regalo", 100, ["desarrollos"]], "des-50": ["Desarrollos con 50% de descuento", 50, ["desarrollos"]], "todo-30": ["30% en Pro y Desarrollos", 30, ["pro", "desarrollos"]] };
@@ -4249,6 +4249,29 @@
       novEdit = null; pintarNovedadesAdmin(); avisar("Actualización borrada");
     }
   });
+  // Contrata tu tour 360: lo que piden desde el sitio (escaparate). Se contesta por WhatsApp o correo y se marca su estado.
+  const TIPOS_SOL = { terreno: "Terreno o desarrollo con lotes", casa: "Casa o departamento", negocio: "Hotel o negocio", otro: "Otro" };
+  async function pintarSolicitudes() {
+    const r = await fetch("api/admin/cotizaciones", { cache: "no-store" }).catch(() => null);
+    if (!r || !r.ok) { avisar("No se pudieron leer las solicitudes"); return; }
+    const { cotizaciones } = await r.json(), nuevas = cotizaciones.filter((x) => x.estado === "nueva").length;
+    const f = (iso) => new Date(iso).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    const est = [["nueva", "Nueva"], ["cotizada", "Cotizada"], ["ganada", "Ganada"], ["perdida", "Perdida"]];
+    $("cuentas").innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) +
+      '<p class="nota" style="margin:0 0 12px">Lo que piden en <b>Contrata tu tour 360</b> del sitio. ' + (nuevas ? "<b>" + nuevas + (nuevas === 1 ? " nueva" : " nuevas") + "</b>. " : "") + "Al cliente ya le llegó un correo: «te mandamos tu cotización en menos de 24 horas».</p>" +
+      '<div class="rep-lista">' + (cotizaciones.length ? cotizaciones.map((x) => {
+        const wa = String(x.whatsapp || "").replace(/\D/g, ""), msg = encodeURIComponent("Hola " + String(x.nombre || "").split(" ")[0] + ", te escribimos de Mozari por tu tour 360 en " + x.ciudad + ".");
+        return '<div class="rep-item ' + (x.estado === "nueva" ? "nuevo" : x.estado === "perdida" ? "resuelto" : "revisando") + '"><div><b>' + esc(TIPOS_SOL[x.tipo] || x.tipo) + " · " + esc(x.ciudad) + ", " + esc(x.pais) + "</b> <small>" + f(x.fecha) + "</small></div>" +
+          '<select data-sol="' + x.id + '">' + est.map(([v, n]) => '<option value="' + v + '"' + (x.estado === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select>" +
+          "<p><b>" + esc(x.nombre) + "</b>" + (x.tamano ? " · " + esc(x.tamano) : "") + (x.cuando ? " · " + esc(x.cuando) : "") + (x.mas ? "<br>" + esc(x.mas) : "") + "</p>" +
+          '<small style="grid-column:1/-1"><a href="https://wa.me/' + wa + "?text=" + msg + '" target="_blank" rel="noopener">WhatsApp ' + esc(x.whatsapp) + '</a> · <a href="mailto:' + esc(x.correo) + "?subject=" + encodeURIComponent("Tu cotización de tour 360 · Mozari") + '">' + esc(x.correo) + "</a></small></div>";
+      }).join("") : '<p class="nota" style="padding:16px">Todavía no hay solicitudes. Llegan desde mozari.app, en «Contrata tu tour 360».</p>') + "</div>";
+  }
+  document.addEventListener("change", async (ev) => {
+    const id = ev.target.dataset && ev.target.dataset.sol; if (!id) return;
+    const r = await fetch("api/admin/cotizaciones/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ estado: ev.target.value }) }).catch(() => null);
+    avisar(r && r.ok ? "Solicitud actualizada" : "No se pudo actualizar"); if (r && r.ok) pintarSolicitudes();
+  });
   async function pintarReportes() {
     const r = await fetch("api/admin/reportes", { cache: "no-store" }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudieron leer los reportes"); return; }
@@ -4303,6 +4326,7 @@
   }
   async function pintarCuentas() {
     if (vistaDueno === "reportes") return pintarReportes();
+    if (vistaDueno === "solicitudes") return pintarSolicitudes();
     if (vistaDueno === "links") return pintarLinks();
     if (vistaDueno === "laboratorio") return pintarLaboratorio();
     if (vistaDueno === "novedades") return pintarNovedadesAdmin();
