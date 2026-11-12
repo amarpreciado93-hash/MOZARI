@@ -78,7 +78,15 @@ async function capturarPayPal(env, orden) {
   if (orden.aplicado) return orden;
   if (!/^[A-Z0-9]{8,40}$/.test(orden.paypal || "")) return orden;
   let r = await paypal(env, "/v2/checkout/orders/" + orden.paypal + "/capture", { method: "POST", headers: { "paypal-request-id": orden.ref + "-cap" } });
+  // PayPal no aceptó la tarjeta o la cuenta con que pagó (INSTRUMENT_DECLINED): la misma orden se puede pagar con otra.
+  // Antes se quedaba en «creado» sin decir nada; ahora se anota y el cliente regresa a PayPal a elegir otra forma de pago.
+  const problema = !r.ok && r.d && Array.isArray(r.d.details) && r.d.details[0] && r.d.details[0].issue;
+  if (problema) { orden.motivo = String(problema).slice(0, 60); await guardar(env, ordenClave(orden.ref), orden); }
   if (!r.ok) r = await paypal(env, "/v2/checkout/orders/" + orden.paypal); // ya capturada antes, o aún sin aprobar
+  if (problema === "INSTRUMENT_DECLINED" || problema === "PAYER_ACTION_REQUIRED") {
+    const link = (r.d && r.d.links || []).find((l) => l.rel === "payer-action" || l.rel === "approve");
+    if (link) return Object.assign({}, orden, { reintentar: link.href });
+  }
   const o = r.d || {}, pu = (o.purchase_units || [])[0] || {}, cap = ((pu.payments || {}).captures || [])[0];
   if (o.status === "COMPLETED" && cap && cap.status === "COMPLETED") {
     const ok = (pu.custom_id || pu.reference_id) === orden.ref && cap.amount && cap.amount.currency_code === "USD" && Math.abs(+cap.amount.value - orden.monto) < 0.01;
@@ -159,6 +167,8 @@ async function revisarPago(env, pagoId) {
   if (!orden.aplicado) {
     orden.estado = pago.status === "pending" || pago.status === "in_process" ? "pendiente" : "rechazado";
     orden.pago = String(pagoId);
+    if (pago.status_detail) orden.motivo = String(pago.status_detail).slice(0, 60); // p. ej. cc_rejected_high_risk
+    if (pago.payment_method_id) orden.medio = String(pago.payment_method_id).slice(0, 30);
     await guardar(env, ordenClave(ref), orden);
   }
   return orden;
@@ -180,7 +190,7 @@ function motivoCupon(cupon, plan, uid) {
 }
 const conDescuento = (monto, pct, moneda) => Math.max(1, Math.round(monto * (1 - pct / 100)));
 
-const resumen = (o) => ({ ref: o.ref, plan: o.plan, periodo: o.periodo, monto: o.monto, estado: o.estado, vence: o.vence || null });
+const resumen = (o) => ({ ref: o.ref, plan: o.plan, periodo: o.periodo, monto: o.monto, estado: o.estado, vence: o.vence || null, reintentar: o.reintentar || undefined, motivo: o.motivo || undefined });
 
 // /api/pagos/... (con sesión)
 export async function apiPagos(request, env, partes, yo) {
@@ -188,8 +198,10 @@ export async function apiPagos(request, env, partes, yo) {
   if (partes[2] === "precios" && m === "GET") {
     const pais = (request.cf && request.cf.country) || "";
     const precios = (mon) => ({ pro: montoLicencia(yo, "pro", mon), desarrollos: montoLicencia(yo, "desarrollos", mon), espacio: montoLicencia(yo, "espacio", mon) });
-    return json({ pais, sugerido: pais && pais !== "MX" ? "paypal" : "mercadopago", mxn: precios("MXN"), usd: precios("USD"),
-      metodos: { mercadopago: !!env.MP_ACCESS_TOKEN || simulado(env), paypal: !!(env.PAYPAL_CLIENT_ID && env.PAYPAL_SECRET) || ppSimulado(env), stripe: !!env.STRIPE_SECRET_KEY || stSimulado(env) } });
+    const metodos = { mercadopago: !!env.MP_ACCESS_TOKEN || simulado(env), paypal: !!(env.PAYPAL_CLIENT_ID && env.PAYPAL_SECRET) || ppSimulado(env), stripe: !!env.STRIPE_SECRET_KEY || stSimulado(env) };
+    // En México se sugiere «Tarjeta» (Stripe): en nov 2026 Mercado Pago rechazaba por antifraude muchas tarjetas de débito
+    // que Stripe sí acepta. Mercado Pago sigue a un clic para OXXO, transferencia o saldo de Mercado Pago.
+    return json({ pais, sugerido: pais && pais !== "MX" ? "paypal" : metodos.stripe ? "stripe" : "mercadopago", mxn: precios("MXN"), usd: precios("USD"), metodos });
   }
 
   // Revisa un cupón y devuelve los precios con descuento para esta cuenta
@@ -275,12 +287,15 @@ export async function apiPagos(request, env, partes, yo) {
     const orden = Object.assign({ ref, uid: yo.uid, email: yo.email, plan: c.plan, periodo: c.periodo, monto, moneda: "MXN", estado: "creado", creado: new Date().toISOString() }, conCupon);
     await guardar(env, ordenClave(ref), orden);
     if (simulado(env)) return json({ ref, url: url.origin + "/api/pagos/simular?ref=" + ref });
+    const cuentaYo = await perfil(env, yo.uid).catch(() => null), partesNombre = String((cuentaYo && cuentaYo.nombre) || "").trim().split(/\s+/).filter(Boolean);
+    const comprador = { email: yo.email };
+    if (partesNombre.length) { comprador.name = partesNombre[0]; if (partesNombre.length > 1) comprador.surname = partesNombre.slice(1).join(" "); }
     const pref = await mp(env, "/checkout/preferences", {
       method: "POST",
       headers: { "x-idempotency-key": ref },
       body: JSON.stringify({
-        items: [{ id: c.plan + "-unico", title: "Mozari " + plan.nombre + (c.plan === "espacio" ? "" : " · licencia de pago único"), quantity: 1, unit_price: monto, currency_id: "MXN" }],
-        payer: { email: yo.email },
+        items: [{ id: c.plan + "-unico", title: "Mozari " + plan.nombre + (c.plan === "espacio" ? "" : " · licencia de pago único"), description: "Software para crear recorridos virtuales 360", category_id: "services", quantity: 1, unit_price: monto, currency_id: "MXN" }],
+        payer: comprador,
         external_reference: ref,
         back_urls: { success: url.origin + "/?pago=ok", pending: url.origin + "/?pago=pendiente", failure: url.origin + "/?pago=error" },
         auto_return: "approved",
@@ -337,7 +352,8 @@ async function firmaStripe(env, cuerpo, cabecera) {
   const partes = Object.fromEntries(String(cabecera || "").split(",").map((x) => x.split("=")).filter((x) => x.length === 2).map(([k, v]) => [k.trim(), v.trim()]));
   const t = +partes.t, v1 = String(cabecera || "").split(",").filter((x) => x.trim().startsWith("v1=")).map((x) => x.trim().slice(3));
   if (!t || !v1.length || Math.abs(Date.now() / 1000 - t) > 600) return false;
-  const llave = await crypto.subtle.importKey("raw", new TextEncoder().encode(env.STRIPE_WEBHOOK_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  // El secreto se limpia: pegado con un espacio o un salto de línea, la firma nunca coincidía (nov 2026: 100% de avisos con «firma»)
+  const llave = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(env.STRIPE_WEBHOOK_SECRET).trim()), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const f = [...new Uint8Array(await crypto.subtle.sign("HMAC", llave, new TextEncoder().encode(t + "." + cuerpo)))].map((x) => x.toString(16).padStart(2, "0")).join("");
   return v1.includes(f);
 }

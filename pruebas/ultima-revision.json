@@ -1,6 +1,6 @@
 {
- "fecha": "2026-11-12T16:57:45.462Z",
- "bien": 91,
+ "fecha": "2026-11-12T19:25:40.239Z",
+ "bien": 90,
  "total": 91,
  "resultados": [
   {
@@ -273,7 +273,8 @@
   },
   {
    "nombre": "Laboratorio · lotes desde el PDF: recuadro sobre la manzana y 4 esquinas en la esfera",
-   "ok": true
+   "ok": false,
+   "motivo": "la foto 360 no trae los datos 360 (XMP)"
   },
   {
    "nombre": "Plano de referencia: las letras dibujadas con líneas no cortan los lotes y el PDF trae su calificación",

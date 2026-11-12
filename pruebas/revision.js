@@ -2039,6 +2039,10 @@ async function capasPesadas(p) {
         };
         const [d1] = await Promise.all([n.waitForEvent("download", { timeout: 180000 }), n.click("#foto360-boton")]);
         const con = await medir(d1);
+        // Reporte de Oscar (Facebook la mostraba plana): XMP de 360 como lo escribe ExifTool, después del JFIF
+        const jb = fs.readFileSync(await d1.path()), seg1 = jb.readUInt16BE(2), largo0 = jb.readUInt16BE(4), seg2 = jb.readUInt16BE(4 + largo0), txt = jb.slice(0, 8000).toString("latin1");
+        exige(seg1 === 0xffe0 && seg2 === 0xffe1 && /<\?xpacket begin=/.test(txt) && /<GPano:ProjectionType>equirectangular<\/GPano:ProjectionType>/.test(txt) && /<GPano:UsePanoramaViewer>True</.test(txt) && /<\?xpacket end='w'\?>/.test(txt),
+          "la foto 360 no lleva los datos de 360 como los lee Facebook: " + [seg1.toString(16), seg2.toString(16)].join(",") + " " + (txt.match(/<x:xmpmeta[\s\S]{0,120}/) || [""])[0]);
         if (process.env.CAPTURAS) fs.copyFileSync(await d1.path(), path.join(process.env.CAPTURAS, "foto360-marca-prueba.jpg"));
         exige(con.oscuro > 800 && con.blanco > 80, "la foto de la cuenta de prueba no lleva la marca «Hecho con Mozari»: " + JSON.stringify(con));
         exige(con.oscuro < con.total * 0.4, "la marca salió demasiado grande: " + JSON.stringify(con));
@@ -2156,8 +2160,8 @@ async function capasPesadas(p) {
       exige(await n.isVisible("#foto360-boton"), "no está el botón «Foto 360 con lotes»");
       const [descarga] = await Promise.all([n.waitForEvent("download", { timeout: 120000 }), n.click("#foto360-boton")]);
       const bytes = fs.readFileSync(await descarga.path()), cab = bytes.slice(0, 3000).toString("latin1");
-      exige(bytes[0] === 0xff && bytes[1] === 0xd8 && /GPano:ProjectionType="equirectangular"/.test(cab), "la foto 360 no trae los datos 360 (XMP)");
-      const anchoF = +(cab.match(/FullPanoWidthPixels="(\d+)"/) || [])[1], altoF = +(cab.match(/FullPanoHeightPixels="(\d+)"/) || [])[1];
+      exige(bytes[0] === 0xff && bytes[1] === 0xd8 && /<GPano:ProjectionType>equirectangular<\/GPano:ProjectionType>/.test(cab) && /<\?xpacket begin=/.test(cab), "la foto 360 no trae los datos 360 (XMP)");
+      const anchoF = +(cab.match(/FullPanoWidthPixels>(\d+)</) || [])[1], altoF = +(cab.match(/FullPanoHeightPixels>(\d+)</) || [])[1];
       exige(anchoF >= 2048 && anchoF === 2 * altoF && /-lotes-360\.jpg$/.test(descarga.suggestedFilename()), "la foto 360 no es 2:1 (" + anchoF + "×" + altoF + ")");
       // Manzana completa (lo de inicio): los 9 lotes amarrados; jalar una esquina mueve a todos; un «+» agrega un punto que la dobla
       let capas = Object.values((await leer()).capas).flat(), mzc = capas.find((c) => c.mzPlano);
@@ -2455,6 +2459,10 @@ async function capasPesadas(p) {
       await u.evaluate(() => { const b = document.querySelector('[data-comprar="pro"]'); if (b) b.click(); });
       await u.waitForTimeout(1500);
       exige(await u.isVisible('[data-dp-metodo="stripe"]'), "no sale la opción de pagar con tarjeta (Stripe)");
+      // En México «Tarjeta» va primero y ya elegida (Mercado Pago rechazaba muchas tarjetas de débito)
+      const inicio = await u.evaluate(async () => { const pr = await fetch("api/pagos/precios").then((r) => r.json()), b = document.querySelector("[data-dp-metodo]"); return { pais: pr.pais, sugerido: pr.sugerido, primero: b && b.dataset.dpMetodo, elegido: b && b.getAttribute("aria-pressed") }; });
+      exige(inicio.primero === "stripe", "«Tarjeta» no va primero: " + JSON.stringify(inicio));
+      exige(inicio.pais && inicio.pais !== "MX" ? inicio.sugerido === "paypal" : inicio.sugerido === "stripe" && inicio.elegido === "true", "en México no sale «Tarjeta» elegida de inicio (fuera, PayPal): " + JSON.stringify(inicio));
       await u.click('[data-dp-metodo="stripe"]'); await u.waitForTimeout(300);
       const txt = await u.textContent("[data-dp-pagar]");
       exige(/Pagar \$(990|59 USD) con tarjeta/.test(txt), "el botón no cobra la licencia con tarjeta ($990 en México o $59 USD fuera): " + txt);
@@ -2468,6 +2476,12 @@ async function capasPesadas(p) {
       await u.goto(ESTUDIO + "/?pago=error"); await u.waitForTimeout(3500);
       const aviso = await u.textContent("#dlg-pago").catch(() => "");
       exige(/No se completó el pago/.test(aviso) && /«Tarjeta»/.test(aviso), "al fallar Mercado Pago no se sugiere pagar con «Tarjeta»: " + aviso.slice(0, 160));
+      // PayPal no aceptó la tarjeta (INSTRUMENT_DECLINED): el aviso lleva de regreso a PayPal a elegir otra, sin empezar de nuevo
+      await u.route("**/api/pagos/verificar", (rt) => rt.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ref: "mz-prueba1", plan: "pro", estado: "creado", reintentar: "https://www.paypal.com/checkoutnow?token=PRUEBA123" }) }));
+      await u.goto(ESTUDIO + "/?pago=ok&metodo=paypal&external_reference=mz-prueba1"); await u.waitForTimeout(3500);
+      const pp = await u.evaluate(() => ({ txt: document.getElementById("dlg-pago").textContent, boton: (document.querySelector("#dp-cuerpo .dp-pagar") || {}).textContent || "", cerrar: !!document.querySelector("#dp-cuerpo [data-dp-cerrar]") }));
+      await u.unroute("**/api/pagos/verificar");
+      exige(/PayPal no aceptó/.test(pp.txt) && /otra forma de pago en PayPal/.test(pp.boton) && pp.cerrar, "cuando PayPal rechaza la tarjeta no se ofrece regresar a PayPal: " + JSON.stringify(pp).slice(0, 200));
       exige(!u.errs.length, "errores en el estudio: " + u.errs.join(" | ").slice(0, 200));
       await u.context().close();
     });

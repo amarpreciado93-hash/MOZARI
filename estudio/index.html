@@ -4460,7 +4460,7 @@
   const elegirMetodo = () => {
     const m = preciosPago && preciosPago.metodos;
     const otro = enUSD() ? "mercadopago" : "paypal";
-    const ks = ["mercadopago", "paypal"].concat(m && m.stripe ? ["stripe"] : []);
+    const ks = (m && m.stripe ? ["stripe"] : []).concat(["mercadopago", "paypal"]); // «Tarjeta» primero: la que menos rechaza
     return '<div class="dp-metodo" role="group" aria-label="Forma de pago"' + (ks.length === 3 ? ' style="grid-template-columns:repeat(3,1fr)"' : "") + ">" + ks.map((k) =>
       '<button data-dp-metodo="' + k + '" aria-pressed="' + (pago.metodo === k) + '"' + (m && !m[k] ? " disabled" : "") + "><b>" + (k === "stripe" ? "Tarjeta" : NOM_METODO[k]) + "</b><small>" + (k === "stripe" ? "Stripe · " + (stripeUSD() ? "USD" : "MXN") : k === "paypal" ? "Fuera de México · USD" : "México · MXN") + "</small></button>").join("") + "</div>";
   };
@@ -4695,10 +4695,17 @@
           const r = await fetch("api/pagos/verificar", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(cuerpo) }).catch(() => null);
           d = r && r.ok ? await r.json().catch(() => null) : null;
           if (d && d.estado === "aprobado") break;
+          if (d && d.reintentar) break; // PayPal no aceptó la tarjeta: no tiene caso esperar
           if (estado === "pendiente") break;
           await new Promise((ok) => setTimeout(ok, 2000));
         }
         if (d && d.estado === "aprobado") avisoPago(d.plan === "espacio" ? "¡Listo! Tienes 10 GB más" : "¡Listo! Ya tienes " + PLANES_TXT[d.plan], d.plan === "espacio" ? "El espacio ya está en tu cuenta, para siempre. Te llega el comprobante del pago a tu correo." : "Tu licencia ya está activa y es para siempre. Te llega el comprobante del pago a tu correo.", true);
+        else if (d && d.reintentar && /^https:\/\/(www\.)?(sandbox\.)?paypal\.com\//.test(d.reintentar)) {
+          // PayPal rechazó la tarjeta o la cuenta con que pagó: la misma orden se paga con otra, sin empezar de nuevo
+          avisoPago("PayPal no aceptó esa forma de pago", "No se hizo ningún cargo. Regresa a PayPal y elige otra tarjeta o tu saldo; tu compra sigue lista. También puedes cerrar y pagar con «Tarjeta».", false);
+          const b = $("dp-cuerpo").querySelector(".dp-pagar");
+          if (b) { b.removeAttribute("data-dp-cerrar"); b.textContent = "Elegir otra forma de pago en PayPal"; b.addEventListener("click", () => { location.href = d.reintentar; }); b.insertAdjacentHTML("afterend", '<button class="mini" data-dp-cerrar style="margin-top:8px">Cerrar</button>'); }
+        }
         else if (estado === "pendiente" || (d && d.estado === "pendiente")) avisoPago("Tu pago está pendiente", "Si pagaste en OXXO, se acredita en unas horas. Tu plan se activa solo en cuanto llegue; no tienes que hacer nada.", true);
         else avisoPago("Aún no vemos tu pago", "Si ya pagaste, en unos minutos se activa solo. Si no, puedes intentarlo de nuevo.", true);
       }
@@ -7307,10 +7314,21 @@ void main(){
     if (marca) marcaFoto360(ox, W, H);
     // 7. JPG con los datos 360 (XMP GPano) y descarga
     const blob = await new Promise((ok) => out.toBlob(ok, "image/jpeg", 0.9));
-    const xmp = '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:GPano="http://ns.google.com/photos/1.0/panorama/" GPano:ProjectionType="equirectangular" GPano:UsePanoramaViewer="True" GPano:FullPanoWidthPixels="' + W + '" GPano:FullPanoHeightPixels="' + H + '" GPano:CroppedAreaImageWidthPixels="' + W + '" GPano:CroppedAreaImageHeightPixels="' + H + '" GPano:CroppedAreaLeftPixels="0" GPano:CroppedAreaTopPixels="0"/></rdf:RDF></x:xmpmeta>';
+    // Reporte de Oscar (nov 2026): Facebook la mostraba como panorámica plana. El XMP va como lo escribe ExifTool (con su
+    // envoltura xpacket y un dato por renglón) y después del encabezado JFIF, que es como lo leen todos los visores.
+    const g = (k, v) => "  <GPano:" + k + ">" + v + "</GPano:" + k + ">\n";
+    const xmp = "<?xpacket begin='\uFEFF' id='W5M0MpCehiHzreSzNTczkc9d'?>\n<x:xmpmeta xmlns:x='adobe:ns:meta/'>\n<rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>\n" +
+      " <rdf:Description rdf:about=''\n  xmlns:GPano='http://ns.google.com/photos/1.0/panorama/'>\n" +
+      g("ProjectionType", "equirectangular") + g("UsePanoramaViewer", "True") + g("FullPanoWidthPixels", W) + g("FullPanoHeightPixels", H) +
+      g("CroppedAreaImageWidthPixels", W) + g("CroppedAreaImageHeightPixels", H) + g("CroppedAreaLeftPixels", 0) + g("CroppedAreaTopPixels", 0) +
+      g("PoseHeadingDegrees", 0) + g("InitialViewHeadingDegrees", 0) + g("InitialViewPitchDegrees", 0) +
+      " </rdf:Description>\n</rdf:RDF>\n</x:xmpmeta>\n<?xpacket end='w'?>";
     const cab = new TextEncoder().encode("http://ns.adobe.com/xap/1.0/\0" + xmp), app1 = new Uint8Array(4 + cab.length);
     app1.set([0xff, 0xe1, ((cab.length + 2) >> 8) & 255, (cab.length + 2) & 255]); app1.set(cab, 4);
-    const jpg = new Uint8Array(await blob.arrayBuffer()), final = new Blob([jpg.slice(0, 2), app1, jpg.slice(2)], { type: "image/jpeg" });
+    const jpg = new Uint8Array(await blob.arrayBuffer());
+    let corte = 2; // después de SOI y, si viene, del JFIF (APP0)
+    if (jpg[2] === 0xff && jpg[3] === 0xe0) corte = 4 + ((jpg[4] << 8) | jpg[5]);
+    const final = new Blob([jpg.slice(0, corte), app1, jpg.slice(corte)], { type: "image/jpeg" });
     const nombre = (nombreDe(id) || "esfera").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w-]+/g, "-").toLowerCase();
     const aE = document.createElement("a"); aE.href = URL.createObjectURL(final); aE.download = nombre + "-lotes-360.jpg"; document.body.appendChild(aE); aE.click(); aE.remove();
     setTimeout(() => URL.revokeObjectURL(aE.href), 4000);
