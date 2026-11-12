@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-12T05:33:56.077Z",
- "bien": 89,
- "total": 89,
+ "fecha": "2026-11-12T13:33:51.989Z",
+ "bien": 90,
+ "total": 90,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -257,6 +257,10 @@
   },
   {
    "nombre": "Copiar y pegar capas entre esferas: Ctrl+C / Ctrl+V, la manzana con sus lotes y sus datos",
+   "ok": true
+  },
+  {
+   "nombre": "Piloto en pantalla baja: la lista de puntos se recorre entera y «Agregar punto» siempre se ve",
    "ok": true
   },
   {

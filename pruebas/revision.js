@@ -1977,6 +1977,32 @@ async function capasPesadas(p) {
     });
 
     // Pedido de Amar (nov 2026): la ruta se curva con manijas, como la pluma de Illustrator
+    // Reporte de Emanuel (nov 2026, pantalla 1536×695): la vista de inicio ocupaba casi toda la columna y solo cabía un punto
+    await paso("Piloto en pantalla baja: la lista de puntos se recorre entera y «Agregar punto» siempre se ve", async () => {
+      const n = await pagina("piloto-bajo-" + Date.now() + "@prueba.mx", { viewport: { width: 1536, height: 695 } });
+      await n.waitForTimeout(2500); await cerrarAnuncio(n);
+      await nuevoTour(n, "Piloto en laptop");
+      await n.click('#nav button:has-text("Panoramas")'); await n.waitForTimeout(300); await n.click('#subtabs button:has-text("Piloto automático")'); await n.waitForTimeout(1500); await pasarGuias(n);
+      for (let i = 0; i < 6; i++) { await n.click("#pt-agregar"); await n.waitForTimeout(350); await pasarGuias(n); }
+      const medir = () => n.evaluate(() => {
+        const pan = document.getElementById("izq-piloto"), b = pan.getBoundingClientRect(), bt = document.getElementById("pt-agregar").getBoundingClientRect();
+        const pie = pan.querySelector(".pie").getBoundingClientRect();
+        const enteros = [...pan.querySelectorAll(".punto:not(.compacto)")].filter((li) => { const r = li.getBoundingClientRect(); return r.top >= b.top - 1 && r.bottom <= pie.top + 1; }).length;
+        const centro = document.elementFromPoint(bt.left + bt.width / 2, bt.top + bt.height / 2);
+        return { puntos: pan.querySelectorAll(".punto:not(.compacto)").length, enteros, desplaza: pan.scrollHeight > pan.clientHeight + 4, boton: bt.bottom <= innerHeight && !!centro && !!centro.closest("#pt-agregar"), alto: Math.round(b.height) };
+      });
+      const arriba = await medir();
+      await n.evaluate(() => { const pan = document.getElementById("izq-piloto"); pan.scrollTop = pan.scrollHeight; }); await n.waitForTimeout(300);
+      const abajo = await medir();
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "piloto-pantalla-baja.png") });
+      console.log("    arriba: " + JSON.stringify(arriba) + " · abajo: " + JSON.stringify(abajo));
+      exige(arriba.puntos === 6, "no se agregaron los 6 puntos: " + arriba.puntos);
+      exige(arriba.desplaza, "la columna del piloto no se desplaza");
+      exige(arriba.boton && abajo.boton, "«Agregar punto» quedó tapado o fuera de pantalla");
+      exige(abajo.enteros >= 3, "al bajar solo caben " + abajo.enteros + " puntos completos");
+      exige(!n.errs.length, n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+    });
     await paso("Ruta curva: manijas rojas en cada punto, como en Illustrator", async () => {
       const n = await pagina(DUENO); await nuevoTour(n, "Ruta curva");
       await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800);
@@ -2380,6 +2406,10 @@ async function capasPesadas(p) {
       exige(/Ya tienes Pro/.test(await u.textContent("#dlg-pago").catch(() => "")), "después de pagar con tarjeta no se activó Pro");
       const yo = await u.evaluate(() => fetch("api/yo").then((r) => r.json()));
       exige(JSON.stringify(yo).includes('"pro"'), "la cuenta no quedó con Pro: " + JSON.stringify(yo).slice(0, 160));
+      // Reporte de Carlos (nov 2026): Mercado Pago rechazó sus tarjetas de débito. Al regresar con error se sugiere «Tarjeta»
+      await u.goto(ESTUDIO + "/?pago=error"); await u.waitForTimeout(3500);
+      const aviso = await u.textContent("#dlg-pago").catch(() => "");
+      exige(/No se completó el pago/.test(aviso) && /«Tarjeta»/.test(aviso), "al fallar Mercado Pago no se sugiere pagar con «Tarjeta»: " + aviso.slice(0, 160));
       exige(!u.errs.length, "errores en el estudio: " + u.errs.join(" | ").slice(0, 200));
       await u.context().close();
     });
