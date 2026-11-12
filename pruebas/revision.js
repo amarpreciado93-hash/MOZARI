@@ -1817,6 +1817,16 @@ async function capasPesadas(p) {
       const chicos = Object.entries(h).filter(([k]) => !/99/.test(k)).map(([, v]) => v).sort((p, q) => p - q), med = chicos[Math.floor(chicos.length / 2)];
       exige(chicos.length >= 4 && h["Lote 99 · M1"], "no se ven los rótulos (" + JSON.stringify(h) + ")");
       exige(h["Lote 99 · M1"] < med * 1.3, "el lote grande tiene la letra más grande que los demás (" + h["Lote 99 · M1"].toFixed(1) + " vs " + med.toFixed(1) + ")");
+      // Reporte de Abraham (nov 2026): girar el rótulo de un lote agrandaba la letra de todos los demás
+      for (const num of ["1", "2", "3", "4"]) {
+        await n.click('#lista li:has-text("Lote ' + num + ' · M1")'); await n.waitForTimeout(400);
+        await n.$eval('[data-k="lote.giroRotulo"]', (e) => { e.value = "90"; e.dispatchEvent(new Event("input", { bubbles: true })); e.dispatchEvent(new Event("change", { bubbles: true })); });
+        await n.waitForTimeout(500);
+      }
+      await n.waitForTimeout(1000);
+      const girado = await altos(), cambian = Object.keys(h).filter((k) => !/Lote [1234] ·/.test(k) && girado[k] && Math.abs(girado[k] - h[k]) > 0.04 * h[k]);
+      exige(!cambian.length, "girar el rótulo de un lote cambió la letra de otros: " + cambian.map((k) => k + " " + h[k].toFixed(1) + "→" + girado[k].toFixed(1)).join(", "));
+      await n.click('#lista li:has-text("Lote 99 · M1")'); await n.waitForTimeout(500);
       await n.$eval('[data-k="lote.tamRotulo"]', (e) => { e.value = "1"; e.dispatchEvent(new Event("input", { bubbles: true })); e.dispatchEvent(new Event("change", { bubbles: true })); });
       await n.waitForTimeout(1200);
       const antes = h["Lote 99 · M1"]; h = await altos();

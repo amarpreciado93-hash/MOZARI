@@ -5376,7 +5376,12 @@
         const ajuste = ([w, h], tt) => { const r = h / w; let Hg = tt * extU * r; if (Hg > 0.55 * tt / 0.6 * extV) Hg = 0.55 * tt / 0.6 * extV; return Hg; };
         // Misma letra en toda la lotificación: un lote grande no agranda su texto; uno chico lo achica solo si no
         // cabe. Si al lote le subes el tamaño a mano, ese sí crece (escala común × t/0.6).
-        n.esc06 = ajuste(R.med.nom, 0.6) / R.med.nom[1];
+        // (Reporte de Abraham, nov 2026: girar el rótulo de un lote agrandaba los de todos.) La letra común se mide con
+        // la orientación natural del lote, sin su giro a mano: girar un rótulo solo cambia ese rótulo.
+        const pu0 = G.map((g) => (g[0] - C[0]) * u0[0] + (g[1] - C[1]) * u0[1]), pv0 = G.map((g) => (g[0] - C[0]) * v0[0] + (g[1] - C[1]) * v0[1]);
+        const extU0 = Math.max(...pu0) - Math.min(...pu0), extV0 = Math.max(...pv0) - Math.min(...pv0);
+        const ajuste0 = ([w, h], tt) => { const r = h / w; let Hg = tt * extU0 * r; if (Hg > 0.55 * tt / 0.6 * extV0) Hg = 0.55 * tt / 0.6 * extV0; return Hg; };
+        n.esc06 = ajuste0(R.med.nom, 0.6) / R.med.nom[1];
         const tope = (h) => (escalaComun ? escalaComun * (t / 0.6) * h : Infinity);
         const poner = (el, [w, h], k) => {
           const r = h / w, Hg = Math.min(ajuste([w, h], t), tope(h)), Wg = Hg / r;
@@ -5883,7 +5888,7 @@
     // quede un lote (la esquina de la manzana quedaba debajo del lote 1 y el clic se iba al lote)
     if (editable) stage.addEventListener("pointerdown", (ev) => {
       if (motor.modo !== "capas" || motor.dibujo || ev.button > 0 || MANO.activa || !motor.elegida) return;
-      const c = lista().find((x) => x.id === motor.elegida); if (!c || (!c.manzana && !c.mzPlano)) return;
+      const c = (lista() || []).find((x) => x.id === motor.elegida); if (!c || (!c.manzana && !c.mzPlano)) return;
       const r = stage.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top, k = asaCercana(ev);
       if (!k) return;
       const s = k.vertice !== undefined ? motor._verts.l.find((v) => v.i === k.vertice) : motor._asasExtra[k.extra]._s;
@@ -5892,7 +5897,7 @@
     }, true);
     if (editable) extra.addEventListener("pointerdown", (ev) => {
       const t = ev.target.closest("[data-x]"); if (!t || !motor._asasExtra) return;
-      const c = lista().find((x) => x.id === motor.elegida); if (!c) return;
+      const c = (lista() || []).find((x) => x.id === motor.elegida); if (!c) return;
       const k = asaCercana(ev);
       if (k && k.vertice !== undefined) { tomar(ev, c, "vertice", k.vertice); return; }
       empezarExtra(ev, c, k && k.extra !== undefined ? k.extra : +t.getAttribute("data-x"));
