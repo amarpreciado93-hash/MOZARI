@@ -26,7 +26,7 @@ const LIB = {
 const DUENO = "amarpreciado93@gmail.com";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -1832,6 +1832,79 @@ async function capasPesadas(p) {
       const antes = h["Lote 99 · M1"]; h = await altos();
       exige(h["Lote 99 · M1"] > antes * 1.4, "subirle el tamaño a mano no agranda su texto (" + h["Lote 99 · M1"].toFixed(1) + " vs " + antes.toFixed(1) + ")");
       exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await n.context().close();
+    }, a);
+
+    // Pedido de Amar (13 nov 2026): «picas un lote y se desacomodan todos los textos». Elegir un lote (en la esfera o
+    // en la lista) no mueve ni cambia de tamaño los rótulos de los demás lotes.
+    await paso("Rótulos quietos: elegir un lote no mueve ni cambia de tamaño los rótulos de los demás", async () => {
+      const n = await pagina(DUENO, { carpetas: true, limpio: true }); await nuevoTour(n, "Rotulos quietos"); // como lo ve un usuario hoy (manzanas como carpeta)
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1800);
+      const [cx, cy] = await n.evaluate(() => { const e = [...document.querySelectorAll(".capas")].find((x) => x.getClientRects().length && x.getBoundingClientRect().width > 300); const b = e.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
+      for (let i = 0; i < 4; i++) { await n.mouse.move(cx, cy + 250); await n.mouse.down(); for (let k = 1; k <= 10; k++) await n.mouse.move(cx, cy + 250 - k * 50); await n.mouse.up(); await n.waitForTimeout(300); }
+      await n.waitForTimeout(800);
+      await dibujarManzana(n, [[cx - 330, cy - 170], [cx - 80, cy - 185], [cx + 170, cy - 170]], [[cx - 330, cy + 70], [cx + 170, cy + 70]]);
+      await n.keyboard.press("Escape"); await n.waitForTimeout(1500);
+      const rotulos = () => n.evaluate(() => Object.fromEntries([...document.querySelectorAll(".lt-p.nom")].filter((e) => e.style.display !== "none" && e.style.visibility !== "hidden" && e.getClientRects().length)
+        .map((e) => { const r = e.getBoundingClientRect(); return [e.firstChild.textContent, [r.x, r.y, r.width, r.height].map((v) => Math.round(v * 10) / 10)]; })));
+      const comparar = (a, b, sin) => Object.keys(a).filter((k) => k !== sin && b[k] && (Math.abs(a[k][0] - b[k][0]) > 2 || Math.abs(a[k][1] - b[k][1]) > 2 || Math.abs(a[k][3] - b[k][3]) > 0.04 * a[k][3])).map((k) => k + " " + JSON.stringify(a[k]) + "→" + JSON.stringify(b[k]));
+      const antes = await rotulos();
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "rotulos-antes.png") });
+      exige(Object.keys(antes).length >= 4, "no se ven los rótulos: " + JSON.stringify(antes));
+      // 1. Elegir un lote en la lista
+      const uno = Object.keys(antes)[1];
+      if (await n.$("#lista li.carpeta:not(.abierta) .carp-flecha")) { await n.click("#lista .carp-flecha"); await n.waitForTimeout(400); }
+      await n.click('#lista li:has-text("' + uno + '")'); await n.waitForTimeout(1200);
+      const conLista = await rotulos(), mov1 = comparar(antes, conLista, uno);
+      // 2. Picar otro lote en la esfera (en su rótulo)
+      const otro = Object.keys(antes)[2], [x, y, w, hh] = antes[otro];
+      await n.mouse.click(x + w / 2, y + hh / 2); await n.waitForTimeout(1200);
+      const conEsfera = await rotulos(), mov2 = comparar(antes, conEsfera, otro);
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "rotulos-elegido.png") });
+      // 3. Soltar la selección: todo como al principio
+      await n.keyboard.press("Escape"); await n.waitForTimeout(1200);
+      const despues = await rotulos(), mov3 = comparar(antes, despues, null);
+      if (mov1.length || mov2.length || mov3.length) console.log("    antes: " + JSON.stringify(antes) + "\n    lista: " + JSON.stringify(conLista) + "\n    esfera: " + JSON.stringify(conEsfera));
+      exige(!mov1.length, "elegir «" + uno + "» en la lista movió otros rótulos: " + mov1.join(" | ").slice(0, 300));
+      exige(!mov2.length, "picar «" + otro + "» en la esfera movió otros rótulos: " + mov2.join(" | ").slice(0, 300));
+      exige(!mov3.length, "al soltar la selección los rótulos no regresaron: " + mov3.join(" | ").slice(0, 300));
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
+      await n.context().close();
+    }, a);
+
+    // Pedido de Amar y de Oscar (13 nov 2026): muchas más tipografías, subir la propia y efectos en los textos (sombra y
+    // contorno). La propia se guarda en el proyecto y se ve igual en el tour publicado.
+    await paso("Tipografías: más de 40, subir la tuya (Laboratorio) y sombra y contorno en los textos; igual en el tour publicado", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Tipografias");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1500); await pasarGuias(n);
+      await n.click("#add-txt"); await n.waitForTimeout(800); await pasarGuias(n);
+      const ops = await n.$$eval('#props select[data-k="fuente"] option', (l) => l.map((o) => o.value));
+      exige(ops.length >= 40 && ops.includes("Bebas Neue") && ops.includes("Great Vibes") && ops.includes("__subir"), "el selector de tipografía del texto no trae las nuevas o «Subir tu tipografía»: " + ops.length);
+      // Subir una tipografía propia
+      const [elige] = await Promise.all([n.waitForEvent("filechooser"), n.selectOption('#props select[data-k="fuente"]', "__subir")]);
+      await elige.setFiles("/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"); await n.waitForTimeout(4000);
+      const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      let d = await leer(), txt = Object.values(d.capas).flat().find((c) => c.tipo === "texto");
+      exige((d.proyecto.fuentes || []).length === 1 && d.proyecto.fuentes[0].familia === "DejaVuSerif Bold" && /^archivos\/fuente-.*\.ttf$/.test(d.proyecto.fuentes[0].archivo), "la tipografía no se guardó en el proyecto: " + JSON.stringify(d.proyecto.fuentes));
+      exige(txt && txt.fuente === "DejaVuSerif Bold", "el texto no quedó con la tipografía subida: " + (txt && txt.fuente));
+      const enEditor = await n.evaluate(() => ({ fam: getComputedStyle([...document.querySelectorAll(".cp-texto:not(.cp)")].find((e) => e.getClientRects().length && e.textContent.trim())).fontFamily, carga: [...document.fonts].some((f) => f.family.replace(/"/g, "") === "DejaVuSerif Bold" && f.status === "loaded") }));
+      exige(/DejaVuSerif Bold/.test(enEditor.fam) && enEditor.carga, "en el editor el texto no se ve con la tipografía subida: " + JSON.stringify(enEditor));
+      // También sale en el selector de los rótulos de los lotes (la lista es la misma)
+      // Sombra fuerte y contorno fino
+      await n.click('#props .hs-estilo[data-k="sombra"][data-v="fuerte"]'); await n.waitForTimeout(500);
+      await n.click('#props .hs-estilo[data-k="contorno"][data-v="1"]'); await n.waitForTimeout(700);
+      exige(await n.isVisible('#props [data-k="contornoColor"]'), "no salió el color del contorno");
+      const efe = await n.evaluate(() => { const s = getComputedStyle([...document.querySelectorAll(".cp-texto:not(.cp)")].find((e) => e.getClientRects().length && e.textContent.trim())); return { sombra: s.textShadow, contorno: s.webkitTextStrokeWidth }; });
+      exige(/rgba\(0, 0, 0, 0\.85\)/.test(efe.sombra) && parseFloat(efe.contorno) > 0, "la sombra fuerte o el contorno no se aplicaron: " + JSON.stringify(efe));
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "tipografias-texto.png") });
+      // Publicado: misma tipografía (desde el archivo del tour) y mismos efectos
+      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
+      const t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(6000);
+      const pub = await t.evaluate(() => { const e = [...document.querySelectorAll(".cp-texto:not(.cp)")].find((x) => x.getClientRects().length && x.textContent.trim()); if (!e) return null; const s = getComputedStyle(e); return { fam: s.fontFamily, contorno: s.webkitTextStrokeWidth, carga: [...document.fonts].some((f) => f.family.replace(/"/g, "") === "DejaVuSerif Bold" && f.status === "loaded") }; });
+      exige(pub && /DejaVuSerif Bold/.test(pub.fam) && pub.carga && parseFloat(pub.contorno) > 0, "en el tour publicado el texto no sale con su tipografía o su contorno: " + JSON.stringify(pub));
+      exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 200));
+      await t.context().close();
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 200));
       await n.context().close();
     }, a);
 

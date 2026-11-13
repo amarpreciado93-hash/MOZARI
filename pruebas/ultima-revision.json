@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-12T22:26:46.522Z",
- "bien": 92,
- "total": 92,
+ "fecha": "2026-11-13T17:44:49.136Z",
+ "bien": 93,
+ "total": 94,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -248,6 +248,14 @@
    "ok": true
   },
   {
+   "nombre": "Rótulos quietos: elegir un lote no mueve ni cambia de tamaño los rótulos de los demás",
+   "ok": true
+  },
+  {
+   "nombre": "Tipografías: más de 40, subir la tuya (Laboratorio) y sombra y contorno en los textos; igual en el tour publicado",
+   "ok": true
+  },
+  {
    "nombre": "Manzana: «Lotes» o «Curvas» — los puntos verdes y las manijas rojas ya no se enciman",
    "ok": true
   },
@@ -341,7 +349,8 @@
   },
   {
    "nombre": "Imagen en 3D: un PNG transparente pegado a la esfera, crece sin deformarse y se inclina sobre el terreno",
-   "ok": true
+   "ok": false,
+   "motivo": "page.screenshot: Protocol error (Page.captureScreenshot): Unable to capture screenshot"
   },
   {
    "nombre": "Tours hechos con Mozari: el dueño elige tours publicados y salen en el sitio con portada y link",
