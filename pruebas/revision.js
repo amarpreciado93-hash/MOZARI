@@ -1897,13 +1897,67 @@ async function capasPesadas(p) {
       const efe = await n.evaluate(() => { const s = getComputedStyle([...document.querySelectorAll(".cp-texto:not(.cp)")].find((e) => e.getClientRects().length && e.textContent.trim())); return { sombra: s.textShadow, contorno: s.webkitTextStrokeWidth }; });
       exige(/rgba\(0, 0, 0, 0\.85\)/.test(efe.sombra) && parseFloat(efe.contorno) > 0, "la sombra fuerte o el contorno no se aplicaron: " + JSON.stringify(efe));
       if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "tipografias-texto.png") });
+      // La foto 360 sale bien con un texto en la tipografía propia (la letra va metida en la captura)
+      await n.keyboard.press("Escape"); await n.waitForTimeout(400);
+      const [f360] = await Promise.all([n.waitForEvent("download", { timeout: 180000 }), n.click("#foto360-boton")]);
+      exige(fs.statSync(await f360.path()).size > 100000, "la foto 360 con la tipografía propia no se armó");
       // Publicado: misma tipografía (desde el archivo del tour) y mismos efectos
       exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
+      // El .zip para otro hosting lleva el archivo de la tipografía y el proyecto la conoce
+      const zipInfo = await n.evaluate((id) => fetch("api/tours/" + id + "/descargar").then((r) => r.json()), id);
+      exige((zipInfo.archivos || []).some((x) => /^archivos\/fuente-.*\.ttf$/.test(x.ruta)) && ((zipInfo.proyecto.proyecto || {}).fuentes || []).length === 1, "el .zip no lleva la tipografía propia: " + JSON.stringify((zipInfo.archivos || []).map((x) => x.ruta)).slice(0, 200));
       const t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(6000);
       const pub = await t.evaluate(() => { const e = [...document.querySelectorAll(".cp-texto:not(.cp)")].find((x) => x.getClientRects().length && x.textContent.trim()); if (!e) return null; const s = getComputedStyle(e); return { fam: s.fontFamily, contorno: s.webkitTextStrokeWidth, carga: [...document.fonts].some((f) => f.family.replace(/"/g, "") === "DejaVuSerif Bold" && f.status === "loaded") }; });
       exige(pub && /DejaVuSerif Bold/.test(pub.fam) && pub.carga && parseFloat(pub.contorno) > 0, "en el tour publicado el texto no sale con su tipografía o su contorno: " + JSON.stringify(pub));
       exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 200));
       await t.context().close();
+      exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+    }, a);
+
+    // Pedido de Amar (13 nov 2026): revisar a fondo los datos 360 de la foto para Facebook. Se arma el archivo y se lee
+    // como lo leería Facebook: XMP GPano en su paquete (como ExifTool), justo después del JFIF, 2:1 y con las medidas
+    // reales del JPG; y si en la compu está ExifTool, que lo dé por bueno.
+    await paso("Foto 360 para Facebook: datos 360 completos y correctos (XMP GPano como ExifTool, 2:1, medidas reales)", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Datos 360");
+      await n.click('#subtabs button:has-text("Capas")'); await n.waitForTimeout(1500); await pasarGuias(n);
+      await n.click("#add-txt"); await n.waitForTimeout(700); await pasarGuias(n); await n.keyboard.press("Escape"); await n.waitForTimeout(500);
+      const [dl] = await Promise.all([n.waitForEvent("download", { timeout: 180000 }), n.click("#foto360-boton")]);
+      const archivo = await dl.path(), b = fs.readFileSync(archivo);
+      exige(/-lotes-360\.jpg$/.test(dl.suggestedFilename()), "el archivo no se llama …-lotes-360.jpg: " + dl.suggestedFilename());
+      // Estructura del JPG, segmento por segmento
+      exige(b[0] === 0xff && b[1] === 0xd8, "no empieza como JPG");
+      const segs = []; let i = 2;
+      while (i + 4 <= b.length && b[i] === 0xff) { const m = b[i + 1], L = b.readUInt16BE(i + 2); segs.push({ m, data: b.slice(i + 4, i + 2 + L) }); if (m === 0xda) break; i += 2 + L; }
+      const XMPNS = "http://ns.adobe.com/xap/1.0/\0", xmps = segs.filter((s) => s.m === 0xe1 && s.data.slice(0, XMPNS.length).toString("latin1") === XMPNS);
+      const sof = segs.find((s) => s.m >= 0xc0 && s.m <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(s.m)), H = sof && sof.data.readUInt16BE(1), W = sof && sof.data.readUInt16BE(3);
+      exige(segs[0] && segs[0].m === 0xe0 && segs[0].data.slice(0, 5).toString("latin1") === "JFIF\0", "el JPG no empieza con su JFIF");
+      exige(segs[1] && segs[1].m === 0xe1 && xmps.length === 1, "el XMP no va justo después del JFIF o va repetido (" + xmps.length + ")");
+      exige(W && H && W === 2 * H && W >= 2048 && W <= 12000 && W * H <= 128e6, "la foto no es 2:1 o se pasa del tamaño que acepta Facebook: " + W + "×" + H);
+      // El XMP leído con un lector de XML de verdad
+      const xmp = xmps[0].data.slice(XMPNS.length).toString("utf8");
+      exige(/^<\?xpacket begin=/.test(xmp) && /<\?xpacket end='w'\?>$/.test(xmp.trim()) && xmp.length < 65000, "el XMP no va en su paquete xpacket");
+      const g = await n.evaluate((x) => {
+        const d = new DOMParser().parseFromString(x.replace(/<\?xpacket[^>]*\?>/g, ""), "application/xml");
+        if (d.querySelector("parsererror")) return { error: d.querySelector("parsererror").textContent.slice(0, 120) };
+        const NS = "http://ns.google.com/photos/1.0/panorama/", o = {};
+        ["ProjectionType", "UsePanoramaViewer", "FullPanoWidthPixels", "FullPanoHeightPixels", "CroppedAreaImageWidthPixels", "CroppedAreaImageHeightPixels", "CroppedAreaLeftPixels", "CroppedAreaTopPixels", "PoseHeadingDegrees"]
+          .forEach((k) => { const e = d.getElementsByTagNameNS(NS, k)[0]; o[k] = e ? e.textContent.trim() : null; });
+        return o;
+      }, xmp);
+      exige(!g.error, "el XMP no es XML válido: " + g.error);
+      exige(g.ProjectionType === "equirectangular" && g.UsePanoramaViewer === "True", "faltan ProjectionType o UsePanoramaViewer: " + JSON.stringify(g));
+      exige(+g.FullPanoWidthPixels === W && +g.FullPanoHeightPixels === H && +g.CroppedAreaImageWidthPixels === W && +g.CroppedAreaImageHeightPixels === H && +g.CroppedAreaLeftPixels === 0 && +g.CroppedAreaTopPixels === 0,
+        "las medidas del XMP no son las del JPG (" + W + "×" + H + "): " + JSON.stringify(g));
+      exige(g.PoseHeadingDegrees !== null, "falta PoseHeadingDegrees");
+      // La imagen abre bien (no se rompió al meterle los datos)
+      const abre = await n.evaluate(async (b64) => { const bm = await createImageBitmap(await (await fetch("data:image/jpeg;base64," + b64)).blob()); return [bm.width, bm.height]; }, b.toString("base64"));
+      exige(abre[0] === W && abre[1] === H, "la foto no abre después de meterle los datos: " + abre);
+      // ExifTool (si está en la compu): sin errores ni advertencias
+      let et = null;
+      try { et = require("child_process").execFileSync("exiftool", ["-validate", "-warning", "-error", "-a", "-s3", archivo]).toString().trim(); } catch (e) { et = e.code === "ENOENT" ? null : String(e.stdout || e.message); }
+      if (et !== null) exige(/^OK$/m.test(et) && !/Warning|Error/i.test(et.replace(/^OK$/m, "")), "ExifTool encontró problemas en la foto: " + et.slice(0, 200));
+      console.log("    " + W + "×" + H + " · XMP " + xmp.length + " bytes · ExifTool: " + (et === null ? "no instalado" : et.split("\n")[0]));
       exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 200));
       await n.context().close();
     }, a);
