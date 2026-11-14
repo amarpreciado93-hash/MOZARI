@@ -23,7 +23,8 @@ const LIB = {
   jsqr: busca(path.join(__dirname, "node_modules/jsqr"), "/tmp/qr/node_modules/jsqr"),
   pngjs: busca(path.join(__dirname, "node_modules/pngjs"), "/tmp/qr/node_modules/pngjs"),
 };
-const DUENO = "amarpreciado93@gmail.com";
+// La cuenta de dueño de las pruebas es una de prueba: el servidor local arranca con ADMIN = esta (nunca el correo real)
+const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
 const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra"];
@@ -32,7 +33,7 @@ const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 // ---------- servidores locales (estudio y tours) ----------
 const procesos = [];
 function arrancar(carpeta, args) {
-  const p = spawn("npx", ["wrangler", "dev", ...args, "--var", "DEV:1", "--persist-to", DATOS], { cwd: path.join(RAIZ, "nube", carpeta), detached: true, stdio: ["ignore", fs.openSync(path.join(DATOS, carpeta + ".log"), "a"), fs.openSync(path.join(DATOS, carpeta + ".log"), "a")], env: Object.assign({}, process.env, { WRANGLER_SEND_METRICS: "false" }) });
+  const p = spawn("npx", ["wrangler", "dev", ...args, "--var", "DEV:1", "--var", "ADMIN:" + DUENO, "--persist-to", DATOS], { cwd: path.join(RAIZ, "nube", carpeta), detached: true, stdio: ["ignore", fs.openSync(path.join(DATOS, carpeta + ".log"), "a"), fs.openSync(path.join(DATOS, carpeta + ".log"), "a")], env: Object.assign({}, process.env, { WRANGLER_SEND_METRICS: "false" }) });
   procesos.push(p);
 }
 async function listo(url) { for (let i = 0; i < 90; i++) { try { const r = await fetch(url); if (r.status < 500) return; } catch (e) { /* aún no */ } await espera(1000); } throw new Error("No arrancó " + url); }
@@ -190,7 +191,9 @@ async function capasPesadas(p) {
     await paso("El escaparate abre con planes y precios", async () => {
       await visita.goto(ESTUDIO + "/"); await visita.waitForTimeout(1500);
       const t = await visita.textContent("body");
-      exige(/Pro/.test(t) && /Desarrollos/.test(t) && /Gratis/.test(t), "no se ven los planes");
+      exige(/Pro/.test(t) && /Desarrollos/.test(t) && /Cuenta de prueba/.test(t), "no se ven los planes");
+      // Reporte de un usuario (13 nov 2026): «dice gratis y luego hay que pagar». Al usuario se le dice «cuenta de prueba»
+      exige(!/\bgratis\b/i.test(t), "el escaparate todavía dice «gratis»");
     }, visita);
 
     // Pedido de Amar (11 nov 2026): «Contrata tu tour 360» hasta abajo del sitio. Mapa de Latinoamérica con las 95 ciudades
@@ -630,7 +633,7 @@ async function capasPesadas(p) {
       await m.evaluate(([k, v]) => sessionStorage.setItem(k, JSON.stringify(Object.assign({}, v, { t: Date.now() - 10 * 60e3 }))), ["mz-vivo:" + tour, marca]);
       await m.goto(link); await m.waitForTimeout(3000);
       exige((await caidas()).length === antes, "una marca vieja (pestaña cerrada hace 10 minutos) mandó aviso de caída");
-      // Falsa alarma de MAMAP (nov 2026): cerrar Safari desde el multitarea y abrirlo 45 s después tampoco
+      // Falsa alarma de un usuario (nov 2026): cerrar Safari desde el multitarea y abrirlo 45 s después tampoco
       await m.goto(TOURS + "/");
       await m.evaluate(([k, v]) => sessionStorage.setItem(k, JSON.stringify(Object.assign({}, v, { t: Date.now() - 45e3 }))), ["mz-vivo:" + tour, marca]);
       await m.goto(link); await m.waitForTimeout(3000);
@@ -743,7 +746,7 @@ async function capasPesadas(p) {
       exige(!m.errs.length, "errores en celular: " + m.errs.join(" | ").slice(0, 160));
       await m.context().close();
     });
-    // Reporte (MAMAP, nov 2026): el piloto miraba al suelo y los puntos de interés en 3D del horizonte quedaban
+    // Reporte de un usuario (nov 2026): el piloto miraba al suelo y los puntos de interés en 3D del horizonte quedaban
     // estirados miles de píxeles fuera de pantalla, cada uno una capa enorme con su latido en el iPhone
     await paso("Un punto en 3D casi de lado (mirando al suelo) se oculta y vuelve al mirarlo (iPhone sin memoria)", async () => {
       link = link || TOURS + "/" + tour + "/";
@@ -793,7 +796,7 @@ async function capasPesadas(p) {
       exige(nombres.some((n) => n.endsWith("/lib/marzipano.js")) && nombres.some((n) => n.endsWith("/lib/d3.min.js")), "el zip no trae las librerías del visor");
       const ix = new TextDecoder().decode(zip[nombres.find((n) => n.endsWith("/index.html"))]);
       exige(ix.includes('src="lib/marzipano.js"') && !/cdn\.jsdelivr|unpkg\.com|cdnjs/.test(ix), "el index.html del zip todavía pide librerías a otro servidor");
-      // Marca blanca (pedido de OBED, licencia Desarrollos): nada en el .zip nombra a la plataforma ni lleva a ella
+      // Marca blanca (pedido de un cliente con licencia Desarrollos): nada en el .zip nombra a la plataforma ni lleva a ella
       const textos = nombres.filter((n) => /\.(html|json|txt|js)$/.test(n) && !/\/lib\//.test(n)).map((n) => [n, new TextDecoder().decode(zip[n])]);
       const marca = textos.filter(([, t]) => /mozari|r360/i.test(t)).map(([n, t]) => n + ": " + (t.match(/.{0,30}(mozari|r360).{0,30}/i) || [""])[0]);
       exige(!marca.length, "el .zip todavía nombra a la plataforma: " + marca.join(" | ").slice(0, 220));
@@ -866,7 +869,7 @@ async function capasPesadas(p) {
       const [dl2] = await Promise.all([a.waitForEvent("download", { timeout: 30000 }), a.click('[data-comp="svg"]')]);
       exige((await dl2.suggestedFilename()).endsWith(".svg"), "no bajó el SVG");
     }, a);
-    // Pedido de un cliente (OBED, nov 2026): leyenda de colores de los lotes con cuántos hay de cada estado
+    // Pedido de un cliente (nov 2026): leyenda de colores de los lotes con cuántos hay de cada estado
     await paso("Leyenda de lotes en el tour: el color de cada estado y cuántos hay", async () => {
       const foto = (p, n) => (process.env.CAPTURAS ? p.screenshot({ path: path.join(process.env.CAPTURAS, n + ".png") }) : null);
       await a.click('#nav button:has-text("Interfaz")'); await a.waitForTimeout(1200);
@@ -897,7 +900,7 @@ async function capasPesadas(p) {
       // Se apaga para no cambiar las demás pruebas
       await a.click('#nav button:has-text("Interfaz")'); await a.waitForTimeout(1000); await a.uncheck('[data-sk-k="extra.leyenda"]'); await a.waitForTimeout(600);
     }, a);
-    // Pedido de un cliente (OBED, nov 2026): su propio crédito abajo del tour («Desarrollado por…»)
+    // Pedido de un cliente (nov 2026): su propio crédito abajo del tour («Desarrollado por…»)
     await paso("Crédito propio abajo del tour («Desarrollado por…») con su enlace", async () => {
       const foto = (p, n) => (process.env.CAPTURAS ? p.screenshot({ path: path.join(process.env.CAPTURAS, n + ".png") }) : null);
       await a.click('#nav button:has-text("Interfaz")'); await a.waitForTimeout(1000);
@@ -1025,6 +1028,12 @@ async function capasPesadas(p) {
       // Un usuario normal en el celular sigue viendo «se usa en computadora» y nada del panel
       const u = await pagina("cel-" + Date.now() + "@prueba.mx", Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
       exige(await u.isVisible("#mv-compu") && !(await u.$(".movil #cuentas")), "a un usuario normal en el celular le salió el panel de dueño");
+      // Reporte de un usuario (13 nov 2026): desde el celular vio precios y creyó que lo queríamos cobrar. La cuenta de
+      // prueba ve primero que no paga nada (sin tarjeta, sin vencimiento) y que la licencia es solo para quitar la marca.
+      const cel = await u.evaluate(() => ({ tit: document.getElementById("mv-compu-tit").textContent, lista: !document.getElementById("mv-prueba").hidden, txt: document.querySelector(".movil").innerText }));
+      exige(/cuenta de prueba ya está lista/i.test(cel.tit) && cel.lista && /No pagas nada/.test(cel.txt) && /sin marca/.test(cel.txt), "en el celular la cuenta de prueba no dice claro que no paga nada: " + cel.tit);
+      exige(!/\bgratis\b/i.test(cel.txt), "en el celular todavía dice «gratis»");
+      if (process.env.CAPTURAS) await u.screenshot({ path: path.join(process.env.CAPTURAS, "celular-cuenta-prueba.png"), fullPage: true });
       await u.context().close();
     });
     // Nov 2026: la cuenta de prueba hace los tours que quiera para practicar (siempre con marca de agua). Si topa con
@@ -1350,7 +1359,7 @@ async function capasPesadas(p) {
       await n.context().close();
     }, a);
 
-    // Reporte de OBED (11 nov 2026, Residencial Hualalachi, lote 58): el lado de atrás en 3 tramos cortos dejaba las
+    // Reporte de un cliente (11 nov 2026): el lado de atrás en 3 tramos cortos dejaba las
     // medidas encimadas en la ficha. Ahora cada medida que no cabe junto a su lado sale afuera con su línea guía.
     await paso("Ficha: las medidas de tramos cortos no se enciman y llevan línea guía a su lado", async () => {
       const n = await pagina(DUENO); await nuevoTour(n, "Medidas encimadas");
@@ -1817,7 +1826,7 @@ async function capasPesadas(p) {
       const chicos = Object.entries(h).filter(([k]) => !/99/.test(k)).map(([, v]) => v).sort((p, q) => p - q), med = chicos[Math.floor(chicos.length / 2)];
       exige(chicos.length >= 4 && h["Lote 99 · M1"], "no se ven los rótulos (" + JSON.stringify(h) + ")");
       exige(h["Lote 99 · M1"] < med * 1.3, "el lote grande tiene la letra más grande que los demás (" + h["Lote 99 · M1"].toFixed(1) + " vs " + med.toFixed(1) + ")");
-      // Reporte de Abraham (nov 2026): girar el rótulo de un lote agrandaba la letra de todos los demás
+      // Reporte de un usuario (nov 2026): girar el rótulo de un lote agrandaba la letra de todos los demás
       for (const num of ["1", "2", "3", "4"]) {
         await n.click('#lista li:has-text("Lote ' + num + ' · M1")'); await n.waitForTimeout(400);
         await n.$eval('[data-k="lote.giroRotulo"]', (e) => { e.value = "90"; e.dispatchEvent(new Event("input", { bubbles: true })); e.dispatchEvent(new Event("change", { bubbles: true })); });
@@ -1872,7 +1881,7 @@ async function capasPesadas(p) {
       await n.context().close();
     }, a);
 
-    // Pedido de Amar y de Oscar (13 nov 2026): muchas más tipografías, subir la propia y efectos en los textos (sombra y
+    // Pedido de Amar y de un usuario (13 nov 2026): muchas más tipografías, subir la propia y efectos en los textos (sombra y
     // contorno). La propia se guarda en el proyecto y se ve igual en el tour publicado.
     await paso("Tipografías: más de 40, subir la tuya (Laboratorio) y sombra y contorno en los textos; igual en el tour publicado", async () => {
       const n = await pagina(DUENO); await nuevoTour(n, "Tipografias");
@@ -2104,7 +2113,7 @@ async function capasPesadas(p) {
     });
 
     // Pedido de Amar (nov 2026): la ruta se curva con manijas, como la pluma de Illustrator
-    // Reporte de Emanuel (nov 2026, pantalla 1536×695): la vista de inicio ocupaba casi toda la columna y solo cabía un punto
+    // Reporte de un usuario (nov 2026, pantalla 1536×695): la vista de inicio ocupaba casi toda la columna y solo cabía un punto
     await paso("Piloto en pantalla baja: la lista de puntos se recorre entera y «Agregar punto» siempre se ve", async () => {
       const n = await pagina("piloto-bajo-" + Date.now() + "@prueba.mx", { viewport: { width: 1536, height: 695 } });
       await n.waitForTimeout(2500); await cerrarAnuncio(n);
@@ -2166,7 +2175,7 @@ async function capasPesadas(p) {
         };
         const [d1] = await Promise.all([n.waitForEvent("download", { timeout: 180000 }), n.click("#foto360-boton")]);
         const con = await medir(d1);
-        // Reporte de Oscar (Facebook la mostraba plana): XMP de 360 como lo escribe ExifTool, después del JFIF
+        // Reporte de un usuario (Facebook la mostraba plana): XMP de 360 como lo escribe ExifTool, después del JFIF
         const jb = fs.readFileSync(await d1.path()), seg1 = jb.readUInt16BE(2), largo0 = jb.readUInt16BE(4), seg2 = jb.readUInt16BE(4 + largo0), txt = jb.slice(0, 8000).toString("latin1");
         exige(seg1 === 0xffe0 && seg2 === 0xffe1 && /<\?xpacket begin=/.test(txt) && /<GPano:ProjectionType>equirectangular<\/GPano:ProjectionType>/.test(txt) && /<GPano:UsePanoramaViewer>True</.test(txt) && /<\?xpacket end='w'\?>/.test(txt),
           "la foto 360 no lleva los datos de 360 como los lee Facebook: " + [seg1.toString(16), seg2.toString(16)].join(",") + " " + (txt.match(/<x:xmpmeta[\s\S]{0,120}/) || [""])[0]);
@@ -2654,7 +2663,7 @@ async function capasPesadas(p) {
       exige(/Ya tienes Pro/.test(await u.textContent("#dlg-pago").catch(() => "")), "después de pagar con tarjeta no se activó Pro");
       const yo = await u.evaluate(() => fetch("api/yo").then((r) => r.json()));
       exige(JSON.stringify(yo).includes('"pro"'), "la cuenta no quedó con Pro: " + JSON.stringify(yo).slice(0, 160));
-      // Reporte de Carlos (nov 2026): Mercado Pago rechazó sus tarjetas de débito. Al regresar con error se sugiere «Tarjeta»
+      // Reporte de un usuario (nov 2026): Mercado Pago rechazó sus tarjetas de débito. Al regresar con error se sugiere «Tarjeta»
       await u.goto(ESTUDIO + "/?pago=error"); await u.waitForTimeout(3500);
       const aviso = await u.textContent("#dlg-pago").catch(() => "");
       exige(/No se completó el pago/.test(aviso) && /«Tarjeta»/.test(aviso), "al fallar Mercado Pago no se sugiere pagar con «Tarjeta»: " + aviso.slice(0, 160));
@@ -2667,7 +2676,7 @@ async function capasPesadas(p) {
       exige(!u.errs.length, "errores en el estudio: " + u.errs.join(" | ").slice(0, 200));
       await u.context().close();
     });
-    // Pedido de Icaro (nov 2026): además de cambiarles el nombre, agregar más estados. Nace en el Laboratorio.
+    // Pedido de un usuario (nov 2026): además de cambiarles el nombre, agregar más estados. Nace en el Laboratorio.
     await paso("Más estados de lote: «+ Estado» agrega uno propio, se usa en un lote, sale en el tour y se quita sin perder lotes", async () => {
       const n = await pagina(DUENO); await nuevoTour(n, "Más estados");
       const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
@@ -3361,7 +3370,7 @@ async function capasPesadas(p) {
       exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
       await n.context().close();
     });
-    // Reporte de OBED (nov 2026): en un lote de la fila de atrás (su calle real es otra) la ficha ponía el frente de lado.
+    // Reporte de un cliente (nov 2026): en un lote de la fila de atrás (su calle real es otra) la ficha ponía el frente de lado.
     // El botón «Frente» existía pero la ficha no le hacía caso en lotes de manzana, y al mover la manzana se borraba.
     await paso("El frente que elige el usuario manda en la ficha, también en lotes de manzana, y no se borra al mover la manzana", async () => {
       const leer = () => a.evaluate((id) => fetch("api/tours/" + id).then((r) => r.json()), tour);
