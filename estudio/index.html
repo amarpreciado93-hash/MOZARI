@@ -1242,6 +1242,39 @@
   .resp-fila span, .resp-fila small { color: var(--mz-tenue); }
   .pub-hosting-aviso { flex-basis: 100%; margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: #F2A900; }
   .comp { text-align: left; display: grid; gap: 18px; }
+  /* Landing del desarrollo (Laboratorio «landing») */
+  .ld { max-width: 1240px; margin: 2vh auto 0; display: grid; gap: 18px; }
+  .ld-cab h1 { margin: 4px 0 6px; }
+  .ld-cab p { margin: 0; max-width: 680px; color: var(--mz-tenue); line-height: 1.6; }
+  .ld-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 470px); gap: 18px; align-items: start; }
+  .ld-form { display: grid; gap: 14px; min-width: 0; }
+  .ld-form .comp-tarjeta > p:not(.nota) { margin-top: -6px; color: var(--mz-tenue); }
+  .ld-fila { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .ld-color { display: grid; gap: 5px; font-size: 12px; color: var(--mz-tenue); }
+  .ld-color div { display: flex; gap: 6px; align-items: center; }
+  .ld-color input[type="color"] { width: 38px; height: 36px; padding: 0; border: 1px solid var(--mz-linea-neutra); border-radius: 9px; background: none; cursor: pointer; flex: none; }
+  .ld-color .entrada { font-family: ui-monospace, Menlo, monospace; text-transform: uppercase; }
+  .ld-img { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .ld-img .mini-img { width: 96px; height: 60px; border-radius: 10px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-negro) center / contain no-repeat; flex: none; }
+  .ld-img .mini-img.foto { background-size: cover; }
+  .ld-img .mini-img.claro { background-color: #F3EEE4; }
+  .ld-img > div { display: grid; gap: 6px; }
+  .ld-img .acc { display: flex; gap: 6px; flex-wrap: wrap; }
+  .ld-plan { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr) minmax(0, 0.9fr) 32px; gap: 6px; align-items: end; }
+  .ld-plan label { display: grid; gap: 4px; font-size: 11px; color: var(--mz-tenue); }
+  .ld-plan .x { height: 38px; border: 1px solid var(--mz-linea-neutra); border-radius: 9px; background: none; color: var(--mz-tenue); cursor: pointer; }
+  .ld-cifra { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr); gap: 6px; }
+  .ld-link { display: grid; gap: 10px; padding: 12px 14px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--mz-lima) 40%, transparent); background: var(--mz-lima-suave); }
+  .ld-link .pub-caja { margin: 0; max-width: none; }
+  .ld-switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; cursor: pointer; }
+  .ld-vista { position: sticky; top: 12px; display: grid; gap: 10px; min-width: 0; }
+  .ld-vista-cab { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .ld-marco { position: relative; overflow: hidden; border-radius: 34px; border: 9px solid #050505; background: #050505; box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.8); }
+  .ld-marco[data-ver="cel"] { width: min(100%, 408px); height: min(78vh, 800px); margin-inline: auto; }
+  .ld-marco[data-ver="cel"] iframe { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+  .ld-marco[data-ver="compu"] { border-radius: 14px; border-width: 6px; height: calc(var(--k, 0.35) * 820px); }
+  .ld-marco[data-ver="compu"] iframe { width: 1300px; height: 820px; border: 0; transform: scale(var(--k, 0.35)); transform-origin: 0 0; display: block; background: #fff; }
+  @media (max-width: 1100px) { .ld-grid { grid-template-columns: minmax(0, 1fr); } .ld-vista { position: static; } }
   .comp-cab h1 { margin: 4px 0 6px; }
   .comp-cab p { max-width: 640px; }
   .comp-aviso { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: 12px; border: 1px solid color-mix(in srgb, #F2A900 45%, transparent); background: color-mix(in srgb, #F2A900 10%, transparent); font-size: 13px; }
@@ -2260,6 +2293,17 @@
 
     <!-- Secciones por venir (se llenan desde el script) -->
     <section data-vista="proximo" id="v-proximo" hidden><div class="contenido"><div class="proximo" id="proximo"></div></div></section>
+    <!-- Publicar / Landing (Laboratorio «landing»): la página de venta del desarrollo, con vista previa en vivo -->
+    <section data-vista="publicar/landing" id="v-landing" hidden><div class="contenido"><div class="ld">
+      <div class="ld-cab"><span class="etiq">Publicar</span><h1>Landing del desarrollo</h1><p>Una página para mandar por WhatsApp o poner en tus anuncios: tu marca, tus lotes con su precio y forma de pago, el recorrido 360 y tu contacto. Se arma con lo que ya tiene el tour.</p></div>
+      <div class="ld-grid">
+        <div class="ld-form" id="ld-form"></div>
+        <div class="ld-vista">
+          <div class="ld-vista-cab"><div class="estados" role="group" aria-label="Ver la landing como"><button type="button" data-ld-ver="cel" aria-pressed="true" style="--c:var(--mz-lima)">Celular</button><button type="button" data-ld-ver="compu" aria-pressed="false" style="--c:var(--mz-lima)">Compu</button></div><span class="nota">Vista previa con tus cambios</span></div>
+          <div class="ld-marco" id="ld-marco" data-ver="cel"><iframe id="ld-iframe" title="Vista previa de la landing"></iframe></div>
+        </div>
+      </div>
+    </div></div></section>
   </main>
 </div>
 
@@ -2452,7 +2496,7 @@
   // Tipografías (pedido de Amar, 13 nov 2026: «muchas más, o subir las tuyas»). Las de Google se cargan solo si alguien las
   // usa; las propias del proyecto (P().fuentes, Laboratorio «tipografias») se suben como archivo y se cargan con FontFace.
   const GRUPOS_FUENTES = [
-    ["Sin serif", ["", "Inter", "Montserrat", "DM Sans", "Manrope", "Plus Jakarta Sans", "Outfit", "Urbanist", "Raleway", "Work Sans", "Sora", "Nunito Sans", "Lato", "Open Sans", "Archivo", "Space Grotesk", "Josefin Sans"]],
+    ["Sin serif", ["", "Inter", "Figtree", "Montserrat", "DM Sans", "Manrope", "Plus Jakarta Sans", "Outfit", "Urbanist", "Raleway", "Work Sans", "Sora", "Nunito Sans", "Lato", "Open Sans", "Archivo", "Space Grotesk", "Josefin Sans"]],
     ["Condensadas y de impacto", ["Oswald", "Bebas Neue", "Anton", "Barlow Condensed", "League Spartan", "Archivo Black", "Unbounded", "Syne"]],
     ["Con serif", ["Playfair Display", "Cormorant Garamond", "Lora", "Fraunces", "DM Serif Display", "Libre Baskerville", "Cinzel", "Marcellus", "Bodoni Moda"]],
     ["Manuscritas", ["Great Vibes", "Dancing Script", "Pacifico", "Caveat", "Allura"]],
@@ -3160,6 +3204,7 @@
 
   const SIN_ESFERAS = ["panoramas/mapa", "panoramas/capas", "panoramas/piloto", "panoramas/terreno", "skin/h", "skin/v"];
   if (enLab("estadisticas")) SECCIONES.find((x) => x.id === "publicar").subs.push(["estadisticas", "Estadísticas"]);
+  if (MODO === "nube" && enLab("landing")) SECCIONES.find((x) => x.id === "publicar").subs.splice(1, 0, ["landing", "Landing"]);
   // Secciones de «Próximo bloque» que ya existen en el Laboratorio: [función, sección]
   const LAB_VISTAS = { "media/planos": ["planos", "v-planos"], "media/audios": ["narracion", "v-audios"] };
   function ir(sec, sub) {
@@ -3184,6 +3229,7 @@
     $("sel-pano-wrap").hidden = !enEditor;
     $("proximo").classList.remove("ancho");
     if (clave === "publicar/web" && MODO === "nube") { pintarPublicar(); }
+    else if (clave === "publicar/landing" && MODO === "nube" && enLab("landing")) { abrirLanding(); }
     else if (clave === "publicar/estadisticas" && MODO === "nube") { pintarEstadisticas(); }
     else if (clave === "publicar/compartir" && MODO === "nube") { pintarCompartir(); }
 
@@ -3319,6 +3365,145 @@
     if (d.txt) { await document.fonts.ready; x.font = "600 " + d.fs * m + "px Poppins, Arial, sans-serif"; x.textAlign = "center"; x.textBaseline = "alphabetic"; x.fillText(d.txt, (d.W / 2) * m, (d.W + d.th * 0.38) * m); }
     cv.toBlob((b) => bajar(b, nombreArchivo("png")), "image/png");
   }
+  // =================== LANDING DEL DESARROLLO (Laboratorio «landing») ===================
+  // La página de venta: marca (como en su manual), portada, lotes con precio y forma de pago, recorrido 360, proyecto,
+  // galería (Media → Fotos), ubicación (puntos de interés) y contacto. La arma estudio/landing.html; aquí se edita y se
+  // ve en vivo. Se publica con el tour en tours.mozari.app/<tour>/landing.
+  const LD_DEF = () => {
+    const hayLotes = Object.values(est.capas).some((l) => (l || []).some((c) => c && c.lote));
+    const sk = est.skin || {}, logo = sk.logo && sk.logo.tipo === "propio" && sk.logo.img ? sk.logo.img : "";
+    return { activa: false, plantilla: hayLotes ? "lotes" : "propiedad",
+      marca: { logo: "", logoClaro: logo, primario: "#0E3A40", fondo: "#F3EEE4", acento: "#C6A15E", titulo: "Cormorant Garamond", texto: "Figtree" },
+      portada: { foto: "", lugar: "", titulo: "", texto: "" },
+      proyecto: { titulo: "", texto: "", foto: "", cifras: [{ v: "", t: "" }, { v: "", t: "" }, { v: "", t: "" }, { v: "", t: "" }], amenidades: [] },
+      ubicacion: { titulo: "", texto: "", mapa: "" },
+      contacto: { whatsapp: "", telefono: "", correo: "", mensaje: "", texto: "" },
+      pagos: { mostrar: true, planes: [{ t: "Contado", meses: 0, ajuste: -8 }, { t: "12 meses", meses: 12, ajuste: 0 }, { t: "24 meses", meses: 24, ajuste: 5 }], engMin: 20, engMax: 60, engDef: 30 },
+      secciones: { lotes: true, recorrido: true, proyecto: true, galeria: true, ubicacion: true, visita: true } };
+  };
+  const LD = () => { const d = LD_DEF(); const L = P().landing || (P().landing = d); ["marca", "portada", "proyecto", "ubicacion", "contacto", "pagos", "secciones"].forEach((k) => (L[k] = Object.assign({}, d[k], L[k] || {}))); return L; };
+  const ldGet = (ruta) => ruta.split(".").reduce((o, k) => (o == null ? undefined : o[k]), LD());
+  const ldSet = (ruta, v) => { const ks = ruta.split("."), ult = ks.pop(); const o = ks.reduce((x, k) => (x[k] = x[k] || {}), LD()); o[ult] = v; };
+  const linkLanding = () => linkTour() + "landing";
+  let ldListo = false, tLd = 0;
+  function ldEnviar(ya) {
+    clearTimeout(tLd);
+    const mandar = () => { const w = $("ld-iframe") && $("ld-iframe").contentWindow; if (!w || !ldListo) return;
+      w.postMessage({ tipo: "landing", base: "t/" + TOUR + "/", proyecto: JSON.parse(JSON.stringify({ proyecto: P(), escenas: est.escenas, capas: est.capas, media: est.media, lotesEstados: est.lotesEstados })) }, location.origin); };
+    if (ya) mandar(); else tLd = setTimeout(mandar, 220);
+  }
+  addEventListener("message", (ev) => { if (ev.origin === location.origin && ev.data && ev.data.tipo === "landing-lista") { ldListo = true; ldEnviar(true); } });
+  function ldEscala() { const m = $("ld-marco"); if (m && m.dataset.ver === "compu") m.style.setProperty("--k", Math.min(1, (m.clientWidth || 400) / 1300).toFixed(4)); }
+  addEventListener("resize", ldEscala);
+  function abrirLanding() {
+    LD();
+    const ifr = $("ld-iframe");
+    if (!ifr.src) { ldListo = false; ifr.src = "landing#previa"; }
+    pintarLanding(); ldEscala(); ldEnviar(true);
+    if (!toursNube) cargarToursNube().then(() => nav.sec + "/" + nav.sub === "publicar/landing" && pintarLanding());
+  }
+  function pintarLanding() {
+    const L = LD(), M = L.marca, t = (toursNube || []).find((x) => x.id === TOUR) || {};
+    const v = (r) => esc(ldGet(r) == null ? "" : ldGet(r));
+    const campo = (r, etq, ph, extra) => '<label class="fe-campo">' + etq + '<input class="entrada" data-ld="' + r + '" value="' + v(r) + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : "") + (extra || "") + "></label>";
+    const area = (r, etq, ph, filas) => '<label class="fe-campo">' + etq + '<textarea class="entrada" rows="' + (filas || 3) + '" data-ld="' + r + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : "") + ">" + v(r) + "</textarea></label>";
+    const color = (r, etq) => '<div class="ld-color">' + etq + '<div><input type="color" data-ld-color="' + r + '" value="' + v(r) + '" aria-label="' + esc(etq) + '"><input class="entrada" data-ld-hex="' + r + '" value="' + v(r) + '" maxlength="7" aria-label="' + esc(etq) + ' en HEX"></div></div>';
+    const imagen = (r, etq, nota, claro, foto) => { const a = ldGet(r); return '<div class="fe-grupo"><b>' + etq + '</b><div class="ld-img"><span class="mini-img' + (claro ? " claro" : "") + (foto ? " foto" : "") + '" style="' + (a ? "background-image:url(&quot;" + esc(urlArchivo(a)) + "&quot;)" : "") + '"></span><div><div class="acc"><button class="btn-sec" type="button" data-ld-subir="' + r + '">' + (a ? "Cambiar" : "Subir") + "</button>" + (a ? '<button class="btn-sec" type="button" data-ld-quitar="' + r + '">Quitar</button>' : "") + "</div>" + (nota ? '<span class="fe-sub">' + nota + "</span>" : "") + "</div></div></div>"; };
+    const sw = (r, etq) => '<label class="ld-switch"><span>' + etq + '</span><input type="checkbox" class="toggle" data-ld-si="' + r + '"' + (ldGet(r) ? " checked" : "") + "></label>";
+    const lotes = Object.values(est.capas).flat().filter((c) => c && c.lote && c.lote.numero).length;
+    const pis = new Set(Object.values(est.capas).flat().filter((c) => c && c.tipo === "interes" && c.pi && c.pi.nombre).map((c) => c.pi.nombre.trim().toLowerCase())).size;
+    const fotos = est.media.fotos.length;
+    let h = "";
+    h += '<section class="comp-tarjeta"><h3>Tu landing</h3>' + sw("activa", "Publicar la landing con el tour") +
+      '<div class="fe-grupo"><b>Plantilla</b><div class="estados" role="group" aria-label="Plantilla">' + [["lotes", "Desarrollo con lotes"], ["propiedad", "Propiedad o casa"]].map(([k, n]) => '<button type="button" data-ld-plantilla="' + k + '" aria-pressed="' + (L.plantilla === k) + '" style="--c:var(--mz-lima)">' + n + "</button>").join("") + "</div>" +
+      '<span class="fe-sub">' + (L.plantilla === "lotes" ? "Con el plano de " + esc(terminos().lote.toLowerCase()) + "s, su precio y la calculadora de pagos. Este tour tiene " + lotes + " " + esc(terminos().lote.toLowerCase()) + (lotes === 1 ? "" : "s") + "." : "Con las cifras y espacios del proyecto, sin plano de lotes.") + "</span></div>" +
+      (L.activa && t.publicado ? '<div class="ld-link"><div class="pub-caja"><code>' + esc(linkLanding()) + '</code><button class="btn-sec" type="button" data-ld-accion="copiar">Copiar link</button></div><div class="comp-acc"><a class="btn-sec" href="' + esc(linkLanding()) + '" target="_blank" rel="noopener">Abrir ↗</a><button class="btn-prim" type="button" data-ld-accion="publicar">Publicar cambios</button></div><span class="fe-sub">Lo que cambies aquí sale en el link al publicar, junto con el tour.</span></div>'
+        : L.activa ? '<div class="ld-link"><span class="fe-sub">Publica el tour para tener el link de tu landing.</span><div class="comp-acc"><button class="btn-prim" type="button" data-ld-accion="publicar">Publicar ahora</button></div></div>' : "") + "</section>";
+    h += '<section class="comp-tarjeta"><h3>Marca</h3><p>Lo de tu manual de identidad: logos, colores en HEX y letras.</p>' +
+      imagen("marca.logoClaro", "Logo sobre fotos y fondos oscuros", "PNG con fondo transparente, en blanco o en negativo.", false) +
+      imagen("marca.logo", "Logo sobre fondo claro", "Opcional. Si no lo subes, se usa el otro.", true) +
+      '<div class="ld-fila">' + color("marca.primario", "Color principal") + color("marca.fondo", "Color de fondo") + color("marca.acento", "Color de acento") + "</div>" +
+      '<div class="ld-fila"><label class="fe-campo">Letra de títulos<select class="entrada" data-ld="marca.titulo">' + opcionesFuente(M.titulo) + '</select></label><label class="fe-campo">Letra de textos<select class="entrada" data-ld="marca.texto">' + opcionesFuente(M.texto) + "</select></label></div></section>";
+    h += '<section class="comp-tarjeta"><h3>Portada</h3>' + imagen("portada.foto", "Foto de portada", "Horizontal y nítida. Si no subes una, se usa la portada del tour.", false, true) +
+      campo("portada.lugar", "Lugar (arriba del título)", "Ej.: Cancún · Quintana Roo") + campo("portada.titulo", "Título", P().nombre || "Nombre del desarrollo", ' maxlength="70"') + area("portada.texto", "Texto", P().descripcion || "Una o dos frases: qué es y dónde está.", 2) + "</section>";
+    if (L.plantilla === "lotes") {
+      const pl = L.pagos.planes || [];
+      h += '<section class="comp-tarjeta"><h3>Precios y formas de pago</h3>' + sw("pagos.mostrar", "Mostrar precios en la landing") +
+        '<p class="nota" style="margin:0">El precio de cada ' + esc(terminos().lote.toLowerCase()) + " sale de su ficha (Panoramas → Fichas técnicas). En el ajuste, un número negativo es descuento (contado) y uno positivo, el costo de financiar.</p>" +
+        pl.map((x, i) => '<div class="ld-plan"><label>Nombre<input class="entrada" data-ld-plan="' + i + '.t" value="' + esc(x.t) + '" maxlength="18"></label><label>Meses<input class="entrada" type="number" min="0" max="240" data-ld-plan="' + i + '.meses" value="' + esc(x.meses) + '"></label><label>Ajuste %<input class="entrada" type="number" min="-50" max="80" step="0.5" data-ld-plan="' + i + '.ajuste" value="' + esc(x.ajuste) + '"></label><button class="x" type="button" data-ld-quitar-plan="' + i + '" aria-label="Quitar ' + esc(x.t) + '">×</button></div>').join("") +
+        (pl.length < 4 ? '<button class="mini" type="button" data-ld-accion="mas-plan" style="justify-self:start">+ Agregar forma de pago</button>' : "") +
+        '<div class="ld-fila">' + campo("pagos.engMin", "Enganche mínimo %", "20", ' type="number" min="0" max="90"') + campo("pagos.engMax", "Enganche máximo %", "60", ' type="number" min="0" max="95"') + campo("pagos.engDef", "Enganche al abrir %", "30", ' type="number" min="0" max="95"') + "</div></section>";
+    }
+    const cf = L.proyecto.cifras || [];
+    h += '<section class="comp-tarjeta"><h3>El proyecto</h3>' + campo("proyecto.titulo", "Título", "Ej.: Vivir despacio, con la laguna enfrente") + area("proyecto.texto", "Texto", "Cuéntalo como lo dirías en una visita: dónde está, qué tiene y para quién es.", 4) +
+      '<div class="fe-grupo"><b>Cifras</b>' + cf.map((c, i) => '<div class="ld-cifra"><input class="entrada" data-ld-cifra="' + i + '.v" value="' + esc(c.v || "") + '" placeholder="4.2 ha" aria-label="Cifra ' + (i + 1) + '"><input class="entrada" data-ld-cifra="' + i + '.t" value="' + esc(c.t || "") + '" placeholder="Superficie total" aria-label="Qué es la cifra ' + (i + 1) + '"></div>').join("") + "</div>" +
+      '<label class="fe-campo">Amenidades (separadas por coma)<textarea class="entrada" rows="2" data-ld="proyecto.amenidadesTxt" placeholder="Casa club, Alberca, Acceso controlado">' + esc((L.proyecto.amenidades || []).join(", ")) + "</textarea></label>" +
+      imagen("proyecto.foto", "Foto del proyecto", "Si no subes una, se usa una de Media → Fotos.", false, true) + "</section>";
+    h += '<section class="comp-tarjeta"><h3>Galería y ubicación</h3><p>La galería usa tus fotos de Media → Fotos (' + fotos + (fotos === 1 ? " foto" : " fotos") + "). Los lugares cercanos salen de tus puntos de interés (" + pis + ").</p>" +
+      campo("ubicacion.titulo", "Título de ubicación", "Ej.: Cancún, Quintana Roo") + area("ubicacion.texto", "Texto", "Cómo se llega y qué hay cerca.", 2) + campo("ubicacion.mapa", "Link de Google Maps (para «Cómo llegar»)", "https://maps.app.goo.gl/…", ' inputmode="url"') + "</section>";
+    h += '<section class="comp-tarjeta"><h3>Contacto</h3><div class="ld-fila">' + campo("contacto.whatsapp", "WhatsApp (10 dígitos)", "477 123 4567", ' inputmode="tel"') + campo("contacto.telefono", "Teléfono que se muestra", "477 123 4567", ' inputmode="tel"') + "</div>" +
+      campo("contacto.correo", "Correo (opcional)", "ventas@tudesarrollo.com", ' inputmode="email"') + campo("contacto.mensaje", "Primer mensaje de WhatsApp", "Hola, quiero información de " + (P().nombre || "el desarrollo") + ".") +
+      '<p class="nota" id="ld-sin-wa" style="margin:0;color:#F2A900"' + (String(L.contacto.whatsapp || "").replace(/\D/g, "").length < 10 ? "" : " hidden") + ">Sin WhatsApp no salen los botones para escribir ni para apartar.</p></section>";
+    h += '<section class="comp-tarjeta"><h3>Secciones</h3>' + [["lotes", "Elige tu " + terminos().lote.toLowerCase()], ["recorrido", "Recorrido 360"], ["proyecto", "El proyecto"], ["galeria", "Galería"], ["ubicacion", "Ubicación"], ["visita", "Agenda tu visita"]]
+      .filter(([k]) => k !== "lotes" || L.plantilla === "lotes").map(([k, n]) => sw("secciones." + k, n)).join("") + "</section>";
+    $("ld-form").innerHTML = h;
+  }
+  async function ldSubir(ruta) {
+    const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/png,image/jpeg,image/webp,image/svg+xml";
+    inp.addEventListener("change", async () => {
+      const f = inp.files && inp.files[0]; if (!f) return;
+      const logo = /^marca\./.test(ruta);
+      try {
+        avisar("Subiendo…", 6000);
+        const im = await leerImagen(f), tope = logo ? 900 : 2400, k = Math.min(1, tope / Math.max(im.naturalWidth || tope, im.naturalHeight || tope, 1));
+        const cv = document.createElement("canvas"); cv.width = Math.round((im.naturalWidth || 600) * k); cv.height = Math.round((im.naturalHeight || 200) * k);
+        cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height); URL.revokeObjectURL(im.src);
+        ldSet(ruta, await medio(cv, logo ? "image/png" : "image/jpeg", logo ? undefined : 0.86, logo ? "logo-landing" : "landing"));
+        guardar(); pintarLanding(); ldEnviar(true); avisar(logo ? "Logo listo" : "Foto lista");
+      } catch (e) { avisar(e.message || "No se pudo subir esa imagen"); }
+    });
+    inp.click();
+  }
+  async function ldPublicar(b) {
+    if (b) { b.disabled = true; b.textContent = "Publicando…"; }
+    clearTimeout(tNube); pendienteNube = JSON.stringify(est); await enviarNube();
+    for (let i = 0; i < 20 && (enviando || pendienteNube !== null); i++) await new Promise((ok) => setTimeout(ok, 300));
+    const r = await fetch("api/tours/" + TOUR + "/publicar", { method: "POST" }).catch(() => null);
+    if (!r || !r.ok) { const e = r ? await r.json().catch(() => ({})) : {}; avisar(e.error || "No se pudo publicar"); pintarLanding(); return; }
+    toursNube = null; await cargarToursNube(); pintarLanding();
+    avisar("¡Publicado! Tu landing ya tiene estos cambios.");
+  }
+  $("v-landing").addEventListener("click", (ev) => {
+    const ver = ev.target.closest("[data-ld-ver]");
+    if (ver) { const m = $("ld-marco"); m.dataset.ver = ver.dataset.ldVer; document.querySelectorAll("[data-ld-ver]").forEach((b) => b.setAttribute("aria-pressed", String(b === ver))); ldEscala(); return; }
+    const pl = ev.target.closest("[data-ld-plantilla]"); if (pl) { LD().plantilla = pl.dataset.ldPlantilla; guardar(); pintarLanding(); ldEnviar(true); return; }
+    const sub = ev.target.closest("[data-ld-subir]"); if (sub) { ldSubir(sub.dataset.ldSubir); return; }
+    const qui = ev.target.closest("[data-ld-quitar]"); if (qui) { ldSet(qui.dataset.ldQuitar, ""); guardar(); pintarLanding(); ldEnviar(true); return; }
+    const qp = ev.target.closest("[data-ld-quitar-plan]"); if (qp) { LD().pagos.planes.splice(+qp.dataset.ldQuitarPlan, 1); guardar(); pintarLanding(); ldEnviar(true); return; }
+    const acc = ev.target.closest("[data-ld-accion]"); if (!acc) return;
+    const a = acc.dataset.ldAccion;
+    if (a === "mas-plan") { LD().pagos.planes.push({ t: "36 meses", meses: 36, ajuste: 8 }); guardar(); pintarLanding(); ldEnviar(true); }
+    if (a === "publicar") ldPublicar(acc);
+    if (a === "copiar") navigator.clipboard.writeText(linkLanding()).then(() => avisar("Link copiado: " + linkLanding())).catch(() => avisar(linkLanding()));
+  });
+  $("v-landing").addEventListener("input", (ev) => {
+    const el = ev.target, d = el.dataset;
+    if (d.ld && el.tagName !== "SELECT") {
+      if (d.ld === "proyecto.amenidadesTxt") LD().proyecto.amenidades = el.value.split(/[,\n]/).map((x) => x.trim()).filter(Boolean).slice(0, 20);
+      else ldSet(d.ld, el.type === "number" ? (el.value === "" ? "" : +el.value) : el.value);
+      if (d.ld === "contacto.whatsapp" && $("ld-sin-wa")) $("ld-sin-wa").hidden = el.value.replace(/\D/g, "").length >= 10;
+    } else if (d.ldPlan) { const [i, k] = d.ldPlan.split("."); const x = LD().pagos.planes[+i]; if (x) x[k] = k === "t" ? el.value : +el.value || 0; }
+    else if (d.ldCifra) { const [i, k] = d.ldCifra.split("."); const cf = LD().proyecto.cifras; while (cf.length <= +i) cf.push({ v: "", t: "" }); cf[+i][k] = el.value; }
+    else if (d.ldColor) { ldSet(d.ldColor, el.value.toUpperCase()); const hx = el.parentNode.querySelector("[data-ld-hex]"); if (hx) hx.value = el.value.toUpperCase(); }
+    else if (d.ldHex) { const vv = el.value.trim().replace(/^([^#])/, "#$1"); if (!/^#[0-9a-f]{6}$/i.test(vv)) return; ldSet(d.ldHex, vv.toUpperCase()); const c = el.parentNode.querySelector("[data-ld-color]"); if (c) c.value = vv; }
+    else return;
+    guardar(); ldEnviar();
+  });
+  $("v-landing").addEventListener("change", (ev) => {
+    const el = ev.target, d = el.dataset;
+    if (d.ldSi) { ldSet(d.ldSi, el.checked); guardar(); pintarLanding(); ldEnviar(true); if (d.ldSi === "activa" && el.checked) avisar("Listo. Publica el tour para que tu landing tenga link"); return; }
+    if (d.ld && el.tagName === "SELECT") { if (el.value === "__subir") return; ldSet(d.ld, el.value); if (el.value) cargarFuente(el.value); guardar(); ldEnviar(true); return; }
+  });
   function pintarCompartir() {
     const t = (toursNube || []).find((x) => x.id === TOUR) || {}, nombre = P().nombre || "Tour 360";
     const caja = $("proximo"); caja.classList.add("ancho"); $("v-proximo").hidden = false;
@@ -3789,6 +3974,8 @@
     if (clave === "panoramas/capas") guiaCapasNuevas();
     if (clave === "proyecto/musica") guiaNueva("nuevo-sonido", () => [esVisible("#m-preguntar-fila") && { el: "#m-preguntar-fila", titulo: "Nuevo: ¿activar sonido?",
       texto: "Los navegadores no dejan sonar un tour hasta que el visitante toca la pantalla. Ahora, al abrirlo le preguntamos <b>Activar sonido</b> o <b>Sin sonido</b>, con los colores de tu tour, y la música y las voces arrancan con su respuesta." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "musica");
+    if (clave === "publicar/landing" && enLab("landing")) guiaNueva("nuevo-landing", () => [esVisible("#ld-form .comp-tarjeta") && { el: "#ld-form .comp-tarjeta", titulo: "Nuevo: la landing de tu desarrollo",
+      texto: "Una página para mandar por WhatsApp o poner en tus anuncios. Sube tu <b>logo</b>, pon los <b>colores y letras</b> de tu marca y tu <b>WhatsApp</b>. Los lotes, sus precios, las fotos y los lugares cercanos salen solos del tour. A la derecha la ves como en el celular." }].filter(Boolean), () => nav.sub === "landing" && esVisible("#ld-form .comp-tarjeta"));
     if (clave === "proyecto/general" && enLab("bienvenida")) guiaNueva("nuevo-bienvenida", () => [esVisible("#p-bv-fila") && { el: "#p-bv", titulo: "Nuevo: pantalla de bienvenida",
       texto: "Tu tour puede abrir con <b>tu logo, el nombre y un botón</b> sobre la esfera girando despacio. Cuando tu cliente lo toca empieza el recorrido <b>con su música</b>, sin preguntarle nada. Préndela aquí y vuelve a publicar." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "general" && esVisible("#p-bv-fila"));
     if (clave === "panoramas/lista" && enLab("ejemplo")) guiaNueva("nuevo-ejemplo", () => [esVisible("#subir-ejemplo") && { el: "#subir-ejemplo", titulo: "Nuevo: fotos de ejemplo",
@@ -4184,7 +4371,7 @@
   // =================== NOVEDADES ===================
   // Cada anuncio se ve una vez por cuenta (se anota en el servidor). El botón ✦ junto a BETA los vuelve a abrir.
   const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Fichas técnicas"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Interfaz"], ["publicar/web", "Publicar"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"]];
-  const LAB_DESTINO = { "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
+  const LAB_DESTINO = { landing: "publicar/landing", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
   let novedades = [], novActual = null;
   const fechaCorta = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
   function htmlNovedad(n, media) {

@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-15T07:12:01.984Z",
- "bien": 104,
- "total": 104,
+ "fecha": "2026-11-15T22:10:02.882Z",
+ "bien": 105,
+ "total": 105,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -413,6 +413,10 @@
   },
   {
    "nombre": "Acabado fino (Laboratorio, nace Solo yo): Cine en celular trae el botón de contacto y Brújula no repite ni corta el nombre",
+   "ok": true
+  },
+  {
+   "nombre": "Landing del desarrollo (Laboratorio, nace Solo yo): marca, lotes con precio y calculadora, WhatsApp con el lote y publicada en /landing",
    "ok": true
   },
   {

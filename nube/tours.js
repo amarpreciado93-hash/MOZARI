@@ -32,9 +32,33 @@ export default {
 
     const ruta = segs.slice(1).join("/");
     // Cuenta en pausa (lo decide el dueño de Mozari) o tour en modo privado (lo decide su dueño): no se muestra
-    if (ruta === "" || ruta === "index.html" || ruta === "proyecto.json") {
+    if (ruta === "landing/") return Response.redirect(url.origin + "/" + id + "/landing" + url.search, 301);
+    if (ruta === "" || ruta === "index.html" || ruta === "proyecto.json" || ruta === "landing") {
       const [pausa, privado] = await Promise.all([env.R2.head("pausados/" + id), env.R2.head("privados/" + id)]);
       if (pausa || privado) return ruta === "proyecto.json" ? error(404, "No disponible") : html(EN_PAUSA, 403);
+    }
+    // Landing del desarrollo (Laboratorio «landing»): una página ligera que lee proyecto.json de su carpeta.
+    // Solo existe si el tour se publicó con la landing prendida; el 360 se carga dentro cuando lo piden.
+    if (ruta === "landing") {
+      const pub = await env.R2.get("publicado/" + id + "/proyecto.json");
+      let p = null; try { p = pub ? await pub.json() : null; } catch (e) { p = null; }
+      const L = p && p.proyecto && p.proyecto.landing;
+      if (!L || !L.activa) return html(pagina("Página no disponible", "Este desarrollo no tiene landing publicada."), 404);
+      let r = await env.ASSETS.fetch(new Request(url.origin + "/landing", { headers: request.headers }));
+      if (r.status >= 300 && r.status < 400 && r.headers.get("location")) r = await env.ASSETS.fetch(new Request(new URL(r.headers.get("location"), url.origin), { headers: request.headers }));
+      const pr = p.proyecto, nombre = String(pr.nombre || "Recorrido virtual").slice(0, 90);
+      const desc = String((L.portada && L.portada.texto) || pr.descripcion || "Conoce el desarrollo y recórrelo en 360°.").replace(/\s+/g, " ").trim().slice(0, 200);
+      const base = url.origin + "/" + id + "/";
+      const foto = [L.portada && L.portada.foto, pr.thumbnail].find((x) => typeof x === "string" && rutaValida(x));
+      const imagen = foto ? base + foto : pr.escenaInicial && /^[A-Za-z0-9_-]{1,80}$/.test(pr.escenaInicial) ? base + "escenas/" + pr.escenaInicial + "/1/f/0/0.jpg" : "";
+      const meta = (v) => ({ element: (el) => el.setAttribute("content", v) });
+      let rw = new HTMLRewriter().on("title", { element: (el) => el.setInnerContent(nombre) })
+        .on('meta[property="og:title"]', meta(nombre)).on('meta[property="og:description"]', meta(desc)).on('meta[name="description"]', meta(desc))
+        .on('meta[property="og:url"]', meta(base + "landing"));
+      if (imagen) rw = rw.on('meta[property="og:image"]', meta(imagen));
+      const out = rw.transform(r), h = new Headers(out.headers);
+      h.set("cache-control", "no-cache"); h.set("content-type", "text/html; charset=utf-8");
+      return new Response(out.body, { status: 200, headers: h });
     }
     // Página del visor (la misma para todos los tours; ella lee proyecto.json de su carpeta)
     if (ruta === "" || ruta === "index.html") {

@@ -3913,6 +3913,79 @@ async function capasPesadas(p) {
         await u.context().close(); await n.context().close();
       }
     });
+    // Landing del desarrollo (Amar, 15 nov 2026: «una landing para móvil como la del anuncio, con la marca de cada proyecto»).
+    // Publicar → Landing arma una página de venta con lo que ya tiene el tour y se publica en /<tour>/landing.
+    await paso("Landing del desarrollo (Laboratorio, nace Solo yo): marca, lotes con precio y calculadora, WhatsApp con el lote y publicada en /landing", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const n = await pagina(DUENO), u = await pagina("sin-landing@prueba.mx");
+      try {
+        await nuevoTour(n, "Laguna Landing"); const id = await idTour(n);
+        // lotes con precio (como los deja la ficha técnica) y dos puntos de interés
+        await n.waitForTimeout(1500);
+        const d = (await api(n, "api/tours/" + id)).d, e0 = d.escenas[0].id;
+        const suelo = (x, z) => [+Math.atan2(x, z).toFixed(5), +Math.asin(1 / Math.hypot(x, 1, z)).toFixed(5)];
+        const estados = ["disponible", "vendido", "disponible", "apartado", "disponible", "disponible"];
+        d.capas[e0] = estados.map((es, i) => { const x0 = -0.8 + i * 0.27; return { id: "ll" + i, tipo: "poligono", nombre: "Lote " + (i + 1), visible: true, puntos: [[x0, 1.2], [x0 + 0.25, 1.2], [x0 + 0.25, 1.7], [x0, 1.7]].map(([x, z]) => suelo(x, z)),
+          relleno: { color: "#22B573", opacidad: 0.35 }, trazo: { color: "#FFFFFF", grosor: 1.5, opacidad: 1 }, lote: { numero: String(i + 1), manzana: i < 3 ? "A" : "B", estado: es, area: "200", precio: String(1000000 + i * 100000), lados: ["10", "20", "10", "20"] } }; })
+          .concat([{ id: "pz", tipo: "interes", nombre: "Plaza", visible: true, yaw: 0.4, pitch: 0.05, pi: { dato: "6 min", nombre: "Plaza comercial", detalle: "" } }, { id: "pa", tipo: "interes", nombre: "Aeropuerto", visible: true, yaw: 1, pitch: 0.05, pi: { dato: "20 min", nombre: "Aeropuerto", detalle: "" } }]);
+        exige((await api(n, "api/tours/" + id, J("PUT", d))).s === 200, "no se guardaron los lotes");
+        await n.goto(ESTUDIO + "/#t=" + id); await n.reload(); await n.waitForTimeout(2500); await cerrarAnuncio(n);
+        await n.click('#nav button:has-text("Publicar")'); await n.waitForTimeout(500);
+        exige(await n.isVisible('#subtabs button:has-text("Landing")'), "el dueño no ve Publicar → Landing");
+        await n.click('#subtabs button:has-text("Landing")'); await n.waitForTimeout(2000);
+        exige(await n.waitForSelector('.guia-tarjeta:has-text("landing")', { timeout: 6000 }).then(() => true).catch(() => false), "la primera vez no salió el tutorial de la landing");
+        await pasarGuias(n);
+        exige(await n.isVisible('[data-ld-plantilla="lotes"][aria-pressed="true"]'), "un tour con lotes debe arrancar con la plantilla de lotes");
+        await n.check('[data-ld-si="activa"]'); await n.waitForTimeout(400);
+        await n.fill('[data-ld-hex="marca.primario"]', "#400911"); await n.fill('[data-ld-hex="marca.acento"]', "#D8B064");
+        await n.fill('[data-ld="portada.titulo"]', "Tu lote junto a la laguna");
+        exige(await n.isVisible("#ld-sin-wa"), "sin WhatsApp debe avisar que no salen los botones");
+        await n.fill('[data-ld="contacto.whatsapp"]', "4771234567"); await n.click('[data-ld="contacto.telefono"]'); await n.fill('[data-ld="contacto.telefono"]', "477 123 4567");
+        exige((await n.inputValue('[data-ld="contacto.whatsapp"]')) === "4771234567" && !(await n.isVisible("#ld-sin-wa")), "el WhatsApp no se quedó escrito o sigue el aviso");
+        // la vista previa se arma con el borrador
+        await n.waitForTimeout(1200);
+        const fr = n.frameLocator("#ld-iframe");
+        exige((await fr.locator("h1").textContent({ timeout: 8000 }).catch(() => "")) === "Tu lote junto a la laguna", "la vista previa no muestra el título nuevo");
+        exige((await fr.locator(".lt").count()) === 6, "la vista previa no trae los 6 lotes");
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "landing-editor.png") });
+        await n.click('[data-ld-accion="publicar"]'); await n.waitForTimeout(4500);
+        exige(await n.isVisible(".ld-link code"), "después de publicar no sale el link de la landing");
+        exige((await n.textContent(".ld-link code")).endsWith("/" + id + "/landing"), "el link de la landing no es /<tour>/landing");
+        // publicada, en un iPhone
+        const r = await fetch(TOURS + "/" + id + "/landing"), html = await r.text();
+        exige(r.status === 200 && /<title>Laguna Landing<\/title>/.test(html), "el servidor no da la landing con el nombre del tour");
+        const ctx = await navegador.newContext(Object.assign({}, devices["iPhone 13"], { acceptDownloads: false })), c = await ctx.newPage(); const errs = []; c.on("pageerror", (e) => errs.push(e.message));
+        await c.route(/fonts\.(googleapis|gstatic)\.com/, (x) => x.abort());
+        await c.goto(TOURS + "/" + id + "/landing"); await c.waitForSelector(".lt", { timeout: 15000 }); await c.waitForTimeout(800);
+        exige((await c.$$(".lt")).length === 6, "en el celular no salen los 6 lotes");
+        exige((await c.textContent(".cifra b")) === "4", "la portada no cuenta solos los lotes disponibles");
+        exige(/\$1\.4 M|\$1\.?0?\d* M/.test(await c.textContent(".cifras")), "la portada no trae el precio desde");
+        exige((await c.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--marca").trim().toUpperCase())) === "#400911", "la landing no tomó el color principal de la marca");
+        await c.tap('.lt[data-lote="B|5"]'); await c.waitForTimeout(700);
+        const wa = await c.getAttribute(".ficha .btn-wa", "href");
+        exige(/wa\.me\/524771234567\?text=/.test(wa) && decodeURIComponent(wa).includes("Lote 5 de la Manzana B"), "«Apartar este lote» no abre WhatsApp con el lote escrito: " + wa);
+        await c.click('.plan-pago [data-plan="0"]'); await c.waitForTimeout(300);
+        exige(/Precio de contado/.test(await c.textContent(".resultado")) && /ahorras/.test(await c.textContent(".desglose")), "al elegir contado no sale el precio con su descuento");
+        exige(decodeURIComponent(await c.getAttribute(".ficha .btn-wa", "href")).includes("de contado"), "el mensaje de WhatsApp no dice la forma de pago elegida");
+        exige(/Plaza comercial/.test(await c.textContent("#ubicacion")), "la ubicación no trae los puntos de interés del tour");
+        exige((await c.evaluate(() => document.documentElement.scrollWidth)) <= 390, "la landing se sale de la pantalla del celular");
+        if (process.env.CAPTURAS) { await c.evaluate(() => scrollTo(0, 0)); await c.screenshot({ path: path.join(process.env.CAPTURAS, "landing-cel.png") }); }
+        await c.evaluate(() => document.getElementById("recorrido").scrollIntoView()); await c.tap("#iniciar-360"); await c.waitForTimeout(2500);
+        exige(await c.$('#visor iframe[src="./"]'), "«Iniciar recorrido» no cargó el tour dentro de la página");
+        exige(!errs.length, "errores en la landing: " + errs.join(" | ").slice(0, 160));
+        await ctx.close();
+        // una cuenta sin la función no ve la pestaña ni puede publicar landing aunque la meta a mano
+        await nuevoTour(u, "Sin landing"); const iu = await idTour(u);
+        await u.click('#nav button:has-text("Publicar")'); await u.waitForTimeout(500);
+        exige(!(await u.isVisible('#subtabs button:has-text("Landing")')), "una cuenta normal ya ve la pestaña Landing (debe nacer Solo yo)");
+        const du = (await api(u, "api/tours/" + iu)).d; du.proyecto.landing = { activa: true };
+        exige((await api(u, "api/tours/" + iu, J("PUT", du))).s === 200 && (await api(u, "api/tours/" + iu + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar el tour de la cuenta normal");
+        exige((await fetch(TOURS + "/" + iu + "/landing")).status === 404, "una cuenta sin la función publicó landing");
+      } finally {
+        await u.context().close(); await n.context().close();
+      }
+    });
     await paso("Sin errores de JavaScript en el estudio", async () => { exige(!a.errs.length && !g.errs.length, (a.errs.concat(g.errs)).join(" | ").slice(0, 200)); });
     await navegador.close();
   } catch (e) {
