@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-15T05:55:32.664Z",
- "bien": 100,
- "total": 100,
+ "fecha": "2026-11-15T07:12:01.984Z",
+ "bien": 104,
+ "total": 104,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -400,9 +400,24 @@
    "ok": true
   },
   {
+   "nombre": "Fotos de ejemplo (Laboratorio, nace Solo yo): un tour vacío ofrece 2 fotos de muestra y quedan como esferas normales",
+   "ok": true
+  },
+  {
+   "nombre": "Mis Tours (Laboratorio, nace Solo yo): el link del tour publicado se copia y se abre desde su tarjeta, sin entrar al tour",
+   "ok": true
+  },
+  {
+   "nombre": "Pantalla de bienvenida (Laboratorio, nace Solo yo): el tour abre con el nombre y un botón; al tocarlo entra y suena, sin la pregunta de sonido",
+   "ok": true
+  },
+  {
+   "nombre": "Acabado fino (Laboratorio, nace Solo yo): Cine en celular trae el botón de contacto y Brújula no repite ni corta el nombre",
+   "ok": true
+  },
+  {
    "nombre": "Sin errores de JavaScript en el estudio",
    "ok": true
   }
- ],
- "nota": "Corrida completa (99/100) + «Imagen en 3D» repetida sola: en la completa falló la captura de pantalla del servidor de pruebas, no la función"
+ ]
 }

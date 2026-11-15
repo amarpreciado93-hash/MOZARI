@@ -388,6 +388,9 @@
   .card:hover .card-borrar, .card:focus-within .card-borrar { opacity: 1; }
   .card .foto .card-borrar:hover { color: var(--mz-error); }
   @media (hover: none) { .card .foto .card-borrar { opacity: 1; } }
+  .card .card-link { display: flex; gap: 6px; margin-top: 10px; }
+  .card .card-link .mini { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
+  .card .card-link .mini svg { width: 13px; height: 13px; }
   .card-confirma { position: absolute; inset: 0; display: grid; align-content: center; gap: 8px; padding: 16px; background: rgba(11, 11, 11, 0.9); backdrop-filter: blur(6px); text-align: center; cursor: default; }
   .card-confirma b { font-size: 14px; font-weight: 600; }
   .card-confirma span { font-size: 11px; color: var(--mz-tenue); line-height: 1.45; }
@@ -401,6 +404,11 @@
   .nuevo-tour .entrada { max-width: 260px; text-align: center; }
   .hueco.subir { cursor: pointer; transition: border-color 0.15s, background 0.15s; }
   .hueco.subir:hover, .hueco.subir.encima { border-color: var(--mz-lima); background: var(--mz-lima-suave); }
+  .hueco.ejemplo { cursor: pointer; background: none; font: inherit; transition: border-color 0.15s, background 0.15s; }
+  .hueco.ejemplo:hover, .hueco.ejemplo:focus-visible { border-color: var(--mz-lima); background: var(--mz-lima-suave); outline: none; }
+  .hueco.ejemplo[disabled] { cursor: progress; opacity: 0.7; }
+  .hueco.ejemplo .ej-fotos { display: flex; gap: 6px; margin-bottom: 4px; }
+  .hueco.ejemplo .ej-fotos img { width: 92px; height: 46px; object-fit: cover; border-radius: 8px; display: block; }
   .subida { position: fixed; z-index: 55; right: 20px; bottom: 20px; width: 340px; max-height: 50vh; overflow-y: auto; display: grid; gap: 8px; padding: 12px; border-radius: 16px; background: var(--mz-vidrio); border: 1px solid var(--mz-linea); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5); }
   .sub-item { display: grid; gap: 4px; padding: 8px 10px; border-radius: 10px; background: var(--mz-negro); }
   .sub-item b { font-size: 12px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -736,6 +744,38 @@
      pantalla. Si la música o la voz no pudieron arrancar solas, al abrir se le pregunta con los colores del tour. */
   .son-pide { position: absolute; z-index: 40; left: 50%; top: 50%; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 14px; padding: 18px 20px; width: max-content; max-width: calc(100% - 32px); box-sizing: border-box; text-align: center; color: #fff; font-family: var(--mz-texto-ui); animation: son-entra 0.35s ease-out; }
   .son-pide b { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; }
+  /* Pantalla de bienvenida (Laboratorio «bienvenida»): la marca, el nombre y un botón sobre la esfera que gira despacio */
+  .previa.con-bv .sk, .previa.con-bv .capas { opacity: 0; } /* la esfera limpia detrás: lotes, puntos e interfaz entran al tocar «Iniciar» */
+  .previa.con-bv .sk, .previa.con-bv .sk * { pointer-events: none !important; }
+  .previa.bv-sale .sk { transition: opacity 0.7s ease 0.2s; }
+  .bv { position: absolute; inset: 0; z-index: 38; display: grid; place-items: center; box-sizing: border-box; padding: max(28px, env(safe-area-inset-top)) 24px max(28px, env(safe-area-inset-bottom)); color: #fff; font-family: var(--mz-texto-ui); text-align: center;
+    background: radial-gradient(64% 48% at 50% 50%, rgba(6, 8, 10, 0.46) 0%, rgba(6, 8, 10, 0.22) 68%, rgba(6, 8, 10, 0) 100%), linear-gradient(180deg, rgba(6, 8, 10, 0.58) 0%, rgba(6, 8, 10, 0.2) 30%, rgba(6, 8, 10, 0.2) 64%, rgba(6, 8, 10, 0.72) 100%); transition: opacity 0.7s ease; }
+  .bv.fuera { opacity: 0; pointer-events: none; }
+  .bv-centro { display: grid; justify-items: center; max-width: min(560px, 100%); transition: transform 0.7s ease; }
+  .bv.fuera .bv-centro { transform: scale(1.04); }
+  .bv-centro > * { animation: bv-sube 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .bv-centro > :nth-child(2) { animation-delay: 0.07s; } .bv-centro > :nth-child(3) { animation-delay: 0.14s; } .bv-centro > :nth-child(4) { animation-delay: 0.21s; }
+  .bv-centro > :nth-child(5) { animation-delay: 0.28s; } .bv-centro > :nth-child(6) { animation-delay: 0.35s; } .bv-centro > :nth-child(n + 7) { animation-delay: 0.42s; }
+  .bv-logo { display: block; max-width: min(220px, 60vw); max-height: 84px; width: auto; height: auto; object-fit: contain; margin-bottom: 22px; filter: drop-shadow(0 2px 14px rgba(0, 0, 0, 0.35)); }
+  .bv-sobre { font-size: 11px; font-weight: 500; letter-spacing: 0.3em; margin-right: -0.3em; text-transform: uppercase; opacity: 0.78; }
+  .bv-nombre { margin: 14px 0 0; font-size: clamp(30px, 7.2vmin, 58px); font-weight: 600; line-height: 1.05; letter-spacing: -0.015em; text-wrap: balance; overflow-wrap: anywhere; text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35); }
+  .bv-linea { display: block; width: 40px; height: 2px; border-radius: 2px; background: var(--sk-acento, #fff); margin-top: 20px; }
+  .bv-frase { margin: 18px 0 0; font-size: clamp(14px, 2.4vmin, 16.5px); line-height: 1.55; opacity: 0.88; max-width: 36ch; text-wrap: pretty; }
+  .bv-ir { position: relative; margin-top: 30px; display: inline-flex; align-items: center; gap: 10px; padding: 16px 30px 16px 24px; border: 0; border-radius: var(--sk-radio-btn, 999px); background: var(--sk-acento, #fff); color: var(--sk-sobre, #0B0B0B); font: 600 15.5px var(--mz-texto-ui); letter-spacing: 0.01em; cursor: pointer; box-shadow: 0 10px 34px rgba(0, 0, 0, 0.35); transition: transform 0.18s ease, filter 0.18s ease; }
+  .bv-ir:hover { transform: translateY(-1px); filter: brightness(1.06); }
+  .bv-ir:active { transform: scale(0.98); }
+  .bv-ir svg { width: 16px; height: 16px; flex: none; }
+  .bv-ir::after { content: ""; position: absolute; inset: -1px; border-radius: inherit; border: 1.5px solid var(--sk-acento, #fff); opacity: 0; pointer-events: none; animation: bv-pulso 2.6s ease-out 1.4s infinite; }
+  .bv-ir:focus-visible, .bv-mudo:focus-visible, .bv-x:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  .bv-mudo { margin-top: 12px; padding: 8px 12px; border: 0; background: none; color: inherit; font: 500 13px var(--mz-texto-ui); opacity: 0.72; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, 0.35); }
+  .bv-mudo:hover { opacity: 1; }
+  .bv-pista { margin-top: 26px; display: inline-flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: 0.04em; opacity: 0.62; }
+  .bv-pista svg { width: 17px; height: 17px; flex: none; }
+  .bv-x { position: absolute; top: max(14px, env(safe-area-inset-top)); right: 14px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 20px; line-height: 1; cursor: pointer; }
+  @keyframes bv-sube { from { opacity: 0; transform: translateY(14px); } }
+  @keyframes bv-pulso { 0% { opacity: 0.55; transform: scale(1); } 70%, 100% { opacity: 0; transform: scale(1.14, 1.4); } }
+  @media (prefers-reduced-motion: reduce) { .bv-centro > *, .bv-ir::after { animation: none; } }
+  @media (max-height: 460px) { .bv-logo { max-height: 44px; margin-bottom: 10px; } .bv-nombre { margin-top: 8px; font-size: clamp(22px, 8vh, 34px); } .bv-linea, .bv-frase, .bv-pista { display: none; } .bv-ir { margin-top: 16px; padding: 12px 24px 12px 20px; } .bv-mudo { margin-top: 4px; } }
   .son-pide b svg { width: 20px; height: 20px; flex: none; }
   .son-acc { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
   .son-acc button { font: 600 13.5px var(--mz-texto-ui); padding: 10px 18px; border-radius: var(--sk-radio-btn, 999px); border: 1px solid rgba(255, 255, 255, 0.28); background: transparent; color: inherit; cursor: pointer; }
@@ -1516,6 +1556,13 @@
   .t-cine.sk--v .c-flechas { left: 20px; right: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); }
   .t-cine.sk--v .c-flechas .sk-btn { width: 46px; height: 46px; }
   .t-cine.sk--v .c-cajon { top: auto; left: 10px; right: 10px; bottom: 10px; width: auto; height: 62%; }
+  /* Acabado fino · Cine en celular: el botón de contacto y el nombre del proyecto sí salen, y las flechas se leen sobre fondos claros */
+  .sk-fino.t-cine.sk--v .c-marca span.n { display: block; font-size: 10px; letter-spacing: 0.24em; }
+  .sk-fino.t-cine.sk--v .c-cta-v { position: absolute; right: 20px; bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); height: 46px; box-sizing: border-box; padding: 0 20px; max-width: calc(100% - 164px); font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 8px 26px rgba(0, 0, 0, 0.3); }
+  .sk-fino.t-cine .c-flechas .sk-btn:not(:hover) { background: rgba(0, 0, 0, 0.3); }
+  /* Los velos oscuros de Cine se pintaban ENCIMA del título, el nombre y el botón de contacto en el tour publicado y en la vista previa
+     (les caía el z-index de una regla vieja, «.previa .arriba / .abajo»): salían grises en vez de blancos. Van detrás, como en el editor. */
+  .sk-fino.t-cine .c-velo { z-index: 0; }
 
   /* ===== Plantilla 2 · DESARROLLO: barra lateral de venta con contacto ===== */
   .t-desarrollo .d-lateral { position: absolute; top: 16px; bottom: 16px; left: max(16px, env(safe-area-inset-left, 0px)); width: 290px; display: flex; flex-direction: column; pointer-events: auto; overflow: hidden; transition: transform 0.35s cubic-bezier(.4, 0, .2, 1), opacity 0.3s; }
@@ -1592,6 +1639,11 @@
   .t-brujula .b-paso:hover span, .t-brujula .b-paso[aria-current="true"] span { opacity: 1; }
   .t-brujula .b-paso[aria-current="true"] { background: var(--sk-acento); border-color: var(--sk-acento); transform: scale(1.3); }
   .t-brujula .b-paso.hecho { background: rgba(255, 255, 255, 0.85); }
+  /* Acabado fino · Brújula: el nombre de la esfera actual ya va en la barra (no se repite ni se corta en la orilla) y los puntos se tocan fácil */
+  .sk-fino.t-brujula .b-paso[aria-current="true"] span { opacity: 0; }
+  .sk-fino.t-brujula .b-paso:first-child span { left: -6px; transform: none; }
+  .sk-fino.t-brujula .b-paso:last-child span { left: auto; right: -6px; transform: none; }
+  .sk-fino.t-brujula .b-paso::after { content: ""; position: absolute; inset: -13px; border-radius: 50%; }
   .t-brujula .b-linea { flex: 1; height: 2px; background: rgba(255, 255, 255, 0.35); }
   .t-brujula .b-nav { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px; width: 100%; box-sizing: border-box; }
   .t-brujula .b-nav .sk-btn { width: 44px; height: 44px; background: rgba(255, 255, 255, 0.08); }
@@ -1922,6 +1974,16 @@
               <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l5.5-3.5z" fill="currentColor"/></svg>Inicio del tour</h2>
               <label class="fila-campo"><span>Panorama inicial</span><select class="entrada" id="p-inicial"></select></label>
               <p class="nota">Hacia dónde mira la cámara al entrar y su recorrido se definen en Panoramas → Piloto automático.</p>
+            </section>
+            <section class="tarjeta" id="p-bv" hidden>
+              <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M8 9.5h8M10 13h4"/><rect x="9.5" y="15" width="5" height="2" rx="1" fill="currentColor" stroke="none"/></svg>Pantalla de bienvenida</h2>
+              <div class="fila-campo" id="p-bv-fila"><span>Al abrir</span><div class="switch"><label for="p-bv-activa">Abrir el tour con bienvenida</label><input type="checkbox" class="toggle" id="p-bv-activa"></div></div>
+              <p class="nota">Tu tour abre con tu logo, el nombre y un botón sobre la esfera girando despacio. Con ese toque empieza el recorrido, con su música y su piloto automático. El logo es el de la Interfaz.</p>
+              <div id="p-bv-campos" hidden>
+                <label class="fila-campo"><span>Texto del botón</span><input class="entrada" id="p-bv-boton" maxlength="28" placeholder="Iniciar recorrido"></label>
+                <label class="fila-campo"><span>Frase</span><input class="entrada" id="p-bv-frase" maxlength="110" placeholder="Si la dejas vacía, sale la descripción del tour"></label>
+                <button class="btn-sec" id="p-bv-ver" type="button">Ver cómo queda</button>
+              </div>
             </section>
             <section class="tarjeta">
               <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M7 15l3-3.5 2.5 2.5L15 11l2 4"/></svg>Calidad del tour</h2>
@@ -3727,6 +3789,10 @@
     if (clave === "panoramas/capas") guiaCapasNuevas();
     if (clave === "proyecto/musica") guiaNueva("nuevo-sonido", () => [esVisible("#m-preguntar-fila") && { el: "#m-preguntar-fila", titulo: "Nuevo: ¿activar sonido?",
       texto: "Los navegadores no dejan sonar un tour hasta que el visitante toca la pantalla. Ahora, al abrirlo le preguntamos <b>Activar sonido</b> o <b>Sin sonido</b>, con los colores de tu tour, y la música y las voces arrancan con su respuesta." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "musica");
+    if (clave === "proyecto/general" && enLab("bienvenida")) guiaNueva("nuevo-bienvenida", () => [esVisible("#p-bv-fila") && { el: "#p-bv", titulo: "Nuevo: pantalla de bienvenida",
+      texto: "Tu tour puede abrir con <b>tu logo, el nombre y un botón</b> sobre la esfera girando despacio. Cuando tu cliente lo toca empieza el recorrido <b>con su música</b>, sin preguntarle nada. Préndela aquí y vuelve a publicar." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "general" && esVisible("#p-bv-fila"));
+    if (clave === "panoramas/lista" && enLab("ejemplo")) guiaNueva("nuevo-ejemplo", () => [esVisible("#subir-ejemplo") && { el: "#subir-ejemplo", titulo: "Nuevo: fotos de ejemplo",
+      texto: "¿No traes tus fotos 360 a la mano? Con un clic cargas <b>2 fotos de muestra</b> (una aérea y una a pie) para practicar: conéctalas, ponles texto y publica. Se borran como cualquier esfera." }].filter(Boolean), () => nav.sub === "lista" && esVisible("#subir-ejemplo"));
     if (clave === "panoramas/piloto") guiaNueva("nuevo-repetir-piloto", () => [esVisible("#pl-repetir-info") && { el: "#pl-repetir-info", titulo: "Nuevo: repetir el recorrido",
       texto: "En el tour, el aviso <b>Piloto automático</b> ahora es un botón: al tocarlo, la cámara regresa al inicio y el recorrido vuelve a empezar <b>con su audio</b>. Y mientras el piloto corre, el celular <b>no se bloquea</b>." }].filter(Boolean), () => nav.sub === "piloto" && esVisible("#pl-repetir-info"));
     if (clave === "media/planos" && enLab("planos")) guiaPlanos();
@@ -3875,6 +3941,8 @@
     catch (e) { toursNube = []; avisar("No se pudo leer tu lista de tours"); }
     pintarTours();
   }
+  const linkDeTour = (id) => location.protocol + "//" + hostTours() + "/" + id + "/";
+  const ICO_LINK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>';
   function pintarTours() {
     if (MODO === "nube") {
       if (!toursNube) { $("tours").innerHTML = '<p class="nota">Cargando tus tours…</p>'; cargarToursNube(); return; }
@@ -3886,7 +3954,9 @@
         return '<div class="card" role="button" tabindex="0" data-tour="' + t.id + '"><div class="foto"><img src="' + foto + '" alt="" loading="lazy" onerror="this.style.opacity=0">' +
           (t.id === TOUR ? '<span class="badge">ABIERTO</span>' : t.privado === "1" ? '<span class="badge oculto">OCULTO</span>' : t.publicado ? '<span class="badge pub">PUBLICADO</span>' : "") +
           '<button class="card-borrar" data-borrar-tour="' + t.id + '" aria-label="Borrar ' + esc(t.nombre) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>' + conf + "</div>" +
-          '<div class="cuerpo"><span class="nombre">' + esc(t.nombre || "Tour") + '</span><div class="chips"><span class="chip-dato">' + (+t.escenas || 0) + " panoramas</span><span class=\"chip-dato\">" + fecha(t.actualizado) + "</span></div></div></div>";
+          '<div class="cuerpo"><span class="nombre">' + esc(t.nombre || "Tour") + '</span><div class="chips"><span class="chip-dato">' + (+t.escenas || 0) + " panoramas</span><span class=\"chip-dato\">" + fecha(t.actualizado) + "</span></div>" +
+          // El link a la mano (Laboratorio «tours-link»): copiarlo o abrirlo sin entrar al tour
+          (enLab("tours-link") && t.publicado && t.privado !== "1" ? '<div class="card-link"><button class="mini" type="button" data-copiar-link="' + t.id + '">' + ICO_LINK + 'Copiar link</button><a class="mini" href="' + esc(linkDeTour(t.id)) + '" target="_blank" rel="noopener" data-abrir-link>Abrir ↗</a></div>' : "") + "</div></div>";
       }).join("") +
         '<form class="hueco nuevo-tour" id="nuevo-tour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><b>Nuevo tour</b>' +
         '<input class="entrada" name="nombre" maxlength="60" placeholder="Nombre del tour" required><button class="btn-prim" type="submit">Crear</button></form>';
@@ -3901,6 +3971,13 @@
   }
   $("tours").addEventListener("click", async (ev) => {
     if (MODO !== "nube") { if (ev.target.closest("[data-abrir-tour]")) ir("proyecto", "general"); return; }
+    if (ev.target.closest("[data-abrir-link]")) return; // abre el tour publicado en otra pestaña, no el editor
+    const cl = ev.target.closest("[data-copiar-link]");
+    if (cl) {
+      ev.stopPropagation(); const link = linkDeTour(cl.dataset.copiarLink);
+      try { await navigator.clipboard.writeText(link); avisar("Link copiado: " + link); } catch (e) { avisar(link); }
+      return;
+    }
     const bt = ev.target.closest("[data-borrar-tour]");
     if (bt) { ev.stopPropagation(); borrandoTour = bt.dataset.borrarTour; pintarTours(); return; }
     if (ev.target.closest("[data-no-borrar-tour]")) { borrandoTour = null; pintarTours(); return; }
@@ -4956,6 +5033,7 @@
   function pintarProyecto() {
     $("p-nombre").value = P().nombre;
     $("p-desc").value = P().descripcion || "";
+    { const b = P().bienvenida || {}; $("p-bv").hidden = !enLab("bienvenida"); $("p-bv-activa").checked = !!b.activa; $("p-bv-campos").hidden = !b.activa; $("p-bv-boton").value = b.boton || ""; $("p-bv-frase").value = b.frase || ""; }
     $("p-thumb").src = thumbProyecto();
     $("p-inicial").innerHTML = est.escenas.map((e) => '<option value="' + e.id + '"' + (e.id === P().escenaInicial ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("");
     $("m-vol").value = P().musica.volumen;
@@ -4995,6 +5073,11 @@
   $("p-nombre").addEventListener("input", (e) => { P().nombre = e.target.value.trim() || "Tour sin nombre"; guardar(); });
   $("p-desc").addEventListener("input", (e) => { const v = e.target.value.replace(/\s+/g, " ").trim(); if (v) P().descripcion = v; else delete P().descripcion; guardar(); });
   $("p-inicial").addEventListener("change", (e) => { ponerInicial(e.target.value); guardar(); pintarProyecto(); });
+  // Pantalla de bienvenida (Laboratorio «bienvenida»)
+  const BV = () => P().bienvenida || (P().bienvenida = { activa: false });
+  $("p-bv-activa").addEventListener("change", (e) => { BV().activa = e.target.checked; guardar(); $("p-bv-campos").hidden = !e.target.checked; avisar(e.target.checked ? "Listo: tu tour abre con bienvenida. Publica para que tu cliente la vea" : "Bienvenida apagada"); });
+  $("p-bv-boton").addEventListener("input", (e) => { const v = e.target.value.replace(/\s+/g, " ").trim().slice(0, 28); if (v) BV().boton = v; else delete BV().boton; guardar(); });
+  $("p-bv-frase").addEventListener("input", (e) => { const v = e.target.value.replace(/\s+/g, " ").trim().slice(0, 110); if (v) BV().frase = v; else delete BV().frase; guardar(); });
   $("p-thumb-auto").addEventListener("click", () => { delete P().thumbnail; guardar(); pintarProyecto(); avisar("Thumbnail: panorama inicial"); });
   $("p-thumb-archivo").addEventListener("change", (e) => {
     const f = e.target.files[0];
@@ -6324,7 +6407,9 @@
         '<span class="chip-dato' + (pl ? " ok" : "") + '">Piloto ' + (pl ? "activo" : "apagado") + "</span></div></div></div>";
     }).join("") +
       (MODO === "nube"
-        ? '<label class="hueco subir" id="subir-zona"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir esferas</b><span class="nota">Arrastra aquí tus JPG 360 (2:1) o haz clic. Mozari las prepara para la web en tu computadora.</span><input type="file" id="subir-archivo" accept="image/jpeg,image/png,image/webp" multiple hidden></label>'
+        ? '<label class="hueco subir" id="subir-zona"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir esferas</b><span class="nota">Arrastra aquí tus JPG 360 (2:1) o haz clic. Mozari las prepara para la web en tu computadora.</span><input type="file" id="subir-archivo" accept="image/jpeg,image/png,image/webp" multiple hidden></label>' +
+          // Fotos de ejemplo (Laboratorio «ejemplo»): quien no trae sus fotos 360 a la mano prueba con 2 de muestra
+          (enLab("ejemplo") && !est.escenas.length ? '<button class="hueco ejemplo" id="subir-ejemplo" type="button"><span class="ej-fotos"><img src="ejemplos/vista-aerea-chica.jpg" alt=""><img src="ejemplos/entrada-chica.jpg" alt=""></span><b>Probar con fotos de ejemplo</b><span class="nota">¿No traes tus fotos 360 a la mano? Carga 2 de muestra y practica: conéctalas, ponles texto y publica.</span></button>' : "")
         : '<div class="hueco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir esfera</b><span class="nota">En el estudio en línea puedes subir tus propias esferas.</span></div>');
   }
   // Cambiar el nombre de una esfera: en la Lista (escribiendo sobre el nombre) o en la tira de Capas (doble clic)
@@ -6632,6 +6717,24 @@ void main(){
     setTimeout(() => { if (!subiendo && !panel.querySelector(".error")) panel.hidden = true; }, 6000);
   }
   window.addEventListener("beforeunload", (ev) => { if (subiendo) { ev.preventDefault(); ev.returnValue = ""; } });
+  // Fotos de ejemplo: se bajan de Mozari y pasan por la misma subida que las fotos del usuario (así son esferas como cualquiera)
+  const EJEMPLOS = [["ejemplos/vista-aerea.jpg", "Vista aérea"], ["ejemplos/entrada.jpg", "Entrada"]];
+  async function cargarEjemplo() {
+    if (subiendo || MODO !== "nube" || !TOUR) return;
+    const b = $("subir-ejemplo");
+    if (b) { b.disabled = true; b.querySelector("b").textContent = "Bajando las fotos de ejemplo…"; }
+    try {
+      const fotos = [];
+      for (const [ruta, nombre] of EJEMPLOS) {
+        const r = await fetch(ruta);
+        if (!r.ok) throw new Error("sin foto");
+        fotos.push(new File([await r.blob()], nombre + ".jpg", { type: "image/jpeg" }));
+      }
+      await subirEsferas(fotos);
+    } catch (e) { avisar("No se pudieron bajar las fotos de ejemplo. Revisa tu conexión e intenta de nuevo"); }
+    if (nav.sec === "panoramas" && nav.sub === "lista") pintarLista();
+  }
+  $("pano-lista").addEventListener("click", (ev) => { if (ev.target.closest("#subir-ejemplo")) { ev.preventDefault(); ev.stopPropagation(); cargarEjemplo(); } }, true);
   $("pano-lista").addEventListener("change", (ev) => { if (ev.target.id === "subir-archivo") { subirEsferas(ev.target.files); ev.target.value = ""; } });
   ["dragenter", "dragover"].forEach((t) => $("pano-lista").addEventListener(t, (ev) => {
     if (MODO !== "nube" || !ev.dataTransfer || ![...ev.dataTransfer.types].includes("Files")) return;
@@ -11600,6 +11703,7 @@ void main(){
         '<div class="c-ctrl">' + c.cta("c-cta") + c.botones("") + '<button class="c-menu-btn" data-sk="cajon">' + ICO_SK.rejilla + "<span>Panoramas</span></button>" + c.cerrar("") + "</div></div>" +
         '<div class="c-titulo">' + (c.sk.extra.numero ? '<span class="c-indice" data-txt="indice"></span>' : "") + '<h2 data-txt="nombre"></h2>' + (c.sk.botones.piloto ? '<span class="sk-pil" data-piloto hidden><i></i>Piloto automático</span>' : "") + "</div>" +
         '<div class="c-flechas"><button class="sk-btn" data-sk="prev" aria-label="Panorama anterior">' + ICO_SK.prev + '</button><button class="sk-btn" data-sk="next" aria-label="Panorama siguiente">' + ICO_SK.next + "</button></div>" +
+        (c.fino && c.vertical ? c.cta("c-cta-v") : "") +
         '<aside class="c-cajon sk-panel" data-cajon hidden><header>Panoramas<button class="sk-btn" data-sk="cajon" aria-label="Cerrar panoramas">' + ICO_SK.cerrar + "</button></header>" +
         '<div class="c-lista">' + c.escenas.map((e, i) => '<button class="c-item" data-ir="' + e.id + '"><img src="' + thumbDe(e.id) + '" alt=""><span class="t"><small>' + String(i + 1).padStart(2, "0") + "</small>" + esc(e.nombre) + "</span></button>").join("") + "</div></aside>",
     },
@@ -11663,11 +11767,14 @@ void main(){
   }
 
   // Dibuja el skin elegido sobre una esfera. o: { orientacion, motor, cerrable, alCerrar, hayMusica, alMusica, alPantalla }
+  // Acabado fino (Laboratorio «acabado»): retoques a lo que ve el cliente. En el tour publicado lo decide el servidor al publicar.
+  const acabadoFino = () => (MODO === "tour" ? P().acabado === true : enLab("acabado"));
   function renderSkin(ui, o) {
     const sk = est.skin, vertical = o.orientacion === "v";
     const T = PLANTILLAS[sk.plantilla] ? sk.plantilla : "cine";
     const [r, g, b] = hexRgb(sk.panel);
-    ui.className = "sk t-" + T + (vertical ? " sk--v" : " sk--h");
+    const fino = acabadoFino();
+    ui.className = "sk t-" + T + (vertical ? " sk--v" : " sk--h") + (fino ? " sk-fino" : "");
     ui.style.setProperty("--sk-acento", sk.acento);
     ui.style.setProperty("--sk-sobre", textoSobre(sk.acento));
     ui.style.setProperty("--sk-panel", "rgba(" + r + "," + g + "," + b + "," + sk.opacidad + ")");
@@ -11677,7 +11784,7 @@ void main(){
     ui.style.setProperty("--sk-radio-img", Math.max(0, sk.radio - 8) + "px");
     const btn = (k, etq, cls) => '<button class="sk-btn ' + cls + '" data-sk="' + k + '" aria-label="' + etq + '">' + ICO_SK[k] + "</button>";
     const c = {
-      sk, vertical, escenas: est.escenas,
+      sk, vertical, fino, escenas: est.escenas,
       logo: sk.logo.tipo === "propio" && sk.logo.img ? '<span class="sk-logo"><img src="' + esc(urlArchivo(sk.logo.img)) + '" alt=""></span>' : sk.logo.tipo === "mozari" ? '<span class="sk-logo"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg></span>' : "",
       botones: (cls) => (sk.botones.musica && o.hayMusica ? btn("musica", "Silenciar música", cls) : "") + (sk.botones.zoom ? btn("menos", "Alejar", cls) + btn("mas", "Acercar", cls) : "") + (sk.botones.limpiar ? btn("limpiar", "Ocultar puntos y lotes", cls) : "") + (sk.botones.pantalla ? btn("pantalla", "Pantalla completa", cls) : ""),
       cerrar: (cls) => (o.cerrable ? btn("cerrar", "Cerrar vista previa", cls) : ""),
@@ -12218,6 +12325,8 @@ void main(){
   }
   function crearTour(stage, ui, o) {
     let motor = null, piloto = null, api = null, actualId = null, pilotoFin = false;
+    // Pantalla de bienvenida: mientras está, nada arranca (piloto, narración, presentación) y la esfera gira despacio
+    let enEspera = !!o.esperar, vozRef = null, giro = 0, fovBase = null;
     const despierto = o.sinPresentacion ? null : pantallaDespierta();
     const despierta = () => { if (!despierto) return; const pr = P().presentacion; despierto.poner(!!((piloto && !pilotoFin) || (pr && pr.activa))); };
     // Modo presentación: si nadie toca el tour, pasa solo a la siguiente esfera
@@ -12228,6 +12337,7 @@ void main(){
     EVENTOS.forEach((e) => zona.addEventListener(e, tocar, { passive: true }));
     const reloj = o.sinPresentacion ? 0 : setInterval(() => {
       const pr = P().presentacion;
+      if (enEspera) { tQuieto = Date.now(); return; }
       if (!pr || !pr.activa || !motor || !actualId) return;
       if (!pop.hidden) { tQuieto = Date.now(); return; }
       if ((escena(actualId).presentacion || "avanza") !== "avanza") return;
@@ -12282,6 +12392,7 @@ void main(){
     }
     function arrancarPiloto(id, desdeInicio) {
       if (piloto) { piloto.detener(); piloto = null; }
+      if (enEspera) { pilotoFin = false; api.piloto(false); return; }
       const pl = escena(id).piloto, activo = pl.activo && pl.puntos.length > 0;
       pilotoFin = false;
       api.piloto(activo);
@@ -12310,7 +12421,8 @@ void main(){
       api = renderSkin(ui, Object.assign({}, o, { orientacion, motor: () => motor, alPiloto: repetirPiloto }));
       const mini = miniPlano(ui, () => motor), voz = o.narrar ? pastillaVoz(ui) : { escena() {} };
       const e0 = api.escena, v0 = api.vista; // el plano con radar y la narración siguen a la esfera
-      api.escena = (id) => { e0(id); mini.escena(id); voz.escena(id); }; api.vista = (v) => { v0(v); mini.vista(v); };
+      vozRef = voz;
+      api.escena = (id) => { e0(id); mini.escena(id); if (!enEspera) voz.escena(id); }; api.vista = (v) => { v0(v); mini.vista(v); };
       if (actualId) api.escena(actualId); if (motor) api.vista(motor.view()); };
     pintar(o.orientacion);
     motor = crearMotor(stage, {
@@ -12326,7 +12438,35 @@ void main(){
       nitido: (ms) => (motor ? motor.nitido(ms) : Promise.resolve()),
       repintar(orientacion) { pintar(orientacion); if (piloto) api.piloto(true, pilotoFin); },
       cerrarPop,
+      // Bienvenida: la esfera se abre un poco y gira despacio detrás del velo
+      girar(on) {
+        cancelAnimationFrame(giro); giro = 0;
+        if (!on || !motor || !motor.actual) return;
+        const v = motor.actual.view;
+        if (fovBase === null) { fovBase = v.fov(); v.setFov(fovBase * 1.14); }
+        if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        let t0 = 0;
+        const paso = (t) => {
+          if (!motor || !motor.actual || !enEspera) { giro = 0; return; }
+          if (t0) { const w = motor.actual.view; w.setYaw(w.yaw() + Math.min(64, t - t0) * 0.000028); }
+          t0 = t; giro = requestAnimationFrame(paso);
+        };
+        giro = requestAnimationFrame(paso);
+      },
+      // «Iniciar recorrido»: la vista se acerca suave y arranca lo que esperaba (piloto automático y narración)
+      empezar() {
+        cancelAnimationFrame(giro); giro = 0;
+        if (!enEspera) return;
+        enEspera = false; tQuieto = Date.now();
+        if (!motor || !actualId) return;
+        const pl = escena(actualId).piloto, conPiloto = pl && pl.activo && pl.puntos.length > 0;
+        if (!conPiloto && fovBase !== null) { try { motor.actual.scene.lookTo({ fov: fovBase }, { transitionDuration: 1600, ease: (x) => 1 - Math.pow(1 - x, 3) }); } catch (e) { /* sin transición */ } }
+        fovBase = null;
+        arrancarPiloto(actualId, true);
+        if (vozRef) vozRef.escena(actualId);
+      },
       destruir() {
+        cancelAnimationFrame(giro); giro = 0;
         if (piloto) piloto.detener();
         if (despierto) despierto.quitar();
         ui.removeEventListener("keydown", teclaPiloto);
@@ -13018,8 +13158,11 @@ void main(){
     });
     if (g !== previaGen || $("previa").hidden) return;
     orientPv = orientacionPantalla();
+    const bv = bienvenidaDe();
+    quitarBienvenida(true);
+    if (bv) $("previa").classList.add("con-bv"); // la interfaz del tour entra hasta que tocan «Iniciar»
     tourPv = crearTour($("pv-stage"), $("pv-ui"), {
-      orientacion: orientPv, cerrable: MODO !== "tour", alCerrar: cerrarPrevia, hayMusica: !!musicaUrl, narrar: true,
+      orientacion: orientPv, cerrable: MODO !== "tour", alCerrar: cerrarPrevia, hayMusica: !!musicaUrl, narrar: true, esperar: !!bv,
       alMusica: () => { quitarPideSonido(); if (audioTour.paused) { musicaSilenciada = false; SON.mudo = false; audioTour.play().catch(() => {}); return true; } musicaSilenciada = true; audioTour.pause(); return false; },
       alRepetir: () => { if (!musicaUrl || musicaSilenciada || SON.mudo) return; try { audioTour.currentTime = 0; } catch (e) { /* aún sin cargar */ } if (audioTour.paused && !VOZ.musicaPausada) audioTour.play().catch(() => {}); },
       alPantalla: () => {
@@ -13027,15 +13170,66 @@ void main(){
         try { if (document.fullscreenElement) document.exitFullscreen(); else if (el.requestFullscreen) el.requestFullscreen().catch(() => {}); } catch (e) { /* no disponible */ }
       },
     });
-    sonar();
+    if (bv) SON.preguntado = true; else sonar(); // con bienvenida, el sonido arranca con el toque de «Iniciar»
     // La pantalla de carga se quita cuando la primera esfera ya se ve nítida (máximo 8 s más)
     // Mientras llega lo que se ve en alta, el avance sigue (no se queda en un número fijo)
     let pct = 40; const sigue = setInterval(() => { pct += (96 - pct) * 0.07; avancePv(g, pct); }, 150);
     if (tourPv && tourPv.nitido) await tourPv.nitido(8000);
     clearInterval(sigue);
     if (g !== previaGen) return;
+    if (bv) mostrarBienvenida(bv);
     quitarCargaMarca();
     setTimeout(() => ($("pv-carga").hidden = true), 150);
+  }
+  // =================== PANTALLA DE BIENVENIDA (Laboratorio «bienvenida») ===================
+  // El tour abre con la marca del proyecto y un botón. Ese toque también enciende el sonido (los navegadores
+  // no dejan sonar nada antes de un toque), así que toma el lugar de la pregunta «Activar sonido».
+  function bienvenidaDe() { const b = P().bienvenida; return b && b.activa && (MODO === "tour" || enLab("bienvenida")) ? b : null; }
+  let bvCaja = null, bvReloj = 0;
+  const ICO_BV = {
+    play: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.2v13.6a.8.8 0 0 0 1.2.7l11-6.8a.8.8 0 0 0 0-1.4l-11-6.8a.8.8 0 0 0-1.2.7z"/></svg>',
+    mirar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="12" rx="9.5" ry="4.2"/><path d="M12 2.5v19M6.5 9.5 4 12l2.5 2.5M17.5 9.5 20 12l-2.5 2.5"/></svg>',
+  };
+  function quitarBienvenida(ya) {
+    clearTimeout(bvReloj);
+    const c = bvCaja, pv = $("previa"); bvCaja = null;
+    if (!c || ya) { if (c) c.remove(); pv.classList.remove("con-bv", "bv-sale"); return; }
+    c.classList.add("fuera"); pv.classList.add("bv-sale"); pv.classList.remove("con-bv");
+    setTimeout(() => { c.remove(); if (!bvCaja) pv.classList.remove("bv-sale"); }, 900);
+  }
+  function mostrarBienvenida(b) {
+    const pv = $("previa"), logo = logoMarca(), haySonido = !!musicaUrl || est.escenas.some((e) => e.narracion && e.narracion.archivo);
+    const frase = String(b.frase || P().descripcion || "").trim();
+    const c = document.createElement("div"); c.className = "bv"; c.setAttribute("role", "dialog"); c.setAttribute("aria-label", "Bienvenida al recorrido");
+    c.style.cssText = $("pv-ui").style.cssText; // los colores y las esquinas del tour
+    c.innerHTML = (MODO !== "tour" ? '<button class="bv-x" data-bv="cerrar" aria-label="Cerrar vista previa">×</button>' : "") +
+      '<div class="bv-centro">' + (logo ? '<img class="bv-logo" src="' + esc(urlArchivo(logo)) + '" alt="">' : "") +
+      '<span class="bv-sobre">Recorrido virtual 360°</span><h1 class="bv-nombre">' + esc(P().nombre || "Tour 360") + '</h1><i class="bv-linea"></i>' +
+      (frase ? '<p class="bv-frase">' + esc(frase) + "</p>" : "") +
+      '<button class="bv-ir" data-bv="si">' + ICO_BV.play + "<span>" + esc(String(b.boton || "").trim() || "Iniciar recorrido") + "</span></button>" +
+      (haySonido ? '<button class="bv-mudo" data-bv="mudo">Entrar sin sonido</button>' : "") +
+      '<span class="bv-pista">' + ICO_BV.mirar + (MOVIL ? "Desliza para mirar alrededor" : "Arrastra para mirar alrededor") + "</span></div>";
+    ["pointerdown", "wheel", "touchstart"].forEach((x) => c.addEventListener(x, (ev) => ev.stopPropagation(), { passive: true }));
+    const entrar = (conSonido) => {
+      if (bvCaja !== c) return;
+      SON.preguntado = true; // este toque ya decidió el sonido
+      sonar();
+      if (conSonido) SON.mudo = false; else { SON.mudo = true; musicaSilenciada = true; audioTour.pause(); }
+      quitarBienvenida();
+      if (tourPv && tourPv.empezar) tourPv.empezar();
+      pintarBotonMusica();
+    };
+    c.addEventListener("click", (ev) => {
+      const bt = ev.target.closest("[data-bv]"); if (!bt) return;
+      ev.stopPropagation();
+      if (bt.dataset.bv === "cerrar") { cerrarPrevia(); return; }
+      entrar(bt.dataset.bv === "si");
+    });
+    quitarBienvenida(true); pv.classList.add("con-bv"); pv.appendChild(c); bvCaja = c;
+    if (tourPv && tourPv.girar) tourPv.girar(true);
+    // En una pantalla de sala de ventas (modo presentación) nadie la va a tocar: entra sola
+    const pr = P().presentacion;
+    if (pr && pr.activa) bvReloj = setTimeout(() => entrar(true), 12000);
   }
   window.addEventListener("resize", () => {
     if (!tourPv) return;
@@ -13102,14 +13296,14 @@ void main(){
     mostrar();
   }
   function cerrarPrevia() {
-    audioTour.pause(); callarVoz(); quitarPideSonido();
+    audioTour.pause(); callarVoz(); quitarPideSonido(); quitarBienvenida(true);
     try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { /* nada */ }
     previaGen++; precarga.parar();
     if (cargaMarca && MODO !== "tour") { cargaMarca.remove(); cargaMarca = null; }
     if (tourPv) { tourPv.destruir(); tourPv = null; }
     $("previa").hidden = true;
   }
-  ["abrir-previa", "r-previa", "mv-previa"].forEach((id) => $(id).addEventListener("click", abrirPrevia));
+  ["abrir-previa", "r-previa", "mv-previa", "p-bv-ver"].forEach((id) => $(id).addEventListener("click", abrirPrevia));
 
   // =================== ARRANQUE ===================
   if (MODO === "tour") {

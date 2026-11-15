@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -3683,6 +3683,236 @@ async function capasPesadas(p) {
         await guardar(original); await a.goto(ESTUDIO + "/#t=" + tour); await a.reload(); await a.waitForTimeout(2500); await cerrarAnuncio(a); // el tour regresa a como estaba
       }
     }, a);
+    // Auditoría (14 nov 2026). Un usuario pidió «alguna imagen para crear ejemplos»: quien no trae sus fotos 360 a la mano
+    // no podía probar nada. En un tour sin esferas, «Probar con fotos de ejemplo» sube 2 de muestra por la subida de siempre.
+    await paso("Fotos de ejemplo (Laboratorio, nace Solo yo): un tour vacío ofrece 2 fotos de muestra y quedan como esferas normales", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const vacio = async (p, nombre) => {
+        await p.fill("#nuevo-tour input", nombre); await p.click("#nuevo-tour button"); await p.waitForTimeout(3000);
+        await p.click('#nav button:has-text("Panoramas")'); await p.waitForTimeout(900);
+        exige(await p.$("#subir-zona"), "no se llegó a la lista de panoramas de «" + nombre + "»");
+        return idTour(p);
+      };
+      const u = await pagina("sin-fotos@prueba.mx"), n = await pagina(DUENO);
+      try {
+        const tu = await vacio(u, "Sin ejemplo");
+        exige(!(await u.$("#subir-ejemplo")), "una cuenta normal ya ve las fotos de ejemplo (deben nacer Solo yo)");
+        const tn = await vacio(n, "Con ejemplo");
+        exige(await n.isVisible("#subir-ejemplo"), "el dueño no ve «Probar con fotos de ejemplo» en un tour sin esferas");
+        await n.waitForTimeout(1200);
+        const minis = await n.$$eval("#subir-ejemplo img", (l) => l.map((i) => (i.complete ? i.naturalWidth : 0)));
+        exige(minis.length === 2 && minis.every((w) => w > 200), "las miniaturas de las fotos de ejemplo no cargan: " + minis);
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "ejemplo-boton.png") });
+        await n.click("#subir-ejemplo");
+        for (let i = 0; i < 150; i++) { await n.waitForTimeout(1000); if ((await n.$$("#pano-lista [data-abrir]")).length >= 2) break; }
+        const nombres = await n.$$eval("#pano-lista [data-renombrar]", (l) => l.map((i) => i.value));
+        exige(nombres.length === 2 && nombres[0] === "Vista aérea" && nombres[1] === "Entrada", "las fotos de ejemplo no quedaron como 2 esferas con su nombre: " + nombres.join(", "));
+        exige(!(await n.$("#subir-ejemplo")), "con esferas en el tour el botón de ejemplo debe quitarse");
+        await n.waitForTimeout(2500);
+        const guardado = (await api(n, "t/" + tn + "/proyecto.json")).d;
+        exige(guardado && guardado.escenas.length === 2, "las esferas de ejemplo no se guardaron en el tour");
+        const esc1 = (await api(n, "t/" + tn + "/escenas/" + guardado.escenas[0].id + "/escena.json")).d;
+        exige(esc1 && esc1.origen.ancho === 6000 && esc1.origen.alto === 3000 && esc1.niveles.length >= 3, "la esfera de ejemplo no se preparó completa: " + JSON.stringify(esc1 && esc1.origen));
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "ejemplo-listo.png") });
+        // se abre y se ve (no negra): el centro de la esfera tiene color
+        await n.click("#pano-lista [data-abrir]"); await n.waitForTimeout(3500); await cerrarGuia(n);
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "ejemplo-esfera.png") });
+        // al darla a todos, la cuenta normal la ve en su tour vacío
+        exige((await api(n, "api/admin/laboratorio/ejemplo", J("PUT", { modo: "todos", probadores: [] }))).s === 200, "no se pudo dar a todos");
+        await u.goto(ESTUDIO + "/#t=" + tu); await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u);
+        await u.click('#nav button:has-text("Panoramas")'); await u.waitForTimeout(900);
+        exige(await u.isVisible("#subir-ejemplo"), "al darla a todos, la cuenta normal no ve las fotos de ejemplo");
+        exige(await u.isVisible('.guia-tarjeta:has-text("fotos de ejemplo")').catch(() => false) || (await u.waitForSelector('.guia-tarjeta:has-text("fotos de ejemplo")', { timeout: 5000 }).then(() => true).catch(() => false)), "la primera vez no salió el tutorial de las fotos de ejemplo");
+      } finally {
+        await api(n, "api/admin/laboratorio/ejemplo", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
+        await u.context().close(); await n.context().close();
+      }
+    });
+    // Auditoría (14 nov 2026). Para mandar el link de un tour había que abrirlo e ir a Publicar. Ahora va en su tarjeta de Mis Tours.
+    await paso("Mis Tours (Laboratorio, nace Solo yo): el link del tour publicado se copia y se abre desde su tarjeta, sin entrar al tour", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const n = await pagina(DUENO, { permissions: ["clipboard-read", "clipboard-write"] }), u = await pagina("link-normal@prueba.mx");
+      const misTours = async (p) => { await p.click('#nav button:has-text("Mis Tours")'); await p.waitForTimeout(1500); };
+      const publicar = async (p) => { await p.click('#nav button:has-text("Publicar")'); await p.waitForTimeout(600); await p.click('#subtabs button:has-text("Web")').catch(() => {}); await p.waitForTimeout(600); await p.click("#pub-publicar"); await p.waitForTimeout(4000); };
+      try {
+        await nuevoTour(n, "Link a la mano"); const id = await idTour(n);
+        await misTours(n);
+        exige(!(await n.$('[data-tour="' + id + '"] .card-link')), "un tour sin publicar no debe ofrecer link");
+        await n.click('[data-tour="' + id + '"]'); await n.waitForTimeout(2500); await publicar(n);
+        const linkPub = (await n.textContent("#pub-link")).trim(); // el mismo link que da Publicar
+        exige(linkPub.endsWith("/" + id + "/"), "Publicar no muestra el link del tour: " + linkPub);
+        await misTours(n);
+        const tarjeta = '[data-tour="' + id + '"]';
+        exige(await n.isVisible(tarjeta + " [data-copiar-link]"), "el tour publicado no trae «Copiar link» en su tarjeta");
+        const href = await n.getAttribute(tarjeta + " a[data-abrir-link]", "href"), blanco = await n.getAttribute(tarjeta + " a[data-abrir-link]", "target");
+        exige(href === linkPub && blanco === "_blank", "«Abrir» no lleva al tour publicado en otra pestaña: " + href);
+        if (process.env.CAPTURAS) { await n.$eval(tarjeta, (e) => e.scrollIntoView({ block: "center" })); await n.screenshot({ path: path.join(process.env.CAPTURAS, "tours-link.png") }); }
+        await n.click(tarjeta + " [data-copiar-link]"); await n.waitForTimeout(600);
+        exige((await n.evaluate(() => navigator.clipboard.readText())) === linkPub, "«Copiar link» no dejó el link del tour en el portapapeles");
+        exige(await n.isVisible("#nuevo-tour"), "copiar el link abrió el tour (debe quedarse en Mis Tours)");
+        const r = await fetch(TOURS + "/" + id + "/"); exige(r.status === 200, "el tour publicado no abre: " + r.status);
+        // oculto (modo privado): el link no se ofrece
+        await n.click(tarjeta); await n.waitForTimeout(2500); await n.click('#nav button:has-text("Publicar")'); await n.waitForTimeout(600); await n.click('#subtabs button:has-text("Web")').catch(() => {}); await n.waitForTimeout(600);
+        if (await n.$("#pub-privado")) { await n.click("#pub-privado"); await n.waitForTimeout(1500); await misTours(n); exige(!(await n.$(tarjeta + " .card-link")), "un tour oculto no debe ofrecer su link"); }
+        // la cuenta normal no lo ve hasta que se le da
+        await nuevoTour(u, "Sin link"); const iu = await idTour(u); await publicar(u); await misTours(u);
+        exige(!(await u.$('[data-tour="' + iu + '"] .card-link')), "una cuenta normal ya ve el link en la tarjeta (debe nacer Solo yo)");
+      } finally {
+        await u.context().close(); await n.context().close();
+      }
+    });
+    // Auditoría de la estética del resultado final (14 nov 2026). El tour abría «en frío», con la pregunta de sonido encima
+    // de la imagen. Ahora puede abrir con una bienvenida: la marca, el nombre y un botón; ese toque enciende el sonido.
+    await paso("Pantalla de bienvenida (Laboratorio, nace Solo yo): el tour abre con el nombre y un botón; al tocarlo entra y suena, sin la pregunta de sonido", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const n = await pagina(DUENO), u = await pagina("sin-bienvenida@prueba.mx");
+      const opaco = (p, sel) => p.$eval(sel, (e) => +getComputedStyle(e).opacity);
+      const general = async (p) => { await p.click('#nav button:has-text("Proyecto")'); await p.waitForTimeout(400); await p.click('#subtabs button:has-text("General")'); await p.waitForTimeout(700); };
+      try {
+        await nuevoTour(u, "Sin bienvenida"); const iu = await idTour(u); await general(u);
+        exige(!(await u.isVisible("#p-bv")), "una cuenta normal ya ve la pantalla de bienvenida (debe nacer Solo yo)");
+        await nuevoTour(n, "Casa del Lago"); const id = await idTour(n); await general(n);
+        exige(await n.isVisible("#p-bv"), "el dueño no ve «Pantalla de bienvenida» en Proyecto → General");
+        exige(!(await n.isChecked("#p-bv-activa")) && !(await n.isVisible("#p-bv-boton")), "la bienvenida debe venir apagada");
+        // apagada: el tour abre como siempre
+        await n.fill("#p-desc", "Vive frente al lago."); await n.waitForTimeout(300);
+        await n.check("#p-bv-activa"); await n.waitForTimeout(500);
+        exige(await n.isVisible("#p-bv-boton"), "al prenderla no salen sus campos");
+        await n.fill("#p-bv-boton", "Entrar al recorrido"); await n.waitForTimeout(1500);
+        if (process.env.CAPTURAS) { await n.$eval("#p-bv", (e) => e.scrollIntoView({ block: "center" })); await n.screenshot({ path: path.join(process.env.CAPTURAS, "bienvenida-editor.png") }); }
+        // vista previa del estudio: igual que publicada, con su botón para cerrar
+        await n.click("#p-bv-ver"); await n.waitForSelector("#previa .bv", { timeout: 20000 }); await n.waitForTimeout(1200);
+        exige((await n.textContent(".bv-nombre")) === "Casa del Lago" && /Entrar al recorrido/.test(await n.textContent(".bv-ir")) && /Vive frente al lago/.test(await n.textContent(".bv-frase")), "la bienvenida no trae el nombre, la frase y el texto del botón");
+        exige((await opaco(n, "#pv-ui")) === 0 && (await opaco(n, "#pv-stage .capas")) === 0, "con la bienvenida en pantalla la interfaz y las capas deben esperar ocultas");
+        exige(await n.isVisible(".bv-x"), "en la vista previa falta el botón para cerrarla");
+        const y0 = await n.evaluate(() => new Promise((ok) => { const c = document.querySelector("#pv-stage canvas"); ok(c ? c.toDataURL("image/jpeg", 0.2).length : 0); }));
+        await n.click(".bv-ir"); await n.waitForTimeout(1800);
+        exige(!(await n.$("#previa .bv")) && (await opaco(n, "#pv-ui")) > 0.9 && (await opaco(n, "#pv-stage .capas")) > 0.9, "al tocar el botón la bienvenida no se quitó o la interfaz no entró");
+        exige(!(await n.evaluate(() => document.getElementById("previa").classList.contains("con-bv"))), "la vista previa se quedó en modo bienvenida");
+        void y0;
+        await n.keyboard.press("Escape"); await n.waitForTimeout(400);
+        if (!(await n.evaluate(() => document.getElementById("previa").hidden))) { await n.click('#pv-ui [data-sk="cerrar"]').catch(() => {}); await n.waitForTimeout(500); }
+        // con música: publicada, nada suena ni pregunta hasta el toque; el toque la enciende
+        await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(400); await n.click('#subtabs button:has-text("Música")'); await n.waitForTimeout(500);
+        await n.setInputFiles("#m-archivo", { name: "fondo.wav", mimeType: "audio/wav", buffer: wavPrueba(20) }); await n.waitForTimeout(3500);
+        exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        const pub = await (await fetch(TOURS + "/" + id + "/proyecto.json")).json();
+        exige(pub.proyecto.bienvenida && pub.proyecto.bienvenida.activa === true, "la bienvenida no viajó al tour publicado del dueño");
+        const visitante = async (op) => {
+          const t = await pagina(null, op || {});
+          await t.addInitScript(() => {
+            window.__medios = []; window.__toque = false; const p = HTMLMediaElement.prototype.play;
+            HTMLMediaElement.prototype.play = function () { if (!window.__medios.includes(this)) window.__medios.push(this); if (!window.__toque) return Promise.reject(new DOMException("sin toque", "NotAllowedError")); return p.apply(this, arguments); };
+          });
+          await t.goto(TOURS + "/" + id + "/"); await t.waitForSelector(".bv", { timeout: 25000 }); await t.waitForTimeout(1500);
+          return t;
+        };
+        const sonando = (t) => t.evaluate(() => (window.__medios || []).some((m) => !m.paused));
+        let t = await visitante();
+        exige(!(await t.$(".bv-x")), "el tour publicado no debe traer el botón de cerrar la vista previa");
+        exige(await t.isVisible(".bv-mudo"), "con música, la bienvenida debe ofrecer «Entrar sin sonido»");
+        await t.waitForTimeout(2500);
+        exige(!(await t.$(".son-pide")) && !(await sonando(t)), "con bienvenida no debe salir la pregunta de sonido ni sonar nada antes del toque");
+        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "bienvenida-compu.png") });
+        await t.evaluate(() => (window.__toque = true)); await t.click(".bv-ir"); await t.waitForTimeout(2000);
+        exige(await sonando(t), "al tocar «Entrar al recorrido» la música no empezó");
+        exige(!(await t.$(".bv")) && !(await t.$(".son-pide")), "después de entrar quedó la bienvenida o salió la pregunta de sonido");
+        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "bienvenida-despues.png") });
+        exige(!t.errs.length, "errores en el tour con bienvenida: " + t.errs.join(" | ").slice(0, 160));
+        await t.context().close();
+        // «Entrar sin sonido» se respeta
+        t = await visitante();
+        await t.evaluate(() => (window.__toque = true)); await t.click(".bv-mudo"); await t.waitForTimeout(1800);
+        exige(!(await sonando(t)) && !(await t.$(".bv")), "«Entrar sin sonido» dejó sonando la música o no quitó la bienvenida");
+        await t.mouse.click(700, 300); await t.waitForTimeout(900);
+        exige(!(await sonando(t)), "después de «Entrar sin sonido», un toque en la esfera prendió la música");
+        await t.context().close();
+        // en el celular cabe completa, parada y acostada
+        for (const d of ["iPhone 13", "iPhone 13 landscape"]) {
+          const c = await visitante(Object.assign({}, devices[d], { acceptDownloads: false }));
+          const cabe = await c.evaluate(() => { const b = document.querySelector(".bv-ir").getBoundingClientRect(), h = document.querySelector(".bv-nombre").getBoundingClientRect(); return h.top >= 0 && b.bottom <= innerHeight && b.left >= 0 && b.right <= innerWidth && document.documentElement.scrollWidth <= innerWidth + 1; });
+          exige(cabe, "en " + d + " la bienvenida no cabe en la pantalla");
+          if (process.env.CAPTURAS) await c.screenshot({ path: path.join(process.env.CAPTURAS, "bienvenida-" + (/landscape/.test(d) ? "cel-acostado" : "cel") + ".png") });
+          await c.context().close();
+        }
+        // una cuenta sin la función no la puede publicar, aunque la meta a mano en su proyecto
+        const pu = (await api(u, "api/tours/" + iu)).d; pu.proyecto.bienvenida = { activa: true };
+        exige((await api(u, "api/tours/" + iu, J("PUT", pu))).s === 200 && (await api(u, "api/tours/" + iu + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar el tour de la cuenta normal");
+        const pubU = await (await fetch(TOURS + "/" + iu + "/proyecto.json")).json();
+        exige(!pubU.proyecto.bienvenida, "una cuenta sin la función publicó con bienvenida");
+        // al darla a todos, la cuenta normal la ve con su tutorial
+        exige((await api(n, "api/admin/laboratorio/bienvenida", J("PUT", { modo: "todos", probadores: [] }))).s === 200, "no se pudo dar a todos");
+        await u.goto(ESTUDIO + "/#t=" + iu); await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u); await general(u);
+        exige(await u.isVisible("#p-bv"), "al darla a todos, la cuenta normal no ve la pantalla de bienvenida");
+        exige(await u.waitForSelector('.guia-tarjeta:has-text("bienvenida")', { timeout: 6000 }).then(() => true).catch(() => false), "la primera vez no salió el tutorial de la pantalla de bienvenida");
+      } finally {
+        await api(n, "api/admin/laboratorio/bienvenida", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
+        await u.context().close(); await n.context().close();
+      }
+    });
+    // Auditoría (14 nov 2026). En el diseño Cine (el de inicio) el botón de contacto y el nombre no salían en el celular,
+    // y en Brújula el nombre de la esfera se repetía y se cortaba en la orilla.
+    await paso("Acabado fino (Laboratorio, nace Solo yo): Cine en celular trae el botón de contacto y Brújula no repite ni corta el nombre", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const n = await pagina(DUENO), u = await pagina("sin-acabado@prueba.mx");
+      const conSkin = async (p, id, plantilla) => {
+        const d = (await api(p, "api/tours/" + id)).d;
+        d.skin = Object.assign({}, d.skin || {}, { plantilla, cta: { mostrar: true, texto: "Agendar visita", enlace: "https://wa.me/520000000000" } });
+        exige((await api(p, "api/tours/" + id, J("PUT", d))).s === 200 && (await api(p, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar con " + plantilla);
+      };
+      const cel = async (id) => { const c = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false })); await c.goto(TOURS + "/" + id + "/"); await c.waitForSelector("#pv-ui.sk", { timeout: 25000 }); await c.waitForTimeout(3500); return c; };
+      try {
+        await nuevoTour(n, "Acabado fino"); const id = await idTour(n); await otraEsfera(n, "Terraza", "#9cc", "#a98"); await n.waitForTimeout(1500);
+        await nuevoTour(u, "Sin acabado"); const iu = await idTour(u); await u.waitForTimeout(1500);
+        // Cine en celular
+        await conSkin(n, id, "cine"); await conSkin(u, iu, "cine");
+        exige((await (await fetch(TOURS + "/" + id + "/proyecto.json")).json()).proyecto.acabado === true, "el tour del dueño no se publicó con el acabado fino");
+        exige((await (await fetch(TOURS + "/" + iu + "/proyecto.json")).json()).proyecto.acabado === false, "una cuenta sin la función publicó con el acabado fino");
+        let c = await cel(id);
+        const cine = await c.evaluate(() => {
+          const b = document.querySelector("#pv-ui .c-cta-v"), nm = document.querySelector("#pv-ui .c-marca span.n"), fl = document.querySelector("#pv-ui .c-flechas");
+          const r = b && b.getBoundingClientRect(), f = fl.getBoundingClientRect();
+          return { fino: document.getElementById("pv-ui").classList.contains("sk-fino"), boton: !!(b && r.width > 60 && getComputedStyle(b).display !== "none"), href: b && b.getAttribute("href"), dentro: !!r && r.right <= innerWidth && r.bottom <= innerHeight && r.left >= 0,
+            libre: !!r && r.left >= f.right - 1, nombre: !!nm && getComputedStyle(nm).display !== "none" && nm.getBoundingClientRect().width > 20 };
+        });
+        exige(cine.fino && cine.boton && cine.href === "https://wa.me/520000000000", "Cine en celular sigue sin el botón de contacto: " + JSON.stringify(cine));
+        exige(cine.dentro && cine.libre, "el botón de contacto de Cine en celular se sale de la pantalla o tapa las flechas: " + JSON.stringify(cine));
+        exige(cine.nombre, "Cine en celular sigue sin el nombre del proyecto");
+        // Los velos oscuros de Cine van DETRÁS del título y del botón (antes los tapaban y salían grises). Se mide en la captura: el título es blanco.
+        const cajaT = await c.evaluate(() => { const r = document.querySelector("#pv-ui .c-titulo h2").getBoundingClientRect(); return { x: Math.max(0, r.left), y: r.top, width: Math.min(260, r.width), height: r.height }; });
+        const brillo = async (pg, caja) => { const { PNG } = require(LIB.pngjs); const im = PNG.sync.read(await pg.screenshot({ clip: caja })); let m = 0; for (let i = 0; i < im.data.length; i += 4) m = Math.max(m, Math.min(im.data[i], im.data[i + 1], im.data[i + 2])); return m; };
+        const bFino = await brillo(c, cajaT);
+        exige(bFino >= 245, "con acabado fino el título de Cine sigue opaco (los velos lo tapan): brillo " + bFino + " de 255");
+        if (process.env.CAPTURAS) await c.screenshot({ path: path.join(process.env.CAPTURAS, "acabado-cine-cel.png") });
+        await c.context().close();
+        c = await cel(iu);
+        exige(!(await c.$("#pv-ui .c-cta-v")) && !(await c.evaluate(() => document.getElementById("pv-ui").classList.contains("sk-fino"))), "el tour de una cuenta sin la función ya trae el acabado fino");
+        if (process.env.CAPTURAS) await c.screenshot({ path: path.join(process.env.CAPTURAS, "acabado-cine-cel-antes.png") });
+        await c.context().close();
+        // en compu, Cine sigue con su botón arriba y sin el de abajo
+        const dsk = await pagina(null); await dsk.goto(TOURS + "/" + id + "/"); await dsk.waitForSelector("#pv-ui.sk", { timeout: 25000 }); await dsk.waitForTimeout(2500);
+        exige(await dsk.isVisible("#pv-ui .c-cta") && !(await dsk.$("#pv-ui .c-cta-v")), "en compu, Cine debe seguir con un solo botón de contacto, arriba");
+        await dsk.context().close();
+        // Brújula en celular: el nombre de la esfera actual no se repite arriba del punto ni se sale de la pantalla
+        await conSkin(n, id, "brujula"); await conSkin(u, iu, "brujula");
+        c = await cel(id);
+        const br = await c.evaluate(() => { const s = document.querySelector('#pv-ui .b-paso[aria-current="true"] span'); const p = document.querySelector("#pv-ui .b-paso").getBoundingClientRect(); const z = document.elementFromPoint(p.left - 8, p.top + p.height / 2); return { op: s ? +getComputedStyle(s).opacity : -1, toca: !!(z && z.closest(".b-paso")) }; });
+        exige(br.op === 0, "Brújula con acabado fino sigue repitiendo el nombre de la esfera actual arriba de su punto");
+        exige(br.toca, "los puntos de la ruta de Brújula siguen con el área de toque chica");
+        if (process.env.CAPTURAS) await c.screenshot({ path: path.join(process.env.CAPTURAS, "acabado-brujula-cel.png") });
+        exige(!c.errs.length, "errores en el tour con acabado fino: " + c.errs.join(" | ").slice(0, 160));
+        await c.context().close();
+        c = await cel(iu);
+        exige((await c.evaluate(() => { const s = document.querySelector('#pv-ui .b-paso[aria-current="true"] span'); return s ? +getComputedStyle(s).opacity : -1; })) === 1, "sin la función, Brújula debe quedar como estaba");
+        await c.context().close();
+      } finally {
+        await u.context().close(); await n.context().close();
+      }
+    });
     await paso("Sin errores de JavaScript en el estudio", async () => { exige(!a.errs.length && !g.errs.length, (a.errs.concat(g.errs)).join(" | ").slice(0, 200)); });
     await navegador.close();
   } catch (e) {

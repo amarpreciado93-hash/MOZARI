@@ -213,6 +213,10 @@ export const LABORATORIO = {
   "lotes-movil": { nombre: "Disponibilidad desde el celular", texto: "Abre mozari.app en tu celular: elige el tour, toca un lote y márcalo Apartado o Vendido. El tour publicado cambia al momento, sin volver a publicar, y el estudio abierto en la compu no lo regresa. Solo licencias de pago." },
   "copiar-capas": { nombre: "Copiar y pegar capas", texto: "En Capas: elige una o varias capas (una manzana va con sus lotes y sus datos) y cópialas con Ctrl+C (⌘+C en Mac). Ve a otra esfera y pégalas con Ctrl+V: salen enfrente de ti, sin ubicarse en el terreno, para que las acomodes. También con los botones Copiar y Pegar de Propiedades." },
   "tipografias": { nombre: "Tus tipografías", texto: "En cualquier selector de Tipografía (textos, rótulos de los lotes y ficha): «Subir tu tipografía» en TTF, OTF o WOFF (hasta 5 MB). Se guarda en el proyecto y sale igual en el tour publicado, en el .zip y en la foto 360." },
+  "bienvenida": { nombre: "Pantalla de bienvenida", texto: "Proyecto → General: el tour abre con tu logo, el nombre y un botón sobre la esfera girando despacio. Al tocarlo empieza el recorrido con su música y su piloto automático, sin la pregunta de «Activar sonido». Se aplica al volver a publicar." },
+  "acabado": { nombre: "Acabado fino del tour", texto: "Retoques a lo que ve tu cliente. Diseño Cine: el título, el nombre y el botón de contacto salen blancos (antes un velo oscuro los dejaba grises); en celular ya salen el botón de contacto y el nombre del proyecto, y las flechas se leen sobre fondos claros. Diseño Brújula: el nombre de la esfera ya no se repite ni se corta en la orilla y los puntos de la ruta se tocan fácil. Se aplica al volver a publicar." },
+  "ejemplo": { nombre: "Fotos de ejemplo", texto: "En un tour sin esferas: «Probar con fotos de ejemplo» sube 2 fotos 360 de muestra (una aérea y una a pie) para practicar sin traer fotos propias. Quedan como esferas normales y se borran igual." },
+  "tours-link": { nombre: "Link a la mano en Mis Tours", texto: "En Mis Tours, cada tour publicado trae «Copiar link» y «Abrir» en su tarjeta, sin tener que entrar al tour e ir a Publicar." },
   "cotas": { nombre: "Cotas en paredes", texto: "En Capas → «Cota»: tocas el inicio y el final de un muro (en el piso) y Mozari calcula su largo con la altura de la cámara; un punto en el piso y otro arriba da la altura. Si tienes la medida del plano, la escribes y manda esa. Salen en el tour como en un plano." },
 };
 // "pago": las cuentas Pro y Desarrollos (con su plan vigente); "todos" incluye también Gratis
@@ -1036,6 +1040,10 @@ async function api(request, env, partes, yo) {
     p.proyecto.estadisticas = lab.includes("estadisticas");
     // Pantalla de carga con el logo del proyecto (Laboratorio): el servidor la arma al servir el tour
     p.proyecto.cargaPropia = lab.includes("carga-logo");
+    // Acabado fino (Laboratorio): los retoques a la interfaz del tour publicado
+    p.proyecto.acabado = lab.includes("acabado");
+    // Pantalla de bienvenida (Laboratorio): solo sale publicada si su dueño tiene la función
+    if (!lab.includes("bienvenida")) delete p.proyecto.bienvenida;
     await env.R2.put("publicado/" + id + "/proyecto.json", JSON.stringify(p), { httpMetadata: { contentType: tipoDe("x.json"), cacheControl: "no-cache" } });
     await guardarIndice(env, uid, id, { publicado: new Date().toISOString() });
     return json({ ok: true });
