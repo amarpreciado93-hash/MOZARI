@@ -196,6 +196,38 @@ async function capasPesadas(p) {
       exige(!/\bgratis\b/i.test(t), "el escaparate todavía dice «gratis»");
     }, visita);
 
+    // Revisión de registros (14 nov 2026): desde Instagram, Facebook y TikTok Google no deja entrar (su navegador interno)
+    // y en iPhone había 0 entradas desde ahí. /entrar ahora pide abrirlo en Safari o Chrome; desde un navegador normal sigue a Google.
+    await paso("Entrar desde Instagram, Facebook o TikTok: pide abrir Mozari en Safari o Chrome (Google no deja entrar ahí)", async () => {
+      const UA = {
+        instagram: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 345.0.0.32.97 (iPhone14,5; iOS 17_5; es_MX)",
+        facebook: "Mozilla/5.0 (Linux; Android 13; SM-A536E Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/129.0.6668.100 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/485.0.0.70.77;]",
+        tiktok: "Mozilla/5.0 (Linux; Android 12; M2101K6G Build/SKQ1.210908.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0 Mobile Safari/537.36 musical_ly_2023405030",
+        safari: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+      };
+      const pedir = (ua, q) => fetch(ESTUDIO + "/entrar" + (q || ""), { headers: { "user-agent": ua }, redirect: "manual" }).then(async (r) => ({ s: r.status, loc: r.headers.get("location") || "", h: r.status === 200 ? await r.text() : "" }));
+      const ig = await pedir(UA.instagram, "?comprar=pro"), fb = await pedir(UA.facebook), tt = await pedir(UA.tiktok), sf = await pedir(UA.safari);
+      exige(ig.s === 200 && /Abrir en Safari/.test(ig.h) && /href="x-safari-http:\/\/localhost:8787\/entrar\?comprar=pro"/.test(ig.h) && /Instagram/.test(ig.h), "desde Instagram en iPhone no pidió abrir en Safari (o perdió el plan elegido): " + ig.s + " " + ig.h.slice(0, 120));
+      exige(fb.s === 200 && /Abrir en Chrome/.test(fb.h) && /intent:\/\/localhost:8787\/entrar#Intent;scheme=https;package=com\.android\.chrome/.test(fb.h) && /Facebook/.test(fb.h), "desde Facebook en Android no ofreció abrir en Chrome");
+      exige(tt.s === 200 && /TikTok/.test(tt.h) && /Copiar el link/.test(tt.h) && /tres puntos/.test(tt.h), "desde TikTok no salió la pantalla para abrir en el navegador");
+      exige(sf.s === 302 && /accounts\.google\.com/.test(sf.loc), "desde Safari normal ya no manda a Google: " + sf.s + " " + sf.loc.slice(0, 60));
+      // Así se ve en el celular
+      const t = await pagina(null, Object.assign({}, devices["iPhone 13"], { userAgent: UA.instagram, acceptDownloads: false }));
+      await t.goto(ESTUDIO + "/entrar"); await t.waitForTimeout(600);
+      exige(await t.isVisible("#abrir") && await t.isVisible("#copiar"), "en el celular no se ven los botones");
+      if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "entrar-desde-instagram.png") });
+      exige(!t.errs.length, "errores: " + t.errs.join(" | ").slice(0, 160));
+      await t.context().close();
+      // El escaparate en el celular: la foto 360 llega hasta 1024 px por cara (antes bajaba 4 MB al abrir)
+      const c = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false })), piezas = [];
+      c.on("request", (r) => { const m = r.url().match(/\/(escaparate-[a-z]+)\/(\d+)\/[a-z]\/\d+\/\d+\.jpg/); if (m) piezas.push([m[1], +m[2]]); });
+      await c.goto(ESTUDIO + "/escaparate"); await c.waitForTimeout(5000);
+      const niveles = {}; for (const e of ["escaparate-interior", "escaparate-aerea", "escaparate-esfera"]) niveles[e] = (await (await fetch(ESTUDIO + "/" + e + "/escena.json")).json()).niveles;
+      const grandes = piezas.filter(([e, z]) => niveles[e] && niveles[e][z] && niveles[e][z].size > 1024);
+      exige(piezas.length > 0 && !grandes.length, "en el celular el escaparate bajó fotos 360 de más de 1024 px por cara: " + grandes.length + " de " + piezas.length);
+      exige(!c.errs.length, "errores en el escaparate: " + c.errs.join(" | ").slice(0, 160));
+      await c.context().close();
+    });
     // Pedido de Amar (11 nov 2026): «Contrata tu tour 360» hasta abajo del sitio. Mapa de Latinoamérica con las 95 ciudades
     // de la red de operadores (de su hoja COLEGAS: solo ciudad y país), 17 banderas, fotos de su carpeta de marca y la
     // solicitud de cotización: le llega al cliente un correo, al dueño un aviso y queda en el Panel de dueño → Solicitudes.
@@ -2694,6 +2726,76 @@ async function capasPesadas(p) {
       exige(s.fin, "el piloto de la segunda esfera no terminó en «Repetir recorrido»: " + JSON.stringify(s));
       exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 200));
       await t.context().close();
+    });
+    // Revisión de los tours publicados (14 nov 2026): 53 de 74 tenían «Agendar visita» sin enlace (al visitante le salía el
+    // aviso para el dueño) y 2 tenían «wa.me/…» sin https (abría una página rota)
+    await paso("Botón de contacto: sin enlace no sale en el tour publicado y «wa.me/…» se abre con https", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Contacto");
+      const id = await idTour(n);
+      const leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((r) => r.json()), id);
+      const guardarPub = async (d) => { exige((await n.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [id, d])) === 200, "no se guardó"); exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se publicó"); };
+      const visitar = async () => { const t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForFunction(() => { const c = document.getElementById("pv-carga"); return c && c.hidden; }, null, { timeout: 30000 }); await t.waitForTimeout(800);
+        const r = await t.evaluate(() => [...document.querySelectorAll(".sk-cta")].map((x) => ({ tag: x.tagName, href: x.getAttribute("href") || "", vis: !!x.getClientRects().length })));
+        exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160)); await t.context().close(); return r; };
+      let d = await leer(); d.skin = d.skin || {}; d.skin.cta = { mostrar: true, texto: "Agendar visita", enlace: "" }; await guardarPub(d);
+      let r = await visitar();
+      exige(!r.some((x) => x.vis), "sin enlace, el botón «Agendar visita» sigue en el tour publicado: " + JSON.stringify(r));
+      d = await leer(); d.skin.cta.enlace = "wa.me/5214771234567"; await guardarPub(d);
+      r = await visitar();
+      exige(r.some((x) => x.vis && x.tag === "A" && x.href === "https://wa.me/5214771234567"), "el enlace «wa.me/…» no se abre con https: " + JSON.stringify(r));
+      d = await leer(); d.skin.cta.enlace = "tel:+524771234567"; await guardarPub(d);
+      r = await visitar();
+      exige(r.some((x) => x.vis && x.href === "tel:+524771234567"), "un enlace de teléfono (tel:) no quedó igual: " + JSON.stringify(r));
+      // En el estudio (vista previa) sin enlace sí sale, para que el dueño sepa que le falta
+      d = await leer(); d.skin.cta.enlace = ""; await guardarPub(d); await n.reload(); await n.waitForTimeout(2500);
+      await n.click('#nav button:has-text("Interfaz")').catch(() => {}); await n.waitForTimeout(1500);
+      exige(await n.$(".sk-cta"), "en el estudio ya no sale el botón sin enlace (el dueño no sabría que le falta)");
+      exige(/no sale en el tour publicado/.test(await n.textContent("body")), "el estudio no avisa que sin enlace el botón no sale publicado");
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+    });
+    // Revisión de registros (14 nov 2026): de 93 cuentas creadas en el cel solo 24 hicieron un tour. «Mándame el link a mi
+    // correo» desde el cel, el recordatorio a las 24 h (se prende en el panel) y el embudo de la semana en el Panel.
+    await paso("Entrada desde el celular: link a su correo, recordatorio a las 24 h a quien no hace tour y el embudo en el Panel", async () => {
+      const LOG = path.join(DATOS, "worker-estudio.log"), correosA = (para) => fs.readFileSync(LOG, "utf8").split("send_email binding called").slice(1).filter((b) => b.includes("To: " + para));
+      const cel = "aaa-cel-" + Date.now() + "@prueba.mx";
+      const u = await pagina(cel, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
+      exige(await u.isVisible("#mv-mail"), "en el celular no sale «Mándame el link a mi correo»");
+      if (process.env.CAPTURAS) await u.screenshot({ path: path.join(process.env.CAPTURAS, "celular-link-correo.png"), fullPage: true });
+      await u.click("#mv-mail"); await u.waitForTimeout(1500);
+      const a = correosA(cel).filter((b) => /Subject: Tu link para abrir Mozari en la compu/.test(b));
+      exige(a.length === 1 && /Listo/.test(await u.textContent("#mv-mail")), "el link para la compu no llegó a su correo: " + correosA(cel).length);
+      await u.evaluate(() => fetch("api/yo/link-compu", { method: "POST" })); await u.waitForTimeout(500);
+      exige(correosA(cel).filter((b) => /Subject: Tu link para abrir/.test(b)).length === 1, "se mandó dos veces seguidas el mismo link");
+      exige(!u.errs.length, "errores en el celular: " + u.errs.join(" | ").slice(0, 160));
+      await u.context().close();
+      // Otra cuenta que sí hace su tour: a ella no le llega el recordatorio
+      const conTour = "aab-tour-" + Date.now() + "@prueba.mx", v = await pagina(conTour);
+      exige((await v.evaluate(() => fetch("api/tours", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nombre: "Mi primer tour" }) }).then((r) => r.status))) === 201, "no se pudo crear el tour");
+      await v.context().close();
+      // El dueño lo prende en su panel y lo corre ya (en local no se esperan 22 h)
+      const n = await pagina(DUENO);
+      const api = (url, op) => n.evaluate(([x, o]) => fetch(x, o).then(async (r) => ({ s: r.status, d: await r.json().catch(() => ({})) })), [url, op || {}]);
+      await n.click('#nav button:has-text("Mis Tours")'); await n.waitForTimeout(800); await pasarGuias(n);
+      await n.click("#ver-cuentas"); await n.waitForTimeout(1500);
+      const emb = await n.textContent(".embudo").catch(() => "");
+      exige(/desde el cel/.test(emb) && /desde la compu/.test(emb) && /hicieron tour/.test(emb), "el Panel no muestra el embudo de la semana (cel vs compu): " + emb);
+      await n.click('[data-dueno="novedades"]'); await n.waitForTimeout(1200);
+      exige(await n.isVisible("[data-cor-recordatorio]"), "no se ve el interruptor del recordatorio");
+      if (process.env.CAPTURAS) { await n.$eval("[data-cor-recordatorio]", (e) => e.closest(".cor-caja").scrollIntoView({ block: "center" })); await n.screenshot({ path: path.join(process.env.CAPTURAS, "correos-recordatorio.png") }); }
+      await n.click("[data-cor-recordatorio]"); await n.waitForTimeout(1200);
+      exige((await api("api/admin/correos")).d.conf.recordatorio === true, "el interruptor no prendió el recordatorio");
+      for (let i = 0; i < 12 && !correosA(cel).some((b) => /Subject: .*primer tour te espera/.test(b)); i++) await api("api/admin/correos/recordatorios", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ horas: 0 }) });
+      const rec = correosA(cel).filter((b) => /Subject: .*primer tour te espera/.test(b));
+      exige(rec.length === 1, "a la cuenta sin tour no le llegó el recordatorio: " + rec.length);
+      const h = (rec[0].match(/HTML: (\S+\.html)/) || [])[1], html = h ? fs.readFileSync(h, "utf8") : "";
+      exige(/Abrir Mozari en mi compu/.test(html) && /\/baja\?t=/.test(html) && !/gratis/i.test(html), "el recordatorio no trae el botón, el link de baja o dice «gratis»");
+      exige(!correosA(conTour).some((b) => /primer tour te espera/.test(b)), "le llegó el recordatorio a quien ya hizo su tour");
+      await api("api/admin/correos/recordatorios", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ horas: 0 }) });
+      exige(correosA(cel).filter((b) => /primer tour te espera/.test(b)).length === 1, "el recordatorio se mandó dos veces a la misma cuenta");
+      await api("api/admin/correos", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ recordatorio: false }) });
+      exige(!n.errs.length, "errores en el panel: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
     });
     // Pedido de un usuario de Perú (nov 2026): allá se dice «Reservado», no «Apartado». Los nombres de los estados se editan.
     await paso("Estados de los lotes con el nombre de cada país: «Apartado» se cambia a «Reservado» y sale en el tour", async () => {

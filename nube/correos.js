@@ -187,7 +187,7 @@ const CONF = "config/correos.json", PERFIL = (uid) => "cuentas/" + uid + "/perfi
 const JSONH = { httpMetadata: { contentType: "application/json" } };
 export async function leerConf(env) {
   const o = await env.R2.get(CONF), c = (o ? await o.json().catch(() => ({})) : {}) || {};
-  return { bienvenida: c.bienvenida === true };
+  return { bienvenida: c.bienvenida === true, recordatorio: c.recordatorio === true };
 }
 export const guardarConf = (env, c) => env.R2.put(CONF, JSON.stringify(c), JSONH);
 const leerNum = async (env, k) => { const o = await env.R2.get(k); return o ? +(await o.text()) || 0 : 0; };
@@ -224,6 +224,81 @@ export async function mandarBienvenida(env, p, base) {
   const r = await enviar(env, cuenta, { para: p.email, asunto: c.asunto, html: c.html, texto: c.texto });
   await cuenta.guardar();
   return r === "ok";
+}
+
+// ---------- «Tu cuenta te espera en la compu» ----------
+// Revisión de registros (14 nov 2026): de 167 cuentas de 4 días, la mitad no hizo ningún tour y solo 18 volvieron.
+// Muchos entran desde el celular, ven «se usa en compu» y no regresan. Dos correos con el link para la compu:
+// - pedido: el usuario lo pide desde el celular («Mándame el link a mi correo»), al momento.
+// - recordatorio: a las ~24 h, a quien aún no hace su primer tour (si el dueño lo prendió en su panel). Una sola vez.
+export function correoCompu({ nombre, base, pedido, baja }) {
+  const n = primerNombre(nombre), ir = base + "/";
+  const titulo = pedido ? "Tu link para abrir Mozari en la compu" : (n ? n + ", tu" : "Tu") + " primer tour te espera";
+  const pasos = PASOS.map(([t, d], i) =>
+    '<tr><td valign="top" width="44" style="padding:0 14px 18px 0"><div style="width:30px;height:30px;border-radius:50%;background:' + TINTA + ";color:" + LIMA + ";text-align:center;font:700 14px/30px " + FUENTE + '">' + (i + 1) + "</div></td>" +
+    '<td valign="top" style="padding:2px 0 18px;font:400 15px/1.5 ' + FUENTE + ";color:" + TEXTO + '"><b style="font-weight:600">' + esc(t) + '</b><br><span style="color:' + TENUE + '">' + esc(d) + "</span></td></tr>").join("");
+  const intro = pedido
+    ? "Aquí tienes tu link. Ábrelo en tu computadora, entra con la misma cuenta de Google y empieza tu primer tour."
+    : "Tu cuenta de prueba ya está lista, pero aún no haces tu primer tour. Mozari se usa en la computadora: ahí subes tus fotos 360, dibujas tus lotes y publicas.";
+  const cuerpo =
+    '<h1 style="margin:0 0 14px;font:700 26px/1.25 ' + FUENTE + ";color:" + TINTA + '">' + esc(titulo) + "</h1>" +
+    '<p style="margin:0 0 24px">' + esc(intro) + "</p>" +
+    '<div style="padding:0 0 26px">' + boton("Abrir Mozari en mi compu", ir) + "</div>" +
+    '<p style="margin:0 0 14px;padding:12px 16px;border-radius:12px;background:' + FONDO + ';font:600 15px ' + FUENTE + ";color:" + TINTA + '">' + esc(ir.replace(/^https?:\/\//, "")) + "</p>" +
+    '<p style="margin:10px 0 14px;font-weight:600;color:' + TINTA + '">En 3 pasos:</p>' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">' + pasos + "</table>" +
+    '<p style="margin:8px 0 0">Nos vemos dentro,<br><b>El equipo de Mozari</b></p>';
+  const pie = (pedido ? "Te llegó este correo porque lo pediste desde tu celular en mozari.app." : "Te llegó este correo porque creaste tu cuenta en mozari.app.") +
+    (baja ? '<br><a href="' + esc(baja) + '" style="color:' + TENUE + '">Ya no quiero recibir correos de Mozari</a>' : "") + "<br>Mozari · León, Guanajuato, México";
+  const texto = titulo + "\n\n" + intro + "\n\nAbrir Mozari en mi compu: " + ir + "\n\nEn 3 pasos:\n" + PASOS.map(([t, d], i) => (i + 1) + ". " + t + ". " + d).join("\n") +
+    "\n\nNos vemos dentro,\nEl equipo de Mozari" + (baja ? "\n\n—\nYa no quiero recibir correos de Mozari: " + baja : "");
+  return { asunto: titulo, html: plantilla({ base, preencabezado: pedido ? "Ábrelo en tu computadora y empieza tu primer tour." : "Ábrelo en tu computadora: en 10 minutos tienes tu primer tour 360.", cuerpo, pie }), texto };
+}
+// Marca para el recordatorio: se deja al crear la cuenta y se quita al mandarlo (o si ya hizo un tour)
+export const MARCA_RECORDATORIO = (uid) => "pendientes/recordatorio/" + uid;
+const POR_HORA_RECORDATORIO = 10;
+// Cada hora (si está prendido): a quien lleva más de `horas` con la cuenta y no tiene ningún tour. Devuelve cuántos mandó.
+export async function mandarRecordatorios(env, base, firma, horas = 22) {
+  if (!env.ENVIOS) return 0;
+  const l = await env.R2.list({ prefix: "pendientes/recordatorio/", limit: 500, include: ["customMetadata"] });
+  const cuenta = await contador(env);
+  let mandados = 0;
+  for (const o of l.objects) {
+    if (mandados >= POR_HORA_RECORDATORIO || cuenta.mes >= TOPE_MES || cuenta.dia >= TOPE_MASIVO_DIA) break;
+    const uid = o.key.split("/").pop(), creado = Date.parse((o.customMetadata && o.customMetadata.creado) || "") || o.uploaded.getTime(), edad = (Date.now() - creado) / 3600e3;
+    if (edad < horas) continue;
+    const [tours, op] = await Promise.all([env.R2.list({ prefix: "cuentas/" + uid + "/tours/", limit: 1 }), env.R2.get(PERFIL(uid))]);
+    const p = op ? await op.json().catch(() => null) : null;
+    // Ya hizo su tour, ya no existe, no quiere correos o pasó mucho tiempo: se quita la marca sin mandar nada
+    if (tours.objects.length || !p || !p.email || p.bloqueado || p.noNovedades || p.recordatorio || edad > 24 * 8) { await env.R2.delete(o.key); continue; }
+    const c = correoCompu({ nombre: p.nombre, base, baja: enlaceBaja(base, await firma(uid)) });
+    const r = await enviar(env, cuenta, { para: p.email, asunto: c.asunto, html: c.html, texto: c.texto, baja: enlaceBaja(base, await firma(uid)) });
+    if (r === "tope") break;
+    if (r === "ok") { mandados++; p.recordatorio = new Date().toISOString(); await env.R2.put(PERFIL(uid), JSON.stringify(p), JSONH); }
+    await env.R2.delete(o.key);
+  }
+  await cuenta.guardar();
+  return mandados;
+}
+// Al prender el recordatorio: las cuentas de los últimos 7 días sin tour también entran (una sola vez)
+export async function sembrarRecordatorios(env) {
+  const perfiles = [], conTour = new Set(), limite = Date.now() - 7 * 864e5;
+  let cur;
+  do {
+    const l = await env.R2.list({ prefix: "cuentas/", cursor: cur, limit: 1000 });
+    for (const o of l.objects) {
+      const t = o.key.match(/^cuentas\/([^/]+)\/tours\/[^/]+$/);
+      if (t) conTour.add(t[1]); else if (o.key.endsWith("/perfil.json")) perfiles.push(o.key);
+    }
+    cur = l.truncated ? l.cursor : undefined;
+  } while (cur);
+  let n = 0;
+  await Promise.all(perfiles.filter((k) => !conTour.has(k.split("/")[1])).map(async (k) => {
+    const o = await env.R2.get(k), p = o ? await o.json().catch(() => null) : null;
+    if (!p || !p.creado || Date.parse(p.creado) < limite || p.recordatorio || p.admin) return;
+    await env.R2.put(MARCA_RECORDATORIO(p.uid), "", { customMetadata: { creado: p.creado } }); n++;
+  }));
+  return n;
 }
 
 // Novedades por correo: la lista de quién falta se guarda en correos/cola/<id>.json y se manda por tandas

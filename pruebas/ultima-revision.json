@@ -1,10 +1,14 @@
 {
- "fecha": "2026-11-14T19:19:45.298381Z",
- "bien": 97,
- "total": 97,
+ "fecha": "2026-11-15T05:55:32.664Z",
+ "bien": 100,
+ "total": 100,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
+   "ok": true
+  },
+  {
+   "nombre": "Entrar desde Instagram, Facebook o TikTok: pide abrir Mozari en Safari o Chrome (Google no deja entrar ahí)",
    "ok": true
   },
   {
@@ -312,6 +316,14 @@
    "ok": true
   },
   {
+   "nombre": "Botón de contacto: sin enlace no sale en el tour publicado y «wa.me/…» se abre con https",
+   "ok": true
+  },
+  {
+   "nombre": "Entrada desde el celular: link a su correo, recordatorio a las 24 h a quien no hace tour y el embudo en el Panel",
+   "ok": true
+  },
+  {
    "nombre": "Estados de los lotes con el nombre de cada país: «Apartado» se cambia a «Reservado» y sale en el tour",
    "ok": true
   },
@@ -392,5 +404,5 @@
    "ok": true
   }
  ],
- "nota": "Corrida en tramos (el servidor de pruebas se reinicia cada ~20 min): completa + 4 tramos SOLO"
+ "nota": "Corrida completa (99/100) + «Imagen en 3D» repetida sola: en la completa falló la captura de pantalla del servidor de pruebas, no la función"
 }

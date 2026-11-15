@@ -443,8 +443,15 @@
 
   // Tres ejemplos en loop: paneo lento, fundido al cambiar. Si alguien mueve la esfera, el loop espera.
   const crearVisor = (el) => { const v = new Marzipano.Viewer(el, { controls: { mouseViewMode: "drag" } }); v.controls().disableMethod("scrollZoom"); return v; };
+  // Revisión del escaparate (14 nov 2026): al abrir bajaba 4 MB (3.2 MB de fotos 360) y en el celular con datos
+  // tardaba. Ahora la foto 360 llega hasta 1024 px por cara en el celular (2048 en compu, igual de nítida a ese
+  // tamaño) y la esfera de lotes de más abajo se arma hasta que vas llegando a ella.
+  const CEL = (() => { try { return matchMedia("(pointer: coarse)").matches && Math.min(screen.width, screen.height) <= 600; } catch (e) { return false; } })();
+  const TOPE = CEL || (navigator.connection && navigator.connection.saveData) ? 1024 : 2048;
   async function escena(viewer, base, o) {
     const d = await (await fetch(base + "escena.json")).json();
+    const nv = d.niveles.filter((l, i) => i === 0 || l.size <= TOPE);
+    d.niveles = nv.length > 1 ? nv : d.niveles.slice(0, 2);
     const el = viewer.domElement(), ang = () => el.clientWidth / el.clientHeight < 1;
     const fov = ang() ? o.fovCel : o.fov, pitch = ang() ? o.pitchCel : o.pitch;
     const view = new Marzipano.RectilinearView({ yaw: o.yaw, pitch, fov }, Marzipano.RectilinearView.limit.traditional(d.cara, (120 * Math.PI) / 180));
@@ -492,11 +499,16 @@
     viewer.domElement().addEventListener("pointerdown", () => (tocada = Date.now()));
     puntos.addEventListener("click", (ev) => { const b = ev.target.closest("button"); if (b) ver([...puntos.children].indexOf(b)); });
     ver(0, true);
-    // La esfera de lotes en su propia sección
-    const vl = crearVisor(document.getElementById("esfera-lotes"));
-    const l = await escena(vl, "escaparate-esfera/", { yaw: -0.15, pitch: 0.55, fov: 1.15, pitchCel: 0.5, fovCel: 1.5, vel: 0.04 });
-    l.scene.switchTo({ transitionDuration: 0 });
-    if (!quieto) { vl.setIdleMovement(4000, l.paneo); vl.startMovement(l.paneo); }
+    // La esfera de lotes en su propia sección: se arma al acercarse a ella
+    const elL = document.getElementById("esfera-lotes");
+    const armarLotes = async () => {
+      const vl = crearVisor(elL);
+      const l = await escena(vl, "escaparate-esfera/", { yaw: -0.15, pitch: 0.55, fov: 1.15, pitchCel: 0.5, fovCel: 1.5, vel: 0.04 });
+      l.scene.switchTo({ transitionDuration: 0 });
+      if (!quieto) { vl.setIdleMovement(4000, l.paneo); vl.startMovement(l.paneo); }
+    };
+    if (!("IntersectionObserver" in window)) armarLotes();
+    else { const io = new IntersectionObserver((en) => { if (en.some((x) => x.isIntersecting)) { io.disconnect(); armarLotes(); } }, { rootMargin: "400px 0px" }); io.observe(elL); }
   })();
 </script>
 <script>

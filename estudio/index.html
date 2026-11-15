@@ -2209,7 +2209,9 @@
     <h2 style="margin:0;font-size:18px" id="mv-compu-tit">Mozari se usa en computadora</h2>
     <ul class="mv-prueba" id="mv-prueba" hidden><li>No pagas nada y no te pedimos tarjeta.</li><li>Usas todas las herramientas, sin fecha de vencimiento.</li><li>Tus tours se publican con la marca «Creado por Mozari».</li><li>Solo si quieres entregarlos sin marca, una licencia de pago único.</li></ul>
     <p class="nota">Para crear tus tours, entra a <b>mozari.app</b> desde tu compu con esta misma cuenta de Google.</p>
-    <button class="btn-prim" id="mv-link">Mandarme el link para la compu</button>
+    <p class="nota mv-correo" id="mv-correo" hidden></p>
+    <button class="btn-prim" id="mv-mail">Mándame el link a mi correo</button>
+    <button class="btn-sec" id="mv-link">Compartir el link (WhatsApp…)</button>
   </div>
   <div class="tarjeta" id="mv-plan" hidden></div>
   <div class="tarjeta" id="mv-tour">
@@ -2930,6 +2932,8 @@
     return h ? vistaLlegada(h, origen) : undefined;
   }
   const urlSegura = (u) => { u = String(u || "").trim(); if (!u) return ""; if (!/^https?:\/\//i.test(u)) u = "https://" + u.replace(/^\/+/, ""); return /^https?:\/\/[^\s"'<>]+$/i.test(u) ? u : ""; };
+  // El botón de contacto también acepta teléfono y correo (tel:, mailto:)
+  const enlaceCta = (u) => { const v = String(u || "").trim(); return /^(tel|mailto):[^\s"'<>]+$/i.test(v) ? v : urlSegura(v); };
   // Historial para deshacer (Cmd/Ctrl + Z) y rehacer (Cmd/Ctrl + Shift + Z).
   // Los cambios seguidos (arrastrar, mover un control) cuentan como un solo paso.
   let historial = [], rehechos = [], ultimoEstado = JSON.stringify(est), tHistorial = 0;
@@ -4201,7 +4205,10 @@
     return '<div class="cor-caja"><div><b>Correos a tus usuarios</b><small>' + (cor.activo ? "Este mes van " + miles(cor.mes) + " de 3,000 incluidos en tu plan. Mozari se detiene en " + miles(cor.topeMes) + ", sin cobros extra." : "El envío se activa cuando subas esta versión.") + "</small>" +
       '<div class="cor-medidor"><i style="width:' + Math.min(100, (cor.mes / 3000) * 100).toFixed(1) + '%"></i></div></div>' +
       '<label class="interruptor"><b>Bienvenida a cuentas nuevas</b><input type="checkbox" class="toggle" data-cor-bienvenida' + (cor.conf.bienvenida ? " checked" : "") + (cor.activo ? "" : " disabled") + "></label>" +
-      '<button class="btn-sec" data-cor-prueba' + (cor.activo ? "" : " disabled") + ">Mandarme la bienvenida</button></div>";
+      '<button class="btn-sec" data-cor-prueba' + (cor.activo ? "" : " disabled") + ">Mandarme la bienvenida</button></div>" +
+      '<div class="cor-caja"><div><b>Recordatorio a las 24 h</b><small>«Tu primer tour te espera»: con el link para abrir Mozari en la compu, a quien creó su cuenta y aún no hace un tour (casi siempre entraron desde el celular). Una sola vez por cuenta. Al prenderlo también les llega a los de los últimos 7 días.</small></div>' +
+      '<label class="interruptor"><b>Recordatorio</b><input type="checkbox" class="toggle" data-cor-recordatorio' + (cor.conf.recordatorio ? " checked" : "") + (cor.activo ? "" : " disabled") + "></label>" +
+      '<button class="btn-sec" data-cor-prueba-rec' + (cor.activo ? "" : " disabled") + ">Mandarme el recordatorio</button></div>";
   }
   // Correo con descuento (campaña): a una lista de correos y a quien tiene cuenta de prueba, con link personal
   let campNueva = false;
@@ -4276,7 +4283,16 @@
     if (!r || !r.ok) { ev.target.checked = !si; avisar("No se pudo guardar"); return; }
     avisar(si ? "Listo: cada cuenta nueva recibirá la bienvenida" : "Bienvenida apagada");
   });
+  document.addEventListener("change", async (ev) => {
+    if (!ev.target.matches || !ev.target.matches("[data-cor-recordatorio]")) return;
+    const si = ev.target.checked;
+    const r = await fetch("api/admin/correos", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ recordatorio: si }) }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    if (!r || !r.ok) { ev.target.checked = !si; avisar("No se pudo guardar"); return; }
+    avisar(si ? "Listo: el recordatorio sale a las 24 h" + (d.sembrados ? ". También a " + d.sembrados + " cuentas de esta semana sin tour (10 por hora)" : "") : "Recordatorio apagado");
+  });
   document.addEventListener("click", async (ev) => {
+    if (ev.target.closest("[data-cor-prueba-rec]")) { correoPrueba({ recordatorio: true }); return; }
     if (ev.target.closest("[data-cor-prueba]")) { correoPrueba(); return; }
     const f = ev.target.closest("[data-nov-id]"); if (!f) return;
     if (ev.target.closest("[data-nf-correo-prueba]")) { await guardarPend(); correoPrueba({ novedad: f.dataset.novId }); return; }
@@ -4423,6 +4439,17 @@
     return '<div class="cuentas-conteo paises-conteo">' + l.map(([cc, k]) => '<span title="' + esc(nombrePais(cc)) + '"><i class="bandera">' + bandera(cc) + "</i><b>" + k + "</b> " + esc(nombrePais(cc)) + "</span>").join("") +
       (sin ? '<span class="sin-pais" title="Cuentas que no han entrado desde que Mozari guarda el país"><b>' + sin + "</b> sin dato aún</span>" : "") + "</div>";
   }
+  // Revisión de registros (14 nov 2026): quien entra desde el celular casi no llega a su primer tour. Aquí se ve cada semana.
+  function embudoSemana(l) {
+    if (!l.length) return "";
+    const de = (t) => l.filter((c) => (c.registro || "") === t), hizo = (x) => x.filter((c) => c.nTours > 0).length;
+    const cel = de("celular").concat(de("tablet")), compu = de("compu"), otros = l.length - cel.length - compu.length;
+    const pct = (a, b) => (b ? Math.round((a / b) * 100) + " %" : "—");
+    return '<div class="cuentas-conteo embudo"><span style="--c:#F2F5EC"><b>Esta semana</b></span>' +
+      '<span style="--c:#FF9F5A"><b>' + cel.length + "</b> desde el cel · " + hizo(cel) + " hicieron tour (" + pct(hizo(cel), cel.length) + ")</span>" +
+      '<span style="--c:#6DB4FF"><b>' + compu.length + "</b> desde la compu · " + hizo(compu) + " hicieron tour (" + pct(hizo(compu), compu.length) + ")</span>" +
+      (otros ? '<span style="--c:#B8BEAE"><b>' + otros + "</b> sin dato</span>" : "") + "</div>";
+  }
   async function pintarCuentas() {
     if (vistaDueno === "reportes") return pintarReportes();
     if (vistaDueno === "solicitudes") return pintarSolicitudes();
@@ -4450,6 +4477,8 @@
       dato(cuantos((c) => c.plan === "desarrollos"), "Desarrollos", "#F5BE4E") + "</div>" +
       // Tours hechos con Mozari: los publicados (con link para sus clientes), cuántos son de usuarios y cuántos se han creado
       (tt ? '<div class="cuentas-conteo tours-conteo">' + dato(tt.publicados, "tours publicados", "#3FD5E0") + dato(tt.publicadosClientes, "de usuarios", "#7FE7EE") + dato(tt.publicados - tt.publicadosClientes, "tuyos", "#B48CFF") + dato(tt.creados, "creados en total", "#8FA6AD") + "</div>" : "") +
+      // Entrada de la semana: desde dónde se registraron y cuántos ya hicieron su primer tour
+      embudoSemana(usuarios.filter((c) => String(c.creado || "") >= semana)) +
       // De qué países son (lo da Cloudflare al usar Mozari; los que no han vuelto desde que se guarda, «sin dato»)
       paisesConteo(usuarios) +
       // Cupo: cuántas cuentas caben por ahora. Quien compra o llega con un link de regalo entra aunque esté lleno.
@@ -4627,6 +4656,15 @@
     // Reporte de un usuario (13 nov 2026): entró desde el celular, vio precios y creyó que lo queríamos cobrar.
     // A la cuenta de prueba se le dice primero qué tiene y que no paga nada; las licencias van después.
     if (PLAN.id === "gratis" && !PLAN.vencido && !NUBE.admin) { $("mv-compu-tit").textContent = "Tu cuenta de prueba ya está lista"; $("mv-prueba").hidden = false; }
+    // Revisión de registros (14 nov 2026): de 93 cuentas creadas en el celular, solo 24 hicieron un tour. El link
+    // para la compu va a su correo (lo abren en la compu sin buscar nada) y se le recuerda que ya le llegó uno.
+    if (NUBE.bienvenida) { $("mv-correo").innerHTML = "Ya te mandamos un correo a <b>" + esc(NUBE.email) + "</b> con el link."; $("mv-correo").hidden = false; }
+    $("mv-mail").addEventListener("click", async () => {
+      const b = $("mv-mail"); b.disabled = true; b.textContent = "Mandando…";
+      const r = await fetch("api/yo/link-compu", { method: "POST" }).catch(() => null), d = r ? await r.json().catch(() => ({})) : {};
+      if (r && r.ok) { b.textContent = "Listo: revisa tu correo en la compu"; $("mv-correo").innerHTML = "Te lo mandamos a <b>" + esc(d.para || NUBE.email) + "</b>. Ábrelo en tu compu y entra con esta misma cuenta."; $("mv-correo").hidden = false; return; }
+      b.disabled = false; b.textContent = "Mándame el link a mi correo"; avisar(d.error || "No se pudo mandar. Usa «Compartir el link».");
+    });
     // Amar sin su compu (nov 2026): en el celular el dueño tiene su Panel completo (cuentas, reportes, links…)
     if (NUBE.admin && matchMedia("(max-width: 960px)").matches) {
       const dn = document.createElement("section");
@@ -11645,8 +11683,12 @@ void main(){
       cerrar: (cls) => (o.cerrable ? btn("cerrar", "Cerrar vista previa", cls) : ""),
       cta: (cls) => {
         if (!sk.cta.mostrar) return "";
-        const t = esc(sk.cta.texto || "Contactar");
-        return sk.cta.enlace ? '<a class="sk-cta ' + cls + '" href="' + esc(sk.cta.enlace) + '" target="_blank" rel="noopener">' + ICO_SK.chat + t + "</a>" : '<button class="sk-cta ' + cls + '" data-sk="cta">' + ICO_SK.chat + t + "</button>";
+        // Revisión de los tours publicados (nov 2026): 53 de 74 tenían el botón sin enlace y al visitante le salía el
+        // aviso que era para el dueño; y 2 tenían «wa.me/…» sin https, que abría una página rota. Ahora el enlace se
+        // completa (https://) y, en el tour publicado, sin enlace no hay botón. En el estudio sí sale, para recordarlo.
+        const t = esc(sk.cta.texto || "Contactar"), en = enlaceCta(sk.cta.enlace);
+        if (!en && MODO === "tour") return "";
+        return en ? '<a class="sk-cta ' + cls + '" href="' + esc(en) + '" target="_blank" rel="noopener">' + ICO_SK.chat + t + "</a>" : '<button class="sk-cta ' + cls + '" data-sk="cta">' + ICO_SK.chat + t + "</button>";
       },
     };
     ui.innerHTML = PLANTILLAS[T].html(c);
@@ -12367,7 +12409,7 @@ void main(){
       campo("Opacidad", '<div class="rango"><input type="range" data-sk-k="opacidad" min="0.3" max="1" step="0.02" value="' + sk.opacidad + '" aria-label="Opacidad de paneles"><span class="valor" id="sk-op-v">' + Math.round(sk.opacidad * 100) + "%</span></div>") +
       campo("Esquinas", '<div class="rango"><input type="range" data-sk-k="radio" min="0" max="24" step="1" value="' + sk.radio + '" aria-label="Redondeo de esquinas"><span class="valor" id="sk-radio-v">' + sk.radio + " px</span></div>") + "</div>" +
       '<div class="grupo"><b>Contacto</b>' + tgl("cta.mostrar", sk.cta.mostrar, "Botón de contacto") +
-      (sk.cta.mostrar ? campo("Texto", '<input type="text" data-sk-k="cta.texto" maxlength="28" value="' + esc(sk.cta.texto) + '">') + campo("Enlace", '<input type="url" data-sk-k="cta.enlace" placeholder="https://wa.me/52…" value="' + esc(sk.cta.enlace) + '">') + '<p class="nota">WhatsApp, formulario o página del desarrollo. Se abre en otra pestaña.</p>' : "") + "</div>" +
+      (sk.cta.mostrar ? campo("Texto", '<input type="text" data-sk-k="cta.texto" maxlength="28" value="' + esc(sk.cta.texto) + '">') + campo("Enlace", '<input type="url" data-sk-k="cta.enlace" placeholder="https://wa.me/52…" value="' + esc(sk.cta.enlace) + '">') + '<p class="nota">WhatsApp, formulario o página del desarrollo. Se abre en otra pestaña. Sin enlace, el botón no sale en el tour publicado.</p>' : "") + "</div>" +
       '<div class="grupo"><b>Crédito</b>' + campo("Texto", '<input type="text" data-sk-k="credito.texto" maxlength="60" placeholder="Desarrollado por Tu Empresa" value="' + esc((sk.credito && sk.credito.texto) || "") + '">') +
         campo("Enlace", '<input type="url" data-sk-k="credito.enlace" placeholder="tuempresa.com (opcional)" value="' + esc((sk.credito && sk.credito.enlace) || "") + '">') +
         '<p class="nota">Sale chiquito abajo del tour, con tu marca. ' + (conMarcaPrueba() ? "En tu plan actual sale la marca de Mozari en su lugar." : "Déjalo vacío para no mostrar nada.") + "</p></div>" +

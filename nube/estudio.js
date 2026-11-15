@@ -29,7 +29,7 @@
 
 import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR, conCarga, cargaEnViejos } from "./comun.js";
 import { rutasSesion, cuentaDe, perfil, leerCupo, contarCuentas, firmarLink, verificarLink } from "./sesion.js";
-import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoCompra, correoCotizacion, TIPOS_COTIZACION, correoDeNovedad, correoCampana, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja, CAMPANA, iniciarCampana } from "./correos.js";
+import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoCompra, correoCotizacion, TIPOS_COTIZACION, correoDeNovedad, correoCampana, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja, CAMPANA, iniciarCampana, correoCompu, mandarRecordatorios, sembrarRecordatorios } from "./correos.js";
 import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
 import { apiPagos, webhookMercadoPago, webhookStripe, CODIGO, cuponClave } from "./pagos.js";
 import { EmailMessage } from "cloudflare:email";
@@ -578,8 +578,18 @@ async function admin(request, env, partes, yo) {
     if (partes.length === 3 && m === "PUT") {
       const c = await request.json().catch(() => ({})), conf = await leerConf(env);
       if (typeof c.bienvenida === "boolean") conf.bienvenida = c.bienvenida;
+      let sembrados = 0;
+      if (typeof c.recordatorio === "boolean") {
+        if (c.recordatorio && !conf.recordatorio) sembrados = await sembrarRecordatorios(env).catch(() => 0);
+        conf.recordatorio = c.recordatorio;
+      }
       await guardarConf(env, conf);
-      return json({ conf });
+      return json({ conf, sembrados });
+    }
+    // Mandar ya los recordatorios pendientes (en local, las pruebas no esperan 22 horas)
+    if (partes[3] === "recordatorios" && partes.length === 4 && m === "POST") {
+      const c = await request.json().catch(() => ({})), horas = env.DEV === "1" && Number.isFinite(+c.horas) ? +c.horas : 22;
+      return json({ mandados: await mandarRecordatorios(env, new URL(request.url).origin, firmaBaja(env), horas) });
     }
     if (partes[3] === "prueba" && partes.length === 4 && m === "POST") {
       const c = await request.json().catch(() => ({})), base = new URL(request.url).origin;
@@ -590,6 +600,7 @@ async function admin(request, env, partes, yo) {
         baja = enlaceBaja(base, await firmaBaja(env)(yo.uid));
         correo = correoDeNovedad(await o.json(), yo, base, baja);
       } else if (["pro", "desarrollos", "espacio"].includes(c.compra)) correo = correoCompra({ nombre: yo.nombre, base, plan: c.compra });
+      else if (c.recordatorio) correo = correoCompu({ nombre: yo.nombre, base, baja: enlaceBaja(base, await firmaBaja(env)(yo.uid)) });
       else correo = correoBienvenida({ nombre: yo.nombre, base });
       const cuenta = await contador(env);
       const r = await enviar(env, cuenta, { para: yo.email, asunto: "[Prueba] " + correo.asunto, html: correo.html, texto: correo.texto, baja });
@@ -774,7 +785,7 @@ async function admin(request, env, partes, yo) {
   }
   if (partes[2] !== "cuentas") return error(404, "Ruta desconocida");
   if (partes.length === 3 && m === "GET") {
-    const cuentas = [], tours = [], lecturas = [], sesiones = {};
+    const cuentas = [], tours = [], lecturas = [], sesiones = {}, nTours = {};
     // Los perfiles y las sesiones se leen todos a la vez (uno por uno tardaba 7 s con 75 cuentas)
     const leerJson = (k) => env.R2.get(k).then((r) => (r ? r.json() : null)).catch(() => null);
     let cur;
@@ -787,6 +798,7 @@ async function admin(request, env, partes, yo) {
         // Índice de tours de cada cuenta: cuentas/<uid>/tours/<id> (su "publicado" dice si ya se publicó)
         const t = o.key.match(/^cuentas\/([^/]+)\/tours\/([^/]+)$/);
         if (t) tours.push({ uid: t[1], publicado: !!(o.customMetadata && o.customMetadata.publicado) });
+        if (t) nTours[t[1]] = (nTours[t[1]] || 0) + 1;
       }
       cur = l.truncated ? l.cursor : undefined;
     } while (cur);
@@ -795,7 +807,10 @@ async function admin(request, env, partes, yo) {
     const dueno = new Set(cuentas.filter((p) => p.admin).map((p) => p.uid)), pub = tours.filter((t) => t.publicado);
     const resumenTours = { creados: tours.length, publicados: pub.length, publicadosClientes: pub.filter((t) => !dueno.has(t.uid)).length };
     cuentas.sort((a, b) => String(b.ultimaEntrada).localeCompare(String(a.ultimaEntrada)));
+    // Desde dónde se registró: lo anota la cuenta nueva; las de antes, su primer dispositivo con sesión
+    const registroDe = (p) => p.registro || ((sesiones[p.uid] || []).slice().sort((a, b) => String(a.creada).localeCompare(String(b.creada)))[0] || {}).tipo || "";
     return json({ tours: resumenTours, cuentas: cuentas.map((p) => ({ uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada,
+      registro: registroDe(p), nTours: nTours[p.uid] || 0,
       // Lo que pagó y por dónde (los pagos de antes del historial salen de su último pago, que fue por Mercado Pago)
       pausada: !!p.bloqueado, cortesia: !!p.cortesia, pais: p.pais || ultimaSesion(p.uid).pais || "", ciudad: ultimaSesion(p.uid).ciudad || "",
       pagos: Array.isArray(p.pagos) ? p.pagos : p.ultimoPago ? [Object.assign({ moneda: "MXN", metodo: "mercadopago" }, p.ultimoPago)] : [] })) });
@@ -826,7 +841,20 @@ async function admin(request, env, partes, yo) {
 
 async function api(request, env, partes, yo) {
   const m = request.method, uid = yo.uid, plan = planDe(yo);
-  if (partes[1] === "yo" && m === "GET") return json({ email: yo.email, nombre: yo.nombre, foto: yo.foto, admin: !!yo.admin, plan, lab: await labDe(env, yo), guias: yo.guiasVistas || [] });
+  if (partes[1] === "yo" && m === "GET") return json({ email: yo.email, nombre: yo.nombre, foto: yo.foto, admin: !!yo.admin, plan, lab: await labDe(env, yo), guias: yo.guiasVistas || [], bienvenida: !!yo.bienvenida });
+  // Desde el celular: «Mándame el link a mi correo» para abrir Mozari en la compu (una vez cada 10 minutos)
+  if (partes[1] === "yo" && partes[2] === "link-compu" && partes.length === 3 && m === "POST") {
+    const clave = "cuentas/" + yo.uid + "/perfil.json", o = await env.R2.get(clave); if (!o) return error(404, "Sin cuenta");
+    const p = await o.json();
+    if (p.linkCompu && Date.now() - Date.parse(p.linkCompu) < 600e3) return json({ ok: true, para: p.email, repetido: true });
+    const base = new URL(request.url).origin, c = correoCompu({ nombre: p.nombre, base, pedido: true });
+    const cuenta = await contador(env), r = await enviar(env, cuenta, { para: p.email, asunto: c.asunto, html: c.html, texto: c.texto });
+    await cuenta.guardar();
+    if (r !== "ok") return error(r === "tope" ? 429 : 502, "No se pudo mandar el correo. Copia el link: " + base + "/");
+    p.linkCompu = new Date().toISOString();
+    await env.R2.put(clave, JSON.stringify(p), { httpMetadata: { contentType: "application/json" } });
+    return json({ ok: true, para: p.email });
+  }
   // Tutoriales guiados: cada cuenta ve el de cada herramienta una sola vez (se anota en su perfil)
   if (partes[1] === "guias" && partes.length === 3 && m === "POST" && /^[a-z0-9-]{2,40}$/.test(partes[2])) {
     const clave = "cuentas/" + yo.uid + "/perfil.json", o = await env.R2.get(clave); if (!o) return error(404, "Sin cuenta");
@@ -1047,6 +1075,8 @@ export default {
     ctx.waitUntil(vigilarRespaldos(env));
     // Novedades por correo que aún tienen pendientes: una tanda por hora
     if (env.ENVIOS) ctx.waitUntil(avanzarColas(env, "https://" + (env.DOMINIO || "mozari.app"), firmaBaja(env)).catch(() => {}));
+    // «Tu cuenta te espera en la compu»: a las ~24 h, a quien no ha hecho su primer tour (si el dueño lo prendió)
+    if (env.ENVIOS) ctx.waitUntil(leerConf(env).then((c) => (c.recordatorio ? mandarRecordatorios(env, "https://" + (env.DOMINIO || "mozari.app"), firmaBaja(env)) : 0)).catch(() => {}));
   },
   async fetch(request, env, ctx) {
     if (!respaldoRevisado && env.VERSION && ctx) { respaldoRevisado = true; ctx.waitUntil(vigilarRespaldos(env).catch(() => {})); }

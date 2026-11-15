@@ -10,7 +10,7 @@
 //   GOOGLE_CLIENT_SECRET (y opcional SESION_SECRETO; si no está, se crea solo)
 // Variables: GOOGLE_CLIENT_ID (no es secreto)
 // Variable: ADMIN (correo del dueño de Mozari: ve el panel de cuentas y adopta los tours viejos)
-import { mandarBienvenida } from "./correos.js";
+import { mandarBienvenida, MARCA_RECORDATORIO } from "./correos.js";
 
 const COOKIE = "mz_sesion", ESTADO = "mz_estado", COMPRAR = "mz_comprar", PENDIENTE = "mz_pendiente", DIAS = 30;
 // Cada cuenta puede tener la sesión abierta en 2 dispositivos (el dueño de Mozari, sin límite).
@@ -60,6 +60,40 @@ a.b{display:inline-block;margin-top:10px;padding:12px 22px;border-radius:999px;b
 <body><div class="c"><h1>MOZARI</h1><h2>Cupo lleno</h2><p>Por ahora Mozari está abierto a un número limitado de cuentas y ya se llenó.</p>
 <p>Te anotamos en la lista de espera con <b>${String(email || "").replace(/[&<>"']/g, "")}</b>. Te escribimos en cuanto se abran más lugares.</p>
 <a class="b" href="/#planes">¿Ya quieres entrar? Con una licencia entras directo</a><small>Pro y Desarrollos no tienen cupo.</small></div></body></html>`;
+
+// Revisión de registros (14 nov 2026): desde el 10 de nov, 0 entradas desde el navegador interno de Instagram,
+// Facebook o TikTok en iPhone, aunque de ahí viene el tráfico de los reels. Google no deja «Entrar con Google» dentro
+// de esas apps (error 403 disallowed_useragent) y la gente se iba sin cuenta. Ahora /entrar lo detecta y les pide
+// abrir Mozari en Chrome o Safari (en Android se abre solo; en iPhone con un toque).
+export function appInterna(ua) {
+  ua = String(ua || "");
+  if (/Instagram/i.test(ua)) return "Instagram";
+  if (/FBAN|FBAV|FB_IAB|FBIOS|FB4A|\bMessenger/i.test(ua)) return "Facebook";
+  if (/musical_ly|Bytedance|TikTok|trill_/i.test(ua)) return "TikTok";
+  if (/\bLine\/|Snapchat|LinkedInApp|Pinterest|Twitter|Threads/i.test(ua)) return "esa app";
+  if (/Android.*; wv\)/.test(ua)) return "esa app"; // cualquier otro navegador interno de Android
+  return "";
+}
+const paginaAbrirFuera = (app, url, ua) => {
+  const destino = url.origin + url.pathname + url.search, sinEsquema = destino.replace(/^https?:\/\//, "");
+  const android = /Android/i.test(ua), iphone = /iPhone|iPad|iPod/i.test(ua);
+  const intent = "intent://" + sinEsquema + "#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" + encodeURIComponent(destino) + ";end";
+  const safari = "x-safari-" + destino;
+  const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const boton = android ? '<a class="b" id="abrir" href="' + esc(intent) + '">Abrir en Chrome</a>' : iphone ? '<a class="b" id="abrir" href="' + esc(safari) + '">Abrir en Safari</a>' : "";
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Abre Mozari en tu navegador</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F4F5F2;color:#0B0B0B;font:15px/1.55 Poppins,system-ui,sans-serif;text-align:center;padding:24px;box-sizing:border-box}
+.c{max-width:420px;width:100%}h1{font-weight:600;letter-spacing:.3em;font-size:16px;margin:0 0 26px}h2{font-size:24px;line-height:1.25;margin:0 0 12px}p{color:#4A4D45;margin:0 0 18px}
+.b{display:block;margin:0 0 12px;padding:15px 22px;border-radius:999px;background:#0B0B0B;color:#fff;text-decoration:none;font-weight:600;font-size:16px;border:0;width:100%;box-sizing:border-box;font-family:inherit;cursor:pointer}
+.s{background:#E6E8E0;color:#0B0B0B}.pasos{text-align:left;background:#fff;border:1px solid #E6E8E0;border-radius:16px;padding:16px 18px;margin:8px 0 0;font-size:14px}.pasos b{color:#0B0B0B}
+.pasos ol{margin:6px 0 0;padding-left:20px}.ok{color:#2E7D32;font-size:13px;min-height:20px;margin:4px 0 0}</style></head>
+<body><div class="c"><h1>MOZARI</h1><h2>Ábrelo en tu navegador para entrar</h2>
+<p>Estás dentro de ${esc(app)}. Ahí Google no deja «Entrar con Google». Ábrelo en ${android ? "Chrome" : iphone ? "Safari" : "tu navegador"} y crea tu cuenta de prueba en un minuto.</p>
+${boton}<button class="b s" id="copiar">Copiar el link</button><p class="ok" id="ok"></p>
+<div class="pasos"><b>¿No se abrió?</b><ol><li>Toca los <b>tres puntos ( ••• )</b> de arriba a la derecha.</li><li>Elige <b>«Abrir en el navegador»</b>${iphone ? " o «Abrir en Safari»" : android ? " o «Abrir en Chrome»" : ""}.</li></ol></div></div>
+<script>document.getElementById("copiar").onclick=async function(){var l=${JSON.stringify(destino)};try{await navigator.clipboard.writeText(l);document.getElementById("ok").textContent="Link copiado. Pégalo en ${android ? "Chrome" : iphone ? "Safari" : "tu navegador"}.";}catch(e){document.getElementById("ok").textContent=l;}};
+${android ? 'setTimeout(function(){location.href=document.getElementById("abrir").href;},350);' : ""}</script></body></html>`;
+};
 
 const b64u = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const deB64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(s.length / 4) * 4, "=")), (c) => c.charCodeAt(0));
@@ -153,9 +187,10 @@ export async function cuentaDe(request, env) {
 }
 
 // Crea la cuenta la primera vez; después solo actualiza nombre y foto
-async function guardarCuenta(env, g) {
+async function guardarCuenta(env, g, registro) {
   const uid = "g" + g.sub, antes = await perfil(env, uid), ahora = new Date().toISOString();
-  const p = Object.assign({ uid, plan: "gratis", creado: ahora }, antes || {}, {
+  // registro: desde dónde creó la cuenta (celular, tablet o compu), para medir la entrada desde el celular
+  const p = Object.assign({ uid, plan: "gratis", creado: ahora, registro: registro || "" }, antes || {}, {
     email: g.email, nombre: g.name || g.email, foto: g.picture || "", ultimaEntrada: ahora,
   });
   if (env.ADMIN && g.email.toLowerCase() === env.ADMIN.toLowerCase()) p.admin = true;
@@ -175,7 +210,9 @@ async function iniciarSesion(request, url, env, g, adopcion, comprar) {
       return new Response(paginaCupoLleno(g.email), { status: 200, headers: h });
     }
   }
-  const { p, nueva } = await guardarCuenta(env, g);
+  const { p, nueva } = await guardarCuenta(env, g, dispositivoDe(request).tipo);
+  // Recordatorio «tu cuenta te espera en la compu» (sale a las ~24 h si no ha hecho un tour y el dueño lo prendió)
+  if (nueva && !p.admin) { try { await env.R2.put(MARCA_RECORDATORIO(p.uid), "", { customMetadata: { creado: p.creado } }); } catch (e) { /* sin recordatorio */ } }
   // Correo de bienvenida (si el dueño lo prendió en su panel). Si falla, la entrada sigue igual.
   if (nueva) {
     try { if (await mandarBienvenida(env, p, url.origin)) { p.bienvenida = new Date().toISOString(); await env.R2.put(perfilClave(p.uid), JSON.stringify(p), { httpMetadata: { contentType: "application/json" } }); } }
@@ -258,6 +295,12 @@ export async function rutasSesion(request, env, adopcion) {
     if (env.DEV === "1" && url.hostname === "localhost" && url.searchParams.get("dev")) {
       const email = url.searchParams.get("dev");
       return iniciarSesion(request, url, env, { sub: "dev-" + email.replace(/[^a-z0-9]/gi, ""), email, name: email.split("@")[0] }, adopcion, comprar);
+    }
+    const ua = request.headers.get("user-agent") || "", app = appInterna(ua);
+    if (app) {
+      // Para medir: cuántos llegan desde cada app (metricas/app-interna/<día>/<app>-<azar>)
+      try { await env.R2.put("metricas/app-interna/" + new Date().toISOString().slice(0, 10) + "/" + app.replace(/\W/g, "") + "-" + b64u(crypto.getRandomValues(new Uint8Array(6))), ""); } catch (e) { /* sin métrica */ }
+      return new Response(paginaAbrirFuera(app, url, ua), { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
     }
     if (!env.GOOGLE_CLIENT_ID) return new Response("Falta configurar el acceso con Google", { status: 503 });
     const estado = b64u(crypto.getRandomValues(new Uint8Array(24)));
