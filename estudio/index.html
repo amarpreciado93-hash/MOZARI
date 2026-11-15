@@ -1472,6 +1472,13 @@
   .sk-cta:hover { filter: brightness(1.08); }
   .sk-pil { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; color: rgba(255, 255, 255, 0.82); white-space: nowrap; }
   .sk-pil i { width: 6px; height: 6px; border-radius: 50%; background: var(--sk-acento); animation: respira 1.6s ease-in-out infinite; }
+  .sk-pil[data-piloto] { pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; padding-block: 6px; margin-block: -6px; }
+  .sk-pil .pil-rep { width: 12px; height: 12px; flex: none; opacity: 0.6; transition: opacity 0.2s, transform 0.3s; }
+  .sk-pil[data-piloto]:hover .pil-rep, .sk-pil[data-piloto]:focus-visible .pil-rep { opacity: 1; transform: rotate(-40deg); }
+  .sk-pil.fin { color: #fff; font-weight: 600; font-size: 12px; }
+  .sk-pil.fin:not(.sk-panel) { width: max-content; max-width: 100%; justify-self: start; align-self: flex-start; padding: 7px 12px; margin-block: 2px 0; border-radius: 999px; background: rgba(11, 11, 11, 0.62); border: 1px solid rgba(255, 255, 255, 0.16); }
+  .sk-pil.fin i { display: none; }
+  .sk-pil.fin .pil-rep { opacity: 1; width: 14px; height: 14px; color: var(--sk-acento); }
   .sk [data-ir] { cursor: pointer; }
 
   /* ===== Plantilla 1 · CINE: minimalista, título grande, menú escondido ===== */
@@ -1528,6 +1535,7 @@
   .t-desarrollo .d-pie { padding: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: grid; gap: 8px; }
   .t-desarrollo .d-pie .sk-cta { width: 100%; box-sizing: border-box; padding: 13px; }
   .t-desarrollo .d-pie .sk-pil { justify-content: center; }
+  .t-desarrollo .d-pie .sk-pil.fin { align-self: center; justify-self: center; }
   .t-desarrollo .d-toggle { position: absolute; top: 28px; left: calc(max(16px, env(safe-area-inset-left, 0px)) + 290px + 10px); width: 34px; height: 34px; transition: left 0.35s cubic-bezier(.4, 0, .2, 1); }
   .t-desarrollo.oculto .d-toggle { left: max(16px, env(safe-area-inset-left, 0px)); }
   .t-desarrollo.oculto .d-toggle svg { transform: rotate(180deg); }
@@ -3200,7 +3208,7 @@
   // Contraste contra blanco: abajo de 4.5 el QR puede no leerse impreso
   const contrasteBlanco = (h) => { const L = hexRgb(h).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 1.05 / (0.2126 * L[0] + 0.7152 * L[1] + 0.0722 * L[2] + 0.05); };
   function codigoInsertar() {
-    const L = esc(linkTour()), T = esc(P().nombre || "Tour 360"), allow = ' allow="fullscreen; gyroscope; accelerometer; xr-spatial-tracking" allowfullscreen';
+    const L = esc(linkTour()), T = esc(P().nombre || "Tour 360"), allow = ' allow="fullscreen; gyroscope; accelerometer; xr-spatial-tracking; autoplay; screen-wake-lock" allowfullscreen';
     if (COMP.modo === "alto") return '<iframe src="' + L + '" title="' + T + '" width="100%" height="' + COMP.alto + '" style="border:0;border-radius:12px"' + allow + ' loading="lazy"></iframe>';
     if (COMP.modo === "pantalla") return '<iframe src="' + L + '" title="' + T + '" style="display:block;width:100%;height:100vh;border:0"' + allow + "></iframe>";
     return '<div style="position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden"><iframe src="' + L + '" title="' + T + '" style="position:absolute;inset:0;width:100%;height:100%;border:0"' + allow + ' loading="lazy"></iframe></div>';
@@ -3715,6 +3723,8 @@
     if (clave === "panoramas/capas") guiaCapasNuevas();
     if (clave === "proyecto/musica") guiaNueva("nuevo-sonido", () => [esVisible("#m-preguntar-fila") && { el: "#m-preguntar-fila", titulo: "Nuevo: ¿activar sonido?",
       texto: "Los navegadores no dejan sonar un tour hasta que el visitante toca la pantalla. Ahora, al abrirlo le preguntamos <b>Activar sonido</b> o <b>Sin sonido</b>, con los colores de tu tour, y la música y las voces arrancan con su respuesta." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "musica");
+    if (clave === "panoramas/piloto") guiaNueva("nuevo-repetir-piloto", () => [esVisible("#pl-repetir-info") && { el: "#pl-repetir-info", titulo: "Nuevo: repetir el recorrido",
+      texto: "En el tour, el aviso <b>Piloto automático</b> ahora es un botón: al tocarlo, la cámara regresa al inicio y el recorrido vuelve a empezar <b>con su audio</b>. Y mientras el piloto corre, el celular <b>no se bloquea</b>." }].filter(Boolean), () => nav.sub === "piloto" && esVisible("#pl-repetir-info"));
     if (clave === "media/planos" && enLab("planos")) guiaPlanos();
     if (clave === "media/audios" && enLab("narracion")) guiaVoz();
     if (clave === "panoramas/lotes" && enLab("fichas")) guiaNueva("nuevo-fichas", [{ el: "#ficha-editor", titulo: "Nuevo: la ficha del lote con tu marca",
@@ -3739,7 +3749,7 @@
     "   cPanel → Administrador de archivos → public_html, o por FTP (FileZilla).",
     "2. Ábrelo en el navegador: https://tusitio.com/" + carpeta + "/",
     "3. Para ponerlo dentro de una página, usa:",
-    '   <iframe src="https://tusitio.com/' + carpeta + '/" width="100%" height="600" style="border:0" allowfullscreen allow="fullscreen; xr-spatial-tracking"></iframe>', "",
+    '   <iframe src="https://tusitio.com/' + carpeta + '/" width="100%" height="600" style="border:0" allowfullscreen allow="fullscreen; xr-spatial-tracking; autoplay; screen-wake-lock"></iframe>', "",
     "IMPORTANTE", "",
     "- No se abre con doble clic: necesita estar en un servidor (tu hosting).",
     "- Necesita internet: carga su motor 3D y tipografías de la web.",
@@ -4919,8 +4929,8 @@
     pintarResumen();
   }
   const NOTAS_CALIDAD = {
-    maxima: "La foto a toda su resolución. Se ve lo más nítido posible al hacer zoom, pero pesa más: con internet lento tarda en verse nítida.",
-    equilibrada: "Recomendada. A zoom normal se ve igual de nítida y en compu pesa hasta 4 veces menos. En celular usa la resolución ligera para ir fluido.",
+    maxima: "La foto a toda su resolución en compu. Se ve lo más nítido al hacer zoom, pero pesa más: con internet o un hosting lento tarda en verse nítida. En celular se limita para que no se trabe.",
+    equilibrada: "Recomendada. A zoom normal se ve igual de nítida y en compu pesa hasta 4 veces menos. En celular usa una resolución más ligera para ir fluido.",
     ligera: "Para conexiones lentas: carga muy rápido en todos lados. Al acercarse se ve menos nítida.",
   };
   function pintarCalidad() {
@@ -5032,7 +5042,15 @@
   // siempre si el tour no dice otra cosa. El editor trabaja siempre en alta (para trazar con precisión).
   const CALIDADES = { maxima: [Infinity, 2048, 2048], equilibrada: [2048, 2048, 1024], ligera: [1024, 1024, 1024] };
   const calidadDe = () => (CALIDADES[P().calidad] ? P().calidad : "equilibrada");
-  const topeCara = () => CALIDADES[calidadDe()][CEL ? 2 : MOVIL ? 1 : 0];
+  // Reporte (nov 2026): en esferas grandes los niveles van 768 → 1536 → 3072. Con tope 1024 el celular se quedaba
+  // en 768 y se veía pixelado. Si el nivel que cabe queda muy abajo del tope, se deja el siguiente (hasta 1.6×).
+  const topeCara = (nv) => {
+    const t = CALIDADES[calidadDe()][CEL ? 2 : MOVIL ? 1 : 0];
+    if (!nv || t > 1024 || calidadDe() === "ligera") return t;
+    let cabe = 0, sig = Infinity;
+    nv.forEach((l, i) => { if (i === 0) return; if (l.size <= t) cabe = Math.max(cabe, l.size); else sig = Math.min(sig, l.size); });
+    return cabe < t * 0.8 && sig <= t * 1.6 ? sig : t;
+  };
   // Manita con la barra espaciadora (Laboratorio). Mientras está activa, un clic en la esfera no pone puntos ni selecciona.
   const MANO = { activa: false };
   // =================== MOTOR (esfera + capas) ===================
@@ -5093,7 +5111,7 @@
       const source = Marzipano.ImageUrlSource.fromString(b + "{z}/{f}/{y}/{x}.jpg", { cubeMapPreviewUrl: b + "preview.jpg", retryDelay: 1500 });
       // En el celular la memoria es poca: se usa hasta 2048 px por cara (se ve nítido en esa pantalla)
       // y se guardan pocas piezas de las vistas anteriores. Así el navegador no cierra la página.
-      const tope = editable ? (MOVIL ? TOPE_MOVIL : Infinity) : topeCara();
+      const tope = editable ? (MOVIL ? TOPE_MOVIL : Infinity) : topeCara(d.niveles);
       const niveles = d.niveles.filter((l, i) => i === 0 || l.size <= tope);
       const geometry = new Marzipano.CubeGeometry(niveles.length > 1 ? niveles : d.niveles.slice(0, 2));
       const cara = Math.min(d.cara, niveles[niveles.length - 1].size);
@@ -6050,7 +6068,17 @@
     const ro = new ResizeObserver(programar);
     ro.observe(stage);
     // Avisa cuando la esfera visible ya cargó todas sus piezas (Marzipano: renderComplete estable)
-    let cortina = null, turnoCambio = 0;
+    let cortina = null, turnoCambio = 0, fondoFijo = null;
+    // Reporte (nov 2026): «la imagen se ve partida, no precarga bien». Mientras llegan las piezas en alta, el visor
+    // rellenaba con la vista previa de 256 px: quedaban cuadros nítidos junto a cuadros muy borrosos. Ahora la esfera
+    // que se ve tiene fijo su nivel ligero (768 px, ya precargado), así lo que falta se ve parejo y no cortado.
+    // Solo la esfera actual: al cambiar, se suelta el de la anterior (memoria del celular).
+    function fondoParejo(e) {
+      if (fondoFijo === e) return;
+      if (fondoFijo) { try { fondoFijo.scene.layer().unpinLevel(1); } catch (x) { /* nada */ } }
+      fondoFijo = null;
+      try { if (e && e.scene.layer().geometry().levelList.length >= 3) { e.scene.layer().pinLevel(1); fondoFijo = e; } } catch (x) { /* nada */ }
+    }
     function nitido(ms) {
       return new Promise((fin) => {
         const st = viewer.stage();
@@ -6072,7 +6100,7 @@
         const antes = actual, dur = transicion ?? 600;
         let foto = "";
         if (antes && antes.id !== id) { try { foto = viewer.stage().takeSnapshot({ quality: 75 }); } catch (e) { foto = ""; } }
-        actual = escenaM(id);
+        actual = escenaM(id); fondoParejo(actual);
         actual.view.setParameters(vista || vistaDe(id)); // arranca en su vista de inicio, o de frente si se llega por un hotspot
         const turno = ++turnoCambio;
         if (cortina) { cortina.remove(); cortina = null; }
@@ -6115,7 +6143,7 @@
         const fundir = () => {
           const ant = actual;
           ++turnoCambio; if (cortina) { cortina.remove(); cortina = null; }
-          actual = escenaM(id);
+          actual = escenaM(id); fondoParejo(actual);
           const vf = Object.assign({}, vista || vistaDe(id));
           actual.view.setParameters(Object.assign({}, vf, { fov: vf.fov * 1.12 }));
           capasEl.classList.add("entrando");
@@ -6187,7 +6215,9 @@
       viajar(p, p.viaje, () => { i++; o.alPunto && o.alPunto(i); esperar(p.pausa, siguiente); });
     }
     o.alPunto && o.alPunto(0);
-    esperar(o.demoraInicial ?? 1.2, siguiente);
+    // «Repetir recorrido»: la cámara regresa al inicio y vuelve a empezar
+    if (o.desdeInicio) viajar(puntos[0], 1.6, () => esperar(0.8, siguiente));
+    else esperar(o.demoraInicial ?? 1.2, siguiente);
     return {
       detener() { vivo = false; cancelAnimationFrame(raf); clearTimeout(espera); },
       // El usuario tomó el control: se pausa y retoma desde donde está después de unos segundos
@@ -8911,7 +8941,8 @@ void main(){
       (pl.alTerminar === "siguiente" ? '<div class="campo"><span>Panorama</span><select id="pl-sig">' + otras.map((e) => '<option value="' + e.id + '"' + (e.id === pl.siguiente ? " selected" : "") + ">" + esc(e.nombre) + "</option>").join("") + "</select></div>" : "") +
       "</div>" +
       '<div class="grupo"><b>Si el usuario toma el control</b><div class="campo"><span>Retomar en</span><div class="rango"><input type="range" id="pl-reanudar" min="3" max="30" step="1" value="' + (pl.reanudar || 8) + '" aria-label="Segundos para retomar"><span class="valor" id="pl-reanudar-v">' + (pl.reanudar || 8) + " s</span></div></div>" +
-      '<p class="nota">El piloto se pausa cuando el usuario mueve la esfera y retoma solo después de ese tiempo sin tocar.</p></div>';
+      '<p class="nota">El piloto se pausa cuando el usuario mueve la esfera y retoma solo después de ese tiempo sin tocar.</p></div>' +
+      '<div class="grupo" id="pl-repetir-info"><b>En el tour</b><p class="nota">Tu cliente toca el aviso <b>Piloto automático</b> para repetir el recorrido desde el inicio, con su audio. Mientras corre, la pantalla del celular no se apaga.</p></div>';
     if (pl.alTerminar === "siguiente" && !escena(pl.siguiente) && otras[0]) { pl.siguiente = otras[0].id; guardar(); }
     pintarDuracion();
   }
@@ -11641,6 +11672,7 @@ void main(){
     const ids = est.escenas.map((e) => e.id);
     const irRel = (d) => { if (!actualId || !o.motor()) return; const i = ids.indexOf(actualId); o.motor().mostrar(ids[(i + d + ids.length) % ids.length]); };
     ui.onclick = (ev) => {
+      if (ev.target.closest("[data-piloto]") && o.alPiloto) { o.alPiloto(); return; }
       const it = ev.target.closest("[data-ir]");
       if (it && o.motor()) { o.motor().mostrar(it.dataset.ir); const caj = ui.querySelector("[data-cajon]"); if (caj) caj.hidden = true; ui.querySelectorAll('[data-sk="cajon"]').forEach((b) => b.setAttribute("aria-expanded", "false")); ui.classList.remove("abierto"); return; }
       const bt = ev.target.closest("[data-sk]");
@@ -11671,7 +11703,18 @@ void main(){
         ui.querySelectorAll('[data-txt="indice"]').forEach((el) => (el.textContent = String(i + 1).padStart(2, "0") + " / " + String(ids.length).padStart(2, "0")));
         ui.querySelectorAll('[data-txt="indice-largo"]').forEach((el) => (el.textContent = "Panorama " + (i + 1) + " de " + ids.length));
       },
-      piloto(on) { ui.querySelectorAll("[data-piloto]").forEach((p) => (p.hidden = !on)); },
+      // El aviso «Piloto automático» también es el botón para repetir el recorrido (al terminar dice «Repetir recorrido»)
+      piloto(on, fin) {
+        ui.querySelectorAll("[data-piloto]").forEach((p) => {
+          p.hidden = !on; p.classList.toggle("fin", !!fin);
+          p.setAttribute("role", "button"); p.tabIndex = 0;
+          const etq = fin ? "Repetir el recorrido desde el inicio" : "Piloto automático: tócalo para empezar el recorrido desde el inicio";
+          p.setAttribute("aria-label", etq); p.title = etq;
+          if (!p.querySelector(".pil-rep")) p.insertAdjacentHTML("beforeend", '<svg class="pil-rep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5"/><path d="M4 4v4.5h4.5"/></svg>');
+          const t = [...p.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
+          if (t) { if (p.dataset.pilTexto == null) p.dataset.pilTexto = t.textContent; t.textContent = fin ? "Repetir recorrido" : p.dataset.pilTexto; }
+        });
+      },
       vista(v) {
         if (!v) return;
         const deg = Math.round((((v.yaw() * 180) / Math.PI) % 360 + 360) % 360);
@@ -12110,8 +12153,31 @@ void main(){
     window.addEventListener("pageshow", (e) => { if (e.persisted) { VIGIA.fuera = false; vigiaGuardar(); } }); // regresó con «atrás»
     window.addEventListener("error", (e) => { VIGIA.errores.push(String((e && e.message) || "error").slice(0, 200)); vigiaGuardar(); });
   }
+  // Reporte (nov 2026): con el piloto automático el celular se bloqueaba a media visita. Mientras el tour se mueve
+  // solo (piloto o presentación), la pantalla no se apaga, como cuando se ve un video.
+  function pantallaDespierta() {
+    let lock = null, pidiendo = false, quiero = false;
+    const pedir = () => {
+      if (!quiero || lock || pidiendo || document.visibilityState !== "visible" || !navigator.wakeLock) return;
+      pidiendo = true;
+      navigator.wakeLock.request("screen").then((l) => {
+        pidiendo = false;
+        if (!quiero) { l.release().catch(() => {}); return; }
+        lock = l; l.addEventListener("release", () => { if (lock === l) lock = null; });
+      }).catch(() => { pidiendo = false; });
+    };
+    const alVolver = () => { if (document.visibilityState === "visible") pedir(); };
+    document.addEventListener("visibilitychange", alVolver);
+    return {
+      poner(on) { quiero = !!on; if (quiero) pedir(); else if (lock) { const l = lock; lock = null; l.release().catch(() => {}); } },
+      activo: () => !!lock,
+      quitar() { this.poner(false); document.removeEventListener("visibilitychange", alVolver); },
+    };
+  }
   function crearTour(stage, ui, o) {
-    let motor = null, piloto = null, api = null, actualId = null;
+    let motor = null, piloto = null, api = null, actualId = null, pilotoFin = false;
+    const despierto = o.sinPresentacion ? null : pantallaDespierta();
+    const despierta = () => { if (!despierto) return; const pr = P().presentacion; despierto.poner(!!((piloto && !pilotoFin) || (pr && pr.activa))); };
     // Modo presentación: si nadie toca el tour, pasa solo a la siguiente esfera
     let tQuieto = Date.now();
     const tocar = () => (tQuieto = Date.now());
@@ -12172,20 +12238,34 @@ void main(){
       else return;
       pop.hidden = false;
     }
-    function arrancarPiloto(id) {
+    function arrancarPiloto(id, desdeInicio) {
       if (piloto) { piloto.detener(); piloto = null; }
       const pl = escena(id).piloto, activo = pl.activo && pl.puntos.length > 0;
+      pilotoFin = false;
       api.piloto(activo);
-      if (!activo) return;
-      piloto = reproducirPiloto(motor, id, {
+      if (activo) piloto = reproducirPiloto(motor, id, {
+        desdeInicio,
         alSiguiente: (sig) => motor && motor.mostrar(sig, 900, vistaHacia(id, sig)),
-        alFin: () => api.piloto(false),
+        alFin: () => { pilotoFin = true; api.piloto(true, true); despierta(); },
       });
+      despierta();
     }
+    // Tocar el aviso del piloto: el recorrido y su audio vuelven a empezar
+    function repetirPiloto() {
+      if (!actualId || !motor) return;
+      const e = escena(actualId), pl = e && e.piloto;
+      if (!pl || !pl.activo || !pl.puntos.length) return;
+      tQuieto = Date.now();
+      arrancarPiloto(actualId, true);
+      if (o.narrar && VOZ.id === actualId && e.narracion && e.narracion.archivo && !SON.mudo) { vozTour.currentTime = 0; vozTour.play().catch(() => {}); }
+      if (o.alRepetir) o.alRepetir();
+    }
+    const teclaPiloto = (ev) => { if ((ev.key === "Enter" || ev.key === " ") && ev.target.closest && ev.target.closest("[data-piloto]")) { ev.preventDefault(); repetirPiloto(); } };
+    ui.addEventListener("keydown", teclaPiloto);
     const pintar = (orientacion) => {
       stage.style.setProperty("--hs-color", est.skin.acento);
       stage.style.setProperty("--hs-sobre", textoSobre(est.skin.acento));
-      api = renderSkin(ui, Object.assign({}, o, { orientacion, motor: () => motor }));
+      api = renderSkin(ui, Object.assign({}, o, { orientacion, motor: () => motor, alPiloto: repetirPiloto }));
       const mini = miniPlano(ui, () => motor), voz = o.narrar ? pastillaVoz(ui) : { escena() {} };
       const e0 = api.escena, v0 = api.vista; // el plano con radar y la narración siguen a la esfera
       api.escena = (id) => { e0(id); mini.escena(id); voz.escena(id); }; api.vista = (v) => { v0(v); mini.vista(v); };
@@ -12202,10 +12282,12 @@ void main(){
     motor.mostrar(o.inicio || P().escenaInicial, 0);
     return {
       nitido: (ms) => (motor ? motor.nitido(ms) : Promise.resolve()),
-      repintar(orientacion) { pintar(orientacion); if (piloto) api.piloto(true); },
+      repintar(orientacion) { pintar(orientacion); if (piloto) api.piloto(true, pilotoFin); },
       cerrarPop,
       destruir() {
         if (piloto) piloto.detener();
+        if (despierto) despierto.quitar();
+        ui.removeEventListener("keydown", teclaPiloto);
         clearInterval(reloj); EVENTOS.forEach((e) => zona.removeEventListener(e, tocar));
         motor.destruir(); motor = null; ui.innerHTML = ""; ui.onclick = null; pop.remove();
       },
@@ -12745,7 +12827,7 @@ void main(){
       if (ligero) return Math.min(1, nv.length - 1);
       const v = vistaDe(id) || {}, fov = v.fov || (100 * Math.PI) / 180;
       const alto = Math.max(window.innerHeight, 300) * Math.min(window.devicePixelRatio || 1, 3);
-      const tope = Math.min(topeCara(), nv[nv.length - 1].size), quiero = Math.min(tope, alto / Math.tan(fov / 2));
+      const tope = Math.min(topeCara(nv), nv[nv.length - 1].size), quiero = Math.min(tope, alto / Math.tan(fov / 2));
       let z = 1;
       for (; z < nv.length; z++) if (nv[z].size >= quiero || nv[z].size >= tope) break;
       z = Math.min(z, nv.length - 1);
@@ -12897,6 +12979,7 @@ void main(){
     tourPv = crearTour($("pv-stage"), $("pv-ui"), {
       orientacion: orientPv, cerrable: MODO !== "tour", alCerrar: cerrarPrevia, hayMusica: !!musicaUrl, narrar: true,
       alMusica: () => { quitarPideSonido(); if (audioTour.paused) { musicaSilenciada = false; SON.mudo = false; audioTour.play().catch(() => {}); return true; } musicaSilenciada = true; audioTour.pause(); return false; },
+      alRepetir: () => { if (!musicaUrl || musicaSilenciada || SON.mudo) return; try { audioTour.currentTime = 0; } catch (e) { /* aún sin cargar */ } if (audioTour.paused && !VOZ.musicaPausada) audioTour.play().catch(() => {}); },
       alPantalla: () => {
         const el = $("previa");
         try { if (document.fullscreenElement) document.exitFullscreen(); else if (el.requestFullscreen) el.requestFullscreen().catch(() => {}); } catch (e) { /* no disponible */ }

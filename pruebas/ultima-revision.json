@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-14T01:22:22.909Z",
- "bien": 95,
- "total": 95,
+ "fecha": "2026-11-14T19:19:45.298381Z",
+ "bien": 97,
+ "total": 97,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -304,6 +304,14 @@
    "ok": true
   },
   {
+   "nombre": "Piloto automático: la pantalla no se apaga mientras corre y su aviso repite el recorrido con el audio",
+   "ok": true
+  },
+  {
+   "nombre": "Piloto encadenado entre esferas con presentación: la pantalla sigue encendida al pasar de una a otra",
+   "ok": true
+  },
+  {
    "nombre": "Estados de los lotes con el nombre de cada país: «Apartado» se cambia a «Reservado» y sale en el tour",
    "ok": true
   },
@@ -383,5 +391,6 @@
    "nombre": "Sin errores de JavaScript en el estudio",
    "ok": true
   }
- ]
+ ],
+ "nota": "Corrida en tramos (el servidor de pruebas se reinicia cada ~20 min): completa + 4 tramos SOLO"
 }

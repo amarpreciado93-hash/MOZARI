@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -519,8 +519,14 @@ async function capasPesadas(p) {
       await t.waitForTimeout(3000);
       const pj = await (await fetch(link + "proyecto.json")).json(), metas = {};
       for (const e of pj.escenas) metas[e.id] = await (await fetch(link + "escenas/" + e.id + "/escena.json")).json();
-      // El nivel más alto permitido: el mayor de hasta 1024 px (o el primero, si la esfera no tiene uno así de chico)
-      const tope = (e) => { const nv = metas[e].niveles; let z = 1; nv.forEach((l, i) => { if (i >= 1 && l.size <= 1024) z = i; }); return z; };
+      // El nivel más alto permitido: el mayor de hasta 1024 px (o el primero, si la esfera no tiene uno así de chico).
+      // Si ese queda muy abajo (768 en esferas grandes) y el siguiente no pasa de 1638 px, se permite el siguiente.
+      const tope = (e) => {
+        const nv = metas[e].niveles; let cabe = 0, sig = Infinity;
+        nv.forEach((l, i) => { if (i >= 1) { if (l.size <= 1024) cabe = Math.max(cabe, l.size); else sig = Math.min(sig, l.size); } });
+        const t = cabe < 1024 * 0.8 && sig <= 1024 * 1.6 ? sig : 1024; let z = 1;
+        nv.forEach((l, i) => { if (i >= 1 && l.size <= t) z = i; }); return z;
+      };
       const grandes = pedidas.filter(([e, z]) => metas[e] && z > tope(e));
       exige(pedidas.length > 0, "el celular no pidió ninguna pieza");
       const cuenta = {}; pedidas.forEach(([e, z]) => { const k = metas[e] ? metas[e].niveles[z].size : z; cuenta[k] = (cuenta[k] || 0) + 1; });
@@ -545,8 +551,8 @@ async function capasPesadas(p) {
       const id = await idTour(n), url = TOURS + "/" + id + "/";
       const publicar = async () => { await n.click('#nav button:has-text("Publicar")'); await n.waitForTimeout(500); await n.click('#subtabs button:has-text("Web")'); await n.waitForTimeout(800); await n.click("#pub-publicar"); await n.waitForTimeout(3500); };
       const elegir = async (c) => { await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(600); await n.click('#p-calidad [data-calidad="' + c + '"]'); await n.waitForTimeout(800); };
-      const tamanos = async () => { // compu con pantalla muy nítida: pediría la resolución más alta si la calidad lo deja
-        const ctx = await navegador.newContext({ viewport: { width: 1200, height: 1000 }, deviceScaleFactor: 3 }), t = await ctx.newPage(), z = new Set();
+      const tamanos = async (cel) => { // compu con pantalla muy nítida: pediría la resolución más alta si la calidad lo deja
+        const ctx = await navegador.newContext(cel ? Object.assign({}, devices["iPhone 13"]) : { viewport: { width: 1200, height: 1000 }, deviceScaleFactor: 3 }), t = await ctx.newPage(), z = new Set();
         await t.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
         t.on("request", (r) => { const m = r.url().match(/\/escenas\/[^/]+\/(\d+)\//); if (m) z.add(+m[1]); });
         await t.goto(url); await t.waitForFunction(() => { const c = document.getElementById("pv-carga"); return c && c.hidden; }, null, { timeout: 30000 }); await t.waitForTimeout(3000);
@@ -559,10 +565,38 @@ async function capasPesadas(p) {
       if (process.env.CAPTURAS) { await n.$eval("#p-calidad", (e) => e.scrollIntoView({ block: "center" })); await n.waitForTimeout(300); await n.screenshot({ path: path.join(process.env.CAPTURAS, "calidad.png") }); }
       await publicar(); let m = await tamanos();
       exige(m > 1024 && m <= 2048, "Equilibrada pidió caras de " + m + " px (debe ser hasta 2048)");
+      // Reporte (nov 2026): en el celular esta esfera (niveles 768/1536/3072) se quedaba en 768 y se veía pixelada
+      m = await tamanos(true);
+      exige(m === 1536, "en celular, Equilibrada pidió caras de " + m + " px en una esfera grande (debe ser 1536, no 768 pixelado ni 3072 pesado)");
+      // Reporte (nov 2026): «la imagen se ve partida, no precarga bien». Si las piezas en alta tardan, lo que falta se
+      // rellena con el nivel de 768 (parejo) y no con la vista previa de 256 (cuadros borrosos junto a nítidos).
+      // Se bloquean las piezas en alta y se mide qué tan nítido queda el piso (rayas finas) contra la pura vista previa.
+      const nitidez = async (bloquear) => {
+        const ctx = await navegador.newContext({ viewport: { width: 1000, height: 700 }, deviceScaleFactor: 2 }), t = await ctx.newPage();
+        await t.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+        await t.route(bloquear, (r) => r.abort());
+        await t.goto(url); await t.waitForFunction(() => { const c = document.getElementById("pv-carga"); return c && c.hidden; }, null, { timeout: 30000 }); await t.waitForTimeout(3500);
+        const png = (await t.screenshot()).toString("base64");
+        if (process.env.CAPTURAS) fs.writeFileSync(path.join(process.env.CAPTURAS, "parejo-" + (String(bloquear).includes("[2-9]") ? "fondo" : "previa") + ".png"), Buffer.from(png, "base64"));
+        const v = await t.evaluate(async (b64) => {
+          const img = new Image(); img.src = "data:image/png;base64," + b64; await img.decode();
+          const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const x = c.getContext("2d"); x.drawImage(img, 0, 0);
+          const y0 = Math.round(img.height * 0.6), y1 = Math.round(img.height * 0.8), w = img.width, d = x.getImageData(0, y0, w, y1 - y0).data;
+          let s = 0, n = 0;
+          for (let y = 0; y < y1 - y0; y += 3) for (let i = 1; i < w; i++) { const k = (y * w + i) * 4; s += Math.abs(d[k] - d[k - 4]) + Math.abs(d[k + 1] - d[k - 3]); n++; }
+          return s / n;
+        }, png);
+        await ctx.close(); return v;
+      };
+      const conFondo = await nitidez(/\/escenas\/[^/]+\/[2-9]\//), soloPrevia = await nitidez(/\/escenas\/[^/]+\/[1-9]\//);
+      console.log("    piezas en alta sin llegar · nitidez del relleno: " + conFondo.toFixed(2) + " (con nivel 768) vs " + soloPrevia.toFixed(2) + " (solo vista previa)");
+      exige(conFondo > soloPrevia * 1.5, "mientras llegan las piezas en alta, el relleno es la vista previa borrosa (se ve partido): " + conFondo.toFixed(2) + " vs " + soloPrevia.toFixed(2));
       await elegir("maxima"); await publicar(); m = await tamanos();
       exige(m > 2048, "Máxima no pidió la foto completa (" + m + " px)");
       await elegir("ligera"); await publicar(); m = await tamanos();
       exige(m <= 1024, "Ligera pidió caras de " + m + " px");
+      m = await tamanos(true);
+      exige(m <= 1024, "en celular, Ligera pidió caras de " + m + " px");
       exige(!n.errs.length, "errores: " + n.errs.join(" | ").slice(0, 160));
       await n.context().close();
     }, a);
@@ -2564,6 +2598,102 @@ async function capasPesadas(p) {
       await t.context().close();
       exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
       await n.context().close();
+    });
+    // Reporte de un usuario (nov 2026): con el piloto automático el celular se bloqueaba a media visita (con un video no pasa)
+    // y pidió un botón para empezar el recorrido otra vez, sobre todo cuando lleva audio
+    await paso("Piloto automático: la pantalla no se apaga mientras corre y su aviso repite el recorrido con el audio", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Repetir piloto");
+      await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(500);
+      await n.click('#subtabs button:has-text("Música")'); await n.waitForTimeout(500);
+      await n.setInputFiles("#m-archivo", { name: "voz.wav", mimeType: "audio/wav", buffer: wavPrueba(40) }); await n.waitForTimeout(4000);
+      const id = await idTour(n);
+      const d = await n.evaluate((id) => fetch("api/tours/" + id).then((r) => r.json()), id);
+      const e = d.escenas.find((x) => x.id === (d.proyecto.escenaInicial || d.escenas[0].id)), y0 = (e.vista || {}).yaw || 0;
+      e.piloto = { activo: true, puntos: [{ yaw: y0 + 1.2, pitch: 0.1, fov: 1.3, viaje: 1.5, pausa: 0.5 }], alTerminar: "detener", siguiente: "", reanudar: 8 };
+      d.proyecto.presentacion = { activa: false };
+      exige((await n.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [id, d])) === 200, "no se guardó el piloto");
+      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+      const t = await pagina(null, { viewport: { width: 1100, height: 700 } });
+      await t.addInitScript(() => { // pantalla despierta (Wake Lock) de mentiras para contar cuándo se pide y se suelta
+        window.__wl = { pedidos: 0, activos: 0 }; window.__medios = [];
+        const p = HTMLMediaElement.prototype.play;
+        HTMLMediaElement.prototype.play = function () { if (!window.__medios.includes(this)) window.__medios.push(this); return p.apply(this, arguments); };
+        const wl = { request: () => { window.__wl.pedidos++; window.__wl.activos++; let suelto = false; const ls = [];
+          return Promise.resolve({ type: "screen", get released() { return suelto; }, release() { if (!suelto) { suelto = true; window.__wl.activos--; ls.forEach((f) => f()); } return Promise.resolve(); }, addEventListener(k, f) { if (k === "release") ls.push(f); }, removeEventListener() {} }); } };
+        try { Object.defineProperty(Navigator.prototype, "wakeLock", { configurable: true, get: () => wl }); } catch (e) { /* nada */ }
+      });
+      await t.goto(TOURS + "/" + id + "/");
+      await t.waitForFunction(() => { const c = document.getElementById("pv-carga"); return c && c.hidden; }, null, { timeout: 30000 });
+      if (await t.isVisible('.son-pide [data-son="si"]')) { await t.click('.son-pide [data-son="si"]'); await t.waitForTimeout(500); }
+      const estado = () => t.evaluate(() => {
+        const pil = [...document.querySelectorAll(".sk-pil[data-piloto]")].find((x) => !x.hidden), m = (window.__medios || []).find((x) => /voz|musica|\.wav/i.test(x.currentSrc || x.src || "")) || (window.__medios || [])[0];
+        return { visible: !!pil, fin: !!(pil && pil.classList.contains("fin")), texto: pil ? pil.textContent.trim() : "", rol: pil ? pil.getAttribute("role") : "", pedidos: window.__wl.pedidos, activos: window.__wl.activos, musica: m ? { t: m.currentTime, pausa: m.paused } : null };
+      });
+      exige((await estado()).pedidos >= 1, "con el piloto corriendo no se pidió dejar la pantalla encendida");
+      await t.waitForFunction(() => document.querySelector(".sk-pil.fin:not([hidden])"), null, { timeout: 15000 }).catch(() => {});
+      let s = await estado();
+      if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "piloto-repetir.png") });
+      console.log("    al terminar: " + JSON.stringify(s));
+      exige(s.visible && s.fin && /Repetir recorrido/.test(s.texto) && s.rol === "button", "al terminar, el aviso no cambió a «Repetir recorrido»: " + JSON.stringify(s));
+      exige(s.activos === 0, "al terminar el piloto, la pantalla se quedó encendida a la fuerza: " + JSON.stringify(s));
+      exige(s.musica && !s.musica.pausa, "la música no estaba sonando para probar que vuelve a empezar: " + JSON.stringify(s));
+      await t.evaluate(() => { const m = (window.__medios || []).find((x) => !x.paused); if (m) m.currentTime = 15; });
+      await t.click(".sk-pil[data-piloto]:not([hidden])"); await t.waitForTimeout(500);
+      s = await estado();
+      console.log("    al tocar «Repetir recorrido»: " + JSON.stringify(s));
+      exige(!s.fin && s.activos === 1, "al tocar «Repetir recorrido» no volvió a empezar el piloto con la pantalla encendida: " + JSON.stringify(s));
+      exige(s.musica && s.musica.t < 3 && !s.musica.pausa, "al repetir el recorrido, la música no volvió a empezar: " + JSON.stringify(s));
+      await t.waitForFunction(() => document.querySelector(".sk-pil.fin:not([hidden])"), null, { timeout: 15000 }).catch(() => {});
+      s = await estado();
+      exige(s.fin && s.activos === 0, "el recorrido repetido no terminó bien: " + JSON.stringify(s));
+      // Con teclado también (Enter sobre el aviso)
+      await t.focus(".sk-pil[data-piloto]:not([hidden])"); await t.keyboard.press("Enter"); await t.waitForTimeout(400);
+      exige(!(await estado()).fin, "con Enter el aviso no repitió el recorrido");
+      exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 200));
+      await t.context().close();
+      if (process.env.CAPTURAS) { // así se ve en el celular al terminar
+        const c = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
+        await c.goto(TOURS + "/" + id + "/"); await c.waitForFunction(() => document.querySelector(".sk-pil.fin:not([hidden])"), null, { timeout: 25000 }).catch(() => {});
+        if (await c.isVisible('.son-pide [data-son="no"]')) await c.click('.son-pide [data-son="no"]');
+        await c.waitForTimeout(600); await c.screenshot({ path: path.join(process.env.CAPTURAS, "piloto-repetir-cel.png") }); await c.context().close();
+      }
+    });
+    // Reporte (nov 2026, mismo usuario): su tour encadena el piloto de esfera en esfera, con el modo presentación prendido
+    await paso("Piloto encadenado entre esferas con presentación: la pantalla sigue encendida al pasar de una a otra", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Piloto encadenado"); await otraEsfera(n, "rotonda", "#9bd", "#7a6");
+      const id = await idTour(n);
+      const d = await n.evaluate((id) => fetch("api/tours/" + id).then((r) => r.json()), id);
+      exige(d.escenas.length >= 2, "el tour de prueba no tiene dos esferas");
+      const [e1, e2] = d.escenas, y1 = (e1.vista || {}).yaw || 0, y2 = (e2.vista || {}).yaw || 0;
+      e1.piloto = { activo: true, puntos: [{ yaw: y1 + 1, pitch: 0.1, fov: 1.3, viaje: 1.2, pausa: 0.3 }], alTerminar: "siguiente", siguiente: e2.id, reanudar: 8 };
+      e2.piloto = { activo: true, puntos: [{ yaw: y2 + 1, pitch: 0.1, fov: 1.3, viaje: 1.2, pausa: 0.3 }], alTerminar: "detener", siguiente: "", reanudar: 8 };
+      d.proyecto.escenaInicial = e1.id; d.proyecto.presentacion = { activa: true, segundos: 60, alTerminar: "repetir" };
+      exige((await n.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [id, d])) === 200, "no se guardó el piloto");
+      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
+      exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+      const t = await pagina(null, Object.assign({}, devices["Pixel 5"], { acceptDownloads: false }));
+      await t.addInitScript(() => {
+        window.__wl = { pedidos: 0, activos: 0, soltadas: 0 };
+        const wl = { request: () => { window.__wl.pedidos++; window.__wl.activos++; let suelto = false; const ls = [];
+          return Promise.resolve({ type: "screen", get released() { return suelto; }, release() { if (!suelto) { suelto = true; window.__wl.activos--; window.__wl.soltadas++; ls.forEach((f) => f()); } return Promise.resolve(); }, addEventListener(k, f) { if (k === "release") ls.push(f); }, removeEventListener() {} }); } };
+        try { Object.defineProperty(Navigator.prototype, "wakeLock", { configurable: true, get: () => wl }); } catch (e) { /* nada */ }
+      });
+      await t.goto(TOURS + "/" + id + "/");
+      await t.waitForFunction(() => { const c = document.getElementById("pv-carga"); return c && c.hidden; }, null, { timeout: 30000 });
+      if (await t.isVisible('.son-pide [data-son="no"]')) await t.click('.son-pide [data-son="no"]');
+      const nombre = () => t.evaluate(() => { const x = [...document.querySelectorAll('[data-txt="nombre"]')].find((el) => el.textContent.trim()); return x ? x.textContent.trim() : ""; });
+      for (let i = 0; i < 40 && (await nombre()) !== e2.nombre; i++) await t.waitForTimeout(500);
+      await t.waitForFunction(() => document.querySelector(".sk-pil.fin:not([hidden])"), null, { timeout: 15000 }).catch(() => {});
+      const s = Object.assign(await t.evaluate(() => window.__wl), { nombre: await nombre(), fin: await t.isVisible(".sk-pil.fin") });
+      console.log("    encadenado: " + JSON.stringify(s));
+      exige(s.nombre === e2.nombre, "el piloto no pasó a la siguiente esfera: " + JSON.stringify(s));
+      exige(s.pedidos >= 1 && s.soltadas === 0 && s.activos === 1, "al pasar de esfera o al terminar, la pantalla se pudo apagar (con presentación prendida debe seguir encendida): " + JSON.stringify(s));
+      exige(s.fin, "el piloto de la segunda esfera no terminó en «Repetir recorrido»: " + JSON.stringify(s));
+      exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 200));
+      await t.context().close();
     });
     // Pedido de un usuario de Perú (nov 2026): allá se dice «Reservado», no «Apartado». Los nombres de los estados se editan.
     await paso("Estados de los lotes con el nombre de cada país: «Apartado» se cambia a «Reservado» y sale en el tour", async () => {
