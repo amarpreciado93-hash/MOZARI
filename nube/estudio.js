@@ -215,6 +215,8 @@ export const LABORATORIO = {
   "tipografias": { nombre: "Tus tipografías", texto: "En cualquier selector de Tipografía (textos, rótulos de los lotes y ficha): «Subir tu tipografía» en TTF, OTF o WOFF (hasta 5 MB). Se guarda en el proyecto y sale igual en el tour publicado, en el .zip y en la foto 360." },
   "landing": { nombre: "Landing del desarrollo", texto: "Publicar → Landing: una página de venta con la marca del proyecto (logos, colores y letras de su manual), portada, plano maestro (se amplía con los dedos), lotes con su precio y calculadora de pagos, recorrido 360, galería, ubicación y WhatsApp con el lote elegido. Se ve en celular y compu y se publica con el tour en su link /landing." },
   "bienvenida": { nombre: "Pantalla de bienvenida", texto: "Proyecto → General: el tour abre con tu logo, el nombre y un botón sobre la esfera girando despacio. Al tocarlo empieza el recorrido con su música y su piloto automático, sin la pregunta de «Activar sonido». Se aplica al volver a publicar." },
+  "tutorial-video": { nombre: "Tutorial en video", texto: "En Mis Tours y en Panoramas (mientras el tour no tiene esferas) sale la tarjeta «Tutorial paso a paso»: abre el video de cómo armar un tour, dentro de Mozari, con un aviso de que se grabó antes de las últimas actualizaciones." },
+  "transiciones": { nombre: "Transiciones inmersivas", texto: "Al tocar un punto para pasar a otra esfera, la vista gira hacia él, avanza y la siguiente esfera entra en vivo (también en celular), sin la foto plana que se veía como página doblada. Antes de abrir, el tour precarga todas sus esferas con una foto de portada, el nombre y el avance." },
   "acabado": { nombre: "Acabado fino del tour", texto: "Retoques a lo que ve tu cliente. Diseño Cine: el título, el nombre y el botón de contacto salen blancos (antes un velo oscuro los dejaba grises); en celular ya salen el botón de contacto y el nombre del proyecto, y las flechas se leen sobre fondos claros. Diseño Brújula: el nombre de la esfera ya no se repite ni se corta en la orilla y los puntos de la ruta se tocan fácil. Se aplica al volver a publicar." },
   "ejemplo": { nombre: "Fotos de ejemplo", texto: "En un tour sin esferas: «Probar con fotos de ejemplo» sube 2 fotos 360 de muestra (una aérea y una a pie) para practicar sin traer fotos propias. Quedan como esferas normales y se borran igual." },
   "tours-link": { nombre: "Link a la mano en Mis Tours", texto: "En Mis Tours, cada tour publicado trae «Copiar link» y «Abrir» en su tarjeta, sin tener que entrar al tour e ir a Publicar." },
@@ -1043,6 +1045,7 @@ async function api(request, env, partes, yo) {
     p.proyecto.cargaPropia = lab.includes("carga-logo");
     // Acabado fino (Laboratorio): los retoques a la interfaz del tour publicado
     p.proyecto.acabado = lab.includes("acabado");
+    p.proyecto.transiciones = lab.includes("transiciones");
     // Landing del desarrollo (Laboratorio): solo se publica si su dueño tiene la función
     if (!lab.includes("landing")) delete p.proyecto.landing;
     // Pantalla de bienvenida (Laboratorio): solo sale publicada si su dueño tiene la función

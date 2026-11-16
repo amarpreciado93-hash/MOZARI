@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -3908,6 +3908,73 @@ async function capasPesadas(p) {
         await c.context().close();
         c = await cel(iu);
         exige((await c.evaluate(() => { const s = document.querySelector('#pv-ui .b-paso[aria-current="true"] span'); return s ? +getComputedStyle(s).opacity : -1; })) === 1, "sin la función, Brújula debe quedar como estaba");
+        await c.context().close();
+      } finally {
+        await u.context().close(); await n.context().close();
+      }
+    });
+    // Tutorial en video (Amar, 16 nov 2026: «un tutorial paso a paso para los que no saben cómo armar», en Loom).
+    await paso("Tutorial en video (Laboratorio, nace Solo yo): tarjeta en Mis Tours y en un tour sin esferas que abre el video de Loom", async () => {
+      const n = await pagina(DUENO), u = await pagina("sin-tutorial@prueba.mx");
+      try {
+        await n.click('#nav button:has-text("Mis Tours")').catch(() => {}); await n.waitForTimeout(1200);
+        exige(await n.isVisible("#ver-tutorial"), "el dueño no ve la tarjeta del tutorial en Mis Tours");
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "tutorial-tarjeta.png") });
+        await n.click("#ver-tutorial"); await n.waitForTimeout(800);
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "tutorial-video.png") });
+        exige(/loom\.com\/embed\/47f7e23f0a33477a9421277ad253bf7e/.test(await n.getAttribute(".tut-velo iframe", "src")), "el tutorial no abre el video de Loom");
+        exige(/últimas actualizaciones/.test(await n.textContent(".tut-nota")), "el tutorial no avisa que se grabó antes de las actualizaciones");
+        await n.keyboard.press("Escape"); await n.waitForTimeout(300);
+        exige(!(await n.$(".tut-velo")), "Escape no cierra el tutorial");
+        await n.fill("#nuevo-tour input", "Tour vacío"); await n.click("#nuevo-tour button"); await n.waitForTimeout(3000);
+        await n.click('#nav button:has-text("Panoramas")'); await n.waitForTimeout(800);
+        exige(await n.isVisible("#ver-tutorial-pano"), "en un tour sin esferas no sale el tutorial en Panoramas");
+        await u.click('#nav button:has-text("Mis Tours")').catch(() => {}); await u.waitForTimeout(1200);
+        exige(!(await u.$("#ver-tutorial")), "una cuenta sin la función ya ve el tutorial (debe nacer Solo yo)");
+      } finally {
+        await u.context().close(); await n.context().close();
+      }
+    });
+    // Transiciones inmersivas (Amar, 16 nov 2026: «se ve como que se dobla la página… que todo el tour se precargue desde antes»).
+    // En celular ya no se agranda una foto plana encima de la esfera nueva: las dos esferas se funden en vivo. Y antes de
+    // abrir se precarga el nivel ligero de todas las esferas, con una foto de portada y el avance.
+    await paso("Transiciones inmersivas (Laboratorio, nace Solo yo): precarga todas las esferas con foto y en celular cambia de esfera en vivo, sin la foto plana", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const n = await pagina(DUENO), u = await pagina("sin-trans@prueba.mx");
+      const armar = async (p, nombre) => {
+        await nuevoTour(p, nombre); const id = await idTour(p); await otraEsfera(p, "Cocina", "#cba", "#987"); await otraEsfera(p, "Recamara", "#bcd", "#876"); await p.waitForTimeout(1200);
+        const d = (await api(p, "api/tours/" + id)).d, [a, b, c] = d.escenas.map((e) => e.id);
+        const hs = (i, dest, yaw) => ({ id: i, tipo: "hotspot", nombre: "", visible: true, yaw, pitch: 0.15, destino: dest, accion: "panorama", llegada: "frente" });
+        d.proyecto.escenaInicial = a; d.escenas[0].vista = { yaw: 0, pitch: 0, fov: 1.4 };
+        d.capas[a] = [hs("h1", b, 0.05), hs("h2", c, 1.6)]; d.capas[b] = [hs("h3", a, 3.1)]; d.capas[c] = [hs("h4", a, -1.5)];
+        exige((await api(p, "api/tours/" + id, J("PUT", d))).s === 200 && (await api(p, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar " + nombre);
+        return { id, esferas: [a, b, c] };
+      };
+      const abrir = async (t) => {
+        const c = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
+        if (process.env.DEPURAR) { await c.addInitScript(() => { window.__DEPURAR = true; }); c.on("console", (m) => console.log("      [consola] " + m.text().slice(0, 400))); }
+        await c.addInitScript(() => { window.__foto = false; window.__cortinas = 0; new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((x) => { if (!x.classList) return; if (x.classList.contains("pf-img") || (x.querySelector && x.querySelector(".pf-img"))) window.__foto = true; if (x.classList.contains("cortina-esfera")) window.__cortinas++; }))).observe(document, { childList: true, subtree: true }); });
+        const pedidas = new Set(); let abierto = false; c.on("request", (r) => { if (process.env.DEPURAR && /escenas\//.test(r.url())) console.log("      " + (abierto ? "después " : "antes ") + r.url().split("/escenas/")[1]); const m = r.url().match(/escenas\/([^/]+)\/1\//); if (m && !abierto) pedidas.add(m[1]); });
+        await c.goto(TOURS + "/" + t.id + "/"); await c.waitForSelector("#pv-stage canvas", { timeout: 30000 }); abierto = true; await c.waitForTimeout(2500);
+        return { c, pedidas };
+      };
+      try {
+        const tn = await armar(n, "Casa inmersiva"), tu = await armar(u, "Casa como antes");
+        exige((await (await fetch(TOURS + "/" + tn.id + "/proyecto.json")).json()).proyecto.transiciones === true, "el tour del dueño no se publicó con las transiciones nuevas");
+        exige((await (await fetch(TOURS + "/" + tu.id + "/proyecto.json")).json()).proyecto.transiciones === false, "una cuenta sin la función publicó con las transiciones nuevas");
+        let { c, pedidas } = await abrir(tn);
+        exige(await c.evaluate(() => window.__foto), "al abrir no salió la pantalla de precarga con foto");
+        exige(tn.esferas.every((e) => pedidas.has(e)), "antes de abrir no se precargaron las 3 esferas (solo " + pedidas.size + ")");
+        exige(!(await c.$(".precarga-foto")), "la pantalla de precarga no se quitó al abrir");
+        await c.evaluate(() => document.querySelector('#pv-stage button.hs-boton[aria-label="Ir a Cocina"]').click()); await c.waitForTimeout(3000);
+        exige(/Cocina/.test(await c.textContent("#pv-ui")), "el punto no llevó a la otra esfera");
+        exige((await c.evaluate(() => window.__cortinas)) === 0, "en celular sigue usando la foto plana que se ve como página doblada");
+        await c.context().close();
+        ({ c, pedidas } = await abrir(tu));
+        exige(!(await c.evaluate(() => window.__foto)), "una cuenta sin la función ya ve la pantalla de precarga con foto");
+        await c.evaluate(() => document.querySelector('#pv-stage button.hs-boton[aria-label="Ir a Cocina"]').click()); await c.waitForTimeout(3000);
+        exige(/Cocina/.test(await c.textContent("#pv-ui")) && (await c.evaluate(() => window.__cortinas)) >= 1, "sin la función, el celular debe cambiar de esfera como antes");
         await c.context().close();
       } finally {
         await u.context().close(); await n.context().close();

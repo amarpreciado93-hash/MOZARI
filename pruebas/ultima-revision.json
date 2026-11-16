@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-16T19:37:07.208Z",
- "bien": 105,
- "total": 105,
+ "fecha": "2026-11-16T22:22:49.878Z",
+ "bien": 107,
+ "total": 107,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -413,6 +413,14 @@
   },
   {
    "nombre": "Acabado fino (Laboratorio, nace Solo yo): Cine en celular trae el botón de contacto y Brújula no repite ni corta el nombre",
+   "ok": true
+  },
+  {
+   "nombre": "Tutorial en video (Laboratorio, nace Solo yo): tarjeta en Mis Tours y en un tour sin esferas que abre el video de Loom",
+   "ok": true
+  },
+  {
+   "nombre": "Transiciones inmersivas (Laboratorio, nace Solo yo): precarga todas las esferas con foto y en celular cambia de esfera en vivo, sin la foto plana",
    "ok": true
   },
   {

@@ -328,6 +328,25 @@
   .tarjeta h2 svg { width: 18px; height: 18px; color: var(--mz-lima); }
   .fila-campo { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 14px; align-items: center; }
   .fila-campo > span { color: var(--mz-tenue); font-size: 12px; }
+  /* Precarga de todo el tour con foto de portada (Laboratorio «transiciones») */
+  .precarga-foto { position: absolute; inset: 0; z-index: 6; background: #0B0B0B; overflow: hidden; display: grid; align-items: end; justify-items: center; transition: opacity 0.8s ease; --avance: 3%; }
+  .precarga-foto .pf-img { position: absolute; inset: -4%; background: center / cover no-repeat; animation: pf-acerca 9s ease-out both; }
+  .precarga-foto .pf-img.borrosa { filter: blur(10px) saturate(1.05); }
+  .precarga-foto::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 30%, rgba(0, 0, 0, 0.62)); }
+  .precarga-foto .pf-c { position: relative; z-index: 1; display: grid; justify-items: center; gap: 10px; padding: 0 24px calc(52px + env(safe-area-inset-bottom, 0px)); color: #fff; text-align: center; }
+  .precarga-foto .pf-c b { font-weight: 500; font-size: 20px; letter-spacing: 0.14em; text-transform: uppercase; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4); }
+  .precarga-foto .pf-c span { font-size: 13px; letter-spacing: 0.04em; opacity: 0.88; }
+  .precarga-foto .pf-c em { font-style: normal; font-variant-numeric: tabular-nums; }
+  .precarga-foto .pf-barra { width: 180px; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, 0.25); overflow: hidden; margin-top: 4px; }
+  .precarga-foto .pf-barra i { display: block; height: 100%; width: var(--avance); background: #fff; transition: width 0.35s ease; }
+  .precarga-foto.fuera { opacity: 0; pointer-events: none; }
+  @keyframes pf-acerca { from { transform: scale(1.08); } to { transform: scale(1); } }
+  .splash.propia.con-foto { --c-texto: #FFFFFF; background: #0B0B0B; overflow: hidden; }
+  .splash.con-foto .pf-img { position: absolute; inset: -4%; background: center / cover no-repeat; animation: pf-acerca 9s ease-out both; }
+  .splash.con-foto .pf-img.borrosa { filter: blur(10px) saturate(1.05); }
+  .splash.con-foto::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.6)); }
+  .splash.con-foto .splash-centro { position: relative; z-index: 1; }
+  @media (prefers-reduced-motion: reduce) { .precarga-foto .pf-img { animation: none; } }
   .cortina-esfera { position: absolute; inset: 0; z-index: 30; background: #0B0B0B center / cover no-repeat; transition: opacity 0.6s ease; pointer-events: none; }
   .cortina-esfera.fuera { opacity: 0; }
   .capas { transition: opacity 0.6s ease 0.25s; }
@@ -409,6 +428,20 @@
   .hueco.ejemplo[disabled] { cursor: progress; opacity: 0.7; }
   .hueco.ejemplo .ej-fotos { display: flex; gap: 6px; margin-bottom: 4px; }
   .hueco.ejemplo .ej-fotos img { width: 92px; height: 46px; object-fit: cover; border-radius: 8px; display: block; }
+  .hueco.tutorial .tut-mini { position: relative; display: block; width: 168px; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; margin-bottom: 4px;
+    background: radial-gradient(120px 80px at 85% 110%, rgba(213, 255, 64, 0.35), transparent 70%), #0B0B0B; border: 1px solid rgba(213, 255, 64, 0.25); }
+  .hueco.tutorial .tut-mini em { position: absolute; left: 12px; bottom: 9px; font-style: normal; font-weight: 600; font-size: 12px; letter-spacing: 0.06em; color: #F2F5EC; }
+  .hueco.tutorial .tut-mini i { position: absolute; left: 0; right: 0; top: 0; bottom: 12px; margin: auto; width: 40px; height: 40px; border-radius: 50%; background: var(--mz-lima); color: #0B0B0B; display: grid; place-items: center; }
+  .hueco.tutorial .tut-mini i svg { width: 18px; height: 18px; margin-left: 2px; }
+  .tut-velo { position: fixed; inset: 0; z-index: 400; background: rgba(0, 0, 0, 0.78); display: grid; place-items: center; padding: 20px; }
+  .tut-caja { width: min(960px, 100%); background: var(--mz-superficie, #161616); border: 1px solid var(--mz-linea-neutra, #2a2a2a); border-radius: 16px; overflow: hidden; }
+  .tut-cab { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px 12px 18px; }
+  .tut-cab b { font-weight: 600; font-size: 15px; }
+  .tut-x { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--mz-linea-neutra, #333); background: none; color: inherit; font-size: 20px; line-height: 1; cursor: pointer; }
+  .tut-video { aspect-ratio: 16 / 9; background: #000; }
+  .tut-video iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .tut-nota { margin: 0; padding: 12px 18px 16px; font-size: 13px; line-height: 1.5; color: var(--mz-texto-tenue, #A3A99A); }
+  .tut-nota a { color: var(--mz-lima); }
   .subida { position: fixed; z-index: 55; right: 20px; bottom: 20px; width: 340px; max-height: 50vh; overflow-y: auto; display: grid; gap: 8px; padding: 12px; border-radius: 16px; background: var(--mz-vidrio); border: 1px solid var(--mz-linea); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5); }
   .sub-item { display: grid; gap: 4px; padding: 8px 10px; border-radius: 10px; background: var(--mz-negro); }
   .sub-item b { font-size: 12px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3979,6 +4012,10 @@
       texto: "Los navegadores no dejan sonar un tour hasta que el visitante toca la pantalla. Ahora, al abrirlo le preguntamos <b>Activar sonido</b> o <b>Sin sonido</b>, con los colores de tu tour, y la música y las voces arrancan con su respuesta." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "musica");
     if (clave === "publicar/landing" && enLab("landing")) guiaNueva("nuevo-landing", () => [esVisible("#ld-form .comp-tarjeta") && { el: "#ld-form .comp-tarjeta", titulo: "Nuevo: la landing de tu desarrollo",
       texto: "Una página para mandar por WhatsApp o poner en tus anuncios. Sube tu <b>logo</b> y tu <b>plano maestro</b>, pon los <b>colores y letras</b> de tu marca y tu <b>WhatsApp</b>. Los lotes, sus precios, las fotos y los lugares cercanos salen solos del tour. A la derecha la ves como en el celular." }].filter(Boolean), () => nav.sub === "landing" && esVisible("#ld-form .comp-tarjeta"));
+    if (clave === "tours/todos" && enLab("tutorial-video")) guiaNueva("nuevo-tutorial-video", () => [esVisible("#ver-tutorial") && { el: "#ver-tutorial", titulo: "Nuevo: tutorial en video",
+      texto: "Si es tu primera vez, aquí está el <b>paso a paso</b> para armar un tour, de subir tus esferas a publicarlo. También sale en Panoramas mientras tu tour no tiene esferas." }].filter(Boolean), () => nav.sec === "tours" && esVisible("#ver-tutorial"));
+    if (clave === "proyecto/general" && enLab("transiciones")) guiaNueva("nuevo-transiciones", () => [esVisible("#abrir-previa") && { el: "#abrir-previa", titulo: "Nuevo: transiciones inmersivas",
+      texto: "Al tocar un punto, tu cliente <b>avanza hacia él</b> y entra a la siguiente esfera sin cortes, también en celular. Mientras abre, el tour <b>precarga todas sus esferas</b> con una foto de portada. Pruébalo aquí en Vista previa y vuelve a publicar." }].filter(Boolean), () => nav.sub === "general" && esVisible("#abrir-previa"));
     if (clave === "proyecto/general" && enLab("bienvenida")) guiaNueva("nuevo-bienvenida", () => [esVisible("#p-bv-fila") && { el: "#p-bv", titulo: "Nuevo: pantalla de bienvenida",
       texto: "Tu tour puede abrir con <b>tu logo, el nombre y un botón</b> sobre la esfera girando despacio. Cuando tu cliente lo toca empieza el recorrido <b>con su música</b>, sin preguntarle nada. Préndela aquí y vuelve a publicar." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "general" && esVisible("#p-bv-fila"));
     if (clave === "panoramas/lista" && enLab("ejemplo")) guiaNueva("nuevo-ejemplo", () => [esVisible("#subir-ejemplo") && { el: "#subir-ejemplo", titulo: "Nuevo: fotos de ejemplo",
@@ -4149,7 +4186,7 @@
           (enLab("tours-link") && t.publicado && t.privado !== "1" ? '<div class="card-link"><button class="mini" type="button" data-copiar-link="' + t.id + '">' + ICO_LINK + 'Copiar link</button><a class="mini" href="' + esc(linkDeTour(t.id)) + '" target="_blank" rel="noopener" data-abrir-link>Abrir ↗</a></div>' : "") + "</div></div>";
       }).join("") +
         '<form class="hueco nuevo-tour" id="nuevo-tour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><b>Nuevo tour</b>' +
-        '<input class="entrada" name="nombre" maxlength="60" placeholder="Nombre del tour" required><button class="btn-prim" type="submit">Crear</button></form>';
+        '<input class="entrada" name="nombre" maxlength="60" placeholder="Nombre del tour" required><button class="btn-prim" type="submit">Crear</button></form>' + tarjetaTutorial("ver-tutorial");
       return;
     }
     const todas = Object.values(est.capas).flat();
@@ -4374,7 +4411,7 @@
   // =================== NOVEDADES ===================
   // Cada anuncio se ve una vez por cuenta (se anota en el servidor). El botón ✦ junto a BETA los vuelve a abrir.
   const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Fichas técnicas"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Interfaz"], ["publicar/web", "Publicar"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"]];
-  const LAB_DESTINO = { landing: "publicar/landing", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
+  const LAB_DESTINO = { "tutorial-video": "tours/todos", transiciones: "proyecto/general", landing: "publicar/landing", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
   let novedades = [], novActual = null;
   const fechaCorta = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
   function htmlNovedad(n, media) {
@@ -6401,6 +6438,42 @@
       });
     }
 
+    // Laboratorio «transiciones» (Amar, nov 2026: «se ve como que se dobla la página»). Antes, en celular, se tomaba
+    // una foto plana de la vista y se agrandaba encima de la esfera nueva: dos perspectivas distintas a la vez.
+    // Ahora es un solo movimiento y todo en vivo (también en celular): la vista gira hacia el punto y avanza, y
+    // las dos esferas se funden mientras la anterior sigue acercándose y la nueva termina de llegar.
+    // El tour ya trae precargado el nivel ligero de todas sus esferas, así que no hay que esperar.
+    function viajarInmersivo(id, vista, hacia, prep) {
+      const v = actual.view, f0 = v.fov(), turno = ++turnoCambio;
+      if (cortina) { cortina.remove(); cortina = null; }
+      const IR = MOVIL ? 420 : 470, FUNDIR = MOVIL ? 780 : 860;
+      const fIr = Math.max(f0 * 0.8, (38 * Math.PI) / 180);
+      const pIr = Math.max(-0.3, Math.min(0.3, v.pitch() * 0.5 + hacia.pitch * 0.3));
+      let llego = false, cargo = false, hecho = false;
+      const fundir = () => {
+        if (hecho || !llego || !cargo || turno !== turnoCambio) return; hecho = true;
+        const fa = actual.view.fov();
+        actual = escenaM(id); fondoParejo(actual);
+        const vf = Object.assign({}, vista || vistaDe(id)), fN0 = Math.min(vf.fov * 1.16, 2.0);
+        actual.view.setParameters(Object.assign({}, vf, { fov: fN0 }));
+        capasEl.classList.add("entrando");
+        const suave = (x) => x * x * (3 - 2 * x), frena = (x) => 1 - Math.pow(1 - x, 3), acelera = (x) => x * x;
+        actual.scene.switchTo({ transitionDuration: FUNDIR, transitionUpdate: (val, nueva, vieja) => {
+          const o = suave(val); nueva.listLayers().forEach((l) => l.mergeEffects({ opacity: o }));
+          try { nueva.hotspotContainer().domElement().style.opacity = o; } catch (e) { /* sin hotspots de Marzipano */ }
+          if (vieja) try { vieja.view().setFov(fa * (1 - 0.22 * acelera(val))); } catch (e) { /* ya no está */ }
+          nueva.view().setFov(fN0 + (vf.fov - fN0) * frena(val));
+        } });
+        construir();
+        setTimeout(() => capasEl.classList.remove("entrando"), Math.round(FUNDIR * 0.45));
+        if (opciones.alMostrar) opciones.alMostrar(id);
+      };
+      actual.scene.lookTo({ yaw: hacia.yaw, pitch: pIr, fov: fIr }, { transitionDuration: IR, ease: (x) => x * x * (3 - 2 * x) }, () => { llego = true; fundir(); });
+      setTimeout(() => { llego = true; fundir(); }, IR + 120);
+      Promise.resolve(prep).catch(() => null).then(() => { cargo = true; fundir(); });
+      setTimeout(() => { cargo = true; fundir(); }, IR + 900); // si aún no está todo, se funde con lo que ya llegó
+    }
+
     const motor = {
       modo: editable ? "capas" : "ver", elegida: null, dibujo: null, ruta: null, rutaActivo: -1,
       get actual() { return actual; },
@@ -6447,6 +6520,7 @@
         const prep = opciones.alPreparar ? opciones.alPreparar(id) : null;
         const reducido = matchMedia("(prefers-reduced-motion: reduce)").matches;
         if (editable || !hacia || !actual || reducido) { motor.mostrar(id, undefined, vista); return; }
+        if (opciones.inmersiva) { viajarInmersivo(id, vista, hacia, prep); return; }
         const v = actual.view, fov = v.fov();
         let listo = false;
         // Compu: como Kuula y 3DVista. Avanza hacia el hotspot, espera (poco) a que la siguiente esté en caché
@@ -6599,9 +6673,30 @@
       (MODO === "nube"
         ? '<label class="hueco subir" id="subir-zona"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir esferas</b><span class="nota">Arrastra aquí tus JPG 360 (2:1) o haz clic. Mozari las prepara para la web en tu computadora.</span><input type="file" id="subir-archivo" accept="image/jpeg,image/png,image/webp" multiple hidden></label>' +
           // Fotos de ejemplo (Laboratorio «ejemplo»): quien no trae sus fotos 360 a la mano prueba con 2 de muestra
+          (!est.escenas.length ? tarjetaTutorial("ver-tutorial-pano") : "") +
           (enLab("ejemplo") && !est.escenas.length ? '<button class="hueco ejemplo" id="subir-ejemplo" type="button"><span class="ej-fotos"><img src="ejemplos/vista-aerea-chica.jpg" alt=""><img src="ejemplos/entrada-chica.jpg" alt=""></span><b>Probar con fotos de ejemplo</b><span class="nota">¿No traes tus fotos 360 a la mano? Carga 2 de muestra y practica: conéctalas, ponles texto y publica.</span></button>' : "")
         : '<div class="hueco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir esfera</b><span class="nota">En el estudio en línea puedes subir tus propias esferas.</span></div>');
   }
+  // =================== TUTORIAL EN VIDEO (Laboratorio «tutorial-video») ===================
+  // Amar, 16 nov 2026: «tengo un tutorial paso a paso… para los que no saben cómo armar». Va en Loom (se ve menos
+  // informal que YouTube). Se grabó antes de las últimas actualizaciones, así que lo dice: algunos botones cambian.
+  const TUTORIAL_LOOM = "47f7e23f0a33477a9421277ad253bf7e";
+  function tarjetaTutorial(id) {
+    if (MODO !== "nube" || !enLab("tutorial-video")) return "";
+    return '<button class="hueco ejemplo tutorial" id="' + id + '" type="button" data-tutorial><span class="tut-mini"><em>Tu primer tour</em><i>' + ICO_PLAY + "</i></span>" +
+      '<b>Tutorial paso a paso</b><span class="nota">Mira cómo se arma un tour: de subir tus esferas a publicarlo.</span></button>';
+  }
+  function verTutorial() {
+    const v = document.createElement("div"); v.className = "tut-velo"; v.setAttribute("role", "dialog"); v.setAttribute("aria-label", "Tutorial paso a paso");
+    v.innerHTML = '<div class="tut-caja"><div class="tut-cab"><b>Tutorial paso a paso</b><button class="tut-x" type="button" aria-label="Cerrar">×</button></div>' +
+      '<div class="tut-video"><iframe src="https://www.loom.com/embed/' + TUTORIAL_LOOM + '?hide_owner=true&hide_share=true&hide_title=true&hideEmbedTopBar=true" title="Tutorial paso a paso de Mozari" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div>' +
+      '<p class="tut-nota">Se grabó antes de las últimas actualizaciones: algunos botones pueden verse un poco distintos, pero los pasos son los mismos. <a href="https://www.loom.com/share/' + TUTORIAL_LOOM + '" target="_blank" rel="noopener">Abrir en otra pestaña ↗</a></p></div>';
+    const cerrar = () => { v.remove(); removeEventListener("keydown", tecla); };
+    const tecla = (e) => { if (e.key === "Escape") cerrar(); };
+    v.addEventListener("click", (e) => { if (e.target === v || e.target.closest(".tut-x")) cerrar(); });
+    addEventListener("keydown", tecla); document.body.appendChild(v); v.querySelector(".tut-x").focus();
+  }
+  document.addEventListener("click", (e) => { if (e.target.closest && e.target.closest("[data-tutorial]")) { e.preventDefault(); verTutorial(); } });
   // Cambiar el nombre de una esfera: en la Lista (escribiendo sobre el nombre) o en la tira de Capas (doble clic)
   function renombrarEsfera(id, nuevo) {
     const e = escena(id); nuevo = String(nuevo || "").trim().slice(0, 60);
@@ -11959,6 +12054,7 @@ void main(){
   // Dibuja el skin elegido sobre una esfera. o: { orientacion, motor, cerrable, alCerrar, hayMusica, alMusica, alPantalla }
   // Acabado fino (Laboratorio «acabado»): retoques a lo que ve el cliente. En el tour publicado lo decide el servidor al publicar.
   const acabadoFino = () => (MODO === "tour" ? P().acabado === true : enLab("acabado"));
+  const transInmersiva = () => (MODO === "tour" ? P().transiciones === true : enLab("transiciones"));
   function renderSkin(ui, o) {
     const sk = est.skin, vertical = o.orientacion === "v";
     const T = PLANTILLAS[sk.plantilla] ? sk.plantilla : "cine";
@@ -12619,6 +12715,7 @@ void main(){
       editable: false,
       alMostrar: (id) => { actualId = id; statsEsfera(id); vigiaEsfera(id); tQuieto = Date.now(); api.escena(id); api.vista(motor.view()); arrancarPiloto(id); if (!o.sinPrecarga) precarga.alrededor(id); },
       alPreparar: (id) => (o.sinPrecarga ? Promise.resolve() : precarga.ya(id)),
+      inmersiva: transInmersiva(),
       alInteractuar: () => { if (piloto) piloto.interrumpir(true); },
       alMoverVista: () => api && motor && api.vista(motor.view()),
       alAccion: accion,
@@ -13234,12 +13331,18 @@ void main(){
       // Lo que se ve en alta lo pide el visor al abrir (solo lo que entra en pantalla, no las 6 caras) y lo demás
       // (el resto de la esfera y las vecinas) se baja ya con el tour abierto. Antes se esperaban ~15 MB: en celular,
       // 10 a 15 s viendo «Cargando». Nunca espera más de 15 s.
-      inicial(id, alAvance) {
-        const urls = meta[id] ? [R(id) + "preview.jpg"].concat(piezas(id, Math.min(1, meta[id].niveles.length - 1))) : [];
+      inicial(id, alAvance, todas) {
+        let urls = meta[id] ? [R(id) + "preview.jpg"].concat(piezas(id, Math.min(1, meta[id].niveles.length - 1))) : [];
+        // Laboratorio «transiciones»: también el nivel ligero de las demás (las vecinas primero), hasta 24 esferas.
+        // Así cada cambio de esfera ya está en caché. Lo que no alcance a bajar en 25 s se sigue bajando ya abierto.
+        if (todas && meta[id]) {
+          const otras = vecinas(id).concat(est.escenas.map((e) => e.id)).filter((x, i, a) => x !== id && meta[x] && a.indexOf(x) === i).slice(0, 23);
+          urls = urls.concat(otras.map((x) => R(x) + "preview.jpg"), ...otras.map((x) => piezas(x, Math.min(1, meta[x].niveles.length - 1))));
+        }
         let listo = 0;
         const total = urls.length;
         return new Promise((fin) => {
-          const t = setTimeout(fin, 15000);
+          const t = setTimeout(fin, todas ? 25000 : 15000);
           let i = 0;
           const uno = () => { if (i >= urls.length) return; const u = urls[i++]; bajar(u).then(() => { listo++; alAvance(listo / total); if (listo >= total) { clearTimeout(t); fin(); } else uno(); }); };
           for (let k = 0; k < 6; k++) uno();
@@ -13326,7 +13429,24 @@ void main(){
     if (g !== previaGen) return;
     $("pv-carga").textContent = "Cargando " + Math.round(pct) + "%";
     if (cargaMarca) cargaMarca.style.setProperty("--avance", (4 + 0.86 * pct).toFixed(1) + "%");
+    if (precargaFoto) { precargaFoto.style.setProperty("--avance", (3 + 0.97 * pct).toFixed(1) + "%"); const n = precargaFoto.querySelector(".pf-pct"); if (n) n.textContent = Math.round(pct) + "%"; }
   };
+  // Laboratorio «transiciones»: mientras se precarga todo el tour, una foto de portada con el nombre y el avance
+  // (la portada del tour; si no hay, el frente de la primera esfera en su nivel más ligero, desenfocado)
+  let precargaFoto = null;
+  function fotoPrecarga() {
+    const id = P().escenaInicial, m = meta[id];
+    let foto = P().thumbnail ? urlArchivo(P().thumbnail) : "", borrosa = false;
+    if (!foto && m) { let z = 0; m.niveles.forEach((n, i) => { if (n.size <= n.tileSize) z = i; }); foto = R(id) + z + "/f/0/0.jpg"; borrosa = true; }
+    return foto ? '<i class="pf-img' + (borrosa ? " borrosa" : "") + '" style="background-image:url(&quot;' + esc(foto) + '&quot;)"></i>' : "";
+  }
+  function pantallaPrecarga() {
+    const el = document.createElement("div"); el.className = "precarga-foto"; el.setAttribute("aria-hidden", "true");
+    el.innerHTML = fotoPrecarga() +
+      '<div class="pf-c"><b>' + esc(P().nombre || "Recorrido 360°") + '</b><span>Preparando el recorrido <em class="pf-pct">0%</em></span><div class="pf-barra"><i></i></div></div>';
+    return el;
+  }
+  const quitarPrecargaFoto = () => { const p = precargaFoto; precargaFoto = null; if (!p) return; p.style.setProperty("--avance", "100%"); setTimeout(() => { p.classList.add("fuera"); setTimeout(() => p.remove(), 800); }, 250); };
   async function abrirPrevia() {
     if (!est.escenas.length) { quitarCargaMarca(); avisar("Primero sube una esfera"); return; }
     // Vista previa: igual que se verá publicado (con marca si es versión de prueba)
@@ -13339,13 +13459,18 @@ void main(){
     $("pv-carga").textContent = "Cargando…";
     // Vista previa del estudio: la misma pantalla de carga con la marca que verá el tour publicado
     if (MODO !== "tour") { $("previa").querySelectorAll(".splash.en-previa").forEach((x) => x.remove()); cargaMarca = cargaMarcaPrevia(); if (cargaMarca) $("previa").appendChild(cargaMarca); }
+    $("previa").querySelectorAll(".precarga-foto").forEach((x) => x.remove()); precargaFoto = null;
+    const todas = transInmersiva();
+    // con la pantalla de carga de la marca (Laboratorio «carga-logo»), la foto va detrás de su logo y su barra
+    if (todas && cargaMarca && !cargaMarca.querySelector(".pf-img")) { cargaMarca.classList.add("con-foto"); cargaMarca.insertAdjacentHTML("afterbegin", fotoPrecarga()); }
+    else if (todas && !cargaMarca) { precargaFoto = pantallaPrecarga(); $("previa").appendChild(precargaFoto); $("pv-carga").hidden = true; }
     audioPrueba.pause(); $("m-play").innerHTML = ICO_PLAY; cerrarAudios();
     quitarPideSonido(); SON.preguntado = false; SON.mudo = false;
     const g = ++previaGen;
     await precarga.inicial(P().escenaInicial, (x) => {
       if (g !== previaGen) return;
-      avancePv(g, 40 * x);
-    });
+      avancePv(g, (todas ? 85 : 40) * x);
+    }, todas);
     if (g !== previaGen || $("previa").hidden) return;
     orientPv = orientacionPantalla();
     const bv = bienvenidaDe();
@@ -13363,12 +13488,12 @@ void main(){
     if (bv) SON.preguntado = true; else sonar(); // con bienvenida, el sonido arranca con el toque de «Iniciar»
     // La pantalla de carga se quita cuando la primera esfera ya se ve nítida (máximo 8 s más)
     // Mientras llega lo que se ve en alta, el avance sigue (no se queda en un número fijo)
-    let pct = 40; const sigue = setInterval(() => { pct += (96 - pct) * 0.07; avancePv(g, pct); }, 150);
+    let pct = todas ? 85 : 40; const sigue = setInterval(() => { pct += (96 - pct) * 0.07; avancePv(g, pct); }, 150);
     if (tourPv && tourPv.nitido) await tourPv.nitido(8000);
     clearInterval(sigue);
     if (g !== previaGen) return;
     if (bv) mostrarBienvenida(bv);
-    quitarCargaMarca();
+    quitarCargaMarca(); quitarPrecargaFoto();
     setTimeout(() => ($("pv-carga").hidden = true), 150);
   }
   // =================== PANTALLA DE BIENVENIDA (Laboratorio «bienvenida») ===================
