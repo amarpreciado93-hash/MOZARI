@@ -3999,6 +3999,15 @@ async function capasPesadas(p) {
         exige(await c.$('#visor iframe[src="./"]'), "«Iniciar recorrido» no cargó el tour dentro de la página");
         exige(!errs.length, "errores en la landing: " + errs.join(" | ").slice(0, 160));
         await ctx.close();
+        // plantilla «Propiedad o casa»: una sola ficha con el precio de la casa y la misma calculadora (sin listas de lotes)
+        await n.click('[data-ld-plantilla="propiedad"]'); await n.waitForTimeout(600);
+        exige(await n.isVisible('[data-ld="pagos.precio"]'), "la plantilla Propiedad no pide el precio de la casa");
+        await n.fill('[data-ld="pagos.precio"]', "4850000"); await n.fill('[data-ld="pagos.m2"]', "240"); await n.waitForTimeout(1500);
+        exige((await fr.locator("#sel-lote").count()) === 0 && (await fr.locator(".ficha h3.h3-casa").textContent({ timeout: 6000 }).catch(() => "")) === "Laguna Landing", "la ficha de la casa no sale con su nombre (o sigue la lista de lotes)");
+        exige(/\$4,850,000/.test(await fr.locator(".ficha .desglose").textContent().catch(() => "")) && /240 m²/.test(await fr.locator(".ficha .datos").textContent().catch(() => "")), "la ficha de la casa no trae su precio y sus m²");
+        await fr.locator('.plan-pago [data-plan="2"]').click(); await n.waitForTimeout(300);
+        exige(decodeURIComponent(await fr.locator(".ficha .btn-wa").getAttribute("href")).includes("me interesa Laguna Landing, a 24 mensualidades"), "el WhatsApp de la casa no dice la forma de pago");
+        exige(/Me interesa/.test(await fr.locator(".ficha .btn-wa").textContent()), "el botón de la casa no dice «Me interesa»");
         // una cuenta sin la función no ve la pestaña ni puede publicar landing aunque la meta a mano
         await nuevoTour(u, "Sin landing"); const iu = await idTour(u);
         await u.click('#nav button:has-text("Publicar")'); await u.waitForTimeout(500);

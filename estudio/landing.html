@@ -84,6 +84,7 @@
 
   .lotes-grid { display: grid; gap: 22px; margin-top: 28px; align-items: start; }
   .plano-col { display: grid; gap: 14px; min-width: 0; }
+  .lotes-grid.solo { grid-template-columns: minmax(0, 1fr) !important; max-width: 760px; }
   .plano { position: relative; margin: 0; border-radius: 20px; overflow: hidden; background: var(--papel); border: 1px solid var(--linea); box-shadow: 0 24px 60px -36px rgba(0, 0, 0, 0.45); }
   .plano button { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
   .plano img { width: 100%; height: auto; display: block; }
@@ -108,6 +109,7 @@
   .ficha-cab { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
   .ficha-cab small { font: 600 11px var(--f-texto); letter-spacing: 0.2em; text-transform: uppercase; color: var(--tenue); }
   .ficha-cab h3 { font-size: 38px; line-height: 1; color: var(--marca); margin-top: 4px; }
+  .ficha-cab h3.h3-casa { font-size: 32px; line-height: 1.05; }
   .estado { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; font: 600 12px var(--f-texto); color: var(--c); background: color-mix(in srgb, var(--c) 13%, transparent); }
   .estado::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
   .datos { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; color: var(--tenue); }
@@ -317,7 +319,9 @@
     const wa = (t) => (telWA ? "https://wa.me/" + (telWA.length === 10 ? "52" + telWA : telWA) + "?text=" + encodeURIComponent(t) : "#visita");
     const saludo = String(con.mensaje || "").trim() || "Hola, quiero información de " + nombre + ".";
     const lotes = plantilla === "lotes" && S.lotes ? lotesDe(p) : [];
-    const conPrecio = pagos.mostrar !== false && lotes.some((l) => l.precio > 0);
+    // Plantilla «Propiedad» con precio: una sola ficha (la casa) con la misma calculadora que los lotes
+    const casa = plantilla === "propiedad" && num(pagos.precio) > 0 ? { k: "casa", num: "", mz: "", area: num(pagos.m2), terreno: num(pagos.terreno), precio: num(pagos.precio), estado: "disponible", eNombre: "En venta", eColor: "#22B573", lados: [] } : null;
+    const conPrecio = pagos.mostrar !== false && (lotes.some((l) => l.precio > 0) || !!casa);
     const libres = lotes.filter((l) => l.estado === "disponible");
     const mensual = (l, pl, eng) => (l.precio * (1 + pl.ajuste / 100) * (1 - eng)) / pl.meses;
     const largo = planes.filter((x) => x.meses > 0).sort((a, b) => b.meses - a.meses)[0];
@@ -333,7 +337,7 @@
       } else { const a = libres.filter((l) => l.area > 0).map((l) => l.area); if (a.length) cifras.push([Math.round(Math.min(...a)).toLocaleString("es-MX") + " m²", "desde"]); }
     } else cifras = (Array.isArray(proy.cifras) ? proy.cifras : []).filter((c) => c && (c.v || c[0])).slice(0, 3).map((c) => [c.v || c[0], c.t || c[1] || ""]);
 
-    const menu = [S.lotes && lotes.length ? ["#lotes", T.lote + "s"] : L.plano ? ["#lotes", "Plano"] : null, S.recorrido ? ["#recorrido", "Recorrido 360°"] : null, S.proyecto ? ["#proyecto", "El proyecto"] : null, S.galeria && fotos.length ? ["#galeria", "Galería"] : null, S.ubicacion ? ["#ubicacion", "Ubicación"] : null].filter(Boolean);
+    const menu = [S.lotes && lotes.length ? ["#lotes", T.lote + "s"] : casa && conPrecio ? ["#lotes", "Precio"] : L.plano ? ["#lotes", "Plano"] : null, S.recorrido ? ["#recorrido", "Recorrido 360°"] : null, S.proyecto ? ["#proyecto", "El proyecto"] : null, S.galeria && fotos.length ? ["#galeria", "Galería"] : null, S.ubicacion ? ["#ubicacion", "Ubicación"] : null].filter(Boolean);
     const logoClaro = archivo(M.logoClaro) || archivo(M.logo);
     const logoOsc = archivo(M.logo) || archivo(M.logoClaro);
     const marcaHtml = (claro) => { const src = claro ? logoClaro : logoOsc; return src ? '<a class="marca-img" href="#inicio" aria-label="' + esc(nombre) + '"><img src="' + esc(src) + '" alt="' + esc(nombre) + '"></a>' : '<a class="marca-txt" href="#inicio">' + esc(nombre) + "</a>"; };
@@ -346,21 +350,24 @@
       '<a class="btn btn-wa wa-mini" data-wa href="' + esc(wa(saludo)) + '" target="_blank" rel="noopener">' + ICO.wa + "WhatsApp</a></div></header>";
     h += '<main><section class="portada" id="inicio">' + (foto0 ? '<img src="' + esc(foto0) + '" alt="" fetchpriority="high">' : "") + '<div class="ancho">' +
       (portada.lugar ? '<span class="ojo">' + esc(portada.lugar) + "</span>" : "") + "<h1>" + esc(tituloPortada) + "</h1>" + (textoPortada ? "<p>" + esc(textoPortada) + "</p>" : "") +
-      '<div class="acciones">' + (lotes.length ? '<a class="btn btn-acento" href="#lotes">Elegir mi ' + esc(T.lote.toLowerCase()) + "</a>" : S.visita ? '<a class="btn btn-acento" href="#visita">Agendar visita</a>' : "") +
+      '<div class="acciones">' + (lotes.length ? '<a class="btn btn-acento" href="#lotes">Elegir mi ' + esc(T.lote.toLowerCase()) + "</a>" : casa && conPrecio ? '<a class="btn btn-acento" href="#lotes">Ver precio</a>' : S.visita ? '<a class="btn btn-acento" href="#visita">Agendar visita</a>' : "") +
       (S.recorrido ? '<a class="btn btn-linea" href="#recorrido">Recorrido 360°</a>' : "") + "</div>" +
       (cifras.length ? '<div class="cifras" style="--n:' + cifras.length + '">' + cifras.map(([v, t]) => '<div class="cifra"><b>' + esc(v) + "</b><span>" + esc(t) + "</span></div>").join("") + "</div>" : "") + "</div></section>";
 
     const planoImg = archivo(L.plano);
     const ICO_LUPA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M11 8v6M8 11h6"/></svg>';
-    const planoHtml = planoImg ? '<figure class="plano"><button type="button" id="plano-abrir" aria-label="Ver el plano maestro completo"><img src="' + esc(planoImg) + '" alt="Plano maestro de ' + esc(nombre) + '" loading="lazy"></button><figcaption>' + ICO_LUPA + "Toca para ampliar</figcaption></figure>" : "";
+    const quePlano = plantilla === "propiedad" ? "Plano" : "Plano maestro";
+    const planoHtml = planoImg ? '<figure class="plano"><button type="button" id="plano-abrir" aria-label="Ver el ' + quePlano.toLowerCase() + ' completo"><img src="' + esc(planoImg) + '" alt="' + quePlano + " de " + esc(nombre) + '" loading="lazy"></button><figcaption>' + ICO_LUPA + "Toca para ampliar</figcaption></figure>" : "";
     if (lotes.length) {
       const resumen = ESTADOS.map((e) => [e, lotes.filter((l) => l.estado === e.id).length]).filter(([, n]) => n);
       h += '<section class="lotes" id="lotes"><div class="ancho"><div class="intro"><span class="ojo">Plan maestro</span><h2>Elige tu ' + esc(T.lote.toLowerCase()) + "</h2><p>" + (planoImg ? "Ubícalo en el plano y elígelo abajo" : "Elige la " + esc(T.manzana.toLowerCase()) + " y el " + esc(T.lote.toLowerCase())) + (conPrecio ? " para ver su precio y cómo pagarlo." : " para ver sus medidas y apartarlo.") + "</p></div>" +
         '<div class="lotes-grid"><div class="plano-col">' + planoHtml +
         '<div class="resumen" aria-label="Disponibilidad">' + resumen.map(([e, n]) => '<span style="--c:' + esc(e.color) + '"><i></i><b>' + n + "</b> " + esc(e.nombre.toLowerCase()) + (n === 1 ? "" : e.nombre.slice(-1).match(/[aeiou]/i) ? "s" : "es") + "</span>").join("") + "</div></div>" +
         '<article class="ficha" id="ficha" aria-live="polite"></article></div></div></section>';
-    } else if (planoImg) {
-      h += '<section class="lotes" id="lotes"><div class="ancho"><div class="intro"><span class="ojo">Plano</span><h2>' + esc(L.planoTitulo || "Así está distribuido") + '</h2></div><div class="lotes-grid" style="grid-template-columns:minmax(0,1fr)"><div class="plano-col">' + planoHtml + "</div></div></div></section>";
+    } else if (planoImg || casa) {
+      const conFicha = !!casa, solo = !(planoImg && conFicha);
+      h += '<section class="lotes" id="lotes"><div class="ancho"><div class="intro"><span class="ojo">' + (conFicha ? "Precio y plano" : "Plano") + "</span><h2>" + esc(L.planoTitulo || "Así está distribuida") + "</h2>" + (conFicha ? "<p>" + (planoImg ? "Mira cómo están los espacios y" : "Mira") + (conPrecio ? " cómo pagarla." : " sus medidas.") + "</p>" : "") + "</div>" +
+        '<div class="lotes-grid' + (solo ? ' solo' : "") + '">' + (planoImg ? '<div class="plano-col">' + planoHtml + "</div>" : "") + (conFicha ? '<article class="ficha" id="ficha" aria-live="polite"></article>' : "") + "</div></div></section>";
     }
     if (S.recorrido) {
       const n = (p.escenas || []).length;
@@ -383,7 +390,8 @@
     }
     const cerca = cercanias(p);
     if (S.ubicacion && (ubi.texto || ubi.mapa || cerca.length || ubi.titulo)) {
-      const fm = archivo(ubi.foto) || (P.escenaInicial ? base + "escenas/" + P.escenaInicial + "/1/d/0/0.jpg" : "") || foto0;
+      // la cara de abajo de la esfera sirve de «mapa» en tomas aéreas (lotes); en una casa sería el piso, así que se usa la portada
+      const fm = archivo(ubi.foto) || (plantilla === "lotes" && P.escenaInicial ? base + "escenas/" + P.escenaInicial + "/1/d/0/0.jpg" : "") || foto0;
       const mapa = /^https:\/\//.test(String(ubi.mapa || "")) ? ubi.mapa : "";
       h += '<section id="ubicacion"><div class="ancho"><div class="intro"><span class="ojo">Ubicación</span><h2>' + esc(ubi.titulo || portada.lugar || "Dónde está") + "</h2>" + (ubi.texto ? "<p>" + esc(ubi.texto) + "</p>" : "") + "</div>" +
         '<div class="ubica-grid"><div class="mapa">' + (fm ? '<img src="' + esc(fm) + '" alt="" loading="lazy">' : "") + '<div class="pin"><b>' + esc(nombre) + "</b><i></i></div>" + (mapa ? '<a class="btn btn-sec" href="' + esc(mapa) + '" target="_blank" rel="noopener">Cómo llegar ↗</a>' : "") + "</div>" +
@@ -399,21 +407,23 @@
     $("raiz").innerHTML = h;
 
     // ---- Lotes y su calculadora ----
-    if (lotes.length) {
+    if (lotes.length || casa) {
+      const lista = lotes.length ? lotes : [casa];
       let actual = null, tocado = false;
       let plan = planes.find((x) => x.meses === (largo && largo.meses)) || planes[0], eng = Math.min(engMax, Math.max(engMin, Math.round(num(pagos.engDef) || 30))) / 100;
-      const mzs = [...new Set(lotes.map((l) => l.mz))];
-      const nombreL = (l) => T.lote + " " + l.num + (l.mz ? " · " + T.manzana + " " + l.mz : "");
+      const mzs = [...new Set(lista.map((l) => l.mz))];
+      const nombreL = (l) => (l === casa ? nombre : T.lote + " " + l.num + (l.mz ? " · " + T.manzana + " " + l.mz : ""));
       const mensaje = () => {
         if (!actual) return saludo;
         const como = !conPrecio || !actual.precio ? "" : plan.meses ? ", a " + plan.meses + " mensualidades con " + Math.round(eng * 100) + "% de enganche" : ", de contado";
+        if (actual === casa) return "Hola, me interesa " + nombre + como + ". ¿Me dan más información?";
         return "Hola, me interesa el " + T.lote + " " + actual.num + (actual.mz ? " de la " + T.manzana + " " + actual.mz : "") + " de " + nombre + (actual.area ? " (" + actual.area.toLocaleString("es-MX") + " m²)" : "") + como + ". ¿Me dan más información?";
       };
       const pintar = () => {
         const l = actual, f = $("ficha");
         const opMz = mzs.map((m) => '<option value="' + esc(m) + '"' + (m === l.mz ? " selected" : "") + ">" + esc(m || "—") + "</option>").join("");
         const opLt = lotes.filter((x) => x.mz === l.mz).map((x) => '<option value="' + esc(x.k) + '"' + (x === l ? " selected" : "") + ">" + esc(x.num + " · " + x.eNombre) + "</option>").join("");
-        const elige = '<div class="elige">' + (mzs.length > 1 || mzs[0] ? '<label>' + esc(T.manzana) + '<select id="sel-mz" aria-label="' + esc(T.manzana) + '">' + opMz + "</select></label>" : "") + '<label' + (mzs.length > 1 || mzs[0] ? "" : ' style="grid-column:1/-1"') + ">" + esc(T.lote) + '<select id="sel-lote" aria-label="' + esc(T.lote) + '">' + opLt + "</select></label></div>";
+        const elige = l === casa ? "" : '<div class="elige">' + (mzs.length > 1 || mzs[0] ? '<label>' + esc(T.manzana) + '<select id="sel-mz" aria-label="' + esc(T.manzana) + '">' + opMz + "</select></label>" : "") + '<label' + (mzs.length > 1 || mzs[0] ? "" : ' style="grid-column:1/-1"') + ">" + esc(T.lote) + '<select id="sel-lote" aria-label="' + esc(T.lote) + '">' + opLt + "</select></label></div>";
         const pp = l.precio * (1 + plan.ajuste / 100);
         let cuerpo = "";
         if (l.estado === "vendido") cuerpo = '<div class="aviso">Este ' + esc(T.lote.toLowerCase()) + " ya se vendió. Elige uno disponible para ver sus datos.</div>";
@@ -423,19 +433,19 @@
               planes.map((x, i) => '<button type="button" data-plan="' + i + '" aria-pressed="' + (x === plan) + '">' + esc(x.t) + "</button>").join("") + "</div>" +
               (plan.meses ? '<div class="enganche"><label for="eng">Enganche <b>' + Math.round(eng * 100) + "% · " + dinero(pp * eng) + '</b></label><input type="range" id="eng" min="' + engMin + '" max="' + engMax + '" step="5" value="' + Math.round(eng * 100) + '"></div>' : "") +
               '<div class="resultado"><span>' + (plan.meses ? plan.meses + " mensualidades de" : "Precio de contado") + "</span><b>" + dinero(plan.meses ? mensual(l, plan, eng) : pp) + "</b></div>" +
-              '<div class="desglose"><div><span>Precio del ' + esc(T.lote.toLowerCase()) + "</span><b>" + dinero(l.precio) + "</b></div>" +
+              '<div class="desglose"><div><span>' + (l === casa ? "Precio" : "Precio del " + esc(T.lote.toLowerCase())) + "</span><b>" + dinero(l.precio) + "</b></div>" +
               (plan.meses ? "<div><span>Enganche</span><b>" + dinero(pp * eng) + "</b></div>" + (plan.ajuste ? "<div><span>" + (plan.ajuste > 0 ? "Financiamiento" : "Descuento") + " a " + plan.meses + " meses</span><b>" + (plan.ajuste > 0 ? "+" : "") + plan.ajuste + "%</b></div>" : "")
                 : plan.ajuste < 0 ? '<div class="ahorro"><span>De contado te ahorras</span><b>' + dinero(l.precio - pp) + "</b></div>" : "") + "</div>";
           } else cuerpo += '<div class="aviso">Pregunta por su precio y las formas de pago.</div>';
-          cuerpo += '<div class="ficha-acc">' + (telWA ? '<a class="btn btn-wa" data-wa href="' + esc(wa(mensaje())) + '" target="_blank" rel="noopener">' + ICO.wa + "Apartar este " + esc(T.lote.toLowerCase()) + "</a>" : "") +
+          cuerpo += '<div class="ficha-acc">' + (telWA ? '<a class="btn btn-wa" data-wa href="' + esc(wa(mensaje())) + '" target="_blank" rel="noopener">' + ICO.wa + (l === casa ? "Me interesa" : "Apartar este " + esc(T.lote.toLowerCase())) + "</a>" : "") +
             '<div class="par">' + (S.recorrido ? '<a class="btn btn-sec" href="#recorrido">Verlo en 360°</a>' : "") + '<button class="btn btn-sec" type="button" id="compartir">Compartir</button></div></div>' + '<p class="nota" id="nota-ficha"></p>';
         }
         const medidas = l.lados.length === 4 ? l.lados[0] + " × " + l.lados[1] + " m" : "";
-        f.innerHTML = elige + '<div class="ficha-cab"><div><small>' + esc(l.mz ? T.manzana + " " + l.mz : nombre) + "</small><h3>" + esc(T.lote + " " + l.num) + '</h3></div><span class="estado" style="--c:' + esc(l.eColor) + '">' + esc(l.eNombre) + "</span></div>" +
-          '<div class="datos">' + (l.area ? "<span><b>" + esc(l.area.toLocaleString("es-MX")) + " m²</b> de terreno</span>" : "") + (medidas ? "<span><b>" + esc(medidas) + "</b></span>" : "") + (conPrecio && l.precio && l.area && l.estado !== "vendido" ? "<span><b>" + dinero(l.precio / l.area) + "</b> por m²</span>" : "") + "</div>" + cuerpo;
+        f.innerHTML = elige + '<div class="ficha-cab"><div><small>' + esc(l === casa ? ubi.titulo || "En venta" : l.mz ? T.manzana + " " + l.mz : nombre) + "</small><h3" + (l === casa ? ' class="h3-casa"' : "") + ">" + esc(l === casa ? nombre : T.lote + " " + l.num) + '</h3></div><span class="estado" style="--c:' + esc(l.eColor) + '">' + esc(l.eNombre) + "</span></div>" +
+          '<div class="datos">' + (l.area ? "<span><b>" + esc(l.area.toLocaleString("es-MX")) + " m²</b> de " + (l === casa ? "construcción" : "terreno") + "</span>" : "") + (l.terreno ? "<span><b>" + esc(l.terreno.toLocaleString("es-MX")) + " m²</b> de terreno</span>" : "") + (medidas ? "<span><b>" + esc(medidas) + "</b></span>" : "") + (conPrecio && l.precio && l.area && l.estado !== "vendido" && l !== casa ? "<span><b>" + dinero(l.precio / l.area) + "</b> por m²</span>" : "") + "</div>" + cuerpo;
         const link = wa(tocado ? mensaje() : saludo);
         document.querySelectorAll("[data-wa]").forEach((a) => { if (!f.contains(a)) a.href = link; });
-        $("wa-fija-txt").textContent = tocado && l.estado !== "vendido" ? "Me interesa el " + nombreL(l) : "Escríbenos por WhatsApp";
+        $("wa-fija-txt").textContent = tocado && l.estado !== "vendido" ? (l === casa ? "Me interesa " + nombre : "Me interesa el " + nombreL(l)) : "Escríbenos por WhatsApp";
       };
       const elegir = (l, porUsuario) => { actual = l; if (porUsuario) tocado = true; pintar(); };
       $("ficha").addEventListener("change", (ev) => {
@@ -446,18 +456,18 @@
         const b = ev.target.closest("[data-plan]");
         if (b) { plan = planes[+b.dataset.plan]; tocado = true; pintar(); return; }
         if (ev.target.closest("#compartir")) {
-          const txt = nombre + " · " + nombreL(actual) + (actual.area ? " · " + actual.area.toLocaleString("es-MX") + " m²" : "") + (conPrecio && actual.precio ? " · " + dinero(actual.precio) : "") + (previa ? "" : " · " + location.href.split("#")[0]);
+          const txt = (actual === casa ? nombre : nombre + " · " + nombreL(actual)) + (actual.area ? " · " + actual.area.toLocaleString("es-MX") + " m²" : "") + (conPrecio && actual.precio ? " · " + dinero(actual.precio) : "") + (previa ? "" : " · " + location.href.split("#")[0]);
           try { await navigator.clipboard.writeText(txt); $("nota-ficha").textContent = "Datos copiados. Pégalos donde quieras."; } catch (e) { $("nota-ficha").textContent = txt; }
         }
       });
       $("ficha").addEventListener("input", (ev) => { if (ev.target.id !== "eng") return; eng = +ev.target.value / 100; tocado = true; pintar(); const r2 = $("eng"); if (r2) r2.focus(); });
-      elegir(libres[0] || lotes[0], false);
+      elegir(libres[0] || lista[0], false);
     }
     // ---- Plano maestro a pantalla completa: acercar con dos dedos, la rueda o los botones, y moverlo arrastrando ----
     const ab = $("plano-abrir");
     if (ab) ab.addEventListener("click", () => {
-      const v = document.createElement("div"); v.className = "ver-plano"; v.setAttribute("role", "dialog"); v.setAttribute("aria-label", "Plano maestro");
-      v.innerHTML = '<header><span>Plano maestro · ' + esc(nombre) + '</span><div><button type="button" data-z="-1" aria-label="Alejar">−</button><button type="button" data-z="1" aria-label="Acercar">+</button><button type="button" data-z="x" aria-label="Cerrar">×</button></div></header><div class="lienzo"><img src="' + esc(planoImg) + '" alt="Plano maestro de ' + esc(nombre) + '" draggable="false"></div>';
+      const v = document.createElement("div"); v.className = "ver-plano"; v.setAttribute("role", "dialog"); v.setAttribute("aria-label", quePlano);
+      v.innerHTML = '<header><span>' + quePlano + " · " + esc(nombre) + '</span><div><button type="button" data-z="-1" aria-label="Alejar">−</button><button type="button" data-z="1" aria-label="Acercar">+</button><button type="button" data-z="x" aria-label="Cerrar">×</button></div></header><div class="lienzo"><img src="' + esc(planoImg) + '" alt="' + quePlano + " de " + esc(nombre) + '" draggable="false"></div>';
       document.body.appendChild(v); document.body.style.overflow = "hidden";
       const lz = v.querySelector(".lienzo"), im = v.querySelector("img"); let k = 1, base = 1, x = 0, y = 0;
       const pinta = () => { im.style.transform = "translate(" + (x - (im.naturalWidth * base * k) / 2) + "px," + (y - (im.naturalHeight * base * k) / 2) + "px) scale(" + base * k + ")"; };
