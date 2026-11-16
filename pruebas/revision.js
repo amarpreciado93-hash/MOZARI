@@ -3915,7 +3915,9 @@ async function capasPesadas(p) {
     });
     // Landing del desarrollo (Amar, 15 nov 2026: «una landing para móvil como la del anuncio, con la marca de cada proyecto»).
     // Publicar → Landing arma una página de venta con lo que ya tiene el tour y se publica en /<tour>/landing.
-    await paso("Landing del desarrollo (Laboratorio, nace Solo yo): marca, lotes con precio y calculadora, WhatsApp con el lote y publicada en /landing", async () => {
+    // Amar, 15 nov 2026: «no me gustó lo de los cuadritos… mejor que se vea un master plan». El tablero de cuadros se quitó:
+    // ahora va la imagen del plano maestro (se amplía con los dedos) y el lote se elige con Manzana y Lote.
+    await paso("Landing del desarrollo (Laboratorio, nace Solo yo): marca, plano maestro, lotes con precio y calculadora, WhatsApp con el lote y publicada en /landing", async () => {
       const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
       const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
       const n = await pagina(DUENO), u = await pagina("sin-landing@prueba.mx");
@@ -3947,7 +3949,16 @@ async function capasPesadas(p) {
         await n.waitForTimeout(1200);
         const fr = n.frameLocator("#ld-iframe");
         exige((await fr.locator("h1").textContent({ timeout: 8000 }).catch(() => "")) === "Tu lote junto a la laguna", "la vista previa no muestra el título nuevo");
-        exige((await fr.locator(".lt").count()) === 6, "la vista previa no trae los 6 lotes");
+        exige((await fr.locator("#sel-lote option").count()) === 3 && (await fr.locator("#sel-mz option").count()) === 2, "la vista previa no trae las 2 manzanas con sus lotes para elegir");
+        exige((await fr.locator(".lt, .tablero").count()) === 0, "la landing sigue con el tablero de cuadritos");
+        // el plano maestro se sube desde su tarjeta
+        const { PNG } = require(LIB.pngjs), pl = new PNG({ width: 1400, height: 1000 });
+        for (let i = 0; i < pl.data.length; i += 4) { const x = (i / 4) % 1400, y = Math.floor(i / 4 / 1400), l = x % 140 < 6 || y % 100 < 6; pl.data[i] = l ? 34 : 241; pl.data[i + 1] = l ? 56 : 236; pl.data[i + 2] = l ? 44 : 226; pl.data[i + 3] = 255; }
+        const plArch = path.join(os.tmpdir(), "plano-maestro-prueba.png"); fs.writeFileSync(plArch, PNG.sync.write(pl));
+        const [elPl] = await Promise.all([n.waitForEvent("filechooser"), n.click('[data-ld-subir="plano"]')]); await elPl.setFiles(plArch);
+        await n.waitForTimeout(2500);
+        exige(await n.isVisible('[data-ld-quitar="plano"]'), "la tarjeta Plano maestro no se quedó con la imagen subida");
+        exige(await fr.locator(".plano img").evaluate((im) => new Promise((ok) => (im.complete ? ok(im.naturalWidth) : (im.onload = () => ok(im.naturalWidth))))).catch(() => 0) > 1000, "la vista previa no muestra el plano maestro");
         if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "landing-editor.png") });
         await n.click('[data-ld-accion="publicar"]'); await n.waitForTimeout(4500);
         exige(await n.isVisible(".ld-link code"), "después de publicar no sale el link de la landing");
@@ -3957,12 +3968,25 @@ async function capasPesadas(p) {
         exige(r.status === 200 && /<title>Laguna Landing<\/title>/.test(html), "el servidor no da la landing con el nombre del tour");
         const ctx = await navegador.newContext(Object.assign({}, devices["iPhone 13"], { acceptDownloads: false })), c = await ctx.newPage(); const errs = []; c.on("pageerror", (e) => errs.push(e.message));
         await c.route(/fonts\.(googleapis|gstatic)\.com/, (x) => x.abort());
-        await c.goto(TOURS + "/" + id + "/landing"); await c.waitForSelector(".lt", { timeout: 15000 }); await c.waitForTimeout(800);
-        exige((await c.$$(".lt")).length === 6, "en el celular no salen los 6 lotes");
+        await c.goto(TOURS + "/" + id + "/landing"); await c.waitForSelector("#sel-lote", { timeout: 15000 }); await c.waitForTimeout(800);
+        exige((await c.$$eval(".resumen b", (l) => l.reduce((s, b) => s + +b.textContent, 0))) === 6, "el resumen del plano no cuenta los 6 lotes");
         exige((await c.textContent(".cifra b")) === "4", "la portada no cuenta solos los lotes disponibles");
         exige(/\$1\.4 M|\$1\.?0?\d* M/.test(await c.textContent(".cifras")), "la portada no trae el precio desde");
         exige((await c.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--marca").trim().toUpperCase())) === "#400911", "la landing no tomó el color principal de la marca");
-        await c.tap('.lt[data-lote="B|5"]'); await c.waitForTimeout(700);
+        // el plano maestro publicado se abre a pantalla completa, se acerca y se cierra
+        await c.evaluate(() => document.getElementById("lotes").scrollIntoView()); await c.waitForTimeout(600);
+        exige(await c.evaluate(() => { const im = document.querySelector(".plano img"); return !!im && im.complete && im.naturalWidth > 1000; }), "la landing publicada no trae el plano maestro");
+        await c.tap("#plano-abrir"); await c.waitForSelector(".ver-plano", { timeout: 4000 }); await c.waitForTimeout(400);
+        const antes = await c.$eval(".ver-plano img", (im) => im.getBoundingClientRect().width);
+        exige(antes > 300 && antes <= 392, "el plano a pantalla completa no cabe en el celular: " + antes);
+        await c.tap('.ver-plano [data-z="1"]'); await c.waitForTimeout(200);
+        exige((await c.$eval(".ver-plano img", (im) => im.getBoundingClientRect().width)) > antes * 1.4, "el botón + no acerca el plano");
+        await c.tap('.ver-plano [data-z="x"]'); await c.waitForTimeout(200);
+        exige(!(await c.$(".ver-plano")) && (await c.evaluate(() => document.body.style.overflow)) === "", "el plano no se cerró bien");
+        // se elige Manzana B y su primer lote libre es el 5
+        await c.selectOption("#sel-mz", "B"); await c.waitForTimeout(400);
+        exige((await c.$eval("#sel-lote", (s) => s.value)) === "B|5" && /Lote 5/.test(await c.textContent(".ficha-cab h3")), "al elegir la Manzana B no salta a su primer lote disponible");
+        exige((await c.$$eval("#sel-lote option", (l) => l.map((o) => o.textContent))).join() === "4 · Apartado,5 · Disponible,6 · Disponible", "la lista de lotes no dice el estado de cada uno");
         const wa = await c.getAttribute(".ficha .btn-wa", "href");
         exige(/wa\.me\/524771234567\?text=/.test(wa) && decodeURIComponent(wa).includes("Lote 5 de la Manzana B"), "«Apartar este lote» no abre WhatsApp con el lote escrito: " + wa);
         await c.click('.plan-pago [data-plan="0"]'); await c.waitForTimeout(300);

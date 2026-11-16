@@ -82,21 +82,28 @@
   .cifra b { font: 500 clamp(22px, 6vw, 40px)/1 var(--f-titulo); font-variant-numeric: lining-nums tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cifra span { font-size: 11.5px; line-height: 1.3; color: rgba(255, 255, 255, 0.74); }
 
-  .filtros { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; margin-top: 26px; }
-  .filtros::-webkit-scrollbar { display: none; }
-  .filtro { flex: none; min-height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--linea); background: var(--papel); color: var(--marca); font: 500 13.5px var(--f-texto); cursor: pointer; }
-  .filtro[aria-pressed="true"] { background: var(--marca); border-color: var(--marca); color: #fff; }
-  .lotes-grid { display: grid; gap: 22px; margin-top: 24px; align-items: start; }
-  .tablero { background: var(--papel); border: 1px solid var(--linea); border-radius: var(--radio); padding: 14px 12px 10px; display: grid; gap: 14px; }
-  .mz-nombre { font: 600 11px var(--f-texto); letter-spacing: 0.18em; text-transform: uppercase; color: var(--tenue); margin: 0 2px 7px; }
-  .mz-lotes { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 5px; }
-  .lt { min-height: 44px; border: 0; border-radius: 7px; background: var(--c, #3F8F6C); color: #fff; font: 600 14px var(--f-texto); cursor: pointer; padding: 0; transition: opacity 0.2s, transform 0.15s; font-variant-numeric: tabular-nums; }
-  .lt.vendido { background: color-mix(in srgb, var(--tenue) 22%, var(--papel)); color: color-mix(in srgb, var(--tenue) 70%, var(--papel)); }
-  .lt.apagado { opacity: 0.22; }
-  .lt[aria-pressed="true"] { background: var(--marca); box-shadow: 0 0 0 3px var(--acento); position: relative; z-index: 1; }
-  .leyenda { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--tenue); padding: 2px 4px 2px; }
-  .leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
-
+  .lotes-grid { display: grid; gap: 22px; margin-top: 28px; align-items: start; }
+  .plano-col { display: grid; gap: 14px; min-width: 0; }
+  .plano { position: relative; margin: 0; border-radius: 20px; overflow: hidden; background: var(--papel); border: 1px solid var(--linea); box-shadow: 0 24px 60px -36px rgba(0, 0, 0, 0.45); }
+  .plano button { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
+  .plano img { width: 100%; height: auto; display: block; }
+  .plano figcaption { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--linea); color: var(--marca); font-size: 13.5px; font-weight: 600; pointer-events: none; }
+  .plano figcaption svg { width: 17px; height: 17px; }
+  .resumen { display: flex; flex-wrap: wrap; gap: 8px; }
+  .resumen span { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 999px; background: var(--papel); border: 1px solid var(--linea); font-size: 13.5px; color: var(--tinta); }
+  .resumen span b { font-variant-numeric: tabular-nums; }
+  .resumen i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+  .elige { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 10px; }
+  .elige label { display: grid; gap: 6px; font: 600 11px var(--f-texto); letter-spacing: 0.16em; text-transform: uppercase; color: var(--tenue); }
+  .elige select { appearance: none; -webkit-appearance: none; width: 100%; min-height: 50px; padding: 0 34px 0 14px; border-radius: 12px; text-overflow: ellipsis; border: 1px solid var(--linea); color: var(--marca); font: 600 16px var(--f-texto); letter-spacing: 0; text-transform: none; cursor: pointer;
+    background: var(--fondo) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center / 18px; }
+  .elige select:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+  .ver-plano { position: fixed; inset: 0; z-index: 60; background: #0B0E0D; display: grid; grid-template-rows: auto 1fr; touch-action: none; }
+  .ver-plano header { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: calc(10px + env(safe-area-inset-top, 0px)) var(--gutter-r) 10px var(--gutter-l); color: #fff; font-size: 14px; }
+  .ver-plano header div { display: flex; gap: 8px; }
+  .ver-plano header button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.08); color: #fff; font: 600 20px/1 var(--f-texto); cursor: pointer; }
+  .ver-plano .lienzo { position: relative; overflow: hidden; cursor: grab; }
+  .ver-plano .lienzo img { position: absolute; left: 50%; top: 50%; max-width: none; transform-origin: 0 0; user-select: none; -webkit-user-drag: none; }
   .ficha { background: var(--papel); border: 1px solid var(--linea); border-radius: 22px; padding: 22px 20px 20px; display: grid; gap: 16px; box-shadow: 0 20px 50px -30px rgba(14, 58, 64, 0.45); scroll-margin-top: 80px; }
   .ficha-cab { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
   .ficha-cab small { font: 600 11px var(--f-texto); letter-spacing: 0.2em; text-transform: uppercase; color: var(--tenue); }
@@ -203,9 +210,8 @@
     .portada .ancho { padding-block: 150px 40px; }
     .portada h1 { max-width: 15ch; }
     .cifras { max-width: 780px; }
-    .lotes-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 28px; }
+    .lotes-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 32px; }
     .ficha { position: sticky; top: 100px; padding: 26px 26px 22px; }
-    .mz-lotes { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); }
     .visor { aspect-ratio: 16 / 8; }
     .proyecto-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 64px; }
     .mosaico { grid-template-columns: 2fr 1fr 1fr; grid-auto-rows: 250px; }
@@ -327,7 +333,7 @@
       } else { const a = libres.filter((l) => l.area > 0).map((l) => l.area); if (a.length) cifras.push([Math.round(Math.min(...a)).toLocaleString("es-MX") + " m²", "desde"]); }
     } else cifras = (Array.isArray(proy.cifras) ? proy.cifras : []).filter((c) => c && (c.v || c[0])).slice(0, 3).map((c) => [c.v || c[0], c.t || c[1] || ""]);
 
-    const menu = [S.lotes && lotes.length ? ["#lotes", T.lote + "s"] : null, S.recorrido ? ["#recorrido", "Recorrido 360°"] : null, S.proyecto ? ["#proyecto", "El proyecto"] : null, S.galeria && fotos.length ? ["#galeria", "Galería"] : null, S.ubicacion ? ["#ubicacion", "Ubicación"] : null].filter(Boolean);
+    const menu = [S.lotes && lotes.length ? ["#lotes", T.lote + "s"] : L.plano ? ["#lotes", "Plano"] : null, S.recorrido ? ["#recorrido", "Recorrido 360°"] : null, S.proyecto ? ["#proyecto", "El proyecto"] : null, S.galeria && fotos.length ? ["#galeria", "Galería"] : null, S.ubicacion ? ["#ubicacion", "Ubicación"] : null].filter(Boolean);
     const logoClaro = archivo(M.logoClaro) || archivo(M.logo);
     const logoOsc = archivo(M.logo) || archivo(M.logoClaro);
     const marcaHtml = (claro) => { const src = claro ? logoClaro : logoOsc; return src ? '<a class="marca-img" href="#inicio" aria-label="' + esc(nombre) + '"><img src="' + esc(src) + '" alt="' + esc(nombre) + '"></a>' : '<a class="marca-txt" href="#inicio">' + esc(nombre) + "</a>"; };
@@ -344,16 +350,17 @@
       (S.recorrido ? '<a class="btn btn-linea" href="#recorrido">Recorrido 360°</a>' : "") + "</div>" +
       (cifras.length ? '<div class="cifras" style="--n:' + cifras.length + '">' + cifras.map(([v, t]) => '<div class="cifra"><b>' + esc(v) + "</b><span>" + esc(t) + "</span></div>").join("") + "</div>" : "") + "</div></section>";
 
+    const planoImg = archivo(L.plano);
+    const ICO_LUPA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M11 8v6M8 11h6"/></svg>';
+    const planoHtml = planoImg ? '<figure class="plano"><button type="button" id="plano-abrir" aria-label="Ver el plano maestro completo"><img src="' + esc(planoImg) + '" alt="Plano maestro de ' + esc(nombre) + '" loading="lazy"></button><figcaption>' + ICO_LUPA + "Toca para ampliar</figcaption></figure>" : "";
     if (lotes.length) {
-      const mzs = [...new Set(lotes.map((l) => l.mz))];
-      const ests = ESTADOS.map((e) => lotes.find((l) => l.estado === e.id)).filter(Boolean); // la leyenda, en el orden de los estados
-      h += '<section class="lotes" id="lotes"><div class="ancho"><div class="intro"><span class="ojo">Plan maestro</span><h2>Elige tu ' + esc(T.lote.toLowerCase()) + "</h2><p>Toca un " + esc(T.lote.toLowerCase()) + (conPrecio ? " para ver su precio y cómo pagarlo." : " para ver sus medidas y apartarlo.") + "</p></div>" +
-        '<div class="filtros" role="group" aria-label="Filtrar"><button class="filtro" type="button" data-filtro="todos" aria-pressed="false">Todos</button><button class="filtro" type="button" data-filtro="disponible" aria-pressed="true">Disponibles</button>' +
-        (mzs.length > 1 && mzs.length <= 8 ? mzs.map((m) => '<button class="filtro" type="button" data-filtro="mz:' + esc(m) + '" aria-pressed="false">' + esc(T.manzana) + " " + esc(m) + "</button>").join("") : "") + "</div>" +
-        '<div class="lotes-grid"><div class="tablero">' + mzs.map((m) => '<div class="mz">' + (m ? '<p class="mz-nombre">' + esc(T.manzana) + " " + esc(m) + "</p>" : "") + '<div class="mz-lotes">' +
-          lotes.filter((l) => l.mz === m).map((l) => '<button type="button" class="lt' + (l.estado === "vendido" ? " vendido" : "") + '" style="--c:' + esc(l.eColor) + '" data-lote="' + esc(l.k) + '" aria-pressed="false" aria-label="' + esc(T.lote + " " + l.num + (m ? " " + T.manzana + " " + m : "") + ", " + l.eNombre) + '">' + esc(l.num) + "</button>").join("") + "</div></div>").join("") +
-        '<div class="leyenda">' + ests.map((l) => '<span><i style="background:' + (l.estado === "vendido" ? "color-mix(in srgb, var(--tenue) 22%, var(--papel))" : esc(l.eColor)) + '"></i>' + esc(l.eNombre) + "</span>").join("") + '<span><i style="background:var(--marca);box-shadow:0 0 0 2px var(--acento)"></i>Tu elección</span></div></div>' +
+      const resumen = ESTADOS.map((e) => [e, lotes.filter((l) => l.estado === e.id).length]).filter(([, n]) => n);
+      h += '<section class="lotes" id="lotes"><div class="ancho"><div class="intro"><span class="ojo">Plan maestro</span><h2>Elige tu ' + esc(T.lote.toLowerCase()) + "</h2><p>" + (planoImg ? "Ubícalo en el plano y elígelo abajo" : "Elige la " + esc(T.manzana.toLowerCase()) + " y el " + esc(T.lote.toLowerCase())) + (conPrecio ? " para ver su precio y cómo pagarlo." : " para ver sus medidas y apartarlo.") + "</p></div>" +
+        '<div class="lotes-grid"><div class="plano-col">' + planoHtml +
+        '<div class="resumen" aria-label="Disponibilidad">' + resumen.map(([e, n]) => '<span style="--c:' + esc(e.color) + '"><i></i><b>' + n + "</b> " + esc(e.nombre.toLowerCase()) + (n === 1 ? "" : e.nombre.slice(-1).match(/[aeiou]/i) ? "s" : "es") + "</span>").join("") + "</div></div>" +
         '<article class="ficha" id="ficha" aria-live="polite"></article></div></div></section>';
+    } else if (planoImg) {
+      h += '<section class="lotes" id="lotes"><div class="ancho"><div class="intro"><span class="ojo">Plano</span><h2>' + esc(L.planoTitulo || "Así está distribuido") + '</h2></div><div class="lotes-grid" style="grid-template-columns:minmax(0,1fr)"><div class="plano-col">' + planoHtml + "</div></div></div></section>";
     }
     if (S.recorrido) {
       const n = (p.escenas || []).length;
@@ -393,11 +400,9 @@
 
     // ---- Lotes y su calculadora ----
     if (lotes.length) {
-      let filtro = "disponible", actual = null, tocado = false;
+      let actual = null, tocado = false;
       let plan = planes.find((x) => x.meses === (largo && largo.meses)) || planes[0], eng = Math.min(engMax, Math.max(engMin, Math.round(num(pagos.engDef) || 30))) / 100;
-      const nodo = (k) => document.querySelector('.lt[data-lote="' + CSS.escape(k) + '"]');
-      const pasa = (l) => filtro === "todos" || (filtro === "disponible" && l.estado === "disponible") || (filtro.startsWith("mz:") && l.mz === filtro.slice(3));
-      const filtrar = () => { document.querySelectorAll(".filtro").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.filtro === filtro))); lotes.forEach((l) => { const n = nodo(l.k); if (n) n.classList.toggle("apagado", !pasa(l)); }); };
+      const mzs = [...new Set(lotes.map((l) => l.mz))];
       const nombreL = (l) => T.lote + " " + l.num + (l.mz ? " · " + T.manzana + " " + l.mz : "");
       const mensaje = () => {
         if (!actual) return saludo;
@@ -406,10 +411,12 @@
       };
       const pintar = () => {
         const l = actual, f = $("ficha");
-        lotes.forEach((x) => { const n = nodo(x.k); if (n) n.setAttribute("aria-pressed", String(x === l)); });
+        const opMz = mzs.map((m) => '<option value="' + esc(m) + '"' + (m === l.mz ? " selected" : "") + ">" + esc(m || "—") + "</option>").join("");
+        const opLt = lotes.filter((x) => x.mz === l.mz).map((x) => '<option value="' + esc(x.k) + '"' + (x === l ? " selected" : "") + ">" + esc(x.num + " · " + x.eNombre) + "</option>").join("");
+        const elige = '<div class="elige">' + (mzs.length > 1 || mzs[0] ? '<label>' + esc(T.manzana) + '<select id="sel-mz" aria-label="' + esc(T.manzana) + '">' + opMz + "</select></label>" : "") + '<label' + (mzs.length > 1 || mzs[0] ? "" : ' style="grid-column:1/-1"') + ">" + esc(T.lote) + '<select id="sel-lote" aria-label="' + esc(T.lote) + '">' + opLt + "</select></label></div>";
         const pp = l.precio * (1 + plan.ajuste / 100);
         let cuerpo = "";
-        if (l.estado === "vendido") cuerpo = '<div class="aviso">Este ' + esc(T.lote.toLowerCase()) + " ya se vendió. Toca uno disponible para ver sus datos.</div>";
+        if (l.estado === "vendido") cuerpo = '<div class="aviso">Este ' + esc(T.lote.toLowerCase()) + " ya se vendió. Elige uno disponible para ver sus datos.</div>";
         else {
           if (conPrecio && l.precio > 0) {
             cuerpo += '<div class="pregunta">¿Cómo quieres pagarlo?</div><div class="plan-pago" role="group" aria-label="Forma de pago" style="--n:' + planes.length + '">' +
@@ -424,15 +431,17 @@
             '<div class="par">' + (S.recorrido ? '<a class="btn btn-sec" href="#recorrido">Verlo en 360°</a>' : "") + '<button class="btn btn-sec" type="button" id="compartir">Compartir</button></div></div>' + '<p class="nota" id="nota-ficha"></p>';
         }
         const medidas = l.lados.length === 4 ? l.lados[0] + " × " + l.lados[1] + " m" : "";
-        f.innerHTML = '<div class="ficha-cab"><div><small>' + esc(l.mz ? T.manzana + " " + l.mz : nombre) + "</small><h3>" + esc(T.lote + " " + l.num) + '</h3></div><span class="estado" style="--c:' + esc(l.eColor) + '">' + esc(l.eNombre) + "</span></div>" +
+        f.innerHTML = elige + '<div class="ficha-cab"><div><small>' + esc(l.mz ? T.manzana + " " + l.mz : nombre) + "</small><h3>" + esc(T.lote + " " + l.num) + '</h3></div><span class="estado" style="--c:' + esc(l.eColor) + '">' + esc(l.eNombre) + "</span></div>" +
           '<div class="datos">' + (l.area ? "<span><b>" + esc(l.area.toLocaleString("es-MX")) + " m²</b> de terreno</span>" : "") + (medidas ? "<span><b>" + esc(medidas) + "</b></span>" : "") + (conPrecio && l.precio && l.area && l.estado !== "vendido" ? "<span><b>" + dinero(l.precio / l.area) + "</b> por m²</span>" : "") + "</div>" + cuerpo;
         const link = wa(tocado ? mensaje() : saludo);
         document.querySelectorAll("[data-wa]").forEach((a) => { if (!f.contains(a)) a.href = link; });
         $("wa-fija-txt").textContent = tocado && l.estado !== "vendido" ? "Me interesa el " + nombreL(l) : "Escríbenos por WhatsApp";
       };
-      const elegir = (l, porUsuario) => { actual = l; if (porUsuario) tocado = true; pintar(); if (porUsuario && matchMedia("(max-width: 899px)").matches) $("ficha").scrollIntoView({ behavior: "smooth", block: "start" }); };
-      document.querySelectorAll(".filtro").forEach((b) => b.addEventListener("click", () => { filtro = b.dataset.filtro; filtrar(); }));
-      document.querySelector(".tablero").addEventListener("click", (ev) => { const b = ev.target.closest("[data-lote]"); if (b) elegir(lotes.find((x) => x.k === b.dataset.lote), true); });
+      const elegir = (l, porUsuario) => { actual = l; if (porUsuario) tocado = true; pintar(); };
+      $("ficha").addEventListener("change", (ev) => {
+        if (ev.target.id === "sel-mz") { const m = ev.target.value; elegir(lotes.find((x) => x.mz === m && x.estado === "disponible") || lotes.find((x) => x.mz === m), true); }
+        if (ev.target.id === "sel-lote") elegir(lotes.find((x) => x.k === ev.target.value), true);
+      });
       $("ficha").addEventListener("click", async (ev) => {
         const b = ev.target.closest("[data-plan]");
         if (b) { plan = planes[+b.dataset.plan]; tocado = true; pintar(); return; }
@@ -442,9 +451,33 @@
         }
       });
       $("ficha").addEventListener("input", (ev) => { if (ev.target.id !== "eng") return; eng = +ev.target.value / 100; tocado = true; pintar(); const r2 = $("eng"); if (r2) r2.focus(); });
-      filtrar();
       elegir(libres[0] || lotes[0], false);
     }
+    // ---- Plano maestro a pantalla completa: acercar con dos dedos, la rueda o los botones, y moverlo arrastrando ----
+    const ab = $("plano-abrir");
+    if (ab) ab.addEventListener("click", () => {
+      const v = document.createElement("div"); v.className = "ver-plano"; v.setAttribute("role", "dialog"); v.setAttribute("aria-label", "Plano maestro");
+      v.innerHTML = '<header><span>Plano maestro · ' + esc(nombre) + '</span><div><button type="button" data-z="-1" aria-label="Alejar">−</button><button type="button" data-z="1" aria-label="Acercar">+</button><button type="button" data-z="x" aria-label="Cerrar">×</button></div></header><div class="lienzo"><img src="' + esc(planoImg) + '" alt="Plano maestro de ' + esc(nombre) + '" draggable="false"></div>';
+      document.body.appendChild(v); document.body.style.overflow = "hidden";
+      const lz = v.querySelector(".lienzo"), im = v.querySelector("img"); let k = 1, base = 1, x = 0, y = 0;
+      const pinta = () => { im.style.transform = "translate(" + (x - (im.naturalWidth * base * k) / 2) + "px," + (y - (im.naturalHeight * base * k) / 2) + "px) scale(" + base * k + ")"; };
+      const ajusta = () => { if (!im.naturalWidth) return; base = Math.min(lz.clientWidth / im.naturalWidth, lz.clientHeight / im.naturalHeight); pinta(); };
+      const zoom = (f, cx, cy) => { const k2 = Math.min(6, Math.max(1, k * f)); const r = lz.getBoundingClientRect(), px = (cx ?? r.left + r.width / 2) - r.left - r.width / 2, py = (cy ?? r.top + r.height / 2) - r.top - r.height / 2; x = px - ((px - x) * k2) / k; y = py - ((py - y) * k2) / k; k = k2; if (k === 1) { x = 0; y = 0; } pinta(); };
+      if (im.complete) ajusta(); else im.onload = ajusta; addEventListener("resize", ajusta);
+      const cerrar = () => { v.remove(); document.body.style.overflow = ""; removeEventListener("resize", ajusta); removeEventListener("keydown", tecla); };
+      const tecla = (e) => { if (e.key === "Escape") cerrar(); }; addEventListener("keydown", tecla);
+      v.querySelector("header").addEventListener("click", (e) => { const b = e.target.closest("[data-z]"); if (!b) return; if (b.dataset.z === "x") cerrar(); else zoom(b.dataset.z === "1" ? 1.6 : 1 / 1.6); });
+      lz.addEventListener("wheel", (e) => { e.preventDefault(); zoom(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); }, { passive: false });
+      const ptrs = new Map(); let d0 = 0, k0 = 1, ult = 0;
+      lz.addEventListener("pointerdown", (e) => { lz.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; d0 = Math.hypot(a[0] - b[0], a[1] - b[1]); k0 = k; }
+        const ahora = Date.now(); if (ptrs.size === 1 && ahora - ult < 300) zoom(k > 1.5 ? 1 / k : 2.5, e.clientX, e.clientY); ult = ahora; });
+      lz.addEventListener("pointermove", (e) => { if (!ptrs.has(e.pointerId)) return; const [px, py] = ptrs.get(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+        if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (d0) zoom((k0 * d) / d0 / k, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); }
+        else if (k > 1) { x += e.clientX - px; y += e.clientY - py; pinta(); } });
+      const suelta = (e) => { ptrs.delete(e.pointerId); if (ptrs.size < 2) d0 = 0; };
+      lz.addEventListener("pointerup", suelta); lz.addEventListener("pointercancel", suelta);
+      v.querySelector('[data-z="x"]').focus();
+    });
     // ---- Recorrido 360: se carga hasta que lo piden (la página abre ligera) ----
     const ini = $("iniciar-360");
     if (ini) ini.addEventListener("click", () => {

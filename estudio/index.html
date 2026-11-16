@@ -3416,7 +3416,7 @@
     let h = "";
     h += '<section class="comp-tarjeta"><h3>Tu landing</h3>' + sw("activa", "Publicar la landing con el tour") +
       '<div class="fe-grupo"><b>Plantilla</b><div class="estados" role="group" aria-label="Plantilla">' + [["lotes", "Desarrollo con lotes"], ["propiedad", "Propiedad o casa"]].map(([k, n]) => '<button type="button" data-ld-plantilla="' + k + '" aria-pressed="' + (L.plantilla === k) + '" style="--c:var(--mz-lima)">' + n + "</button>").join("") + "</div>" +
-      '<span class="fe-sub">' + (L.plantilla === "lotes" ? "Con el plano de " + esc(terminos().lote.toLowerCase()) + "s, su precio y la calculadora de pagos. Este tour tiene " + lotes + " " + esc(terminos().lote.toLowerCase()) + (lotes === 1 ? "" : "s") + "." : "Con las cifras y espacios del proyecto, sin plano de lotes.") + "</span></div>" +
+      '<span class="fe-sub">' + (L.plantilla === "lotes" ? "Con el plano maestro, la lista de " + esc(terminos().lote.toLowerCase()) + "s, su precio y la calculadora de pagos. Este tour tiene " + lotes + " " + esc(terminos().lote.toLowerCase()) + (lotes === 1 ? "" : "s") + "." : "Con las cifras y espacios del proyecto, sin plano de lotes.") + "</span></div>" +
       (L.activa && t.publicado ? '<div class="ld-link"><div class="pub-caja"><code>' + esc(linkLanding()) + '</code><button class="btn-sec" type="button" data-ld-accion="copiar">Copiar link</button></div><div class="comp-acc"><a class="btn-sec" href="' + esc(linkLanding()) + '" target="_blank" rel="noopener">Abrir ↗</a><button class="btn-prim" type="button" data-ld-accion="publicar">Publicar cambios</button></div><span class="fe-sub">Lo que cambies aquí sale en el link al publicar, junto con el tour.</span></div>'
         : L.activa ? '<div class="ld-link"><span class="fe-sub">Publica el tour para tener el link de tu landing.</span><div class="comp-acc"><button class="btn-prim" type="button" data-ld-accion="publicar">Publicar ahora</button></div></div>' : "") + "</section>";
     h += '<section class="comp-tarjeta"><h3>Marca</h3><p>Lo de tu manual de identidad: logos, colores en HEX y letras.</p>' +
@@ -3426,6 +3426,7 @@
       '<div class="ld-fila"><label class="fe-campo">Letra de títulos<select class="entrada" data-ld="marca.titulo">' + opcionesFuente(M.titulo) + '</select></label><label class="fe-campo">Letra de textos<select class="entrada" data-ld="marca.texto">' + opcionesFuente(M.texto) + "</select></label></div></section>";
     h += '<section class="comp-tarjeta"><h3>Portada</h3>' + imagen("portada.foto", "Foto de portada", "Horizontal y nítida. Si no subes una, se usa la portada del tour.", false, true) +
       campo("portada.lugar", "Lugar (arriba del título)", "Ej.: Cancún · Quintana Roo") + campo("portada.titulo", "Título", P().nombre || "Nombre del desarrollo", ' maxlength="70"') + area("portada.texto", "Texto", P().descripcion || "Una o dos frases: qué es y dónde está.", 2) + "</section>";
+    h += '<section class="comp-tarjeta"><h3>' + (L.plantilla === "lotes" ? "Plano maestro" : "Plano") + "</h3>" + imagen("plano", L.plantilla === "lotes" ? "Imagen del plano maestro" : "Plano de la propiedad", "PNG o JPG con buena resolución. Tus clientes lo pueden ampliar con los dedos.", true) + "</section>";
     if (L.plantilla === "lotes") {
       const pl = L.pagos.planes || [];
       h += '<section class="comp-tarjeta"><h3>Precios y formas de pago</h3>' + sw("pagos.mostrar", "Mostrar precios en la landing") +
@@ -3452,14 +3453,14 @@
     const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/png,image/jpeg,image/webp,image/svg+xml";
     inp.addEventListener("change", async () => {
       const f = inp.files && inp.files[0]; if (!f) return;
-      const logo = /^marca\./.test(ruta);
+      const logo = /^marca\./.test(ruta), plano = ruta === "plano";
       try {
         avisar("Subiendo…", 6000);
-        const im = await leerImagen(f), tope = logo ? 900 : 2400, k = Math.min(1, tope / Math.max(im.naturalWidth || tope, im.naturalHeight || tope, 1));
+        const im = await leerImagen(f), tope = logo ? 900 : plano ? 3200 : 2400, k = Math.min(1, tope / Math.max(im.naturalWidth || tope, im.naturalHeight || tope, 1));
         const cv = document.createElement("canvas"); cv.width = Math.round((im.naturalWidth || 600) * k); cv.height = Math.round((im.naturalHeight || 200) * k);
         cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height); URL.revokeObjectURL(im.src);
-        ldSet(ruta, await medio(cv, logo ? "image/png" : "image/jpeg", logo ? undefined : 0.86, logo ? "logo-landing" : "landing"));
-        guardar(); pintarLanding(); ldEnviar(true); avisar(logo ? "Logo listo" : "Foto lista");
+        ldSet(ruta, await medio(cv, logo ? "image/png" : "image/jpeg", logo ? undefined : plano ? 0.9 : 0.86, logo ? "logo-landing" : plano ? "plano-landing" : "landing"));
+        guardar(); pintarLanding(); ldEnviar(true); avisar(logo ? "Logo listo" : plano ? "Plano listo" : "Foto lista");
       } catch (e) { avisar(e.message || "No se pudo subir esa imagen"); }
     });
     inp.click();
@@ -3975,7 +3976,7 @@
     if (clave === "proyecto/musica") guiaNueva("nuevo-sonido", () => [esVisible("#m-preguntar-fila") && { el: "#m-preguntar-fila", titulo: "Nuevo: ¿activar sonido?",
       texto: "Los navegadores no dejan sonar un tour hasta que el visitante toca la pantalla. Ahora, al abrirlo le preguntamos <b>Activar sonido</b> o <b>Sin sonido</b>, con los colores de tu tour, y la música y las voces arrancan con su respuesta." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "musica");
     if (clave === "publicar/landing" && enLab("landing")) guiaNueva("nuevo-landing", () => [esVisible("#ld-form .comp-tarjeta") && { el: "#ld-form .comp-tarjeta", titulo: "Nuevo: la landing de tu desarrollo",
-      texto: "Una página para mandar por WhatsApp o poner en tus anuncios. Sube tu <b>logo</b>, pon los <b>colores y letras</b> de tu marca y tu <b>WhatsApp</b>. Los lotes, sus precios, las fotos y los lugares cercanos salen solos del tour. A la derecha la ves como en el celular." }].filter(Boolean), () => nav.sub === "landing" && esVisible("#ld-form .comp-tarjeta"));
+      texto: "Una página para mandar por WhatsApp o poner en tus anuncios. Sube tu <b>logo</b> y tu <b>plano maestro</b>, pon los <b>colores y letras</b> de tu marca y tu <b>WhatsApp</b>. Los lotes, sus precios, las fotos y los lugares cercanos salen solos del tour. A la derecha la ves como en el celular." }].filter(Boolean), () => nav.sub === "landing" && esVisible("#ld-form .comp-tarjeta"));
     if (clave === "proyecto/general" && enLab("bienvenida")) guiaNueva("nuevo-bienvenida", () => [esVisible("#p-bv-fila") && { el: "#p-bv", titulo: "Nuevo: pantalla de bienvenida",
       texto: "Tu tour puede abrir con <b>tu logo, el nombre y un botón</b> sobre la esfera girando despacio. Cuando tu cliente lo toca empieza el recorrido <b>con su música</b>, sin preguntarle nada. Préndela aquí y vuelve a publicar." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "general" && esVisible("#p-bv-fila"));
     if (clave === "panoramas/lista" && enLab("ejemplo")) guiaNueva("nuevo-ejemplo", () => [esVisible("#subir-ejemplo") && { el: "#subir-ejemplo", titulo: "Nuevo: fotos de ejemplo",
