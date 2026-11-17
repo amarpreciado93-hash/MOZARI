@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -222,11 +222,44 @@ async function capasPesadas(p) {
       const c = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false })), piezas = [];
       c.on("request", (r) => { const m = r.url().match(/\/(escaparate-[a-z]+)\/(\d+)\/[a-z]\/\d+\/\d+\.jpg/); if (m) piezas.push([m[1], +m[2]]); });
       await c.goto(ESTUDIO + "/escaparate"); await c.waitForTimeout(5000);
-      const niveles = {}; for (const e of ["escaparate-interior", "escaparate-aerea", "escaparate-esfera"]) niveles[e] = (await (await fetch(ESTUDIO + "/" + e + "/escena.json")).json()).niveles;
+      const niveles = {}; for (const e of ["escaparate-interior", "escaparate-aerea", "escaparate-esfera", "escaparate-mirador", "escaparate-cabo"]) niveles[e] = (await (await fetch(ESTUDIO + "/" + e + "/escena.json")).json()).niveles;
       const grandes = piezas.filter(([e, z]) => niveles[e] && niveles[e][z] && niveles[e][z].size > 1024);
       exige(piezas.length > 0 && !grandes.length, "en el celular el escaparate bajó fotos 360 de más de 1024 px por cara: " + grandes.length + " de " + piezas.length);
       exige(!c.errs.length, "errores en el escaparate: " + c.errs.join(" | ").slice(0, 160));
       await c.context().close();
+    });
+    // Pedido de Amar (16 nov 2026): portadas nuevas que se intercalan con las esferas del inicio (fotos de cámara,
+    // operador y dron entre esfera y esfera) y dos desarrollos con lotes reales.
+    await paso("Portadas del sitio: fotos y esferas se intercalan (y en el celular la foto ligera)", async () => {
+      const ver = async (p, k) => { await p.click("#esfera-puntos button:nth-child(" + (k + 1) + ")"); await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(1900); };
+      for (const [disp, nom] of [[{ viewport: { width: 1400, height: 900 } }, "compu"], [{ viewport: { width: 1024, height: 768 } }, "laptop"], [Object.assign({}, devices["iPhone 13"]), "cel"]]) {
+        const p = await pagina(null, Object.assign({ acceptDownloads: false }, disp)), fotos = [];
+        p.on("request", (r) => { const m = r.url().match(/\/(portada-[a-z]+(-cel)?)\.webp/); if (m) fotos.push(m[1]); });
+        await p.goto(ESTUDIO + "/escaparate"); await p.waitForTimeout(3500);
+        const alAbrir = fotos.slice();
+        exige(alAbrir.length <= 1 && !alAbrir.some((x) => /dron|operador/.test(x)), "al abrir bajó fotos que todavía no tocan: " + alAbrir.join(","));
+        const nombres = await p.$$eval("#esfera-puntos button", (bs) => bs.map((b) => b.getAttribute("aria-label")));
+        exige(nombres.length === 8 && nombres[1] === "Cámara 360" && nombres[4] === "Lotes en la montaña" && nombres[6] === "Lotes con vista al mar", "no salen las 8 portadas en su orden: " + nombres.join(", "));
+        await ver(p, 1);
+        const f = await p.$eval("#portada-fotos img.ver", (e) => ({ ok: e.complete && e.naturalWidth > 0, op: +getComputedStyle(e).opacity, src: e.src.split("/").pop(), r: e.getBoundingClientRect().height })).catch(() => null);
+        const dato = await p.$eval(".esfera-marco .esfera-dato", (e) => +getComputedStyle(e).opacity);
+        exige(f && f.ok && f.op > 0.9 && f.r > 200 && dato < 0.1, "la foto de portada no se ve (o sigue «Arrastra para mirar»): " + JSON.stringify(f) + " " + dato);
+        exige(nom === "cel" ? /-cel\.webp$/.test(f.src) : !/-cel/.test(f.src), "en " + nom + " bajó la foto equivocada: " + f.src);
+        exige(await p.isVisible(".tarjeta-hero h1"), "la foto tapa la tarjeta del inicio");
+        // Los puntos quedan sobre la foto o la esfera, no encima del texto de la tarjeta
+        const choque = await p.evaluate(() => { const a = document.getElementById("esfera-puntos").getBoundingClientRect(), t = document.querySelector(".tarjeta-hero").getBoundingClientRect(); return a.bottom > t.top + 2 && a.top < t.bottom && a.right > t.left && a.left < t.right; });
+        exige(!choque, "los puntos de las portadas quedan encima de la tarjeta");
+        if (process.env.CAPTURAS) await p.screenshot({ path: path.join(process.env.CAPTURAS, "portada-foto-" + nom + ".png") });
+        await ver(p, 4);
+        exige((await p.textContent("#esfera-nombre")) === "Lotes en la montaña" && !(await p.$("#portada-fotos img.ver")) && (await p.$eval(".esfera-marco .esfera-dato", (e) => +getComputedStyle(e).opacity)) > 0.9, "al volver a una esfera no se quita la foto");
+        await p.waitForTimeout(1500);
+        if (process.env.CAPTURAS) await p.screenshot({ path: path.join(process.env.CAPTURAS, "portada-mirador-" + nom + ".png") });
+        await ver(p, 6); await p.waitForTimeout(1500);
+        exige((await p.textContent("#esfera-nombre")) === "Lotes con vista al mar", "no cambia a la esfera de vista al mar");
+        if (process.env.CAPTURAS) await p.screenshot({ path: path.join(process.env.CAPTURAS, "portada-cabo-" + nom + ".png") });
+        exige(!p.errs.length, "errores en el escaparate: " + p.errs.join(" | ").slice(0, 160));
+        await p.context().close();
+      }
     });
     // Pedido de Amar (11 nov 2026): «Contrata tu tour 360» hasta abajo del sitio. Mapa de Latinoamérica con las 95 ciudades
     // de la red de operadores (de su hoja COLEGAS: solo ciudad y país), 17 banderas, fotos de su carpeta de marca y la
@@ -3946,6 +3979,102 @@ async function capasPesadas(p) {
         exige(await n.isVisible("#ver-tutorial-pano"), "en un tour sin esferas no sale el tutorial en Panoramas");
         await u.click('#nav button:has-text("Mis Tours")').catch(() => {}); await u.waitForTimeout(1200);
         exige(!(await u.$("#ver-tutorial")), "una cuenta sin la función ya ve el tutorial (debe nacer Solo yo)");
+      } finally {
+        await u.context().close(); await n.context().close();
+      }
+    });
+    // Pedido de Amar (16 nov 2026): las métricas de los tours publicados de los usuarios, en su Panel de dueño
+    await paso("Panel de dueño → Estadísticas: visitas de los tours de los usuarios (sin los del dueño), por plan, celular, contacto y detalle por tour", async () => {
+      const correoU = "visitas-" + Date.now() + "@prueba.mx", u = await pagina(correoU); await nuevoTour(u, "Tour con visitas"); const id = await idTour(u);
+      const n = await pagina(DUENO);
+      // Las estadísticas se miden en los tours de cuentas con licencia (Pro y Desarrollos)
+      const cu = (await n.evaluate(() => fetch("api/admin/cuentas").then((r) => r.json()))).cuentas.find((c) => c.email === correoU);
+      exige(cu && (await n.evaluate((uid) => fetch("api/admin/cuentas/" + uid, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ plan: "pro" }) }).then((r) => r.status), cu.uid)) === 200, "no se pudo pasar la cuenta a Pro");
+      exige((await u.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar el tour del usuario");
+      const esf = (await u.evaluate((id) => fetch("api/tours/" + id).then((r) => r.json()), id)).escenas[0].id;
+      const visita = (tour, i, o) => fetch(ESTUDIO + "/v/" + tour, { method: "POST", body: JSON.stringify(Object.assign({ v: "prueba" + Date.now().toString(36) + i, dur: 40 + i * 10, disp: "compu", ref: "whatsapp", esferas: { [esf]: 30 }, lotes: {}, contacto: 0 }, o)) });
+      for (let i = 0; i < 5; i++) await visita(id, i, i < 3 ? { disp: "celular" } : i === 3 ? { contacto: 1 } : {});
+      exige((await u.evaluate(() => fetch("api/admin/estadisticas").then((r) => r.status))) === 403, "una cuenta normal puede leer las estadísticas de todos");
+      try {
+        const d = await n.evaluate(() => fetch("api/admin/estadisticas?dias=7").then((r) => r.json()));
+        const t = d.tours.find((x) => x.id === id);
+        exige(t && t.visitas === 5 && t.semana === 5 && t.plan === "pro" && /^visitas-/.test(t.dueno), "el tour del usuario no sale con sus 5 visitas: " + JSON.stringify(t));
+        exige(d.usuarios.visitas >= 5 && d.porPlan.pro.visitas >= 5 && d.muestra.n >= 5 && (d.muestra.disp.celular || 0) >= 3 && d.muestra.conContacto >= 1 && d.muestra.durMediana > 0, "el resumen no cuadra: " + JSON.stringify({ u: d.usuarios, m: d.muestra }));
+        exige(d.tours.filter((x) => x.plan === "dueno").every((x) => x.visitas <= d.porPlan.dueno.visitas) && d.usuarios.visitas === d.porPlan.desarrollos.visitas + d.porPlan.pro.visitas + d.porPlan.gratis.visitas, "las visitas del dueño se mezclan con las de los usuarios");
+        await n.click('#nav button:has-text("Mis Tours")'); await n.waitForTimeout(800); await pasarGuias(n);
+        await n.click("#ver-cuentas"); await n.waitForTimeout(1200);
+        await n.click('[data-dueno="estadisticas"]'); await n.waitForTimeout(2000);
+        exige(await n.isVisible(".est-adm .est-kpis") && /visitas/.test(await n.textContent(".est-adm .est-kpis")) && /tocan contacto/.test(await n.textContent(".est-adm .est-kpis")), "no se ve la pestaña de Estadísticas en el panel");
+        exige(await n.isVisible('[data-est-tour="' + id + '"]'), "el tour del usuario no sale en la lista");
+        await n.click('[data-est-tour="' + id + '"]'); await n.waitForTimeout(2000);
+        const det = await n.textContent(".est-det").catch(() => "");
+        exige(/5\s*visitas/.test(det) && /Esferas más vistas/.test(det), "el detalle del tour no se ve: " + det.slice(0, 160));
+        await n.click('[data-adm-dias="7"]'); await n.waitForTimeout(1800);
+        exige(await n.isVisible('.est-adm [data-adm-dias="7"][aria-pressed="true"]'), "no cambia a 7 días");
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "panel-estadisticas.png"), fullPage: true });
+        exige(!n.errs.length, "errores en el panel: " + n.errs.join(" | ").slice(0, 200));
+      } finally {
+        await n.context().close(); await u.context().close();
+      }
+    });
+    // Pedido de David (reporte, 16 nov 2026): un botón abajo, como el de contacto, para descargar un PDF (plano maestro
+    // o ayuda de ventas). Interfaz → Descargar PDF; sale en las 4 plantillas, en compu con texto y en celular con ícono.
+    await paso("Botón para descargar un PDF (Laboratorio, nace Solo yo): se sube en Interfaz y sale junto al de contacto en todas las plantillas", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const pdf = Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n");
+      const n = await pagina(DUENO), u = await pagina("sin-pdf@prueba.mx");
+      try {
+        await nuevoTour(n, "Con PDF"); const id = await idTour(n);
+        await n.click('#nav button:has-text("Interfaz")'); await n.waitForTimeout(1200); await pasarGuias(n);
+        exige(await n.isVisible("#sk-pdf-grupo"), "el dueño no ve «Descargar PDF» en Interfaz");
+        await n.check('#sk-pdf-grupo input[data-sk-k="pdf.mostrar"]'); await n.waitForTimeout(500);
+        await n.setInputFiles("#sk-pdf-archivo", { name: "Plano maestro Encino.pdf", mimeType: "application/pdf", buffer: pdf }); await n.waitForTimeout(2500);
+        exige(/Plano maestro Encino\.pdf/.test(await n.textContent("#sk-pdf-grupo .pdf-nombre").catch(() => "")), "no se ve el PDF subido en Interfaz");
+        await n.fill('#sk-pdf-grupo input[data-sk-k="pdf.texto"]', "Descargar brochure"); await n.waitForTimeout(1500);
+        exige(/Descargar brochure/.test(await n.textContent("a[data-pdf]").catch(() => "")), "la vista de Interfaz no muestra el botón del PDF");
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "pdf-interfaz.png") });
+        // En las 4 plantillas: el botón de contacto y el del PDF se ven, sin encimarse, en compu y en celular
+        const d0 = (await api(n, "api/tours/" + id)).d;
+        exige(d0.skin.pdf && /^archivos\/descarga-[a-z0-9]+\.pdf$/.test(d0.skin.pdf.archivo) && d0.skin.pdf.nombre === "Plano maestro Encino.pdf", "el proyecto no guardó el PDF: " + JSON.stringify(d0.skin.pdf));
+        for (const pl of ["cine", "desarrollo", "dock", "brujula"]) {
+          const d = (await api(n, "api/tours/" + id)).d;
+          d.skin.plantilla = pl; d.skin.cta = { mostrar: true, texto: "Agendar visita", enlace: "https://wa.me/524770000000" };
+          exige((await api(n, "api/tours/" + id, J("PUT", d))).s === 200 && (await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar con " + pl);
+          for (const [disp, nom] of [[{ viewport: { width: 1366, height: 800 } }, "compu"], [Object.assign({}, devices["iPhone 13"]), "cel"]]) {
+            const t = await pagina(null, Object.assign({ acceptDownloads: false }, disp));
+            await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(3500);
+            await t.click(".snd-no").catch(() => {}); await t.waitForTimeout(300);
+            const r = await t.evaluate(() => {
+              const vis = (e) => { if (!e) return null; const b = e.getBoundingClientRect(), cs = getComputedStyle(e); return b.width > 0 && b.height > 0 && cs.display !== "none" && cs.visibility !== "hidden" && b.bottom <= innerHeight + 1 && b.right <= innerWidth + 1 ? b : null; };
+              const p = [...document.querySelectorAll("a[data-pdf]")].map(vis).find(Boolean), c = [...document.querySelectorAll("a.sk-cta:not([data-pdf])")].map(vis).find(Boolean);
+              const a = document.querySelector("a[data-pdf]"), t = a && a.querySelector(".t");
+              return { pdf: !!p, cta: !!c, choca: !!(p && c && p.left < c.right && c.left < p.right && p.top < c.bottom && c.top < p.bottom), texto: t ? getComputedStyle(t).display !== "none" : false, href: a && a.href, dl: a && a.getAttribute("download") };
+            });
+            exige(r.pdf && r.cta && !r.choca, pl + " en " + nom + ": el botón del PDF no se ve o se encima con el de contacto: " + JSON.stringify(r));
+            if (nom === "compu") exige(r.texto, pl + " en compu: el botón no trae su texto");
+            if (pl === "cine") {
+              const f = await t.request.get(r.href);
+              exige(f.status() === 200 && /application\/pdf/.test(f.headers()["content-type"] || "") && (await f.body()).slice(0, 5).toString() === "%PDF-" && r.dl === "Plano maestro Encino.pdf", "el PDF no se descarga del tour publicado: " + f.status() + " " + r.dl);
+            }
+            if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "pdf-" + pl + "-" + nom + ".png") });
+            exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
+            await t.context().close();
+          }
+        }
+        // El .zip para otro hosting lleva el PDF
+        const z = await api(n, "api/tours/" + id + "/descargar");
+        exige(z.s === 200 && (z.d.archivos || []).some((a) => a.ruta === d0.skin.pdf.archivo), "el .zip no lleva el PDF");
+        // Una cuenta sin la función no lo ve en Interfaz, y aunque su proyecto lo traiga, su tour publicado no lo muestra
+        await nuevoTour(u, "Sin PDF"); const idU = await idTour(u);
+        await u.click('#nav button:has-text("Interfaz")'); await u.waitForTimeout(1000);
+        exige(!(await u.$("#sk-pdf-grupo")), "una cuenta sin la función ya ve «Descargar PDF» (debe nacer Solo yo)");
+        const du = (await api(u, "api/tours/" + idU)).d; du.skin.pdf = { mostrar: true, texto: "Descargar", archivo: "archivos/descarga-x1.pdf", nombre: "x.pdf" };
+        exige((await api(u, "api/tours/" + idU, J("PUT", du))).s === 200 && (await api(u, "api/tours/" + idU + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar el tour sin la función");
+        const tu = await pagina(null); await tu.goto(TOURS + "/" + idU + "/"); await tu.waitForTimeout(3000);
+        exige(!(await tu.$("a[data-pdf]")), "un tour sin la función muestra el botón del PDF");
+        await tu.context().close();
+        exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
       } finally {
         await u.context().close(); await n.context().close();
       }

@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-17T00:49:30.678Z",
- "bien": 107,
- "total": 107,
+ "fecha": "2026-11-17T03:47:51.877Z",
+ "bien": 110,
+ "total": 110,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -9,6 +9,10 @@
   },
   {
    "nombre": "Entrar desde Instagram, Facebook o TikTok: pide abrir Mozari en Safari o Chrome (Google no deja entrar ahí)",
+   "ok": true
+  },
+  {
+   "nombre": "Portadas del sitio: fotos y esferas se intercalan (y en el celular la foto ligera)",
    "ok": true
   },
   {
@@ -417,6 +421,14 @@
   },
   {
    "nombre": "Tutorial en video (Laboratorio, nace Solo yo): tarjeta en Mis Tours y en un tour sin esferas que abre el video de Loom",
+   "ok": true
+  },
+  {
+   "nombre": "Panel de dueño → Estadísticas: visitas de los tours de los usuarios (sin los del dueño), por plan, celular, contacto y detalle por tour",
+   "ok": true
+  },
+  {
+   "nombre": "Botón para descargar un PDF (Laboratorio, nace Solo yo): se sube en Interfaz y sale junto al de contacto en todas las plantillas",
    "ok": true
   },
   {

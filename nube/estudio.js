@@ -216,6 +216,7 @@ export const LABORATORIO = {
   "landing": { nombre: "Landing del desarrollo", texto: "Publicar → Landing: una página de venta con la marca del proyecto (logos, colores y letras de su manual), portada, plano maestro (se amplía con los dedos), lotes con su precio y calculadora de pagos, recorrido 360, galería, ubicación y WhatsApp con el lote elegido. Se ve en celular y compu y se publica con el tour en su link /landing." },
   "bienvenida": { nombre: "Pantalla de bienvenida", texto: "Proyecto → General: el tour abre con tu logo, el nombre y un botón sobre la esfera girando despacio. Al tocarlo empieza el recorrido con su música y su piloto automático, sin la pregunta de «Activar sonido». Se aplica al volver a publicar." },
   "tutorial-video": { nombre: "Tutorial en video", texto: "En Mis Tours y en Panoramas (mientras el tour no tiene esferas) sale la tarjeta «Tutorial paso a paso»: abre el video de cómo armar un tour, dentro de Mozari, con un aviso de que se grabó antes de las últimas actualizaciones." },
+  "descarga-pdf": { nombre: "Botón para descargar un PDF", texto: "En Interfaz → Descargar PDF: sube el plano, el brochure o la ficha de venta (hasta 25 MB) y en el tour sale un botón junto al de contacto («Descargar plano» o el texto que quieras). En el celular sale solo el ícono para no tapar la vista. También viaja en el .zip." },
   "transiciones": { nombre: "Transiciones inmersivas", texto: "Al tocar un punto para pasar a otra esfera, la vista gira hacia él, avanza y la siguiente esfera entra en vivo (también en celular), sin la foto plana que se veía como página doblada. Antes de abrir, el tour precarga todas sus esferas con una foto de portada, el nombre y el avance." },
   "acabado": { nombre: "Acabado fino del tour", texto: "Retoques a lo que ve tu cliente. Diseño Cine: el título, el nombre y el botón de contacto salen blancos (antes un velo oscuro los dejaba grises); en celular ya salen el botón de contacto y el nombre del proyecto, y las flechas se leen sobre fondos claros. Diseño Brújula: el nombre de la esfera ya no se repite ni se corta en la orilla y los puntos de la ruta se tocan fácil. Se aplica al volver a publicar." },
   "ejemplo": { nombre: "Fotos de ejemplo", texto: "En un tour sin esferas: «Probar con fotos de ejemplo» sube 2 fotos 360 de muestra (una aérea y una a pie) para practicar sin traer fotos propias. Quedan como esferas normales y se borran igual." },
@@ -374,20 +375,23 @@ async function registrarCaida(request, env, id) {
   await avisarPorCorreo(env, rep, new URL(request.url));
   return ok;
 }
-async function resumenVisitas(env, id, dias) {
+async function resumenVisitas(env, id, dias, tope = 5000) {
   const desde = new Date(Date.now() - (dias - 1) * 864e5).toISOString().slice(0, 10), claves = [];
   let cursor;
   do {
     const l = await env.R2.list({ prefix: "stats/" + id + "/", cursor, limit: 1000 });
     l.objects.forEach((o) => { if (o.key.split("/")[2] >= desde) claves.push(o.key); });
     cursor = l.truncated ? l.cursor : undefined;
-  } while (cursor && claves.length < 5000);
+  } while (cursor && claves.length < 20000);
+  // Leer cada visita cuesta: con muchas se lee una muestra pareja (el Panel de dueño pide hasta 600)
+  const paso = Math.max(1, Math.ceil(claves.length / tope)), leer = claves.filter((_, i) => i % paso === 0);
   const regs = [];
-  for (let i = 0; i < claves.length; i += 50) regs.push(...(await Promise.all(claves.slice(i, i + 50).map(async (k) => (await env.R2.get(k))?.json().catch(() => null)))).filter(Boolean));
+  for (let i = 0; i < leer.length; i += 50) regs.push(...(await Promise.all(leer.slice(i, i + 50).map(async (k) => (await env.R2.get(k))?.json().catch(() => null)))).filter(Boolean));
   const suma = (o, k, n = 1) => { o[k] = (o[k] || 0) + n; };
-  const r = { dias, total: regs.length, porDia: {}, disp: {}, origen: {}, ciudades: {}, esferas: {}, esferasVisitas: {}, lotes: {}, contacto: 0, conContacto: 0, durTotal: 0 };
+  const r = { dias, total: paso > 1 ? claves.length : regs.length, muestra: regs.length, porDia: {}, disp: {}, origen: {}, ciudades: {}, esferas: {}, esferasVisitas: {}, lotes: {}, contacto: 0, conContacto: 0, durTotal: 0 };
+  if (paso > 1) claves.forEach((k) => suma(r.porDia, k.split("/")[2]));
   regs.forEach((x) => {
-    suma(r.porDia, x.t.slice(0, 10)); suma(r.disp, x.disp); suma(r.origen, x.ref);
+    if (paso === 1) suma(r.porDia, x.t.slice(0, 10)); suma(r.disp, x.disp); suma(r.origen, x.ref);
     suma(r.ciudades, (x.ciudad ? x.ciudad + ", " : "") + (x.pais || "—"));
     Object.entries(x.esferas || {}).forEach(([k, s]) => { suma(r.esferas, k, s); suma(r.esferasVisitas, k); });
     Object.entries(x.lotes || {}).forEach(([k, n]) => suma(r.lotes, k, n));
@@ -396,6 +400,58 @@ async function resumenVisitas(env, id, dias) {
   return r;
 }
 
+// ---------- Estadísticas de todos los tours (Panel de dueño) ----------
+// Pedido de Amar (16 nov 2026): las métricas de los tours publicados de los usuarios, en su panel. Las visitas se
+// cuentan con la lista de piezas de stats/ (exacto y barato). Celular o compu, tiempo, contacto, países, ciudades y
+// de dónde llegan salen de una muestra pareja de hasta 300 visitas (leer cada una cuesta). Lo de un tour, aparte.
+const MUESTRA_STATS = 300;
+async function estadisticasAdmin(env, dias) {
+  const dia = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10), desde = dia(dias - 1), semana = dia(6);
+  // Tours (dueño, nombre, si está publicado) y planes de las cuentas
+  const deTour = {}, perfiles = [];
+  let cur;
+  do {
+    const l = await env.R2.list({ prefix: "cuentas/", cursor: cur, limit: 1000, include: ["customMetadata"] });
+    for (const o of l.objects) {
+      if (o.key.endsWith("/perfil.json")) { perfiles.push(o.key); continue; }
+      const t = o.key.match(/^cuentas\/([^/]+)\/tours\/([^/]+)$/), md = o.customMetadata || {};
+      if (t) deTour[t[2]] = { uid: t[1], nombre: md.nombre || "Tour", publicado: md.publicado || "" };
+    }
+    cur = l.truncated ? l.cursor : undefined;
+  } while (cur);
+  const cuentas = {};
+  for (let i = 0; i < perfiles.length; i += 50) (await Promise.all(perfiles.slice(i, i + 50).map((k) => env.R2.get(k).then((o) => (o ? o.json() : null)).catch(() => null)))).forEach((p) => { if (p && p.uid) cuentas[p.uid] = p; });
+  const planDeTour = (id) => { const c = deTour[id] && cuentas[deTour[id].uid]; return !c ? "gratis" : c.admin ? "dueno" : PLANES[c.plan] ? c.plan : "gratis"; };
+  // Visitas: una pieza por visita en stats/<tour>/<día>/<visita>.json
+  const porTour = {}, porDia = {}, deUsuarios = [];
+  cur = undefined;
+  do {
+    const l = await env.R2.list({ prefix: "stats/", cursor: cur, limit: 1000 });
+    for (const o of l.objects) {
+      const [, id, d] = o.key.split("/");
+      if (!id || !d || d < desde) continue;
+      const t = porTour[id] || (porTour[id] = { visitas: 0, semana: 0, ultima: "" });
+      t.visitas++; if (d >= semana) t.semana++; if (d > t.ultima) t.ultima = d;
+      if (planDeTour(id) !== "dueno") { porDia[d] = (porDia[d] || 0) + 1; deUsuarios.push(o.key); }
+    }
+    cur = l.truncated ? l.cursor : undefined;
+  } while (cur);
+  const porPlan = { desarrollos: { tours: 0, visitas: 0, publicados: 0 }, pro: { tours: 0, visitas: 0, publicados: 0 }, gratis: { tours: 0, visitas: 0, publicados: 0 }, dueno: { tours: 0, visitas: 0, publicados: 0 } };
+  Object.entries(deTour).forEach(([id, t]) => { if (t.publicado) porPlan[planDeTour(id)].publicados++; });
+  Object.entries(porTour).forEach(([id, t]) => { const g = porPlan[planDeTour(id)]; g.tours++; g.visitas += t.visitas; });
+  // Muestra pareja de las visitas de los usuarios
+  const paso = Math.max(1, Math.ceil(deUsuarios.length / MUESTRA_STATS)), leer = deUsuarios.filter((_, i) => i % paso === 0), regs = [];
+  for (let i = 0; i < leer.length; i += 50) regs.push(...(await Promise.all(leer.slice(i, i + 50).map((k) => env.R2.get(k).then((o) => (o ? o.json() : null)).catch(() => null)))).filter(Boolean));
+  const suma = (o, k) => { if (k) o[k] = (o[k] || 0) + 1; };
+  const m = { n: regs.length, disp: {}, paises: {}, ciudades: {}, origen: {}, conContacto: 0, durProm: 0, durMediana: 0 };
+  const durs = regs.map((x) => +x.dur || 0).sort((a, b) => a - b);
+  regs.forEach((x) => { suma(m.disp, x.disp); suma(m.paises, x.pais || "—"); suma(m.ciudades, x.ciudad ? x.ciudad + ", " + (x.pais || "") : ""); suma(m.origen, x.ref || "directo"); if (x.contacto) m.conContacto++; });
+  if (durs.length) { m.durProm = Math.round(durs.reduce((a, b) => a + b, 0) / durs.length); m.durMediana = durs[Math.floor(durs.length / 2)]; }
+  const tours = Object.entries(porTour).map(([id, t]) => ({ id, nombre: (deTour[id] || {}).nombre || id, plan: planDeTour(id), dueno: ((cuentas[(deTour[id] || {}).uid] || {}).email) || "", visitas: t.visitas, semana: t.semana, ultima: t.ultima }))
+    .sort((a, b) => b.visitas - a.visitas).slice(0, 100);
+  const usuarios = ["desarrollos", "pro", "gratis"].reduce((a, k) => ({ visitas: a.visitas + porPlan[k].visitas, tours: a.tours + porPlan[k].tours, publicados: a.publicados + porPlan[k].publicados }), { visitas: 0, tours: 0, publicados: 0 });
+  return { dias, desde, generado: new Date().toISOString(), usuarios, porPlan, porDia, muestra: m, tours };
+}
 // Quién recibe una novedad por correo: cuentas con correo, sin pausar, que no se dieron de baja y del público de la novedad
 async function destinatarios(env, n) {
   const claves = [];
@@ -572,6 +628,12 @@ async function ventasCsv(request, env) {
 async function admin(request, env, partes, yo) {
   const m = request.method;
   if (partes[2] === "galeria" && partes.length === 3) return apiGaleria(request, env, partes);
+  // Estadísticas: todos los tours (resumen) y el detalle de uno
+  if (partes[2] === "estadisticas" && m === "GET") {
+    const dias = Math.max(1, Math.min(90, +new URL(request.url).searchParams.get("dias") || 30));
+    if (partes.length === 3) return json(await estadisticasAdmin(env, dias));
+    if (partes.length === 4 && ID_TOUR.test(partes[3])) return json(await resumenVisitas(env, partes[3], dias, 600));
+  }
   if (partes[2] === "ventas-link" && partes.length === 3 && m === "GET") {
     let o = await env.R2.get(CLAVE_VENTAS), clave = o ? await o.text() : "";
     if (!clave) { clave = [...crypto.getRandomValues(new Uint8Array(24))].map((x) => x.toString(16).padStart(2, "0")).join(""); await env.R2.put(CLAVE_VENTAS, clave); }
@@ -1052,6 +1114,8 @@ async function api(request, env, partes, yo) {
     // Acabado fino (Laboratorio): los retoques a la interfaz del tour publicado
     p.proyecto.acabado = lab.includes("acabado");
     p.proyecto.transiciones = lab.includes("transiciones");
+    // Botón para descargar un PDF (Laboratorio): sale solo si su dueño tiene la función
+    p.proyecto.descargaPdf = lab.includes("descarga-pdf");
     // Landing del desarrollo (Laboratorio): solo se publica si su dueño tiene la función
     if (!lab.includes("landing")) delete p.proyecto.landing;
     // Pantalla de bienvenida (Laboratorio): solo sale publicada si su dueño tiene la función

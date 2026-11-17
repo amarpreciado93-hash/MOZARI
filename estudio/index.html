@@ -287,7 +287,8 @@
   .rep-item.caida.nuevo { box-shadow: inset 3px 0 0 #FF8A80; }
   .rep-item.nuevo { box-shadow: inset 3px 0 0 var(--mz-lima); }
   .rep-item.resuelto { opacity: 0.55; }
-  .rep-tabs { display: flex; gap: 6px; padding: 10px 16px 0; }
+  .rep-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px 0; }
+  .rep-tabs button { white-space: nowrap; }
   .estado { font-size: 11px; color: var(--mz-tenue); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
   .estado i { width: 6px; height: 6px; border-radius: 50%; background: var(--mz-lima); }
 
@@ -1269,6 +1270,17 @@
   .est-fila i { height: 8px; width: var(--w); border-radius: 4px; background: var(--mz-lima); opacity: 0.8; }
   .est-fila b { font-weight: 600; font-variant-numeric: tabular-nums; }
   @media (max-width: 760px) { .est-kpis, .est-grid { grid-template-columns: 1fr 1fr; } .est-grid { grid-template-columns: 1fr; } }
+  /* Estadísticas de todos los tours en el Panel de dueño */
+  .est-adm { padding: 4px 16px 16px; max-width: none; }
+  .est-adm .est-kpis { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .est-adm .est-kpis b small { font-size: 13px; color: var(--mz-tenue); font-weight: 500; }
+  .est-adm .est-dias { height: 90px; }
+  .plan-chip { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c) 40%, transparent); }
+  .est-tabla tr.abierta td { background: color-mix(in srgb, var(--mz-lima) 5%, transparent); }
+  .est-det-fila > td { padding: 4px 8px 16px !important; }
+  .est-det { display: grid; gap: 10px; }
+  .est-det .est-kpis { grid-template-columns: repeat(4, 1fr); }
+  .est-det .est-kpis b { font-size: 20px; }
   .pub-hosting { text-align: left; max-width: 560px; margin: 18px auto 0; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
   .pub-hosting > div { flex: 1 1 260px; display: grid; gap: 4px; }
   .pub-hosting span { color: var(--mz-tenue); }
@@ -1580,6 +1592,17 @@
   .sk-btn[aria-pressed="true"] { background: var(--sk-acento); color: var(--sk-sobre); }
   .sk-cta { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--sk-acento); color: var(--sk-sobre); text-decoration: none; font-weight: 600; font-size: 13px; padding: 11px 18px; border-radius: var(--sk-radio-btn); white-space: nowrap; border: 0; cursor: pointer; }
   .sk-cta svg { width: 16px; height: 16px; }
+  /* Botón de descarga (PDF): junto al de contacto, en segundo plano para no competir con él */
+  .sk-cta.sk-pdf { background: var(--sk-panel); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+  .sk-cta.sk-pdf:hover { filter: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55); }
+  .sk--v .sk-cta.sk-pdf .t { display: none; }
+  .sk--v .sk-cta.sk-pdf { padding-left: 13px; padding-right: 13px; }
+  .t-desarrollo.sk--v .sk-cta.sk-pdf .t, .t-brujula.sk--v .sk-cta.sk-pdf .t { display: inline; }
+  .t-brujula .b-cta-wrap { display: flex; gap: 8px; align-items: center; }
+  .sk-fino.t-cine.sk--v .c-cta-v.sk-pdf { bottom: calc(env(safe-area-inset-bottom, 0px) + 84px); }
+  .pdf-fila { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .pdf-nombre { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--mz-texto); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pdf-nombre svg { width: 14px; height: 14px; flex: none; color: var(--mz-lima); }
   .sk-cta:hover { filter: brightness(1.08); }
   .sk-pil { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; color: rgba(255, 255, 255, 0.82); white-space: nowrap; }
   .sk-pil i { width: 6px; height: 6px; border-radius: 50%; background: var(--sk-acento); animation: respira 1.6s ease-in-out infinite; }
@@ -2653,6 +2676,8 @@
     plantilla: "cine", acento: "#FFFFFF", panel: "#111111", opacidad: 0.6, radio: 14,
     logo: { tipo: "ninguno", img: "" }, nombre: true,
     cta: { mostrar: true, texto: "Agendar visita", enlace: "" },
+    // Botón para descargar un PDF (Laboratorio «descarga-pdf», pedido de David): plano, brochure o ficha de venta
+    pdf: { mostrar: false, texto: "Descargar plano", archivo: "", nombre: "" },
     credito: { texto: "", enlace: "" },
     extra: { numero: true, brujula: true, ruta: true, leyenda: false, leyendaCantidad: true },
     botones: { pantalla: true, musica: true, zoom: false, piloto: true, limpiar: true },
@@ -4034,6 +4059,8 @@
     if (/^publicar\//.test(clave) && enLab("estadisticas")) guiaNueva("nuevo-estadisticas", [{ el: () => [...document.querySelectorAll("#subtabs button")].find((b) => /Estad/.test(b.textContent)),
       titulo: "Nuevo: estadísticas de tu tour",
       texto: "Cuántas visitas tiene, si entran por celular o compu, de qué ciudades, cuánto se quedan, qué esferas y lotes ven más y cuántos le dan a contacto. Empieza a contar cuando <b>vuelves a publicar</b>." }], () => nav.sec === "publicar");
+    if (/^skin\//.test(clave) && enLab("descarga-pdf")) guiaNueva("nuevo-descarga-pdf", () => [esVisible("#sk-pdf-grupo") && { el: "#sk-pdf-grupo", titulo: "Nuevo: botón para descargar un PDF",
+      texto: "Sube el <b>plano</b>, el <b>brochure</b> o la <b>ficha de venta</b> y tu cliente lo descarga desde el tour con un botón junto al de contacto. Se ve al <b>volver a publicar</b>." }].filter(Boolean), () => nav.sec === "skin" && esVisible("#sk-pdf-grupo"));
     if (/^skin\//.test(clave) && enLab("carga-logo")) guiaNueva("nuevo-carga-logo", [{ el: () => document.querySelector(".logo-fila") && document.querySelector(".logo-fila").closest(".grupo"),
       titulo: "Nuevo: tu logo al cargar el tour", anim: animCarga, dur: 4.5,
       texto: "Elige <b>Del cliente</b> y sube su logo: el tour publicado carga con ese logo, el nombre y los colores de la Interfaz, sin Mozari. Se ve al <b>volver a publicar</b>." + (conMarcaPrueba() ? " En tu plan actual se queda la de Mozari." : "") }], () => nav.sec === "skin" && esVisible(".logo-fila"));
@@ -4166,6 +4193,82 @@
   }
   $("proximo").addEventListener("click", (ev) => { const b = ev.target.closest("[data-est-dias]"); if (b) pintarEstadisticas(+b.dataset.estDias); });
 
+  // =================== ESTADÍSTICAS DE TODOS LOS TOURS (Panel de dueño) ===================
+  // Pedido de Amar (16 nov 2026): las métricas de los tours publicados de los usuarios en su panel. Las visitas son
+  // exactas; celular, tiempo, contacto, países y origen salen de una muestra pareja (lo dice abajo si lo es).
+  let estAdm = { dias: 30, datos: null, abierto: "", detalle: {} };
+  const PLAN_EST = { desarrollos: ["Desarrollos", "#F5BE4E"], pro: ["Pro", "#6DB4FF"], gratis: ["Gratis", "#B8BEAE"], dueno: ["Tuyo", "#B48CFF"] };
+  const minSegAdm = (s) => { s = Math.round(s); return s >= 60 ? Math.floor(s / 60) + " min" + (s % 60 ? " " + (s % 60) + " s" : "") : s + " s"; };
+  const topAdm = (o, n) => Object.entries(o || {}).sort((a, b) => b[1] - a[1]).slice(0, n || 6);
+  const barrasAdm = (lista, fmt) => lista.length ? lista.map(([k, v]) => '<div class="est-fila"><span title="' + esc(k) + '">' + esc(k) + '</span><i style="--w:' + Math.max(3, (v / (lista[0][1] || 1)) * 100).toFixed(1) + '%"></i><b>' + (fmt ? fmt(v) : v) + "</b></div>").join("") : '<p class="nota">Aún sin datos.</p>';
+  const pctAdm = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+  async function pintarEstadisticasAdmin(recargar = true) {
+    const caja = $("cuentas"), cab = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0);
+    if (recargar || !estAdm.datos) {
+      caja.innerHTML = cab + '<div class="est est-adm"><p class="nota">Leyendo las visitas…</p></div>';
+      const r = await fetch("api/admin/estadisticas?dias=" + estAdm.dias, { cache: "no-store" }).catch(() => null);
+      if (!r || !r.ok) { caja.innerHTML = cab + '<div class="est est-adm"><p class="nota">No se pudieron leer las estadísticas.</p></div>'; return; }
+      estAdm.datos = await r.json(); estAdm.detalle = {};
+    }
+    const d = estAdm.datos, u = d.usuarios, m = d.muestra, dias = estAdm.dias;
+    const dd = []; for (let i = dias - 1; i >= 0; i--) { const f = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10); dd.push([f, d.porDia[f] || 0]); }
+    const maxDia = Math.max(1, ...dd.map((x) => x[1]));
+    const celular = (m.disp.celular || 0) + (m.disp.tablet || 0);
+    const kpi = (v, t) => "<div><b>" + v + "</b><span>" + t + "</span></div>";
+    const fila = (t, i) => {
+      const [pn, pc] = PLAN_EST[t.plan] || PLAN_EST.gratis, abierto = estAdm.abierto === t.id;
+      return '<tr class="' + (abierto ? "abierta" : "") + '"><td class="cuenta-n">' + (i + 1) + '</td><td><b>' + esc(t.nombre) + "</b><small class=\"cuenta-alta\">" + esc(t.dueno || "") + '</small></td><td><span class="plan-chip" style="--c:' + pc + '">' + pn + '</span></td><td data-l="Visitas"><b>' + t.visitas + '</b></td><td data-l="7 días">' + t.semana + '</td><td data-l="Última">' + fechaCortaAdm(t.ultima) +
+        '</td><td><button class="mini' + (abierto ? " primario" : "") + '" data-est-tour="' + esc(t.id) + '">' + (abierto ? "Cerrar" : "Ver") + "</button></td></tr>" + (abierto ? '<tr class="est-det-fila"><td colspan="7">' + detalleAdm(t) + "</td></tr>" : "");
+    };
+    const deUsuarios = d.tours.filter((t) => t.plan !== "dueno"), tuyos = d.porPlan.dueno;
+    caja.innerHTML = cab + '<div class="est est-adm">' +
+      '<div class="est-cab"><div><h3 style="margin:0">Visitas a los tours de tus usuarios</h3><p class="nota" style="margin:4px 0 0">Visitas al link público de cada tour (sin contar los tuyos). Sin cookies ni datos personales.</p></div>' +
+      '<div class="estados">' + [7, 30, 90].map((n) => '<button data-adm-dias="' + n + '" aria-pressed="' + (n === dias) + '">' + n + " días</button>").join("") + "</div></div>" +
+      '<div class="est-kpis">' + kpi(u.visitas.toLocaleString("es-MX"), "visitas") + kpi(u.tours + " <small>de " + u.publicados + "</small>", "tours con visitas") +
+        kpi(u.tours ? Math.round(u.visitas / u.tours) : 0, "visitas por tour") + kpi(pctAdm(celular, m.n) + "%", "desde celular") +
+        kpi(m.n ? minSegAdm(m.durMediana) : "—", "tiempo típico por visita") + kpi(pctAdm(m.conContacto, m.n) + "%", "tocan contacto") + "</div>" +
+      '<div class="est-dias" title="Visitas por día">' + dd.map(([f, n]) => '<i style="--h:' + ((n / maxDia) * 100).toFixed(1) + '%" title="' + f + ": " + n + '"></i>').join("") + "</div>" +
+      '<div class="est-grid">' +
+        "<section><h3>Por plan <small>visitas · tours con visitas</small></h3>" + barrasAdm(["desarrollos", "pro", "gratis"].map((k) => [PLAN_EST[k][0], d.porPlan[k].visitas]).sort((a, b) => b[1] - a[1]),
+          (v) => v.toLocaleString("es-MX")) + '<p class="nota" style="margin:2px 0 0">' + ["desarrollos", "pro", "gratis"].map((k) => PLAN_EST[k][0] + ": " + d.porPlan[k].tours + " de " + d.porPlan[k].publicados + " publicados").join(" · ") + "</p></section>" +
+        "<section><h3>De dónde llegan</h3>" + barrasAdm(topAdm(m.origen).map(([k, v]) => [ORIGEN_TXT[k] || k, v]), (v) => pctAdm(v, m.n) + "%") + "</section>" +
+        "<section><h3>Países</h3>" + barrasAdm(topAdm(m.paises).map(([k, v]) => [(bandera(k) ? bandera(k) + " " : "") + (nombrePais(k) || k), v]), (v) => pctAdm(v, m.n) + "%") + "</section>" +
+        "<section><h3>Ciudades</h3>" + barrasAdm(topAdm(m.ciudades), (v) => pctAdm(v, m.n) + "%") + "</section></div>" +
+      "<h3 style=\"margin:6px 0 0\">Tours con más visitas</h3>" +
+      (deUsuarios.length ? '<table class="lotes-tabla est-tabla"><thead><tr><th>#</th><th>Tour</th><th>Plan</th><th>Visitas</th><th>7 días</th><th>Última</th><th></th></tr></thead><tbody>' + deUsuarios.slice(0, 40).map(fila).join("") + "</tbody></table>"
+        : '<p class="nota">Todavía no hay visitas en estos días.</p>') +
+      '<p class="nota">' + (tuyos.visitas ? "Tus tours: " + tuyos.visitas.toLocaleString("es-MX") + " visitas en " + tuyos.tours + " tours (no cuentan arriba). " : "") +
+        (m.n && m.n < u.visitas ? "Celular, tiempo, contacto, origen, países y ciudades salen de una muestra pareja de " + m.n + " visitas." : "") + "</p></div>";
+  }
+  const fechaCortaAdm = (f) => { if (!f) return ""; try { return new Date(f + "T12:00:00").toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return f; } };
+  function detalleAdm(t) {
+    const x = estAdm.detalle[t.id];
+    if (!x) return '<p class="nota">Cargando…</p>';
+    if (x.error) return '<p class="nota">No se pudo leer este tour.</p>';
+    const r = x.r, n = r.muestra || r.total, cel = (r.disp.celular || 0) + (r.disp.tablet || 0), nombre = (id) => (x.nombres[id] || id);
+    const esferas = topAdm(r.esferas, 5).map(([k, s]) => [nombre(k), s / Math.max(1, r.esferasVisitas[k] || 1)]);
+    return '<div class="est-det"><div class="est-kpis">' + "<div><b>" + r.total + "</b><span>visitas</span></div><div><b>" + (n ? minSegAdm(r.durTotal / n) : "—") + "</b><span>tiempo promedio</span></div><div><b>" + pctAdm(cel, n) + "%</b><span>desde celular</span></div><div><b>" + pctAdm(r.conContacto, n) + "%</b><span>tocan contacto</span></div></div>" +
+      '<div class="est-grid"><section><h3>Esferas más vistas <small>tiempo promedio</small></h3>' + barrasAdm(esferas, minSegAdm) + "</section>" +
+      "<section><h3>De dónde llegan</h3>" + barrasAdm(topAdm(r.origen, 5).map(([k, v]) => [ORIGEN_TXT[k] || k, v])) + "</section></div>" +
+      '<p class="nota" style="margin:0"><a href="' + esc(location.protocol + "//" + hostTours() + "/" + t.id + "/") + '" target="_blank" rel="noopener">Abrir el tour ↗</a></p></div>';
+  }
+  document.addEventListener("click", async (ev) => {
+    const b = ev.target.closest("[data-adm-dias]");
+    if (b) { estAdm.dias = +b.dataset.admDias; estAdm.abierto = ""; pintarEstadisticasAdmin(); return; }
+    const t = ev.target.closest("[data-est-tour]");
+    if (!t) return;
+    const id = t.dataset.estTour;
+    estAdm.abierto = estAdm.abierto === id ? "" : id;
+    pintarEstadisticasAdmin(false);
+    if (!estAdm.abierto || estAdm.detalle[id]) return;
+    // El detalle de un tour: sus visitas y los nombres de sus esferas (el dueño puede leer cualquier proyecto)
+    const [r, p] = await Promise.all([fetch("api/admin/estadisticas/" + id + "?dias=" + estAdm.dias, { cache: "no-store" }).then((x) => (x.ok ? x.json() : null)).catch(() => null),
+      fetch("api/admin/tours/" + id, { cache: "no-store" }).then((x) => (x.ok ? x.json() : null)).catch(() => null)]);
+    const nombres = {}; ((p && p.escenas) || []).forEach((e) => (nombres[e.id] = e.nombre || e.id));
+    estAdm.detalle[id] = r ? { r, nombres } : { error: true };
+    if (vistaDueno === "estadisticas") pintarEstadisticasAdmin(false);
+  });
+
   // =================== MIS TOURS ===================
   let toursNube = null, borrandoTour = null;
   async function cargarToursNube() {
@@ -4263,7 +4366,7 @@
   // Panel del dueño: todas las cuentas y su plan (para dar acceso a tus alumnos)
   let vistaDueno = "cuentas";
   const TAB_DUENO = (k, txt, color) => '<button class="mini' + (vistaDueno === k ? " primario" : "") + '" data-dueno="' + k + '"><i class="tab-punto" style="--c:' + color + '"></i>' + txt + "</button>";
-  const TABS_DUENO = (n) => '<div class="rep-tabs">' + TAB_DUENO("cuentas", "Cuentas", "#3DDC84") + TAB_DUENO("links", "Links de regalo y descuento", "#F5BE4E") + TAB_DUENO("reportes", "Reportes" + (n ? " (" + n + " nuevos)" : ""), n ? "#FF5A5F" : "#FF9A9E") + TAB_DUENO("solicitudes", "Solicitudes de tour", "#3FC3B4") +
+  const TABS_DUENO = (n) => '<div class="rep-tabs">' + TAB_DUENO("cuentas", "Cuentas", "#3DDC84") + TAB_DUENO("estadisticas", "Estadísticas", "#3FD5E0") + TAB_DUENO("links", "Links de regalo y descuento", "#F5BE4E") + TAB_DUENO("reportes", "Reportes" + (n ? " (" + n + " nuevos)" : ""), n ? "#FF5A5F" : "#FF9A9E") + TAB_DUENO("solicitudes", "Solicitudes de tour", "#3FC3B4") +
     TAB_DUENO("laboratorio", "Laboratorio", "#B48CFF") + TAB_DUENO("novedades", "Actualizaciones", "#6DB4FF") + TAB_DUENO("galeria", "Tours en la web", "#FFB020") + TAB_DUENO("respaldos", "Respaldos", "#8FA6AD") + "</div>";
   // Links de un solo uso: cada alumno recibe el suyo (licencia de regalo o descuento)
   const TIPOS_LINK = { "pro-100": ["Pro de regalo", 100, ["pro"]], "des-100": ["Desarrollos de regalo", 100, ["desarrollos"]], "des-50": ["Desarrollos con 50% de descuento", 50, ["desarrollos"]], "todo-30": ["30% en Pro y Desarrollos", 30, ["pro", "desarrollos"]] };
@@ -4429,7 +4532,7 @@
   // =================== NOVEDADES ===================
   // Cada anuncio se ve una vez por cuenta (se anota en el servidor). El botón ✦ junto a BETA los vuelve a abrir.
   const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Fichas técnicas"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Interfaz"], ["publicar/web", "Publicar"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"]];
-  const LAB_DESTINO = { "tutorial-video": "tours/todos", transiciones: "proyecto/general", landing: "publicar/landing", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
+  const LAB_DESTINO = { "descarga-pdf": "skin/h", "tutorial-video": "tours/todos", transiciones: "proyecto/general", landing: "publicar/landing", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
   let novedades = [], novActual = null;
   const fechaCorta = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
   function htmlNovedad(n, media) {
@@ -4780,6 +4883,7 @@
     if (vistaDueno === "novedades") return pintarNovedadesAdmin();
     if (vistaDueno === "respaldos") return pintarRespaldos();
     if (vistaDueno === "galeria") return pintarGaleria();
+    if (vistaDueno === "estadisticas") return pintarEstadisticasAdmin();
     const [r, rc] = await Promise.all([fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null), fetch("api/admin/cupo", { cache: "no-store" }).catch(() => null)]);
     if (!r || !r.ok) { avisar("No se pudieron leer las cuentas"); return; }
     const { cuentas: todas, tours: tt } = await r.json();
@@ -11995,7 +12099,11 @@ void main(){
     casa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg>',
     atras: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',
     adelante: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+    descargar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14"/></svg>',
   };
+  // Botón de descarga: en el tour publicado lo decide el servidor al publicar; en el estudio, el Laboratorio
+  const conPdf = () => (MODO === "tour" ? P().descargaPdf === true : enLab("descarga-pdf"));
+  const nombrePdf = (d) => { const n = String((d && d.nombre) || P().nombre || "plano").replace(/\.pdf$/i, "").replace(/[^\p{L}\p{N} ._-]/gu, "").trim().slice(0, 60) || "plano"; return n + ".pdf"; };
   const BRUJULA = '<svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="37" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1"/>' +
     [0, 45, 90, 135, 180, 225, 270, 315].map((a) => '<line x1="40" y1="5" x2="40" y2="' + (a % 90 ? 9 : 12) + '" stroke="rgba(255,255,255,.5)" stroke-width="1.5" transform="rotate(' + a + ' 40 40)"/>').join("") +
     '<g class="sk-aguja"><path d="M40 12 L46 40 L40 36 L34 40 Z" style="fill:var(--sk-acento)"/><path d="M40 68 L46 40 L40 44 L34 40 Z" fill="rgba(255,255,255,.55)"/></g><circle cx="40" cy="40" r="3" fill="#fff"/></svg>';
@@ -12096,7 +12204,14 @@ void main(){
       logo: sk.logo.tipo === "propio" && sk.logo.img ? '<span class="sk-logo"><img src="' + esc(urlArchivo(sk.logo.img)) + '" alt=""></span>' : sk.logo.tipo === "mozari" ? '<span class="sk-logo"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg></span>' : "",
       botones: (cls) => (sk.botones.musica && o.hayMusica ? btn("musica", "Silenciar música", cls) : "") + (sk.botones.zoom ? btn("menos", "Alejar", cls) + btn("mas", "Acercar", cls) : "") + (sk.botones.limpiar ? btn("limpiar", "Ocultar puntos y lotes", cls) : "") + (sk.botones.pantalla ? btn("pantalla", "Pantalla completa", cls) : ""),
       cerrar: (cls) => (o.cerrable ? btn("cerrar", "Cerrar vista previa", cls) : ""),
-      cta: (cls) => {
+      cta: (cls) => c.contacto(cls) + c.pdf(cls),
+      pdf: (cls) => {
+        const d = sk.pdf || {};
+        if (!conPdf() || !d.mostrar || !d.archivo) return "";
+        const t = esc(String(d.texto || "").trim() || "Descargar plano");
+        return '<a class="sk-cta sk-pdf ' + cls + '" href="' + esc(urlArchivo(d.archivo)) + '" target="_blank" rel="noopener" download="' + esc(nombrePdf(d)) + '" aria-label="' + t + '" data-pdf>' + ICO_SK.descargar + '<span class="t">' + t + "</span></a>";
+      },
+      contacto: (cls) => {
         if (!sk.cta.mostrar) return "";
         // Revisión de los tours publicados (nov 2026): 53 de 74 tenían el botón sin enlace y al visitante le salía el
         // aviso que era para el dueño; y 2 tenían «wa.me/…» sin https, que abría una página rota. Ahora el enlace se
@@ -12859,6 +12974,11 @@ void main(){
       campo("Esquinas", '<div class="rango"><input type="range" data-sk-k="radio" min="0" max="24" step="1" value="' + sk.radio + '" aria-label="Redondeo de esquinas"><span class="valor" id="sk-radio-v">' + sk.radio + " px</span></div>") + "</div>" +
       '<div class="grupo"><b>Contacto</b>' + tgl("cta.mostrar", sk.cta.mostrar, "Botón de contacto") +
       (sk.cta.mostrar ? campo("Texto", '<input type="text" data-sk-k="cta.texto" maxlength="28" value="' + esc(sk.cta.texto) + '">') + campo("Enlace", '<input type="url" data-sk-k="cta.enlace" placeholder="https://wa.me/52…" value="' + esc(sk.cta.enlace) + '">') + '<p class="nota">WhatsApp, formulario o página del desarrollo. Se abre en otra pestaña. Sin enlace, el botón no sale en el tour publicado.</p>' : "") + "</div>" +
+      (enLab("descarga-pdf") ? '<div class="grupo" id="sk-pdf-grupo"><b>Descargar PDF</b>' + tgl("pdf.mostrar", sk.pdf.mostrar, "Botón para descargar un PDF") +
+        (sk.pdf.mostrar ? campo("Texto", '<input type="text" data-sk-k="pdf.texto" maxlength="28" placeholder="Descargar plano" value="' + esc(sk.pdf.texto) + '">') +
+          '<div class="pdf-fila">' + (sk.pdf.archivo ? '<span class="pdf-nombre" title="' + esc(sk.pdf.nombre || "") + '">' + ICO_SK.descargar + esc(sk.pdf.nombre || "Tu PDF") + "</span>" : "") +
+          '<label class="btn-sec" for="sk-pdf-archivo">' + (sk.pdf.archivo ? "Cambiar PDF" : "Subir PDF") + '</label><input type="file" id="sk-pdf-archivo" accept="application/pdf,.pdf" hidden></div>' +
+          '<p class="nota">El plano, el brochure o la ficha de venta, hasta 25 MB. Sale junto al botón de contacto y se descarga en el celular y en la compu.' + (sk.pdf.archivo ? "" : " <b>Sube tu PDF para que aparezca.</b>") + "</p>" : "") + "</div>" : "") +
       '<div class="grupo"><b>Crédito</b>' + campo("Texto", '<input type="text" data-sk-k="credito.texto" maxlength="60" placeholder="Desarrollado por Tu Empresa" value="' + esc((sk.credito && sk.credito.texto) || "") + '">') +
         campo("Enlace", '<input type="url" data-sk-k="credito.enlace" placeholder="tuempresa.com (opcional)" value="' + esc((sk.credito && sk.credito.enlace) || "") + '">') +
         '<p class="nota">Sale chiquito abajo del tour, con tu marca. ' + (conMarcaPrueba() ? "En tu plan actual sale la marca de Mozari en su lugar." : "Déjalo vacío para no mostrar nada.") + "</p></div>" +
@@ -12895,10 +13015,24 @@ void main(){
   $("sk-panel").addEventListener("change", (ev) => {
     const el = ev.target;
     if (el.id === "sk-logo-archivo") return subirLogo(el);
+    if (el.id === "sk-pdf-archivo") return subirPdf(el);
     if (el.type !== "checkbox" || !el.dataset.skK) return;
     setSk(el.dataset.skK, el.checked);
     pintarPanelSkin(); repintarSk();
   });
+  async function subirPdf(input) {
+    const f = input.files[0]; input.value = "";
+    if (!f) return;
+    if (f.type !== "application/pdf" && !/\.pdf$/i.test(f.name)) { avisar("Elige un archivo PDF"); return; }
+    if (f.size > 25 * 1024 * 1024) { avisar("Tu PDF pesa más de 25 MB. Compáctalo y vuelve a subirlo."); return; }
+    if (MODO !== "nube") { avisar("El PDF se sube en tu cuenta de Mozari"); return; }
+    const viejo = SK().pdf.archivo, ruta = "archivos/descarga-" + Date.now().toString(36) + ".pdf";
+    avisar("Subiendo tu PDF…");
+    try { await subirArchivo(ruta, f); } catch (e) { avisar(e.message); return; }
+    setSk("pdf.archivo", ruta); setSk("pdf.nombre", f.name.slice(0, 80));
+    if (viejo && viejo !== ruta && /^archivos\/descarga-[a-z0-9]+\.pdf$/.test(viejo)) fetch("api/tours/" + TOUR + "/f/" + viejo, { method: "DELETE" }).catch(() => {});
+    pintarPanelSkin(); repintarSk(); avisar("PDF listo");
+  }
   function subirLogo(input) {
     const f = input.files[0];
     if (!f) return;

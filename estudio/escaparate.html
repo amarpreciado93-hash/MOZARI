@@ -54,7 +54,17 @@
   #esfera:active { cursor: grabbing; }
   .esfera-dato { position: absolute; top: 18px; right: 18px; display: flex; gap: 8px; align-items: center; font-size: 12px; color: #fff; background: rgba(11, 11, 11, 0.45); backdrop-filter: blur(8px); padding: 7px 14px; border-radius: 999px; pointer-events: none; }
   .esfera-dato svg { width: 16px; height: 16px; }
-  .esfera-puntos { position: absolute; right: 22px; bottom: 22px; display: flex; gap: 8px; z-index: 2; }
+  .esfera-dato { transition: opacity 0.6s ease; }
+  .esfera-dato.oculto { opacity: 0; }
+  /* Portadas: fotos que se intercalan con las esferas (cámara 360, operador, dron) */
+  .portada-fotos { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }
+  .esfera-marco .esfera-dato, .esfera-marco .tarjeta-hero { z-index: 3; }
+  .esfera-marco .esfera-puntos { z-index: 4; }
+  .portada-fotos img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.4s ease; transform: scale(1.02); }
+  .portada-fotos img.ver { opacity: 1; animation: portada-acerca 9s ease-out forwards; }
+  @keyframes portada-acerca { from { transform: scale(1.02); } to { transform: scale(1.09); } }
+  @media (prefers-reduced-motion: reduce) { .portada-fotos img.ver { animation: none; } }
+  .esfera-puntos { position: absolute; left: 22px; top: 22px; display: flex; gap: 8px; z-index: 2; }
   .esfera-puntos button { width: 10px; height: 10px; border-radius: 50%; border: 0; padding: 0; background: rgba(255, 255, 255, 0.55); cursor: pointer; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15); transition: width 0.25s, background 0.25s; }
   .esfera-puntos button[aria-pressed="true"] { width: 26px; border-radius: 999px; background: #fff; }
   .tarjeta-hero { position: absolute; left: 50%; bottom: 0; transform: translate(-50%, 58%); width: min(1040px, calc(100% - 48px)); background: #fff; border-radius: 22px; padding: 34px 40px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 12px 44px; align-items: center; box-shadow: 0 24px 70px rgba(11, 11, 11, 0.14); }
@@ -239,6 +249,8 @@
     .envoltura { padding: 0 18px; }
     .esfera-marco { height: auto; background: none; margin-bottom: 0; }
     #esfera { position: relative; height: 50vh; }
+    .portada-fotos { inset: 0 0 auto 0; height: 50vh; }
+    .esfera-marco .esfera-puntos { top: calc(50vh - 62px); left: auto; right: 16px; }
     .esfera-dato { top: 12px; right: 12px; font-size: 11px; }
     .tarjeta-hero { position: relative; left: 0; bottom: 0; transform: none; width: auto; margin: -36px 12px 0; padding: 26px 22px; box-shadow: 0 16px 40px rgba(11, 11, 11, 0.12); }
     section { padding: 64px 0; }
@@ -254,7 +266,8 @@
 </div></header>
 
 <div class="esfera-marco">
-  <div id="esfera" role="img" aria-label="Ejemplos de tours 360 hechos con Mozari: un interior, una vista aérea y un desarrollo con lotes. Arrastra para mirar alrededor."></div>
+  <div id="esfera" role="img" aria-label="Ejemplos de tours 360 hechos con Mozari: un interior, una vista aérea y desarrollos con lotes. Arrastra para mirar alrededor."></div>
+  <div class="portada-fotos" id="portada-fotos" aria-hidden="true"></div>
   <div class="esfera-puntos" id="esfera-puntos" role="group" aria-label="Elegir ejemplo"></div>
   <div class="esfera-dato"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 12h8M5 9l-3 3 3 3M19 9l3 3-3 3"/></svg><span id="esfera-nombre">Interior</span> · Arrastra para mirar</div>
   <div class="tarjeta-hero">
@@ -475,25 +488,49 @@
   (async () => {
     if (!window.Marzipano) return;
     const viewer = crearVisor(document.getElementById("esfera"));
+    // Pedido de Amar (nov 2026): portadas nuevas que se intercalan con las esferas: entre cada esfera, una foto
+    // (cámara 360, operador, dron) que se acerca despacio; y dos desarrollos con lotes reales (fotos 360 de Mozari).
     const ej = [
       { base: "escaparate-interior/", nombre: "Interior", yaw: -2.15, pitch: 0.1, fov: 1.2, pitchCel: 0.04, fovCel: 1.5 },
+      { foto: "portada-camara", nombre: "Cámara 360", pos: "78% 45%" },
       { base: "escaparate-aerea/", nombre: "Vista aérea", yaw: 0.85, pitch: 0.16, fov: 0.95, pitchCel: 0.2, fovCel: 1.5 },
+      { foto: "portada-operador", nombre: "En campo", pos: "30% 40%" },
+      { base: "escaparate-mirador/", nombre: "Lotes en la montaña", yaw: -0.3, pitch: 0.86, fov: 1.2, pitchCel: 0.82, fovCel: 1.5 },
+      { foto: "portada-dron", nombre: "Con dron", pos: "50% 55%" },
+      { base: "escaparate-cabo/", nombre: "Lotes con vista al mar", yaw: 0.29, pitch: 0.66, fov: 0.95, pitchCel: 0.7, fovCel: 1.5 },
       { base: "escaparate-esfera/", nombre: "Desarrollo con lotes", yaw: -0.15, pitch: 0.52, fov: 1.0, pitchCel: 0.42, fovCel: 1.5 },
     ];
-    const esc = await Promise.all(ej.map((o) => escena(viewer, o.base, o)));
+    const esc = await Promise.all(ej.map((o) => (o.foto ? null : escena(viewer, o.base, o))));
+    const capa = document.getElementById("portada-fotos"), dato = document.querySelector(".esfera-marco .esfera-dato");
+    // La foto se pide cuando le va a tocar (la del celular pesa la mitad)
+    const img = (k) => {
+      const o = ej[k];
+      if (!o.foto) return null;
+      if (!o.el) { o.el = new Image(); o.el.alt = ""; o.el.decoding = "async"; o.el.style.objectPosition = o.pos; o.el.src = o.foto + (CEL || innerWidth < 700 ? "-cel" : "") + ".webp"; capa.appendChild(o.el); }
+      return o.el;
+    };
     const puntos = document.getElementById("esfera-puntos"), nombre = document.getElementById("esfera-nombre");
     puntos.innerHTML = ej.map((o, i) => '<button aria-label="' + o.nombre + '"></button>').join("");
     let i = -1, reloj = 0, tocada = 0;
     function ver(n, rapido) {
-      i = (n + esc.length) % esc.length;
-      const e = esc[i];
-      e.view.setParameters({ yaw: e.o.yaw, pitch: e.view.pitch(), fov: e.view.fov() });
-      e.scene.switchTo({ transitionDuration: rapido ? 0 : 1400 });
-      nombre.textContent = e.o.nombre;
+      i = (n + ej.length) % ej.length;
+      const e = esc[i], f = img(i);
+      capa.querySelectorAll("img.ver").forEach((x) => { if (x !== f) x.classList.remove("ver"); });
+      if (f) {
+        // Foto: aparece encima de la última esfera, sin «Arrastra para mirar»
+        const mostrar = () => { if (ej[i].el === f) { f.classList.remove("ver"); void f.offsetWidth; f.classList.add("ver"); } };
+        f.complete ? mostrar() : (f.onload = mostrar);
+        dato.classList.add("oculto");
+      } else {
+        e.view.setParameters({ yaw: e.o.yaw, pitch: e.view.pitch(), fov: e.view.fov() });
+        e.scene.switchTo({ transitionDuration: rapido ? 0 : 1400 });
+        nombre.textContent = e.o.nombre; dato.classList.remove("oculto");
+        if (!quieto) { viewer.setIdleMovement(4000, e.paneo); viewer.startMovement(e.paneo); }
+      }
       [...puntos.children].forEach((b, k) => b.setAttribute("aria-pressed", String(k === i)));
-      if (!quieto) { viewer.setIdleMovement(4000, e.paneo); viewer.startMovement(e.paneo); }
+      img((i + 1) % ej.length);
       clearTimeout(reloj);
-      if (!quieto) reloj = setTimeout(siguiente, 15000);
+      if (!quieto) reloj = setTimeout(siguiente, f ? 7000 : 13000);
     }
     function siguiente() { if (Date.now() - tocada < 8000) { reloj = setTimeout(siguiente, 3000); return; } ver(i + 1); }
     viewer.domElement().addEventListener("pointerdown", () => (tocada = Date.now()));
