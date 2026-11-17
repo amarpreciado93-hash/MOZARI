@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-17T03:47:51.877Z",
- "bien": 110,
- "total": 110,
+ "fecha": "2026-11-17T18:29:43.643Z",
+ "bien": 111,
+ "total": 111,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -16,7 +16,7 @@
    "ok": true
   },
   {
-   "nombre": "Contrata tu tour 360: mapa con 95 ciudades y 17 países; la solicitud llega al panel y al cliente su correo",
+   "nombre": "Contrata tu tour 360: mapa, solicitud y cotización tentativa al instante (con folio, total + IVA, 50/50, WhatsApp e imagen); sin precio si no es terreno",
    "ok": true
   },
   {
@@ -421,6 +421,10 @@
   },
   {
    "nombre": "Tutorial en video (Laboratorio, nace Solo yo): tarjeta en Mis Tours y en un tour sin esferas que abre el video de Loom",
+   "ok": true
+  },
+  {
+   "nombre": "Para todos: landing con marca de agua en cuenta de prueba y limpia con licencia; ícono propio de la pestaña en las licencias",
    "ok": true
   },
   {

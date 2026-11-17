@@ -29,7 +29,7 @@
 
 import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR, conCarga, cargaEnViejos } from "./comun.js";
 import { rutasSesion, cuentaDe, perfil, leerCupo, contarCuentas, firmarLink, verificarLink } from "./sesion.js";
-import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoCompra, correoCotizacion, TIPOS_COTIZACION, correoDeNovedad, correoCampana, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja, CAMPANA, iniciarCampana, correoCompu, mandarRecordatorios, sembrarRecordatorios } from "./correos.js";
+import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoCompra, correoCotizacion, htmlCotizacion, textoCotizacion, TIPOS_COTIZACION, correoDeNovedad, correoCampana, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja, CAMPANA, iniciarCampana, correoCompu, mandarRecordatorios, sembrarRecordatorios } from "./correos.js";
 import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
 import { apiPagos, webhookMercadoPago, webhookStripe, CODIGO, cuponClave } from "./pagos.js";
 import { EmailMessage } from "cloudflare:email";
@@ -102,6 +102,31 @@ const limite = (mensaje, que) => json({ error: mensaje, limite: que }, 403);
 // Desde el escaparate (sin cuenta): la solicitud se guarda en cotizaciones/<id>.json, al cliente le llega que ya se
 // recibió y al dueño un aviso con todo (y un link a WhatsApp). En el Panel de dueño → Solicitudes cambia su estado.
 const ESTADOS_COT = ["nueva", "cotizada", "ganada", "perdida"], COT_DIA_IP = 5;
+// Cotización tentativa (pedido de Amar, 17 nov 2026): tarifas fijas que el dueño cambia en su panel (config/cotizacion.json).
+// Solo «Terreno o desarrollo con lotes» lleva precio; las demás, «te enviamos tu cotización en minutos». Nunca hay tabla pública.
+const TARIFAS_COT = "config/cotizacion.json";
+const TARIFAS_DEF = { dron: 3500, armado: 3000, porLote: 20, minimo: 8000, maximo: 25000, anticipo: 50, vigencia: 7, whatsapp: "524777217228" };
+async function tarifasCot(env) {
+  const o = await env.R2.get(TARIFAS_COT), c = o ? await o.json().catch(() => ({})) : {}, t = Object.assign({}, TARIFAS_DEF);
+  Object.keys(TARIFAS_DEF).forEach((k) => { if (k === "whatsapp") { if (/^\d{10,15}$/.test(String(c.whatsapp || ""))) t.whatsapp = String(c.whatsapp); } else if (Number.isFinite(+c[k]) && +c[k] >= 0 && c[k] !== "" && c[k] !== null) t[k] = +c[k]; });
+  if (t.maximo < t.minimo) t.maximo = t.minimo; t.anticipo = Math.min(100, t.anticipo); t.vigencia = Math.max(1, Math.round(t.vigencia));
+  return t;
+}
+function armarCotizacion(sol, t) {
+  const ahora = new Date(), vence = new Date(ahora.getTime() + t.vigencia * 864e5);
+  const folio = "MZ-" + ahora.toISOString().slice(2, 10).replace(/-/g, "") + "-" + sol.id.split("-")[1].slice(-4).toUpperCase().padStart(4, "0");
+  const tipo = TIPOS_COTIZACION[sol.tipo] || sol.tipo, lugar = [sol.ciudad, sol.pais].filter(Boolean).join(", ");
+  const q = { folio, fecha: ahora.toISOString(), vence: vence.toISOString(), whatsapp: t.whatsapp, conPrecio: sol.tipo === "terreno" };
+  if (!q.conPrecio) {
+    q.mensaje = "Hola, soy " + sol.nombre + ". Envié la solicitud " + folio + " en Mozari para un tour 360 de " + tipo.toLowerCase() + " en " + lugar + ". Quiero mi cotización.";
+    return q;
+  }
+  const conceptos = [["Levantamiento con dron", t.dron], ["Armado del tour", t.armado], ["Lotificación (" + sol.lotes.toLocaleString("es-MX") + " lotes × $" + t.porLote.toLocaleString("es-MX") + ")", sol.lotes * t.porLote]];
+  const subtotal = conceptos.reduce((a, [, m]) => a + m, 0), total = Math.min(t.maximo, Math.max(t.minimo, subtotal)), anticipo = Math.round((total * t.anticipo) / 100);
+  Object.assign(q, { moneda: "MXN", lotes: sol.lotes, conceptos, subtotal, total, ajuste: total > subtotal ? "minimo" : total < subtotal ? "maximo" : "", anticipo, contraentrega: total - anticipo, pctAnticipo: t.anticipo, vigencia: t.vigencia });
+  q.mensaje = "Hola, soy " + sol.nombre + ". Tengo la cotización tentativa " + folio + " de Mozari: tour 360 de mi terreno en " + lugar + ", " + sol.lotes.toLocaleString("es-MX") + " lotes, total $" + total.toLocaleString("es-MX") + " MXN + IVA. Quiero agendar la junta de revisión.";
+  return q;
+}
 async function huellaCorta(t) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(t))); return [...new Uint8Array(b)].slice(0, 10).map((x) => x.toString(16).padStart(2, "0")).join(""); }
 async function cotizar(request, env, url) {
   if (request.method === "GET") return json({ pais: (request.cf && request.cf.country) || "" });
@@ -115,29 +140,40 @@ async function cotizar(request, env, url) {
   const sol = { tipo: TIPOS_COTIZACION[c.tipo] ? c.tipo : "", pais: t("pais", 40), ciudad: t("ciudad", 80), tamano: t("tamano", 80), cuando: t("cuando", 40), nombre: t("nombre", 80),
     whatsapp: t("whatsapp", 30), correo: t("correo", 120).toLowerCase(), mas: String(c.mas == null ? "" : c.mas).trim().slice(0, 800) };
   if (!sol.tipo || !sol.pais || !sol.ciudad || !sol.nombre || sol.whatsapp.replace(/\D/g, "").length < 8 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sol.correo)) return error(400, "Revisa los datos de tu solicitud");
+  // Terreno o desarrollo: cuántos lotes (para la cotización tentativa)
+  if (sol.tipo === "terreno") { sol.lotes = Math.round(+String(c.lotes || "").replace(/[^\d.]/g, "")); if (!(sol.lotes >= 1 && sol.lotes <= 100000)) return error(400, "Escribe cuántos lotes tiene (aproximado)"); }
   const hoy = new Date().toISOString().slice(0, 10), tope = "cotizaciones-tope/" + hoy + "/" + (await huellaCorta(request.headers.get("cf-connecting-ip") || "local"));
   const n = +((await (await env.R2.get(tope))?.text()) || 0);
   if (n >= COT_DIA_IP) return error(429, "Ya recibimos tus solicitudes de hoy. Te contactamos pronto.");
   await env.R2.put(tope, String(n + 1));
   const id = new Date().toISOString().replace(/\D/g, "").slice(0, 14) + "-" + crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
   Object.assign(sol, { id, fecha: new Date().toISOString(), estado: "nueva", paisRed: (request.cf && request.cf.country) || "" });
+  sol.cotizacion = armarCotizacion(sol, await tarifasCot(env));
   await env.R2.put("cotizaciones/" + id + ".json", JSON.stringify(sol), { httpMetadata: { contentType: "application/json" } });
   const base = "https://" + (env.DOMINIO || url.hostname), m = correoCotizacion({ nombre: sol.nombre, base, sol });
   await enviar(env, await contador(env), { para: sol.correo, asunto: m.asunto, html: m.html, texto: m.texto }).catch(() => null);
   await avisarCotizacion(env, sol, url);
-  return json({ ok: true, id });
+  return json({ ok: true, id, cotizacion: sol.cotizacion });
 }
 async function avisarCotizacion(env, sol, url) {
   if (!env.CORREO || !env.ADMIN) return;
   try {
     const dom = env.DOMINIO || url.hostname, de = "reportes@" + dom, wa = sol.whatsapp.replace(/\D/g, "");
-    const asunto = "Mozari · Solicitud de tour 360: " + (TIPOS_COTIZACION[sol.tipo] || sol.tipo) + " en " + sol.ciudad + ", " + sol.pais;
+    const q = sol.cotizacion || {};
+    const asunto = "Mozari · Solicitud de tour 360" + (q.folio ? " " + q.folio : "") + ": " + (TIPOS_COTIZACION[sol.tipo] || sol.tipo) + " en " + sol.ciudad + ", " + sol.pais + (q.conPrecio ? " · $" + q.total.toLocaleString("es-MX") + " + IVA" : "");
     const cuerpo = "Nueva solicitud de tour 360\n\nQué: " + (TIPOS_COTIZACION[sol.tipo] || sol.tipo) + "\nDónde: " + sol.ciudad + ", " + sol.pais + "\nTamaño: " + (sol.tamano || "—") + "\nPara cuándo: " + (sol.cuando || "—") +
       "\n\nNombre: " + sol.nombre + "\nWhatsApp: " + sol.whatsapp + " (https://wa.me/" + wa + ")\nCorreo: " + sol.correo + (sol.mas ? "\n\nComentarios:\n" + sol.mas : "") +
+      (q.conPrecio ? "\n\nLa cotización que vio al enviar:\n\n" + textoCotizacion(sol, q) : q.folio ? "\n\nFolio: " + q.folio + " (sin precio: no es terreno; vio «te enviamos tu cotización en minutos»)" : "") +
       "\n\nContesta este correo para escribirle. Está en tu Panel de dueño → Solicitudes: https://" + dom + "/";
+    const escH = (x) => String(x == null ? "" : x).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+    const htmlDueno = '<div style="font:14px/1.5 Poppins,Helvetica,Arial,sans-serif;color:#0B0B0B"><p style="margin:0 0 12px"><b>Nueva solicitud de tour 360</b>' + (q.folio ? " · " + escH(q.folio) : "") + "</p>" +
+      (q.conPrecio ? htmlCotizacion(sol, q) : "") + '<pre style="font:13px/1.5 Menlo,Consolas,monospace;white-space:pre-wrap;margin:16px 0 0">' + escH(cuerpo) + "</pre></div>";
+    const corte = "mz" + sol.id.replace(/\W/g, "");
     const raw = ["From: Mozari <" + de + ">", "To: " + env.ADMIN, "Reply-To: " + sol.correo, "Subject: =?UTF-8?B?" + b64utf8(asunto) + "?=",
       "Message-ID: <cot-" + sol.id + "@" + dom + ">", "Date: " + new Date().toUTCString(), "MIME-Version: 1.0",
-      "Content-Type: text/plain; charset=UTF-8", "Content-Transfer-Encoding: base64", "", b64utf8(cuerpo).replace(/.{76}/g, "$&\r\n")].join("\r\n");
+      "Content-Type: multipart/alternative; boundary=\"" + corte + "\"", "", "--" + corte,
+      "Content-Type: text/plain; charset=UTF-8", "Content-Transfer-Encoding: base64", "", b64utf8(cuerpo).replace(/.{76}/g, "$&\r\n"), "--" + corte,
+      "Content-Type: text/html; charset=UTF-8", "Content-Transfer-Encoding: base64", "", b64utf8(htmlDueno).replace(/.{76}/g, "$&\r\n"), "--" + corte + "--", ""].join("\r\n");
     await env.CORREO.send(new EmailMessage(de, env.ADMIN, raw));
   } catch (e) { /* la solicitud ya quedó guardada aunque el aviso falle */ }
 }
@@ -768,6 +804,18 @@ async function admin(request, env, partes, yo) {
       return json({ ok: true, funcion: c[partes[3]] });
     }
   }
+  if (partes[2] === "cotizacion-tarifas" && partes.length === 3) {
+    if (m === "GET") return json({ tarifas: await tarifasCot(env), predeterminadas: TARIFAS_DEF });
+    if (m === "PUT") {
+      const c = await request.json().catch(() => ({})), t = await tarifasCot(env);
+      Object.keys(TARIFAS_DEF).forEach((k) => { if (!(k in c)) return; if (k === "whatsapp") { const w = String(c.whatsapp).replace(/\D/g, ""); if (/^\d{10,15}$/.test(w)) t.whatsapp = w; } else if (Number.isFinite(+c[k]) && +c[k] >= 0 && +c[k] <= 10000000) t[k] = +c[k]; });
+      if (t.maximo < t.minimo) return error(400, "El máximo no puede ser menor que el mínimo");
+      if (t.anticipo > 100) return error(400, "El anticipo es un porcentaje (0 a 100)");
+      await env.R2.put(TARIFAS_COT, JSON.stringify(t), { httpMetadata: { contentType: "application/json" } });
+      return json({ tarifas: await tarifasCot(env) });
+    }
+    return error(405, "Método no permitido");
+  }
   if (partes[2] === "cotizaciones") {
     if (partes.length === 3 && m === "GET") {
       const out = []; let cur;
@@ -1078,6 +1126,8 @@ async function api(request, env, partes, yo) {
       .on('meta[property="og:description"]', pon(desc)).on('meta[name="description"]', pon(desc))
       .on('meta[property^="og:image"]', quita).on('meta[name="twitter:image"]', quita).on('meta[property="og:url"]', quita)
       .on('link[href^="/"]', quita).on('meta[name="theme-color"]', quita)
+      // El ícono de la pestaña del cliente (si subió uno) viaja en sus archivos
+      .on("head", { element: (el) => { const i = p.skin && p.skin.icono; if (typeof i === "string" && /^archivos\/[A-Za-z0-9._-]+\.(png|jpe?g|webp|svg)$/.test(i)) el.append('<link rel="icon" href="' + i + '"><link rel="apple-touch-icon" href="' + i + '">', { html: true }); } })
       // Las librerías viajan dentro del .zip, junto al index.html
       .on('script[src^="/lib/"]', { element: (el) => el.setAttribute("src", el.getAttribute("src").slice(1)) })
       .transform(pagina).text();

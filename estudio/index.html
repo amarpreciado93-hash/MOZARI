@@ -166,6 +166,13 @@
   .gal-acc { display: flex; gap: 6px; align-items: center; }
   .gal-acc a.mini { text-decoration: none; color: var(--mz-texto); }
   .gal-busca { max-width: 360px; }
+  .tarifas-cot { margin: 0 0 14px; border: 1px solid var(--mz-linea-neutra); border-radius: 14px; background: var(--mz-superficie); padding: 12px 16px; }
+  .tarifas-cot summary { cursor: pointer; font-weight: 600; font-size: 13px; } .tarifas-cot summary small { color: var(--mz-tenue); font-weight: 400; }
+  .tarifas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-top: 12px; }
+  .tarifas-grid label { display: grid; gap: 4px; font-size: 12px; color: var(--mz-tenue); }
+  .tarifas-grid span { display: flex; align-items: center; gap: 6px; } .tarifas-grid i { font-style: normal; color: var(--mz-tenue); font-size: 12px; }
+  .tarifas-acc { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; } .tarifas-acc small { color: var(--mz-tenue); }
+  .sol-cot { color: var(--mz-lima); }
   .gal-planes { display: flex; flex-wrap: wrap; gap: 6px; }
   .gal-planes .tab-punto { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 7px; vertical-align: 1px; }
   .gal-planes b { margin-left: 4px; font-weight: 600; opacity: 0.75; }
@@ -1910,6 +1917,9 @@
   .logo-fila .muestra-logo { height: 34px; min-width: 34px; padding: 6px 10px; border-radius: 10px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); display: grid; place-items: center; box-sizing: border-box; }
   .logo-fila .muestra-logo img { max-height: 22px; max-width: 120px; }
   .logo-fila .muestra-logo svg { width: 20px; height: 20px; color: var(--mz-lima); }
+  .icono-fila { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .icono-fila .muestra-icono { width: 34px; height: 34px; border-radius: 9px; overflow: hidden; flex: none; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); display: grid; place-items: center; }
+  .icono-fila .muestra-icono img, .icono-fila .muestra-icono svg { width: 100%; height: 100%; object-fit: cover; }
   .sk-vista { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #20241c 0%, var(--mz-fondo) 70%); }
   .sk-vista .leyenda-v { position: absolute; left: 20px; top: 16px; font-size: 12px; color: var(--mz-tenue); z-index: 2; }
   .sk-vista .leyenda-v b { color: var(--mz-texto); font-weight: 500; }
@@ -2675,6 +2685,8 @@
   const SKIN_DEF = {
     plantilla: "cine", acento: "#FFFFFF", panel: "#111111", opacidad: 0.6, radio: 14,
     logo: { tipo: "ninguno", img: "" }, nombre: true,
+    // Ícono de la pestaña del navegador (licencias de pago, pedido de Amar): sin él, uno neutro; nunca el de Mozari
+    icono: "",
     cta: { mostrar: true, texto: "Agendar visita", enlace: "" },
     // Botón para descargar un PDF (Laboratorio «descarga-pdf», pedido de David): plano, brochure o ficha de venta
     pdf: { mostrar: false, texto: "Descargar plano", archivo: "", nombre: "" },
@@ -3452,7 +3464,7 @@
   function ldEnviar(ya) {
     clearTimeout(tLd);
     const mandar = () => { const w = $("ld-iframe") && $("ld-iframe").contentWindow; if (!w || !ldListo) return;
-      w.postMessage({ tipo: "landing", base: "t/" + TOUR + "/", proyecto: JSON.parse(JSON.stringify({ proyecto: P(), escenas: est.escenas, capas: est.capas, media: est.media, lotesEstados: est.lotesEstados })) }, location.origin); };
+      w.postMessage({ tipo: "landing", base: "t/" + TOUR + "/", proyecto: JSON.parse(JSON.stringify({ proyecto: Object.assign({}, P(), { marcaMozari: conMarcaPrueba() }), escenas: est.escenas, capas: est.capas, media: est.media, lotesEstados: est.lotesEstados })) }, location.origin); };
     if (ya) mandar(); else tLd = setTimeout(mandar, 220);
   }
   addEventListener("message", (ev) => { if (ev.origin === location.origin && ev.data && ev.data.tipo === "landing-lista") { ldListo = true; ldEnviar(true); } });
@@ -3478,6 +3490,7 @@
     const fotos = est.media.fotos.length;
     let h = "";
     h += '<section class="comp-tarjeta"><h3>Tu landing</h3>' + sw("activa", "Publicar la landing con el tour") +
+      (conMarcaPrueba() ? '<p class="nota" id="ld-marca-nota">En tu plan actual la landing sale con la marca de agua de Mozari, como tu tour. Con tu licencia sale limpia, con tu marca.</p>' : "") +
       '<div class="fe-grupo"><b>Plantilla</b><div class="estados" role="group" aria-label="Plantilla">' + [["lotes", "Desarrollo con lotes"], ["propiedad", "Propiedad o casa"]].map(([k, n]) => '<button type="button" data-ld-plantilla="' + k + '" aria-pressed="' + (L.plantilla === k) + '" style="--c:var(--mz-lima)">' + n + "</button>").join("") + "</div>" +
       '<span class="fe-sub">' + (L.plantilla === "lotes" ? "Con el plano maestro, la lista de " + esc(terminos().lote.toLowerCase()) + "s, su precio y la calculadora de pagos. Este tour tiene " + lotes + " " + esc(terminos().lote.toLowerCase()) + (lotes === 1 ? "" : "s") + "." : "Para una casa o un departamento: su plano, su precio con la calculadora de pagos y sus espacios.") + "</span></div>" +
       (L.activa && t.publicado ? '<div class="ld-link"><div class="pub-caja"><code>' + esc(linkLanding()) + '</code><button class="btn-sec" type="button" data-ld-accion="copiar">Copiar link</button></div><div class="comp-acc"><a class="btn-sec" href="' + esc(linkLanding()) + '" target="_blank" rel="noopener">Abrir ↗</a><button class="btn-prim" type="button" data-ld-accion="publicar">Publicar cambios</button></div><span class="fe-sub">Lo que cambies aquí sale en el link al publicar, junto con el tour.</span></div>'
@@ -3873,6 +3886,88 @@
     h += '<rect x="130" y="124" width="100" height="3" rx="2" fill="rgba(255,255,255,.15)"/><rect x="130" y="124" width="' + (100 * sv(u)).toFixed(1) + '" height="3" rx="2" fill="#D5FF40"/>' + pieG(u >= 1 ? "Tu cliente ve su marca desde el primer segundo" : "Así carga tu tour, sin Mozari", u >= 1);
     svg.innerHTML = h;
   }
+  // =================== ANIMACIONES DE LAS FUNCIONES QUE SE ABREN A TODOS (Amar, 17 nov 2026) ===================
+  // «Recuerda ponerle animaciones de uso a las nuevas funciones»: cada mini tutorial muestra cómo se usa en unos segundos.
+  const BTN_G = (x, y, w, txt, fondo, color, borde) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="22" rx="11" fill="' + fondo + '"' + (borde ? ' stroke="' + borde + '"' : "") + '/><text x="' + (x + w / 2) + '" y="' + (y + 14.5) + '" fill="' + color + '" font-size="9.5" font-weight="700" text-anchor="middle">' + txt + "</text>";
+  const TOQUE_G = (x, y, t, t0) => (t > t0 && t < t0 + 0.35 ? '<circle cx="' + x + '" cy="' + y + '" r="' + (6 + 14 * (t - t0) / 0.35).toFixed(1) + '" fill="none" stroke="#D5FF40" stroke-width="2" opacity="' + (1 - (t - t0) / 0.35).toFixed(2) + '"/>' : "");
+  const camino = (P, t) => { for (let i = 1; i < P.length; i++) if (t <= P[i][0]) { const u = sv((t - P[i - 1][0]) / (P[i][0] - P[i - 1][0])); return [P[i - 1][1] + (P[i][1] - P[i - 1][1]) * u, P[i - 1][2] + (P[i][2] - P[i - 1][2]) * u]; } const z = P[P.length - 1]; return [z[1], z[2]]; };
+  // Landing: el celular arma la página sola (portada, plano, precio con mensualidades) y el cliente escribe por WhatsApp
+  function animLanding(svg, t) {
+    const x0 = 128, w = 104, ap = (a) => Math.max(0, Math.min(1, (t - a) / 0.5));
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="' + (x0 - 6) + '" y="6" width="' + (w + 12) + '" height="176" rx="16" fill="#0b0b0b" stroke="rgba(255,255,255,.25)"/>';
+    h += '<clipPath id="ld-cel"><rect x="' + x0 + '" y="14" width="' + w + '" height="160" rx="10"/></clipPath><g clip-path="url(#ld-cel)"><rect x="' + x0 + '" y="14" width="' + w + '" height="160" fill="#F3EEE4"/>';
+    const sube = t > 2.2 ? -Math.min(52, 52 * sv((t - 2.2) / 0.8)) : 0;
+    h += '<g transform="translate(0 ' + sube.toFixed(1) + ')">';
+    h += '<g opacity="' + ap(0.2).toFixed(2) + '"><rect x="' + x0 + '" y="14" width="' + w + '" height="70" fill="#0E3A40"/><path d="M' + x0 + ' 70 L' + (x0 + 30) + ' 48 L' + (x0 + 52) + ' 62 L' + (x0 + 78) + ' 40 L' + (x0 + w) + ' 58 V84 H' + x0 + 'Z" fill="#2F6B5A"/>' +
+      '<text x="' + (x0 + 8) + '" y="30" fill="#fff" font-size="8" font-weight="800" letter-spacing="1.5">TU MARCA</text><text x="' + (x0 + 8) + '" y="78" fill="#fff" font-size="9.5" font-weight="700">Encino Alto</text></g>';
+    h += '<g opacity="' + ap(1.0).toFixed(2) + '"><text x="' + (x0 + 8) + '" y="98" fill="#0E3A40" font-size="7.5" font-weight="700">PLANO MAESTRO</text><rect x="' + (x0 + 8) + '" y="102" width="' + (w - 16) + '" height="40" rx="5" fill="#fff" stroke="rgba(14,58,64,.2)"/>' +
+      [0, 1, 2, 3, 4, 5].map((k) => '<rect x="' + (x0 + 14 + k * 14) + '" y="108" width="11" height="12" fill="' + (k === 2 ? "#E8B04B" : k === 4 ? "#D9534F" : "#4CAF50") + '" opacity=".75"/><rect x="' + (x0 + 14 + k * 14) + '" y="124" width="11" height="12" fill="#4CAF50" opacity=".75"/>').join("") + "</g>";
+    const meses = t > 3.0 ? Math.round(12 + 36 * sv((t - 3.0) / 0.9)) : 12;
+    h += '<g opacity="' + ap(2.4).toFixed(2) + '"><rect x="' + (x0 + 8) + '" y="148" width="' + (w - 16) + '" height="48" rx="6" fill="#fff"/><text x="' + (x0 + 14) + '" y="160" fill="#0E3A40" font-size="7" font-weight="700">LOTE 12 · $850,000</text>' +
+      '<text x="' + (x0 + 14) + '" y="172" fill="#5F6566" font-size="7">' + meses + ' meses de $' + Math.round(680000 / meses).toLocaleString("es-MX") + "</text>" +
+      '<rect x="' + (x0 + 14) + '" y="178" width="' + (w - 28) + '" height="3" rx="2" fill="rgba(14,58,64,.15)"/><rect x="' + (x0 + 14) + '" y="178" width="' + ((w - 28) * (meses - 12) / 36).toFixed(1) + '" height="3" rx="2" fill="#C6A15E"/></g>';
+    h += "</g>" + (t > 1.6 ? '<g opacity="' + ap(1.6).toFixed(2) + '">' + BTN_G(x0 + 8, 148, w - 16, "WhatsApp", t > 4.2 && t < 4.5 ? "#2bd06a" : "#1FA855", "#fff") + "</g>" : "") + "</g>";
+    const [cx, cy] = camino([[0, 330, 190], [3.9, 330, 190], [4.25, x0 + w / 2, 160], [5.4, x0 + w / 2, 160]], t);
+    h += TOQUE_G(x0 + w / 2, 159, t, 4.25);
+    h += '<text x="112" y="40" fill="rgba(255,255,255,.7)" font-size="9.5" text-anchor="end">Un link para</text><text x="112" y="54" fill="#fff" font-size="10.5" font-weight="700" text-anchor="end">WhatsApp</text><text x="112" y="67" fill="#fff" font-size="10.5" font-weight="700" text-anchor="end">y anuncios</text>' +
+      '<text x="248" y="40" fill="rgba(255,255,255,.7)" font-size="9.5">Con lotes,</text><text x="248" y="54" fill="#fff" font-size="10.5" font-weight="700">precio y</text><text x="248" y="67" fill="#fff" font-size="10.5" font-weight="700">tour 360</text>';
+    h += CURSOR_G(cx, cy) + pieG(t > 4.3 ? "Tu cliente elige su lote y te escribe con el precio" : t > 2.4 ? "Su precio y sus mensualidades, al momento" : "Se arma sola con tu tour, tu logo y tus colores", t > 4.3);
+    svg.innerHTML = h;
+  }
+  // Transiciones: un toque en el punto, la vista avanza hacia él y entra a la siguiente esfera sin cortes
+  function animTransicion(svg, t) {
+    const toca = 1.3, u = sv((t - toca) / 1.2), f = sv((t - toca - 0.7) / 0.9);
+    let h = '<rect width="360" height="200" fill="#1a2014"/><clipPath id="tr-v"><rect x="40" y="12" width="280" height="160" rx="12"/></clipPath><g clip-path="url(#tr-v)">';
+    const esc1 = 1 + 0.9 * u, esc2 = 1.25 - 0.25 * f;
+    h += '<g transform="translate(250 92) scale(' + esc1.toFixed(3) + ') translate(-250 -92)" opacity="' + (1 - f).toFixed(2) + '"><rect x="40" y="12" width="280" height="90" fill="#7FA9C9"/><rect x="40" y="102" width="280" height="70" fill="#6A8F4E"/><rect x="200" y="70" width="70" height="40" fill="#E9E2D3"/><rect x="226" y="86" width="18" height="24" fill="#8A6B4A"/>' +
+      '<circle cx="235" cy="128" r="9" fill="rgba(255,255,255,.35)" stroke="#fff" stroke-width="2"/><path d="M231 128 l4 -5 l4 5" fill="none" stroke="#fff" stroke-width="2"/></g>';
+    h += '<g transform="translate(180 92) scale(' + esc2.toFixed(3) + ') translate(-180 -92)" opacity="' + f.toFixed(2) + '"><rect x="40" y="12" width="280" height="160" fill="#EFE7DA"/><rect x="40" y="130" width="280" height="42" fill="#B89C7A"/><rect x="70" y="40" width="70" height="56" fill="#9CC3D9" stroke="#fff" stroke-width="3"/><rect x="200" y="96" width="90" height="34" rx="6" fill="#5B6B73"/></g>';
+    h += "</g>";
+    const [cx, cy] = camino([[0, 330, 190], [1.1, 238, 132], [toca + 2.6, 238, 132], [4.6, 330, 190]], t);
+    h += TOQUE_G(235, 128, t, toca) + (t < toca + 0.5 || t > 3.6 ? CURSOR_G(cx, cy) : "") + pieG(t > 2.9 ? "Llegó a la siguiente esfera, sin cortes" : t > toca ? "La vista avanza hacia el punto…" : "Tu cliente toca un punto", t > 2.9);
+    svg.innerHTML = h;
+  }
+  // Bienvenida: logo, nombre y un botón sobre la esfera; un toque entra, suena la música y arranca el piloto
+  function animBienvenida(svg, t) {
+    const toca = 2.0, fuera = sv((t - toca) / 0.7), gira = t * 14;
+    let h = '<rect width="360" height="200" fill="#1a2014"/><clipPath id="bv-v"><rect x="40" y="12" width="280" height="160" rx="12"/></clipPath><g clip-path="url(#bv-v)">' +
+      '<g transform="translate(' + (-(gira % 140)).toFixed(1) + ' 0)">' + [0, 1, 2, 3].map((k) => '<rect x="' + (40 + k * 140) + '" y="12" width="140" height="100" fill="' + (k % 2 ? "#86B2CF" : "#7FA9C9") + '"/><rect x="' + (40 + k * 140) + '" y="112" width="140" height="60" fill="' + (k % 2 ? "#6E9452" : "#6A8F4E") + '"/><rect x="' + (80 + k * 140) + '" y="84" width="46" height="30" fill="#E9E2D3"/>').join("") + "</g>";
+    h += '<g opacity="' + (1 - fuera).toFixed(2) + '"><rect x="40" y="12" width="280" height="160" fill="rgba(11,11,11,.55)"/><rect x="164" y="40" width="32" height="32" rx="8" fill="#fff"/><text x="180" y="61" fill="#0E3A40" font-size="12" font-weight="800" text-anchor="middle">TU</text>' +
+      '<text x="180" y="92" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Encino Alto</text>' + BTN_G(128, 104, 104, "Entrar al recorrido", t > toca && t < toca + 0.3 ? "#e6ff7a" : "#D5FF40", "#0b0b0b") + "</g>";
+    if (t > toca + 0.6) { const n = (t * 2) % 1; h += '<g opacity="' + Math.min(1, (t - toca - 0.6) / 0.4).toFixed(2) + '"><rect x="252" y="22" width="56" height="20" rx="10" fill="rgba(11,11,11,.6)"/><text x="263" y="36" fill="#D5FF40" font-size="11">♪</text><text x="274" y="36" fill="#fff" font-size="8.5" font-weight="600">Piloto</text><circle cx="300" cy="32" r="' + (2 + n * 2).toFixed(1) + '" fill="#D5FF40"/></g>'; }
+    h += "</g>";
+    const [cx, cy] = camino([[0, 330, 190], [1.8, 182, 117], [toca + 0.8, 182, 117], [4.2, 330, 190]], t);
+    h += TOQUE_G(180, 115, t, toca) + CURSOR_G(cx, cy) + pieG(t > toca + 0.5 ? "Entra, suena tu música y arranca el piloto" : "Tu tour abre con tu logo y tu nombre", t > toca + 0.5);
+    svg.innerHTML = h;
+  }
+  // Descargar PDF: subes tu plano en Interfaz y en el tour sale un botón junto al de contacto
+  function animPdf(svg, t) {
+    const on = t > 0.9, subido = t > 2.0, baja = t > 3.4;
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="12" y="20" width="132" height="150" rx="10" fill="#111" stroke="rgba(255,255,255,.15)"/><text x="22" y="40" fill="#fff" font-size="10" font-weight="700">Descargar PDF</text>' +
+      '<text x="22" y="62" fill="rgba(255,255,255,.75)" font-size="8.5">Botón para descargar</text><rect x="108" y="53" width="26" height="14" rx="7" fill="' + (on ? "#D5FF40" : "#3a3a3a") + '"/><circle cx="' + (on ? 127 : 115) + '" cy="60" r="5" fill="' + (on ? "#0b0b0b" : "#bbb") + '"/>';
+    if (on) h += BTN_G(22, 80, 70, subido ? "Cambiar PDF" : "Subir PDF", "transparent", "#fff", "rgba(255,255,255,.4)");
+    if (t > 1.4) { const v = sv((t - 1.4) / 0.6), y = 150 - 52 * v; h += '<g opacity="' + (subido ? 1 : v).toFixed(2) + '"><rect x="' + (subido ? 22 : 60) + '" y="' + (subido ? 110 : y) + '" width="18" height="22" rx="2" fill="#fff"/><text x="' + (subido ? 31 : 69) + '" y="' + ((subido ? 110 : y) + 15) + '" fill="#D9534F" font-size="6.5" font-weight="800" text-anchor="middle">PDF</text>' + (subido ? '<text x="46" y="124" fill="#fff" font-size="8">Plano maestro.pdf</text>' : "") + "</g>"; }
+    h += '<rect x="160" y="20" width="188" height="150" rx="10" fill="#7FA9C9"/><rect x="160" y="110" width="188" height="60" fill="#6A8F4E"/><path d="M160 160 V 110 H348 V160" fill="none"/>';
+    h += BTN_G(172, 140, 80, "Agendar visita", "#fff", "#0b0b0b");
+    if (subido) h += '<g opacity="' + Math.min(1, (t - 2.0) / 0.4).toFixed(2) + '">' + BTN_G(258, 140, 82, "↓ Descargar plano", baja && t < 3.7 ? "rgba(40,40,40,.9)" : "rgba(17,17,17,.75)", "#fff", "rgba(255,255,255,.35)") + "</g>";
+    if (baja) { const v = sv((t - 3.5) / 0.7); h += '<g opacity="' + Math.min(1, v * 2).toFixed(2) + '" transform="translate(0 ' + (-18 * v).toFixed(1) + ')"><rect x="286" y="96" width="26" height="32" rx="3" fill="#fff"/><text x="299" y="116" fill="#D9534F" font-size="8" font-weight="800" text-anchor="middle">PDF</text></g>'; }
+    const [cx, cy] = camino([[0, 330, 190], [0.7, 126, 62], [1.1, 126, 62], [1.8, 56, 93], [2.4, 56, 93], [3.2, 300, 152], [4.2, 300, 152], [5, 330, 190]], t);
+    h += TOQUE_G(122, 60, t, 0.85) + TOQUE_G(56, 91, t, 1.3) + TOQUE_G(299, 151, t, 3.35) + CURSOR_G(cx, cy);
+    h += pieG(baja ? "Tu cliente se lleva el plano en un toque" : subido ? "Sale junto a tu botón de contacto" : "Prendes el botón y subes tu PDF", baja);
+    svg.innerHTML = h;
+  }
+  // Ícono de la pestaña: el de Mozari se cambia por el de tu cliente (y el acceso directo en el celular)
+  function animIcono(svg, t) {
+    const cambia = sv((t - 1.6) / 0.6);
+    const ico = (x, y, s) => '<g transform="translate(' + x + " " + y + ") scale(" + s + ')"><g opacity="' + (1 - cambia).toFixed(2) + '"><rect width="16" height="16" rx="4" fill="#0b0b0b"/><circle cx="5" cy="5" r="2.2" fill="#D5FF40"/><circle cx="11" cy="11" r="2.2" fill="#D5FF40"/><path d="M5 5 L11 11" stroke="#D5FF40" stroke-width="1.6"/></g>' +
+      '<g opacity="' + cambia.toFixed(2) + '"><rect width="16" height="16" rx="4" fill="#C6A15E"/><rect x="5" y="5" width="6" height="6" fill="#0E3A40"/></g></g>';
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="24" y="22" width="312" height="120" rx="10" fill="#2a2a2a"/><rect x="24" y="22" width="312" height="30" rx="10" fill="#1d1d1d"/>' +
+      '<path d="M40 52 V36 q0 -6 6 -6 H160 q6 0 6 6 V52Z" fill="#3a3a3a"/>' + ico(48, 33, 1) + '<text x="70" y="45" fill="#fff" font-size="10.5" font-weight="600">Encino Alto</text><text x="152" y="45" fill="rgba(255,255,255,.5)" font-size="10">×</text>' +
+      '<rect x="36" y="60" width="288" height="72" rx="6" fill="#7FA9C9"/><rect x="36" y="104" width="288" height="28" fill="#6A8F4E"/>';
+    h += '<rect x="246" y="148" width="40" height="40" rx="10" fill="#0b0b0b" stroke="rgba(255,255,255,.2)"/>' + ico(254, 156, 1.5) + '<text x="230" y="170" fill="rgba(255,255,255,.7)" font-size="8.5" text-anchor="end">En el celular</text>';
+    h += pieG(t > 2.2 ? "Tu ícono, sin rastro de Mozari" : "Subes el ícono de tu cliente en Interfaz", t > 2.2);
+    svg.innerHTML = h.replace('y="194"', 'y="194"');
+  }
   // =================== MINI TUTORIALES DE LAS FUNCIONES PARA INTERIORES (nov 2026) ===================
   // Regla de Amar: toda función nueva lleva su mini tutorial la primera vez que se usa (y un botón para volver a verlo).
   const PLANO_G = (x, y, w, h) => '<g transform="translate(' + x + " " + y + ')"><rect width="' + w + '" height="' + h + '" rx="6" fill="#F4F2EC"/><path d="M6 6h' + (w - 12) + "v" + (h - 12) + "h-" + (w - 12) + 'Z M' + (w * 0.5) + " 6v" + (h * 0.38) + " M" + (w * 0.5) + " " + (h * 0.6) + "v" + (h * 0.4 - 6) + " M" + (w * 0.5) + " " + (h * 0.55) + "h" + (w * 0.5 - 6) + '" fill="none" stroke="#2a2a2a" stroke-width="3"/></g>';
@@ -4040,13 +4135,13 @@
     if (clave === "panoramas/capas") guiaCapasNuevas();
     if (clave === "proyecto/musica") guiaNueva("nuevo-sonido", () => [esVisible("#m-preguntar-fila") && { el: "#m-preguntar-fila", titulo: "Nuevo: ¿activar sonido?",
       texto: "Los navegadores no dejan sonar un tour hasta que el visitante toca la pantalla. Ahora, al abrirlo le preguntamos <b>Activar sonido</b> o <b>Sin sonido</b>, con los colores de tu tour, y la música y las voces arrancan con su respuesta." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "musica");
-    if (clave === "publicar/landing" && enLab("landing")) guiaNueva("nuevo-landing", () => [esVisible("#ld-form .comp-tarjeta") && { el: "#ld-form .comp-tarjeta", titulo: "Nuevo: la landing de tu desarrollo",
+    if (clave === "publicar/landing" && enLab("landing")) guiaNueva("nuevo-landing", () => [esVisible("#ld-form .comp-tarjeta") && { el: "#ld-form .comp-tarjeta", titulo: "Nuevo: la landing de tu desarrollo", anim: animLanding, dur: 5.8,
       texto: "Una página para mandar por WhatsApp o poner en tus anuncios. Sube tu <b>logo</b> y tu <b>plano maestro</b>, pon los <b>colores y letras</b> de tu marca y tu <b>WhatsApp</b>. Los lotes, sus precios, las fotos y los lugares cercanos salen solos del tour. A la derecha la ves como en el celular." }].filter(Boolean), () => nav.sub === "landing" && esVisible("#ld-form .comp-tarjeta"));
     if (clave === "tours/todos" && enLab("tutorial-video")) guiaNueva("nuevo-tutorial-video", () => [esVisible("#ver-tutorial") && { el: "#ver-tutorial", titulo: "Nuevo: tutorial en video",
       texto: "Si es tu primera vez, aquí está el <b>paso a paso</b> para armar un tour, de subir tus esferas a publicarlo. También sale en Panoramas mientras tu tour no tiene esferas." }].filter(Boolean), () => nav.sec === "tours" && esVisible("#ver-tutorial"));
-    if (clave === "proyecto/general" && enLab("transiciones")) guiaNueva("nuevo-transiciones", () => [esVisible("#abrir-previa") && { el: "#abrir-previa", titulo: "Nuevo: transiciones inmersivas",
+    if (clave === "proyecto/general" && enLab("transiciones")) guiaNueva("nuevo-transiciones", () => [esVisible("#abrir-previa") && { el: "#abrir-previa", titulo: "Nuevo: transiciones inmersivas", anim: animTransicion, dur: 5,
       texto: "Al tocar un punto, tu cliente <b>avanza hacia él</b> y entra a la siguiente esfera sin cortes, también en celular. Mientras abre, el tour <b>precarga todas sus esferas</b> con una foto de portada. Pruébalo aquí en Vista previa y vuelve a publicar." }].filter(Boolean), () => nav.sub === "general" && esVisible("#abrir-previa"));
-    if (clave === "proyecto/general" && enLab("bienvenida")) guiaNueva("nuevo-bienvenida", () => [esVisible("#p-bv-fila") && { el: "#p-bv", titulo: "Nuevo: pantalla de bienvenida",
+    if (clave === "proyecto/general" && enLab("bienvenida")) guiaNueva("nuevo-bienvenida", () => [esVisible("#p-bv-fila") && { el: "#p-bv", titulo: "Nuevo: pantalla de bienvenida", anim: animBienvenida, dur: 4.8,
       texto: "Tu tour puede abrir con <b>tu logo, el nombre y un botón</b> sobre la esfera girando despacio. Cuando tu cliente lo toca empieza el recorrido <b>con su música</b>, sin preguntarle nada. Préndela aquí y vuelve a publicar." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "general" && esVisible("#p-bv-fila"));
     if (clave === "panoramas/lista" && enLab("ejemplo")) guiaNueva("nuevo-ejemplo", () => [esVisible("#subir-ejemplo") && { el: "#subir-ejemplo", titulo: "Nuevo: fotos de ejemplo",
       texto: "¿No traes tus fotos 360 a la mano? Con un clic cargas <b>2 fotos de muestra</b> (una aérea y una a pie) para practicar: conéctalas, ponles texto y publica. Se borran como cualquier esfera." }].filter(Boolean), () => nav.sub === "lista" && esVisible("#subir-ejemplo"));
@@ -4059,11 +4154,13 @@
     if (/^publicar\//.test(clave) && enLab("estadisticas")) guiaNueva("nuevo-estadisticas", [{ el: () => [...document.querySelectorAll("#subtabs button")].find((b) => /Estad/.test(b.textContent)),
       titulo: "Nuevo: estadísticas de tu tour",
       texto: "Cuántas visitas tiene, si entran por celular o compu, de qué ciudades, cuánto se quedan, qué esferas y lotes ven más y cuántos le dan a contacto. Empieza a contar cuando <b>vuelves a publicar</b>." }], () => nav.sec === "publicar");
-    if (/^skin\//.test(clave) && enLab("descarga-pdf")) guiaNueva("nuevo-descarga-pdf", () => [esVisible("#sk-pdf-grupo") && { el: "#sk-pdf-grupo", titulo: "Nuevo: botón para descargar un PDF",
+    if (/^skin\//.test(clave) && enLab("descarga-pdf")) guiaNueva("nuevo-descarga-pdf", () => [esVisible("#sk-pdf-grupo") && { el: "#sk-pdf-grupo", titulo: "Nuevo: botón para descargar un PDF", anim: animPdf, dur: 5.4,
       texto: "Sube el <b>plano</b>, el <b>brochure</b> o la <b>ficha de venta</b> y tu cliente lo descarga desde el tour con un botón junto al de contacto. Se ve al <b>volver a publicar</b>." }].filter(Boolean), () => nav.sec === "skin" && esVisible("#sk-pdf-grupo"));
     if (/^skin\//.test(clave) && enLab("carga-logo")) guiaNueva("nuevo-carga-logo", [{ el: () => document.querySelector(".logo-fila") && document.querySelector(".logo-fila").closest(".grupo"),
       titulo: "Nuevo: tu logo al cargar el tour", anim: animCarga, dur: 4.5,
       texto: "Elige <b>Del cliente</b> y sube su logo: el tour publicado carga con ese logo, el nombre y los colores de la Interfaz, sin Mozari. Se ve al <b>volver a publicar</b>." + (conMarcaPrueba() ? " En tu plan actual se queda la de Mozari." : "") }], () => nav.sec === "skin" && esVisible(".logo-fila"));
+    if (/^skin\//.test(clave) && !conMarcaPrueba()) guiaNueva("nuevo-icono", () => [esVisible("#sk-icono-grupo") && { el: "#sk-icono-grupo", titulo: "Nuevo: tu ícono en la pestaña", anim: animIcono, dur: 4,
+      texto: "Con tu licencia, el tour y su landing ya no llevan el ícono de Mozari: sube el de tu cliente (cuadrado, PNG) y sale en la pestaña del navegador y en el acceso directo del celular. Sin ícono propio sale uno neutro." }].filter(Boolean), () => nav.sec === "skin" && esVisible("#sk-icono-grupo"));
   }
 
   // =================== DESCARGAR PARA OTRO HOSTING ===================
@@ -4531,7 +4628,7 @@
   });
   // =================== NOVEDADES ===================
   // Cada anuncio se ve una vez por cuenta (se anota en el servidor). El botón ✦ junto a BETA los vuelve a abrir.
-  const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Fichas técnicas"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Interfaz"], ["publicar/web", "Publicar"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"]];
+  const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Fichas técnicas"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Interfaz"], ["publicar/web", "Publicar"], ["publicar/landing", "Publicar → Landing"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"]];
   const LAB_DESTINO = { "descarga-pdf": "skin/h", "tutorial-video": "tours/todos", transiciones: "proyecto/general", landing: "publicar/landing", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
   let novedades = [], novActual = null;
   const fechaCorta = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
@@ -4791,19 +4888,36 @@
   });
   // Contrata tu tour 360: lo que piden desde el sitio (escaparate). Se contesta por WhatsApp o correo y se marca su estado.
   const TIPOS_SOL = { terreno: "Terreno o desarrollo con lotes", casa: "Casa o departamento", negocio: "Hotel o negocio", otro: "Otro" };
+  // Tarifas de la cotización tentativa (solo el dueño las ve y las cambia; el sitio nunca las muestra en tabla)
+  let tarifasCot = null;
+  const TARIFAS_TXT = [["dron", "Levantamiento con dron", "$"], ["armado", "Armado del tour", "$"], ["porLote", "Lotificación, por lote", "$"], ["minimo", "Total mínimo", "$"], ["maximo", "Total máximo", "$"], ["anticipo", "Anticipo", "%"], ["vigencia", "Vigencia", "días"], ["whatsapp", "WhatsApp del encargado", "wa.me/"]];
+  const tarifasHtml = () => !tarifasCot ? "" : '<details class="tarifas-cot"' + (tarifasCot.abierto ? " open" : "") + '><summary>Tarifas de la cotización tentativa <small>(precios + IVA, viáticos aparte)</small></summary><div class="tarifas-grid">' +
+    TARIFAS_TXT.map(([k, t, u]) => '<label>' + t + '<span><i>' + u + '</i><input class="entrada" data-tarifa="' + k + '" inputmode="numeric" value="' + esc(tarifasCot.t[k]) + '"></span></label>').join("") +
+    '</div><div class="tarifas-acc"><button class="mini primario" data-tarifas-guardar>Guardar tarifas</button><small>Ejemplo con 80 lotes: ' + (() => { const t = tarifasCot.t, sub = +t.dron + +t.armado + 80 * t.porLote, tot = Math.min(+t.maximo, Math.max(+t.minimo, sub)); return "$" + tot.toLocaleString("es-MX") + " + IVA"; })() + "</small></div></details>";
+  document.addEventListener("click", async (ev) => {
+    if (!ev.target.closest("[data-tarifas-guardar]")) return;
+    const c = {}; document.querySelectorAll("[data-tarifa]").forEach((i) => (c[i.dataset.tarifa] = i.dataset.tarifa === "whatsapp" ? i.value : +String(i.value).replace(/[^\d.]/g, "")));
+    const r = await fetch("api/admin/cotizacion-tarifas", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(c) }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    if (!r || !r.ok) { avisar(d.error || "No se pudieron guardar las tarifas"); return; }
+    tarifasCot = { t: d.tarifas, abierto: true }; avisar("Tarifas guardadas"); pintarSolicitudes();
+  });
   async function pintarSolicitudes() {
+    if (!tarifasCot) { const rt = await fetch("api/admin/cotizacion-tarifas", { cache: "no-store" }).catch(() => null); if (rt && rt.ok) tarifasCot = { t: (await rt.json()).tarifas, abierto: false }; }
     const r = await fetch("api/admin/cotizaciones", { cache: "no-store" }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudieron leer las solicitudes"); return; }
     const { cotizaciones } = await r.json(), nuevas = cotizaciones.filter((x) => x.estado === "nueva").length;
     const f = (iso) => new Date(iso).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
     const est = [["nueva", "Nueva"], ["cotizada", "Cotizada"], ["ganada", "Ganada"], ["perdida", "Perdida"]];
     $("cuentas").innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) +
-      '<p class="nota" style="margin:0 0 12px">Lo que piden en <b>Contrata tu tour 360</b> del sitio. ' + (nuevas ? "<b>" + nuevas + (nuevas === 1 ? " nueva" : " nuevas") + "</b>. " : "") + "Al cliente ya le llegó un correo: «te mandamos tu cotización en menos de 24 horas».</p>" +
+      '<p class="nota" style="margin:0 0 12px">Lo que piden en <b>Contrata tu tour 360</b> del sitio. ' + (nuevas ? "<b>" + nuevas + (nuevas === 1 ? " nueva" : " nuevas") + "</b>. " : "") + "Si es terreno o desarrollo, al enviar ve su cotización tentativa (y le llega por correo); si no, «te enviamos tu cotización en minutos».</p>" +
+      tarifasHtml() +
       '<div class="rep-lista">' + (cotizaciones.length ? cotizaciones.map((x) => {
         const wa = String(x.whatsapp || "").replace(/\D/g, ""), msg = encodeURIComponent("Hola " + String(x.nombre || "").split(" ")[0] + ", te escribimos de Mozari por tu tour 360 en " + x.ciudad + ".");
         return '<div class="rep-item ' + (x.estado === "nueva" ? "nuevo" : x.estado === "perdida" ? "resuelto" : "revisando") + '"><div><b>' + esc(TIPOS_SOL[x.tipo] || x.tipo) + " · " + esc(x.ciudad) + ", " + esc(x.pais) + "</b> <small>" + f(x.fecha) + "</small></div>" +
           '<select data-sol="' + x.id + '">' + est.map(([v, n]) => '<option value="' + v + '"' + (x.estado === v ? " selected" : "") + ">" + n + "</option>").join("") + "</select>" +
-          "<p><b>" + esc(x.nombre) + "</b>" + (x.tamano ? " · " + esc(x.tamano) : "") + (x.cuando ? " · " + esc(x.cuando) : "") + (x.mas ? "<br>" + esc(x.mas) : "") + "</p>" +
+          "<p><b>" + esc(x.nombre) + "</b>" + (x.lotes ? " · " + x.lotes + " lotes" : "") + (x.tamano ? " · " + esc(x.tamano) : "") + (x.cuando ? " · " + esc(x.cuando) : "") + (x.mas ? "<br>" + esc(x.mas) : "") +
+            (x.cotizacion && x.cotizacion.folio ? '<br><small class="sol-cot">Folio <b>' + esc(x.cotizacion.folio) + "</b>" + (x.cotizacion.conPrecio ? " · cotización tentativa <b>$" + Math.round(x.cotizacion.total).toLocaleString("es-MX") + " " + esc(x.cotizacion.moneda) + " + IVA</b>" : " · sin precio") + "</small>" : "") + "</p>" +
           '<small style="grid-column:1/-1"><a href="https://wa.me/' + wa + "?text=" + msg + '" target="_blank" rel="noopener">WhatsApp ' + esc(x.whatsapp) + '</a> · <a href="mailto:' + esc(x.correo) + "?subject=" + encodeURIComponent("Tu cotización de tour 360 · Mozari") + '">' + esc(x.correo) + "</a></small></div>";
       }).join("") : '<p class="nota" style="padding:16px">Todavía no hay solicitudes. Llegan desde mozari.app, en «Contrata tu tour 360».</p>') + "</div>";
   }
@@ -12102,6 +12216,8 @@ void main(){
     descargar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14"/></svg>',
   };
   // Botón de descarga: en el tour publicado lo decide el servidor al publicar; en el estudio, el Laboratorio
+  // Ícono neutro de la pestaña (licencias sin ícono propio): una esfera de líneas, sin Mozari
+  const ICONO_NEUTRO_SVG = '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#151515"/><g fill="none" stroke="#fff" stroke-width="3.2"><circle cx="32" cy="32" r="17"/><ellipse cx="32" cy="32" rx="7.5" ry="17"/><path d="M15 32h34"/></g></svg>';
   const conPdf = () => (MODO === "tour" ? P().descargaPdf === true : enLab("descarga-pdf"));
   const nombrePdf = (d) => { const n = String((d && d.nombre) || P().nombre || "plano").replace(/\.pdf$/i, "").replace(/[^\p{L}\p{N} ._-]/gu, "").trim().slice(0, 60) || "plano"; return n + ".pdf"; };
   const BRUJULA = '<svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="37" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1"/>' +
@@ -12967,6 +13083,13 @@ void main(){
       (sk.logo.tipo === "propio" ? '<label class="btn-sec" for="sk-logo-archivo" style="justify-self:start">' + (sk.logo.img ? "Cambiar logo" : "Subir logo (PNG o SVG)") + '</label><input type="file" id="sk-logo-archivo" accept="image/png,image/svg+xml,image/webp,image/jpeg" hidden>' : "") +
       tgl("nombre", sk.nombre, "Mostrar el nombre del tour") +
       (enLab("carga-logo") ? '<span class="nota">El tour publicado carga con este logo, el nombre y los colores de la Interfaz.' + (conMarcaPrueba() ? " En tu plan actual se queda la de Mozari." : "") + "</span>" : "") + "</div>" +
+      // Ícono de la pestaña: el del cliente en las licencias; en la cuenta de prueba se queda el de Mozari
+      '<div class="grupo" id="sk-icono-grupo"><b>Ícono de la pestaña</b><div class="icono-fila"><span class="muestra-icono">' +
+        (conMarcaPrueba() ? '<img src="/favicon.svg" alt="">' : sk.icono ? '<img src="' + esc(urlArchivo(sk.icono)) + '" alt="Ícono del cliente">' : ICONO_NEUTRO_SVG) + "</span>" +
+        (conMarcaPrueba() ? '<span class="nota">Con tu licencia pones el ícono de tu cliente en la pestaña del navegador. En tu plan actual sale el de Mozari.</span>'
+          : '<label class="btn-sec" for="sk-icono-archivo">' + (sk.icono ? "Cambiar ícono" : "Subir ícono") + '</label><input type="file" id="sk-icono-archivo" accept="image/png,image/svg+xml,image/webp,image/jpeg" hidden>' +
+            (sk.icono ? '<button class="mini" type="button" id="sk-icono-quitar">Quitar</button>' : "")) + "</div>" +
+        (conMarcaPrueba() ? "" : '<p class="nota">Es el dibujito de la pestaña de Chrome y del acceso directo en el celular, en el tour y en su landing. Mejor cuadrado (PNG de 512 px). Sin ícono propio sale uno neutro, sin Mozari. Se ve al <b>volver a publicar</b>.</p>') + "</div>" +
       '<div class="grupo"><b>Colores</b>' +
       campo("Acento", '<div class="color"><input type="color" data-sk-k="acento" value="' + sk.acento + '" aria-label="Color de acento">' + SK_MUESTRAS.map((m) => '<button class="muestra" style="background:' + m + '" data-sk-k="acento" data-v="' + m + '" aria-label="Usar ' + m + '"></button>').join("") + "</div>") +
       campo("Paneles", '<div class="color"><input type="color" data-sk-k="panel" value="' + sk.panel + '" aria-label="Color de paneles">' + ["#111111", "#1B2430", "#2B2722", "#FFFFFF"].map((m) => '<button class="muestra" style="background:' + m + '" data-sk-k="panel" data-v="' + m + '" aria-label="Usar ' + m + '"></button>').join("") + "</div>") +
@@ -13016,10 +13139,26 @@ void main(){
     const el = ev.target;
     if (el.id === "sk-logo-archivo") return subirLogo(el);
     if (el.id === "sk-pdf-archivo") return subirPdf(el);
+    if (el.id === "sk-icono-archivo") return subirIcono(el);
     if (el.type !== "checkbox" || !el.dataset.skK) return;
     setSk(el.dataset.skK, el.checked);
     pintarPanelSkin(); repintarSk();
   });
+  // Ícono de la pestaña: se recorta al centro en cuadrado y se guarda como PNG de 256 px
+  async function subirIcono(input) {
+    const f = input.files[0]; input.value = "";
+    if (!f) return;
+    if (!/^image\//.test(f.type)) { avisar("Elige una imagen PNG, JPG o SVG"); return; }
+    const url = URL.createObjectURL(f), img = new Image();
+    try { await new Promise((ok, mal) => { img.onload = ok; img.onerror = mal; img.src = url; }); } catch (e) { URL.revokeObjectURL(url); avisar("No se pudo abrir la imagen"); return; }
+    const w = img.naturalWidth || 512, h = img.naturalHeight || 512, lado = Math.min(w, h), c = document.createElement("canvas");
+    c.width = c.height = 256;
+    c.getContext("2d").drawImage(img, (w - lado) / 2, (h - lado) / 2, lado, lado, 0, 0, 256, 256);
+    URL.revokeObjectURL(url);
+    try { setSk("icono", await medio(c, "image/png", undefined, "icono")); } catch (e) { avisar(e.message); return; }
+    pintarPanelSkin(); avisar("Ícono listo: se ve en la pestaña al volver a publicar");
+  }
+  document.addEventListener("click", (ev) => { if (ev.target.id !== "sk-icono-quitar") return; setSk("icono", ""); pintarPanelSkin(); });
   async function subirPdf(input) {
     const f = input.files[0]; input.value = "";
     if (!f) return;

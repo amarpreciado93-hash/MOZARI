@@ -199,6 +199,12 @@
   footer a { color: inherit; }
 
   .fija { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; padding: 10px var(--gutter-r) calc(10px + env(safe-area-inset-bottom, 0px)) var(--gutter-l); background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--fondo) 92%, transparent) 40%); }
+  /* Cuenta de prueba: la landing sale con la marca de Mozari (como su tour). Con licencia, sin marca. */
+  .agua-mz { position: fixed; inset: 0; z-index: 45; pointer-events: none; background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22380%22%20height%3D%22240%22%20viewBox%3D%220%200%20380%20240%22%3E%3Cg%20transform%3D%22rotate%28-24%20190%20120%29%22%20fill%3D%22%23fff%22%20fill-opacity%3D%22.34%22%20stroke%3D%22%23000%22%20stroke-opacity%3D%22.18%22%20stroke-width%3D%221%22%3E%3Csvg%20x%3D%2270%22%20y%3D%22100%22%20width%3D%2234%22%20height%3D%2234%22%20viewBox%3D%220%200%20613%20613%22%3E%3Cpath%20d%3D%22M89.0%20540.5C52.3%20536.4%2019.8%20511.8%206.5%20478.0C3.5%20470.4%200.1%20453.0%200.0%20445.0C-0.0%20433.4%203.9%20416.1%209.1%20404.8C16.2%20389.1%2028.5%20373.6%2041.3%20363.9C49.0%20358.1%2067.1%20349.3%2076.9%20346.6C119.8%20334.8%20165.9%20351.4%20189.1%20387.0C200.5%20404.5%20204.4%20418.2%20204.4%20440.5C204.4%20452.5%20204.0%20456.5%20202.1%20463.5C199.5%20473.0%20191.9%20489.9%20186.9%20497.2C178.2%20509.8%20162.1%20523.5%20147.1%20531.0C131.2%20538.9%20108.4%20542.7%2089.0%20540.5ZM454.4%20538.9C437.0%20536.0%20419.2%20528.3%20404.2%20517.3C386.4%20504.2%20371.5%20484.7%20362.5%20462.7C358.1%20451.9%20356.9%20448.0%20348.4%20417.0C337.4%20377.0%20323.2%20351.4%20299.2%20328.4C276.3%20306.3%20245.6%20291.3%20206.0%20282.5C174.5%20275.6%20166.3%20273.2%20154.5%20267.3C131.4%20255.6%20114.6%20239.4%20104.4%20218.9C97.5%20204.9%2094.9%20194.6%2094.3%20178.5C93.8%20166.5%2094.1%20163.7%2096.3%20153.7C100.7%20134.5%20107.8%20121.3%20121.4%20106.9C150.6%2075.9%20196.1%2065.4%20237.3%2080.1C261.2%2088.7%20282.6%20105.7%20297.4%20128.1C305.7%20140.4%20309.9%20149.9%20318.5%20175.8C334.3%20223.5%20346.9%20246.4%20369.5%20269.0C382.6%20282.1%20394.0%20290.6%20411.2%20300.2C428.3%20309.8%20441.1%20314.7%20484.5%20328.5C525.8%20341.6%20551.4%20361.5%20566.2%20392.0C585.4%20431.8%20577.9%20477.9%20547.1%20508.6C522.5%20533.0%20487.6%20544.5%20454.4%20538.9ZM515.3%20243.4C499.8%20241.6%20481.7%20233.4%20469.2%20222.6C455.3%20210.5%20445.5%20194.6%20440.9%20176.5C438.6%20167.5%20439.1%20145.7%20441.8%20136.2C450.7%20104.9%20473.3%2082.7%20504.8%2074.3C515.7%2071.5%20536.3%2071.5%20547.2%2074.3C579.3%2082.9%20603.7%20108.1%20610.6%20139.7C612.6%20148.7%20612.8%20167.1%20611.1%20174.5C608.4%20186.2%20602.7%20199.3%20596.7%20208.0C592.8%20213.6%20581.5%20224.7%20575.6%20228.7C558.7%20240.3%20535.7%20245.9%20515.3%20243.4Z%22%2F%3E%3C%2Fsvg%3E%3Ctext%20x%3D%22114%22%20y%3D%22126%22%20font-family%3D%22Poppins%2CArial%2Csans-serif%22%20font-size%3D%2219%22%20font-weight%3D%22600%22%20letter-spacing%3D%222%22%3ECREADO%20POR%20MOZARI%3C%2Ftext%3E%3Ctext%20x%3D%22114%22%20y%3D%22146%22%20font-family%3D%22Poppins%2CArial%2Csans-serif%22%20font-size%3D%2211%22%20font-weight%3D%22500%22%20letter-spacing%3D%221.5%22%3EHaz%20el%20tuyo%20en%20mozari.app%3C%2Ftext%3E%3C%2Fg%3E%3C%2Fsvg%3E") 0 0 / 380px 240px repeat; opacity: 0.55; }
+  .hecho-mz { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(86px + env(safe-area-inset-bottom, 0px)); z-index: 46; display: inline-flex; align-items: center; gap: 7px; padding: 6px 13px 6px 9px; border-radius: 999px; background: rgba(11, 11, 11, 0.72); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: #fff; font: 500 12px/1 system-ui, -apple-system, "Segoe UI", sans-serif; text-decoration: none; white-space: nowrap; }
+  .hecho-mz b { font-weight: 600; } .hecho-mz span { opacity: 0.7; }
+  .hecho-mz svg { width: 15px; height: 15px; color: #D5FF40; }
+  @media (min-width: 900px) { .hecho-mz { bottom: 18px; } }
   .fija .btn { width: 100%; min-height: 56px; font-size: 16px; box-shadow: 0 10px 26px -8px rgba(31, 168, 85, 0.6); }
   .fija .btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .vacio { min-height: 100vh; display: grid; place-items: center; text-align: center; padding: 40px 24px; color: var(--tenue); }
@@ -307,6 +313,7 @@
 
     const nombre = String(P.nombre || "Recorrido virtual");
     if (!previa) document.title = nombre;
+    marcaPrueba(!!P.marcaMozari);
     const plantilla = L.plantilla === "propiedad" ? "propiedad" : "lotes";
     const S = Object.assign({ lotes: true, recorrido: true, proyecto: true, galeria: true, ubicacion: true, visita: true }, L.secciones || {});
     const portada = L.portada || {}, proy = L.proyecto || {}, ubi = L.ubicacion || {}, con = L.contacto || {}, pagos = Object.assign({ mostrar: true }, L.pagos || {});
@@ -499,6 +506,16 @@
     window.__lfScroll = solida; addEventListener("scroll", solida, { passive: true }); solida();
   }
 
+  // Cuenta de prueba (o Pro con lotes): marca de agua y «Hecho con Mozari», igual que en su tour
+  const ISO = "M89.0 540.5C52.3 536.4 19.8 511.8 6.5 478.0C3.5 470.4 0.1 453.0 0.0 445.0C-0.0 433.4 3.9 416.1 9.1 404.8C16.2 389.1 28.5 373.6 41.3 363.9C49.0 358.1 67.1 349.3 76.9 346.6C119.8 334.8 165.9 351.4 189.1 387.0C200.5 404.5 204.4 418.2 204.4 440.5C204.4 452.5 204.0 456.5 202.1 463.5C199.5 473.0 191.9 489.9 186.9 497.2C178.2 509.8 162.1 523.5 147.1 531.0C131.2 538.9 108.4 542.7 89.0 540.5ZM454.4 538.9C437.0 536.0 419.2 528.3 404.2 517.3C386.4 504.2 371.5 484.7 362.5 462.7C358.1 451.9 356.9 448.0 348.4 417.0C337.4 377.0 323.2 351.4 299.2 328.4C276.3 306.3 245.6 291.3 206.0 282.5C174.5 275.6 166.3 273.2 154.5 267.3C131.4 255.6 114.6 239.4 104.4 218.9C97.5 204.9 94.9 194.6 94.3 178.5C93.8 166.5 94.1 163.7 96.3 153.7C100.7 134.5 107.8 121.3 121.4 106.9C150.6 75.9 196.1 65.4 237.3 80.1C261.2 88.7 282.6 105.7 297.4 128.1C305.7 140.4 309.9 149.9 318.5 175.8C334.3 223.5 346.9 246.4 369.5 269.0C382.6 282.1 394.0 290.6 411.2 300.2C428.3 309.8 441.1 314.7 484.5 328.5C525.8 341.6 551.4 361.5 566.2 392.0C585.4 431.8 577.9 477.9 547.1 508.6C522.5 533.0 487.6 544.5 454.4 538.9ZM515.3 243.4C499.8 241.6 481.7 233.4 469.2 222.6C455.3 210.5 445.5 194.6 440.9 176.5C438.6 167.5 439.1 145.7 441.8 136.2C450.7 104.9 473.3 82.7 504.8 74.3C515.7 71.5 536.3 71.5 547.2 74.3C579.3 82.9 603.7 108.1 610.6 139.7C612.6 148.7 612.8 167.1 611.1 174.5C608.4 186.2 602.7 199.3 596.7 208.0C592.8 213.6 581.5 224.7 575.6 228.7C558.7 240.3 535.7 245.9 515.3 243.4Z";
+  function marcaPrueba(si) {
+    document.querySelectorAll(".agua-mz, .hecho-mz").forEach((x) => x.remove());
+    if (!si) return;
+    const agua = document.createElement("div"); agua.className = "agua-mz"; agua.setAttribute("aria-hidden", "true");
+    const a = document.createElement("a"); a.className = "hecho-mz"; a.href = "https://mozari.app/"; a.target = "_blank"; a.rel = "noopener";
+    a.innerHTML = '<svg viewBox="0 0 613 613" aria-hidden="true"><path fill="currentColor" d="' + ISO + '"/></svg><b>Hecho con Mozari</b><span>· Crea el tuyo</span>';
+    document.body.append(agua, a);
+  }
   function vacio(txt) { $("raiz").innerHTML = '<div class="vacio"><p>' + esc(txt) + "</p></div>"; }
 
   // En el estudio: el editor manda el borrador (y lo vuelve a mandar con cada cambio)

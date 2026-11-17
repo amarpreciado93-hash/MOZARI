@@ -104,20 +104,52 @@ export function correoCompra({ nombre, base, plan }) {
 
 // Contrata tu tour 360 (escaparate): a quien pide una cotización le llega que ya la recibimos
 export const TIPOS_COTIZACION = { terreno: "Terreno o desarrollo con lotes", casa: "Casa o departamento", negocio: "Hotel o negocio", otro: "Otro" };
+// Cotización tentativa (pedido de Amar, 17 nov 2026): membretada Mozari (negro, lima, Poppins), con folio, fecha,
+// datos, conceptos, total + IVA, pago 50/50, la junta de revisión y la vigencia. Solo existe después de pedirla.
+const pesos = (n) => "$" + Math.round(+n || 0).toLocaleString("es-MX");
+const fechaLarga = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric", timeZone: "America/Mexico_City" }); } catch (e) { return String(iso).slice(0, 10); } };
+export function textoCotizacion(sol, q) {
+  if (!q || !q.conPrecio) return "";
+  return "COTIZACIÓN TENTATIVA · MOZARI\nFolio: " + q.folio + "\nFecha: " + fechaLarga(q.fecha) + "\n\nPara: " + sol.nombre + "\nProyecto: " + (TIPOS_COTIZACION[sol.tipo] || sol.tipo) + "\nUbicación: " + [sol.ciudad, sol.pais].filter(Boolean).join(", ") + "\nLotes: " + q.lotes + "\n\n" +
+    q.conceptos.map(([c, m]) => c + ": " + pesos(m)).join("\n") + (q.ajuste ? "\n" + (q.ajuste === "minimo" ? "Ajuste al mínimo del servicio" : "Tope máximo del servicio") + ": " + pesos(q.total - q.subtotal) : "") +
+    "\n\nTOTAL TENTATIVO: " + pesos(q.total) + " " + q.moneda + " + IVA (viáticos aparte)\n" +
+    "Anticipo " + q.pctAnticipo + "% para agendar: " + pesos(q.anticipo) + "\nContraentrega " + (100 - q.pctAnticipo) + "% del tour: " + pesos(q.contraentrega) +
+    "\n\nTe invitamos a una junta de revisión, valoración y planeación de tu proyecto: ahí se confirma el costo final.\nEntrega: esta misma semana.\nVigencia: " + q.vigencia + " días (hasta el " + fechaLarga(q.vence) + ").";
+}
+export function htmlCotizacion(sol, q) {
+  if (!q || !q.conPrecio) return "";
+  const F = "Poppins, 'Segoe UI', Helvetica, Arial, sans-serif", N = "#0B0B0B", L = "#D5FF40", G = "#6B6B66";
+  const fila = (k, v, fuerte) => '<tr><td style="padding:9px 0;border-bottom:1px solid #ECECE6;font:' + (fuerte ? 600 : 400) + " 14px/1.45 " + F + ";color:" + N + '">' + esc(k) + '</td><td align="right" style="padding:9px 0;border-bottom:1px solid #ECECE6;font:600 14px/1.45 ' + F + ";color:" + N + ';white-space:nowrap">' + esc(v) + "</td></tr>";
+  const dato = (k, v) => '<tr><td style="padding:3px 14px 3px 0;font:400 13px/1.45 ' + F + ";color:" + G + ';white-space:nowrap" valign="top">' + esc(k) + '</td><td style="padding:3px 0;font:600 13px/1.45 ' + F + ";color:" + N + '">' + esc(v) + "</td></tr>";
+  return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;border-collapse:separate;border-radius:16px;overflow:hidden;border:1px solid #E2E2DA;background:#fff">' +
+    '<tr><td style="background:' + N + ';padding:20px 24px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>' +
+    '<td style="font:700 18px/1 ' + F + ";letter-spacing:6px;color:#fff" + '">MOZARI</td><td align="right" style="font:400 12px/1.5 ' + F + ";color:#BDBDB5" + '"><span style="display:inline-block;background:' + L + ";color:" + N + ';font-weight:700;font-size:11px;letter-spacing:1.5px;padding:4px 10px;border-radius:6px">COTIZACIÓN TENTATIVA</span><br>Folio <b style="color:#fff">' + esc(q.folio) + "</b> · " + esc(fechaLarga(q.fecha)) + "</td></tr></table></td></tr>" +
+    '<tr><td style="padding:20px 24px 6px"><table role="presentation" cellpadding="0" cellspacing="0" border="0">' + dato("Para", sol.nombre) + dato("Proyecto", TIPOS_COTIZACION[sol.tipo] || sol.tipo) + dato("Ubicación", [sol.ciudad, sol.pais].filter(Boolean).join(", ")) + dato("Lotes", String(q.lotes)) + "</table></td></tr>" +
+    '<tr><td style="padding:8px 24px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">' + q.conceptos.map(([c, m]) => fila(c, pesos(m))).join("") +
+    (q.ajuste ? fila(q.ajuste === "minimo" ? "Ajuste al mínimo del servicio" : "Tope máximo del servicio", pesos(q.total - q.subtotal)) : "") + "</table></td></tr>" +
+    '<tr><td style="padding:14px 24px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:' + N + ';border-radius:12px"><tr><td style="padding:14px 18px;font:500 13px/1.4 ' + F + ';color:#BDBDB5">Total tentativo<br><span style="font-size:11px">+ IVA · viáticos aparte</span></td><td align="right" style="padding:14px 18px;font:700 24px/1 ' + F + ";color:" + L + '">' + pesos(q.total) + ' <span style="font-size:12px;color:#fff">' + esc(q.moneda) + "</span></td></tr></table></td></tr>" +
+    '<tr><td style="padding:0 24px 6px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">' + fila("Anticipo " + q.pctAnticipo + "% para agendar", pesos(q.anticipo), true) + fila("Contraentrega " + (100 - q.pctAnticipo) + "% del tour", pesos(q.contraentrega), true) + "</table></td></tr>" +
+    '<tr><td style="padding:12px 24px 20px;font:400 13px/1.55 ' + F + ";color:" + N + '"><p style="margin:0 0 8px">Te invitamos a una <b>junta de revisión, valoración y planeación</b> de tu proyecto: ahí se confirma el costo final. Entrega: <b>esta misma semana</b>.</p>' +
+    '<p style="margin:0;color:' + G + ';font-size:12px">Precios + IVA. Viáticos aparte. Vigencia ' + q.vigencia + " días (hasta el " + esc(fechaLarga(q.vence)) + ").</p></td></tr></table>";
+}
 export function correoCotizacion({ nombre, base, sol }) {
-  const n = primerNombre(nombre), hola = n ? n + ", recibimos tu solicitud" : "Recibimos tu solicitud";
+  const n = primerNombre(nombre), q = sol.cotizacion, conPrecio = !!(q && q.conPrecio);
+  const hola = conPrecio ? (n ? n + ", esta es tu cotización tentativa" : "Esta es tu cotización tentativa") : n ? n + ", recibimos tu solicitud" : "Recibimos tu solicitud";
+  const wa = q && q.whatsapp ? "https://wa.me/" + q.whatsapp + "?text=" + encodeURIComponent(q.mensaje || "") : "";
   const filas = [["Qué", TIPOS_COTIZACION[sol.tipo] || sol.tipo], ["Dónde", [sol.ciudad, sol.pais].filter(Boolean).join(", ")], ["Tamaño", sol.tamano], ["Para cuándo", sol.cuando]].filter(([, v]) => v);
   const tabla = filas.map(([k, v]) => '<tr><td style="padding:6px 14px 6px 0;font:400 14px/1.5 ' + FUENTE + ";color:" + TENUE + ';white-space:nowrap" valign="top">' + esc(k) + '</td><td style="padding:6px 0;font:600 14px/1.5 ' + FUENTE + ";color:" + TINTA + '">' + esc(v) + "</td></tr>").join("");
   const cuerpo =
     '<h1 style="margin:0 0 14px;font:700 26px/1.25 ' + FUENTE + ";color:" + TINTA + '">' + esc(hola) + "</h1>" +
-    '<p style="margin:0 0 20px">Un operador de la red Mozari revisa tu proyecto y te mandamos tu cotización en <b>menos de 24 horas</b>, por WhatsApp o por este correo.</p>' +
-    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px;padding:14px 18px;border-radius:14px;background:' + FONDO + '">' + tabla + "</table>" +
+    (conPrecio ? '<div style="margin:0 0 22px">' + htmlCotizacion(sol, q) + "</div>"
+      : '<p style="margin:0 0 20px">Un operador de la red Mozari revisa tu proyecto y te enviamos tu cotización <b>en minutos</b>, por WhatsApp o por este correo.</p>' +
+        '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px;padding:14px 18px;border-radius:14px;background:' + FONDO + '">' + tabla + "</table>") +
+    (wa ? '<div style="padding:0 0 22px">' + boton("Seguir con el encargado de producción", wa) + "</div>" : "") +
     '<p style="margin:0 0 4px">Si quieres agregar algo (un plano, fotos o la ubicación), contesta este correo.</p>' +
     '<p style="margin:22px 0 0">Gracias por escribirnos,<br><b>El equipo de Mozari</b></p>';
   const pie = "Te llegó este correo porque pediste una cotización en mozari.app.<br>Mozari · León, Guanajuato, México";
-  const texto = hola + "\n\nUn operador de la red Mozari revisa tu proyecto y te mandamos tu cotización en menos de 24 horas, por WhatsApp o por este correo.\n\n" +
-    filas.map(([k, v]) => k + ": " + v).join("\n") + "\n\nSi quieres agregar algo (un plano, fotos o la ubicación), contesta este correo.\n\nGracias por escribirnos,\nEl equipo de Mozari";
-  return { asunto: (n ? n + ", recibimos" : "Recibimos") + " tu solicitud de tour 360", html: plantilla({ base, preencabezado: "Te mandamos tu cotización en menos de 24 horas.", cuerpo, pie }), texto };
+  const texto = hola + "\n\n" + (conPrecio ? textoCotizacion(sol, q) : "Un operador de la red Mozari revisa tu proyecto y te enviamos tu cotización en minutos, por WhatsApp o por este correo.\n\n" + filas.map(([k, v]) => k + ": " + v).join("\n")) +
+    (wa ? "\n\nSeguir con el encargado de producción por WhatsApp: " + wa : "") + "\n\nSi quieres agregar algo (un plano, fotos o la ubicación), contesta este correo.\n\nGracias por escribirnos,\nEl equipo de Mozari";
+  return { asunto: conPrecio ? "Tu cotización tentativa de tour 360 · " + q.folio : (n ? n + ", recibimos" : "Recibimos") + " tu solicitud de tour 360", html: plantilla({ base, preencabezado: conPrecio ? "Total tentativo " + pesos(q.total) + " " + q.moneda + " + IVA. Se confirma en la junta de revisión." : "Te enviamos tu cotización en minutos.", cuerpo, pie }), texto };
 }
 
 // Novedad: título, texto (con saltos de línea), imagen opcional y un botón

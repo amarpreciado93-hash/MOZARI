@@ -216,6 +216,39 @@
   .dlg-cot .trampa { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
   .dlg-cot .pie { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
   .dlg-cot .pie small { color: var(--suave); font-size: 12px; max-width: 300px; }
+  /* Cotización tentativa (solo después de enviar; terreno o desarrollo con lotes) */
+  .dlg-cot .listo .btn-wa, .cotz-acc .btn { justify-content: center; white-space: normal; text-align: center; max-width: 100%; line-height: 1.3; }
+  .dlg-cot .listo p { overflow-wrap: anywhere; }
+  .dlg-cot .listo b#cot-folio-txt { display: block; margin-top: 6px; font-size: 14px; }
+  .btn-wa { background: #1FA855; color: #fff; justify-content: center; }
+  .btn-wa:hover { background: #1b964c; }
+  .btn-wa svg { width: 20px; height: 20px; flex: none; }
+  .cotz-vista { display: grid; gap: 14px; padding: 22px 22px 24px; }
+  .cotz-vista > h3 { margin: 0; font-size: 21px; font-weight: 600; padding-right: 44px; }
+  .cotz { border: 1px solid var(--linea); border-radius: 18px; overflow: hidden; background: #fff; }
+  .cotz-cab { background: #0B0B0B; color: #fff; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 20px; flex-wrap: wrap; }
+  .cotz-marca { display: flex; align-items: center; gap: 10px; }
+  .cotz-marca svg { width: 26px; height: 26px; color: #D5FF40; }
+  .cotz-marca b { font-weight: 500; letter-spacing: 0.4em; font-size: 14px; }
+  .cotz-doc { text-align: right; font-size: 12px; color: #BDBDB5; line-height: 1.5; }
+  .cotz-doc span { display: inline-block; background: #D5FF40; color: #0B0B0B; font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; padding: 3px 9px; border-radius: 6px; margin-bottom: 4px; }
+  .cotz-doc b { color: #fff; font-weight: 600; }
+  .cotz-cuerpo { padding: 16px 20px 18px; display: grid; gap: 12px; font-size: 14px; }
+  .cotz-datos { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; font-size: 13px; }
+  .cotz-datos dt { color: var(--tenue); } .cotz-datos dd { margin: 0; font-weight: 600; }
+  .cotz-tabla { width: 100%; border-collapse: collapse; }
+  .cotz-tabla td { padding: 8px 0; border-bottom: 1px solid var(--gris2); }
+  .cotz-tabla td:last-child { text-align: right; font-weight: 600; white-space: nowrap; padding-left: 12px; }
+  .cotz-total { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: #0B0B0B; color: #BDBDB5; border-radius: 12px; padding: 12px 16px; font-size: 12.5px; line-height: 1.4; }
+  .cotz-total b { color: #D5FF40; font-size: 26px; font-weight: 600; white-space: nowrap; } .cotz-total b small { color: #fff; font-size: 12px; font-weight: 500; }
+  .cotz-pago { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cotz-pago div { border: 1px solid var(--gris2); border-radius: 12px; padding: 10px 12px; font-size: 12px; color: var(--tenue); line-height: 1.4; }
+  .cotz-pago div b { display: block; color: var(--texto); font-size: 17px; font-weight: 600; }
+  .cotz-junta { margin: 0; background: var(--gris); border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.55; }
+  .cotz-letra { margin: 0; font-size: 12px; color: var(--suave); }
+  .cotz-acc { display: grid; gap: 10px; }
+  .cotz-acc .btn { justify-content: center; }
+  @media (max-width: 520px) { .cotz-pago { grid-template-columns: 1fr; } .cotz-doc { text-align: left; } .cotz-vista { padding: 18px 14px 20px; } }
   .dlg-cot .listo { text-align: center; justify-items: center; padding: 48px 32px; }
   .dlg-cot .listo i { width: 56px; height: 56px; border-radius: 50%; background: var(--texto); color: #fff; display: grid; place-items: center; font-style: normal; font-size: 26px; }
   .dlg-cot .listo p { margin: 0; color: var(--tenue); max-width: 400px; }
@@ -403,7 +436,7 @@
       <h2>¿Prefieres que lo hagamos por ti? Contrata tu tour 360.</h2>
       <p>Operadores con dron y cámara 360 en 17 países de Latinoamérica capturan tu proyecto y te entregan el tour listo, hecho en Mozari. Cuéntanos qué necesitas y te mandamos tu cotización.</p>
       <ul class="puntos"><li>Terrenos y desarrollos con sus lotes</li><li>Casas, departamentos e interiores</li><li>Hoteles, negocios y espacios comerciales</li></ul>
-      <div class="cta"><button class="btn btn-negro" type="button" data-cotizar>Solicita tu cotización</button><small>Te respondemos en menos de 24 horas.</small></div>
+      <div class="cta"><button class="btn btn-negro" type="button" data-cotizar>Solicita tu cotización</button><small>Te respondemos en minutos.</small></div>
       <p class="paises-lista">México · Guatemala · Belice · El Salvador · Honduras · Costa Rica · Panamá · República Dominicana · Colombia · Venezuela · Ecuador · Perú · Bolivia · Brasil · Chile · Argentina · Uruguay</p>
     </div>
     <div class="mapa" id="mapa">
@@ -417,7 +450,7 @@
   <button class="x" type="button" data-cerrar aria-label="Cerrar">×</button>
   <form id="cot-form" novalidate>
     <h3 id="cot-titulo">Solicita tu cotización</h3>
-    <p class="sub">Un tour 360 hecho por la red de operadores Mozari. Te mandamos el presupuesto en menos de 24 horas.</p>
+    <p class="sub">Un tour 360 hecho por la red de operadores Mozari.</p>
     <fieldset><legend>¿Qué quieres mostrar?</legend>
       <div class="opciones">
         <label><input type="radio" name="tipo" value="terreno" required><span>Terreno o desarrollo con lotes</span></label>
@@ -426,6 +459,7 @@
         <label><input type="radio" name="tipo" value="otro"><span>Otro</span></label>
       </div>
     </fieldset>
+    <label id="cot-lotes" hidden><span>¿Cuántos lotes tiene? (aproximado)</span><input type="text" name="lotes" inputmode="numeric" maxlength="7" placeholder="Ej. 80"></label>
     <div class="dos">
       <label><span>País</span><select name="pais" required><option value="">Elige tu país</option><option>México</option><option>Guatemala</option><option>Belice</option><option>El Salvador</option><option>Honduras</option><option>Nicaragua</option><option>Costa Rica</option><option>Panamá</option><option>República Dominicana</option><option>Puerto Rico</option><option>Colombia</option><option>Venezuela</option><option>Ecuador</option><option>Perú</option><option>Bolivia</option><option>Brasil</option><option>Paraguay</option><option>Chile</option><option>Argentina</option><option>Uruguay</option><option>Estados Unidos</option><option>Otro</option></select></label>
       <label><span>Ciudad</span><input type="text" name="ciudad" maxlength="80" autocomplete="address-level2" placeholder="Ej. Guadalajara" required></label>
@@ -444,7 +478,8 @@
     <div class="error" id="cot-error" hidden></div>
     <div class="pie"><small>Usamos tus datos solo para mandarte tu cotización. <a href="privacidad">Privacidad</a></small><button class="btn btn-negro" type="submit" id="cot-enviar">Enviar solicitud</button></div>
   </form>
-  <div class="listo" id="cot-listo" hidden><i>✓</i><h3 id="cot-gracias">¡Listo!</h3><p>Recibimos tu solicitud. Te mandamos tu cotización en menos de 24 horas por WhatsApp o correo.</p><button class="btn btn-gris" type="button" data-cerrar>Cerrar</button></div>
+  <div class="listo" id="cot-listo" hidden><i>✓</i><h3 id="cot-gracias">¡Listo!</h3><p>Recibimos tu solicitud. Te enviamos tu cotización en minutos.<b id="cot-folio-txt"></b></p><a class="btn btn-wa" id="cot-wa-sin" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2.2-.6.2-1.1.1-1.2l-.4-.2Z"/></svg>Seguir con el encargado de producción</a><button class="btn btn-gris" type="button" data-cerrar>Cerrar</button></div>
+  <div class="cotz-vista" id="cot-cotz" hidden></div>
 </dialog>
 
 <footer><div class="envoltura"><span>© Mozari</span><nav aria-label="Legal"><a href="privacidad">Privacidad</a><a href="terminos">Términos</a></nav><svg viewBox="0 0 2190 600" role="img" aria-label="Created by R360 Team"><g fill="none" stroke="currentColor" stroke-width="22"><circle cx="245" cy="300" r="222"/><path d="M245 78v444M23 300h444"/></g><g fill="currentColor" font-family="Poppins, Arial, sans-serif"><text x="555" y="238" font-size="212" font-weight="400">Created by</text><text x="548" y="522" font-size="268" font-weight="800" letter-spacing="2">R360 TEAM</text></g></svg></div></footer>
@@ -564,26 +599,97 @@
     const dlg = document.getElementById("dlg-cot"), form = document.getElementById("cot-form"), err = document.getElementById("cot-error"), listo = document.getElementById("cot-listo"), btn = document.getElementById("cot-enviar");
     let abierto = 0;
     const PLACE = { terreno: "Ej. 5 hectáreas, 80 lotes", casa: "Ej. 120 m², 3 recámaras", negocio: "Ej. hotel de 40 habitaciones", otro: "Ej. 2,000 m²" };
-    document.querySelectorAll("[data-cotizar]").forEach((b) => b.addEventListener("click", () => { form.hidden = false; listo.hidden = true; err.hidden = true; abierto = Date.now(); dlg.showModal(); }));
+    document.querySelectorAll("[data-cotizar]").forEach((b) => b.addEventListener("click", () => { form.hidden = false; listo.hidden = true; document.getElementById("cot-cotz").hidden = true; err.hidden = true; abierto = Date.now(); dlg.showModal(); }));
     dlg.addEventListener("click", (ev) => { if (ev.target.closest("[data-cerrar]") || ev.target === dlg) dlg.close(); });
-    form.addEventListener("change", (ev) => { if (ev.target.name === "tipo") form.tamano.placeholder = PLACE[ev.target.value] || ""; });
+    form.addEventListener("change", (ev) => { if (ev.target.name === "tipo") { form.tamano.placeholder = PLACE[ev.target.value] || ""; document.getElementById("cot-lotes").hidden = ev.target.value !== "terreno"; } });
     // El país se elige solo (el mismo que usan los precios); se puede cambiar
     fetch("cotizar").then((r) => r.json()).then((d) => {
       const N = { MX: "México", GT: "Guatemala", BZ: "Belice", SV: "El Salvador", HN: "Honduras", NI: "Nicaragua", CR: "Costa Rica", PA: "Panamá", DO: "República Dominicana", PR: "Puerto Rico", CO: "Colombia", VE: "Venezuela", EC: "Ecuador", PE: "Perú", BO: "Bolivia", BR: "Brasil", PY: "Paraguay", CL: "Chile", AR: "Argentina", UY: "Uruguay", US: "Estados Unidos" };
       if (d && N[d.pais] && !form.pais.value) form.pais.value = N[d.pais];
     }).catch(() => {});
+    // Cotización tentativa (pedido de Amar, 17 nov 2026): llega del servidor solo después de enviar; se ve membretada,
+    // se guarda como imagen y lleva al encargado de producción por WhatsApp con el folio, el nombre, la ubicación y el total.
+    const ISO_C = document.querySelector("#iso") ? document.querySelector("#iso").getAttribute("d") : "";
+    const escC = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+    const pesosC = (n) => "$" + Math.round(+n || 0).toLocaleString("es-MX");
+    const fechaC = (iso) => new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+    const TIPOS_C = { terreno: "Terreno o desarrollo con lotes", casa: "Casa o departamento", negocio: "Hotel o negocio", otro: "Otro" };
+    const waC = (q) => "https://wa.me/" + q.whatsapp + "?text=" + encodeURIComponent(q.mensaje || "");
+    let ultimaC = null;
+    function filasC(q) { return q.conceptos.concat(q.ajuste ? [[q.ajuste === "minimo" ? "Ajuste al mínimo del servicio" : "Tope máximo del servicio", q.total - q.subtotal]] : []); }
+    function mostrarCotizacion(f, q) {
+      const v = document.getElementById("cot-cotz"), lugar = [f.ciudad, f.pais].filter(Boolean).join(", ");
+      v.innerHTML = '<h3>Tu cotización tentativa</h3><div class="cotz" id="cotz">' +
+        '<div class="cotz-cab"><div class="cotz-marca"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg><b>MOZARI</b></div><div class="cotz-doc"><span>COTIZACIÓN TENTATIVA</span><br>Folio <b id="cotz-folio">' + escC(q.folio) + "</b> · " + escC(fechaC(q.fecha)) + "</div></div>" +
+        '<div class="cotz-cuerpo"><dl class="cotz-datos"><dt>Para</dt><dd>' + escC(f.nombre) + "</dd><dt>Proyecto</dt><dd>" + TIPOS_C[f.tipo] + "</dd><dt>Ubicación</dt><dd>" + escC(lugar) + "</dd><dt>Lotes</dt><dd>" + q.lotes.toLocaleString("es-MX") + "</dd></dl>" +
+        '<table class="cotz-tabla">' + filasC(q).map(([c, m]) => "<tr><td>" + escC(c) + "</td><td>" + pesosC(m) + "</td></tr>").join("") + "</table>" +
+        '<div class="cotz-total"><span>Total tentativo<br>+ IVA · viáticos aparte</span><b id="cotz-total">' + pesosC(q.total) + " <small>" + q.moneda + "</small></b></div>" +
+        '<div class="cotz-pago"><div>Anticipo ' + q.pctAnticipo + "% para agendar<b>" + pesosC(q.anticipo) + "</b></div><div>Contraentrega " + (100 - q.pctAnticipo) + "% del tour<b>" + pesosC(q.contraentrega) + "</b></div></div>" +
+        '<p class="cotz-junta">Te invitamos a una <b>junta de revisión, valoración y planeación</b> de tu proyecto: ahí se confirma el costo final. Entrega: <b>esta misma semana</b>.</p>' +
+        '<p class="cotz-letra">Precios + IVA. Viáticos aparte. Vigencia ' + q.vigencia + " días (hasta el " + escC(fechaC(q.vence)) + ").</p></div></div>" +
+        '<div class="cotz-acc"><a class="btn btn-wa" id="cotz-wa" href="' + escC(waC(q)) + '" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2.2-.6.2-1.1.1-1.2l-.4-.2Z"/></svg>Seguir con el encargado de producción</a><button class="btn btn-gris" type="button" id="cotz-guardar">Guardar como imagen</button></div>';
+      form.hidden = true; listo.hidden = true; v.hidden = false; dlg.scrollTop = 0; v.scrollIntoView({ block: "start" });
+      ultimaC = { f, q };
+    }
+    // La cotización como imagen (PNG), dibujada aquí mismo con la misma membresía
+    async function imagenCotizacion({ f, q }) {
+      try { await document.fonts.ready; await Promise.all(["400", "500", "600"].map((w) => document.fonts.load(w + " 20px Poppins"))); } catch (e) { /* sigue con la letra que haya */ }
+      const W = 900, S = 2, P = 44, filas = filasC(q), H = 762 + filas.length * 44;
+      const cv = document.createElement("canvas"); cv.width = W * S; cv.height = H * S;
+      const x = cv.getContext("2d"); x.scale(S, S);
+      const T = (t, X, Y, peso, tam, color, al) => { x.font = peso + " " + tam + "px Poppins, Arial, sans-serif"; x.fillStyle = color; x.textAlign = al || "left"; x.fillText(t, X, Y); };
+      const rr = (X, Y, w, h, r, color) => { x.fillStyle = color; x.beginPath(); x.roundRect(X, Y, w, h, r); x.fill(); };
+      x.fillStyle = "#fff"; x.fillRect(0, 0, W, H);
+      x.fillStyle = "#0B0B0B"; x.fillRect(0, 0, W, 150);
+      if (ISO_C) { x.save(); x.translate(P, 46); x.scale(58 / 613, 58 / 613); x.fillStyle = "#D5FF40"; x.fill(new Path2D(ISO_C)); x.restore(); }
+      x.letterSpacing = "8px"; T("MOZARI", P + 76, 86, "500", 24, "#fff"); x.letterSpacing = "0px";
+      rr(W - P - 248, 40, 248, 30, 7, "#D5FF40"); T("COTIZACIÓN TENTATIVA", W - P - 124, 61, "600", 15, "#0B0B0B", "center");
+      T("Folio " + q.folio, W - P, 98, "600", 17, "#fff", "right"); T(fechaC(q.fecha), W - P, 122, "400", 15, "#BDBDB5", "right");
+      let y = 196;
+      [["Para", f.nombre], ["Proyecto", TIPOS_C[f.tipo]], ["Ubicación", [f.ciudad, f.pais].filter(Boolean).join(", ")], ["Lotes", q.lotes.toLocaleString("es-MX")]].forEach(([k, v]) => { T(k, P, y, "400", 17, "#6B6B66"); T(String(v).slice(0, 60), P + 130, y, "600", 17, "#0B0B0B"); y += 30; });
+      y += 18;
+      filas.forEach(([c, m]) => { T(c, P, y, "400", 18, "#0B0B0B"); T(pesosC(m), W - P, y, "600", 18, "#0B0B0B", "right"); x.fillStyle = "#ECECE6"; x.fillRect(P, y + 16, W - 2 * P, 1.5); y += 44; });
+      y += 10; rr(P, y, W - 2 * P, 92, 16, "#0B0B0B");
+      T("Total tentativo", P + 24, y + 40, "500", 18, "#BDBDB5"); T("+ IVA · viáticos aparte", P + 24, y + 66, "400", 15, "#BDBDB5");
+      T(q.moneda, W - P - 24, y + 58, "500", 16, "#fff", "right");
+      x.font = "500 16px Poppins, Arial, sans-serif"; const mm = x.measureText(q.moneda).width; T(pesosC(q.total), W - P - 34 - mm, y + 60, "600", 40, "#D5FF40", "right");
+      y += 92 + 22;
+      const bw = (W - 2 * P - 14) / 2;
+      [["Anticipo " + q.pctAnticipo + "% para agendar", q.anticipo], ["Contraentrega " + (100 - q.pctAnticipo) + "% del tour", q.contraentrega]].forEach(([k, v], i) => { const X = P + i * (bw + 14); x.strokeStyle = "#E2E2DA"; x.lineWidth = 1.5; x.beginPath(); x.roundRect(X, y, bw, 84, 14); x.stroke(); T(k, X + 18, y + 32, "400", 15, "#6B6B66"); T(pesosC(v), X + 18, y + 64, "600", 24, "#0B0B0B"); });
+      y += 84 + 22; rr(P, y, W - 2 * P, 92, 14, "#F3F4F1");
+      T("Te invitamos a una junta de revisión, valoración y planeación de tu", P + 20, y + 34, "400", 16, "#0B0B0B"); T("proyecto: ahí se confirma el costo final. Entrega: esta misma semana.", P + 20, y + 62, "400", 16, "#0B0B0B");
+      y += 92 + 34; T("Precios + IVA. Viáticos aparte. Vigencia " + q.vigencia + " días (hasta el " + fechaC(q.vence) + ").", P, y, "400", 14, "#8A8F84");
+      T("mozari.app", W - P, y + 30, "600", 15, "#0B0B0B", "right");
+      return await new Promise((ok) => cv.toBlob(ok, "image/png"));
+    }
+    dlg.addEventListener("click", async (ev) => {
+      if (!ev.target.closest("#cotz-guardar") || !ultimaC) return;
+      const b = ev.target.closest("#cotz-guardar"); b.disabled = true; b.textContent = "Preparando…";
+      try {
+        const blob = await imagenCotizacion(ultimaC), nombre = "Cotizacion-" + ultimaC.q.folio + ".png", file = new File([blob], nombre, { type: "image/png" });
+        if (navigator.canShare && matchMedia("(pointer: coarse)").matches && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "Cotización " + ultimaC.q.folio }).catch(() => {}); }
+        else { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 30000); }
+      } catch (e) { /* si no se pudo, sigue en pantalla para captura */ }
+      b.disabled = false; b.textContent = "Guardar como imagen";
+    });
     form.addEventListener("submit", async (ev) => {
       ev.preventDefault(); err.hidden = true;
       const f = Object.fromEntries(new FormData(form).entries());
-      const falta = !f.tipo ? "Elige qué quieres mostrar" : !f.pais ? "Elige tu país" : !f.ciudad.trim() ? "Escribe tu ciudad" : !f.nombre.trim() ? "Escribe tu nombre" : f.whatsapp.replace(/\D/g, "").length < 8 ? "Escribe tu WhatsApp con lada" : !/^\S+@\S+\.\S+$/.test(f.correo) ? "Revisa tu correo" : "";
+      const falta = !f.tipo ? "Elige qué quieres mostrar" : f.tipo === "terreno" && !(+String(f.lotes || "").replace(/\D/g, "") >= 1) ? "Escribe cuántos lotes tiene (aproximado)" : !f.pais ? "Elige tu país" : !f.ciudad.trim() ? "Escribe tu ciudad" : !f.nombre.trim() ? "Escribe tu nombre" : f.whatsapp.replace(/\D/g, "").length < 8 ? "Escribe tu WhatsApp con lada" : !/^\S+@\S+\.\S+$/.test(f.correo) ? "Revisa tu correo" : "";
       if (falta) { err.textContent = falta; err.hidden = false; return; }
       btn.disabled = true; btn.textContent = "Enviando…";
       try {
         const r = await fetch("cotizar", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(Object.assign(f, { tiempo: Date.now() - abierto })) });
         const d = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(d.error || "No se pudo enviar. Intenta de nuevo o escríbenos a hola@mozari.app");
-        document.getElementById("cot-gracias").textContent = "¡Listo, " + f.nombre.trim().split(/\s+/)[0] + "!";
-        form.reset(); form.hidden = true; listo.hidden = false;
+        const q = d.cotizacion;
+        if (q && q.conPrecio) { mostrarCotizacion(f, q); form.reset(); document.getElementById("cot-lotes").hidden = true; }
+        else {
+          document.getElementById("cot-gracias").textContent = "¡Listo, " + f.nombre.trim().split(/\s+/)[0] + "!";
+          document.getElementById("cot-folio-txt").textContent = q && q.folio ? "Folio " + q.folio : "";
+          const w = document.getElementById("cot-wa-sin"); w.hidden = !(q && q.whatsapp); if (q && q.whatsapp) w.href = waC(q);
+          form.reset(); document.getElementById("cot-lotes").hidden = true; form.hidden = true; listo.hidden = false;
+        }
       } catch (e) { err.textContent = e.message; err.hidden = false; }
       btn.disabled = false; btn.textContent = "Enviar solicitud";
     });

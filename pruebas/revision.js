@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -264,7 +264,9 @@ async function capasPesadas(p) {
     // Pedido de Amar (11 nov 2026): «Contrata tu tour 360» hasta abajo del sitio. Mapa de Latinoamérica con las 95 ciudades
     // de la red de operadores (de su hoja COLEGAS: solo ciudad y país), 17 banderas, fotos de su carpeta de marca y la
     // solicitud de cotización: le llega al cliente un correo, al dueño un aviso y queda en el Panel de dueño → Solicitudes.
-    await paso("Contrata tu tour 360: mapa con 95 ciudades y 17 países; la solicitud llega al panel y al cliente su correo", async () => {
+    // Pedido de Amar (17 nov 2026): al enviar, el cliente ve al instante su «Cotización tentativa» membretada (solo terreno o
+    // desarrollo con lotes), la guarda como imagen y sigue por WhatsApp con el encargado de producción. Nunca hay tabla pública.
+    await paso("Contrata tu tour 360: mapa, solicitud y cotización tentativa al instante (con folio, total + IVA, 50/50, WhatsApp e imagen); sin precio si no es terreno", async () => {
       const v = await pagina(null); await v.goto(ESTUDIO + "/"); await v.waitForTimeout(1200);
       await v.$eval("#contrata", (e) => e.scrollIntoView()); await v.waitForTimeout(1500);
       exige((await v.$$("#puntos-mapa circle")).length === 95, "el mapa no trae las 95 ciudades");
@@ -272,18 +274,42 @@ async function capasPesadas(p) {
       await v.hover('#puntos-mapa circle[data-c^="Lima"]'); await v.waitForTimeout(300);
       exige(/Lima, Perú/.test(await v.textContent("#mapa-dato")), "al pasar por un punto no sale su ciudad");
       exige(!/\+?\d{7,}|@/.test(await v.$eval("#mapa", (e) => e.innerHTML)), "el mapa trae datos de los operadores (teléfono o correo)");
+      // Antes de enviar no hay precios en ninguna parte del sitio
+      const html0 = await v.content();
+      exige(!/Levantamiento con dron|Lotificación \(|por lote|\$3,500|\$8,000|\$25,000/.test(html0), "el sitio muestra tarifas antes de pedir la cotización");
       await v.click("[data-cotizar]"); await v.waitForTimeout(500);
-      exige(await v.isVisible("#dlg-cot") && await v.isVisible("#cot-form") && !(await v.isVisible("#cot-listo")), "no abre el formulario de cotización");
+      exige(await v.isVisible("#dlg-cot") && await v.isVisible("#cot-form") && !(await v.isVisible("#cot-listo")) && !(await v.isVisible("#cot-cotz")), "no abre el formulario de cotización");
       await v.click("#cot-enviar"); await v.waitForTimeout(300);
       exige(/Elige qué quieres mostrar/.test(await v.textContent("#cot-error")), "sin datos no avisa qué falta");
       const correo = "cliente-" + Date.now() + "@prueba.mx";
       await v.click('.opciones input[value="terreno"] + span'); await v.selectOption('#cot-form [name="pais"]', "México");
+      exige(await v.isVisible("#cot-lotes"), "en terreno no pregunta cuántos lotes");
       await v.fill('#cot-form [name="ciudad"]', "León"); await v.fill('#cot-form [name="tamano"]', "5 hectáreas, 80 lotes");
       await v.fill('#cot-form [name="nombre"]', "Ana Prueba"); await v.fill('#cot-form [name="whatsapp"]', "+52 477 123 4567"); await v.fill('#cot-form [name="correo"]', correo);
       await v.fill('#cot-form [name="mas"]', "Ya tengo el plano en PDF"); await v.waitForTimeout(2600);
+      await v.click("#cot-enviar"); await v.waitForTimeout(400);
+      exige(/cuántos lotes/.test(await v.textContent("#cot-error")), "sin lotes no avisa que faltan");
+      await v.fill('#cot-form [name="lotes"]', "300");
       if (process.env.CAPTURAS) await v.screenshot({ path: path.join(process.env.CAPTURAS, "contrata-formulario.png") });
       await v.click("#cot-enviar"); await v.waitForTimeout(2500);
-      exige(await v.isVisible("#cot-listo") && /Listo, Ana/.test(await v.textContent("#cot-listo")), "no confirmó la solicitud: " + (await v.textContent("#cot-error").catch(() => "")));
+      exige(await v.isVisible("#cot-cotz") && !(await v.isVisible("#cot-form")), "no salió la cotización tentativa: " + (await v.textContent("#cot-error").catch(() => "")));
+      const cz = await v.textContent("#cot-cotz"), folio = await v.textContent("#cotz-folio");
+      // 3,500 + 3,000 + 300 × 20 = 12,500 (entre 8,000 y 25,000); anticipo y contraentrega de 6,250
+      exige(/^MZ-\d{6}-[A-Z0-9]{4}$/.test(folio) && /COTIZACIÓN TENTATIVA/.test(cz) && /Ana Prueba/.test(cz) && /León, México/.test(cz) && /\$12,500/.test(cz) && (cz.match(/\$6,250/g) || []).length === 2 &&
+        /\+ IVA/.test(cz) && /viáticos aparte/i.test(cz) && /Vigencia 7 días/.test(cz) && /junta de revisión, valoración y planeación/.test(cz) && /esta misma semana/.test(cz) && /Levantamiento con dron\s*\$3,500/.test(cz) && /300 lotes × \$20\)\s*\$6,000/.test(cz), "la cotización no trae lo que debe: " + cz.replace(/\s+/g, " ").slice(0, 400));
+      const wa = await v.getAttribute("#cotz-wa", "href"), msg = decodeURIComponent((wa.split("?text=")[1] || ""));
+      exige(/^https:\/\/wa\.me\/524777217228\?text=/.test(wa) && msg.includes(folio) && /Ana Prueba/.test(msg) && /León, México/.test(msg) && /300 lotes/.test(msg) && /\$12,500/.test(msg), "el WhatsApp no lleva el folio, nombre, ubicación, lotes y total: " + msg);
+      exige(/Seguir con el encargado de producción/.test(await v.textContent("#cotz-wa")), "falta el botón «Seguir con el encargado de producción»");
+      if (process.env.CAPTURAS) await v.screenshot({ path: path.join(process.env.CAPTURAS, "cotizacion-compu.png") });
+      // En un celular se lee completa, sin salirse de la pantalla
+      await v.setViewportSize({ width: 390, height: 844 }); await v.waitForTimeout(500);
+      exige(await v.evaluate(() => [...document.querySelectorAll("#cot-cotz *")].every((e) => e.getBoundingClientRect().right <= innerWidth + 1)), "en el celular la cotización se sale de la pantalla");
+      if (process.env.CAPTURAS) await v.screenshot({ path: path.join(process.env.CAPTURAS, "cotizacion-cel.png") });
+      await v.setViewportSize({ width: 1400, height: 900 }); await v.waitForTimeout(300);
+      const [dl] = await Promise.all([v.waitForEvent("download", { timeout: 15000 }), v.click("#cotz-guardar")]);
+      const png = fs.readFileSync(await dl.path());
+      exige(dl.suggestedFilename() === "Cotizacion-" + folio + ".png" && png.slice(1, 4).toString() === "PNG" && png.readUInt32BE(16) === 1800 && png.length > 20000, "no se guardó la cotización como imagen: " + dl.suggestedFilename() + " " + png.length);
+      if (process.env.CAPTURAS) fs.copyFileSync(await dl.path(), path.join(process.env.CAPTURAS, "cotizacion-imagen.png"));
       // Robots: el campo escondido lleno se contesta «ok» pero no se guarda
       const trampa = await v.evaluate(() => fetch("cotizar", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tipo: "casa", pais: "Perú", ciudad: "Lima", nombre: "Robot", whatsapp: "+51 999 999 999", correo: "robot@prueba.mx", sitio: "http://spam" }) }).then((r) => r.status));
       exige(trampa === 200, "la trampa para robots no respondió");
@@ -291,18 +317,48 @@ async function capasPesadas(p) {
       // Correo al cliente (Email Service simulado: queda en el registro de wrangler)
       await espera(1500);
       const reg = fs.readFileSync(path.join(DATOS, "worker-estudio.log"), "utf8").split("send_email binding called").slice(1).filter((b) => b.includes("To: " + correo));
-      exige(reg.length === 1 && /recibimos tu solicitud/i.test(reg[0]), "al cliente no le llegó su correo de que se recibió");
+      exige(reg.length === 1 && /cotizaci=C3=B3n tentativa|cotización tentativa/i.test(reg[0]), "al cliente no le llegó su correo con la cotización tentativa");
+      // Otro tipo (casa): sin precio, «en minutos» y el mismo botón de WhatsApp (en el celular)
+      const m = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false })); await m.goto(ESTUDIO + "/"); await m.waitForTimeout(1000);
+      await m.click("[data-cotizar]"); await m.waitForTimeout(500);
+      await m.click('.opciones input[value="casa"] + span'); exige(!(await m.isVisible("#cot-lotes")), "en casa pregunta lotes");
+      await m.selectOption('#cot-form [name="pais"]', "Honduras"); await m.fill('#cot-form [name="ciudad"]', "Tegucigalpa");
+      await m.fill('#cot-form [name="nombre"]', "Luis Casa"); await m.fill('#cot-form [name="whatsapp"]', "+504 9999 8888"); await m.fill('#cot-form [name="correo"]', "casa-" + Date.now() + "@prueba.mx");
+      await m.waitForTimeout(3100); await m.click("#cot-enviar"); await m.waitForTimeout(2500);
+      const lt = await m.textContent("#cot-listo").catch(() => ""), waC = await m.getAttribute("#cot-wa-sin", "href").catch(() => "");
+      exige(await m.isVisible("#cot-listo") && /en minutos/.test(lt) && /MZ-\d{6}-/.test(lt) && !/\$/.test(await m.textContent("#dlg-cot")) && /^https:\/\/wa\.me\/524777217228\?text=/.test(waC) && /Luis Casa/.test(decodeURIComponent(waC)) && /Tegucigalpa, Honduras/.test(decodeURIComponent(waC)), "una casa no debe llevar precio y sí el WhatsApp: " + lt.slice(0, 160));
+      if (process.env.CAPTURAS) await m.screenshot({ path: path.join(process.env.CAPTURAS, "cotizacion-sin-precio-cel.png") });
+      const anchoBien = await m.evaluate(() => [...document.querySelectorAll("#cot-listo > *")].every((e) => e.getBoundingClientRect().right <= innerWidth + 1));
+      exige(anchoBien, "en el celular algo se sale de la pantalla en la confirmación");
+      await m.context().close();
+      // Topes: pocos lotes dan el mínimo y muchísimos el máximo (viáticos aparte)
+      const pide = (lotes, nombre) => fetch(ESTUDIO + "/cotizar", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tipo: "terreno", lotes, pais: "México", ciudad: "Silao", nombre, whatsapp: "+52 477 000 0000", correo: nombre.toLowerCase().replace(/\s/g, "") + "@prueba.mx" }) }).then((r) => r.json());
+      const qmin = (await pide(10, "Min Prueba")).cotizacion, qmax = (await pide(5000, "Max Prueba")).cotizacion;
+      exige(qmin.total === 8000 && qmin.ajuste === "minimo" && qmin.anticipo === 4000 && qmax.total === 25000 && qmax.ajuste === "maximo" && qmax.contraentrega === 12500, "los topes no cuadran: " + JSON.stringify([qmin.total, qmax.total]));
+      // El correo que le llega al dueño trae la misma cotización
+      const { htmlCotizacion, textoCotizacion } = await import(path.join(__dirname, "../nube/correos.js"));
+      const dd = await pagina(DUENO), guardada = (await dd.evaluate(() => fetch("api/admin/cotizaciones").then((r) => r.json()))).cotizaciones.find((x) => x.nombre === "Ana Prueba"); await dd.context().close();
+      const tx = textoCotizacion(guardada, guardada.cotizacion), hx = htmlCotizacion(guardada, guardada.cotizacion);
+      exige(tx.includes(folio) && /TOTAL TENTATIVO: \$12,500 MXN \+ IVA/.test(tx) && /Anticipo 50% para agendar: \$6,250/.test(tx) && hx.includes(folio) && hx.includes("#D5FF40") && hx.includes("$12,500"), "el correo del dueño no trae la misma cotización");
       // Panel de dueño → Solicitudes
       const d = await pagina(DUENO);
       const l = (await d.evaluate(() => fetch("api/admin/cotizaciones").then((r) => r.json()))).cotizaciones;
-      exige(l.length === 1 && l[0].correo === correo && l[0].estado === "nueva" && l[0].ciudad === "León" && !l.some((x) => x.nombre === "Robot"), "la solicitud no quedó guardada bien: " + JSON.stringify(l).slice(0, 200));
+      const ana = l.find((x) => x.correo === correo);
+      exige(l.length === 4 && ana && ana.estado === "nueva" && ana.ciudad === "León" && ana.lotes === 300 && ana.cotizacion && ana.cotizacion.total === 12500 && !l.some((x) => x.nombre === "Robot"), "la solicitud no quedó guardada bien: " + JSON.stringify(l).slice(0, 200));
       await d.click('#nav button:has-text("Mis Tours")'); await d.waitForTimeout(800);
       await d.click("#ver-cuentas"); await d.waitForTimeout(1200);
       await d.click('[data-dueno="solicitudes"]'); await d.waitForTimeout(1200);
-      exige(/León, México/.test(await d.textContent("#cuentas")) && await d.$('#cuentas a[href^="https://wa.me/524771234567"]'), "la solicitud no sale en el Panel de dueño con su WhatsApp");
+      exige(/León, México/.test(await d.textContent("#cuentas")) && await d.$('#cuentas a[href^="https://wa.me/524771234567"]') && (await d.textContent("#cuentas")).includes(folio), "la solicitud no sale en el Panel de dueño con su WhatsApp y su folio");
+      // Tarifas editables en el panel
+      await d.click(".tarifas-cot summary"); await d.waitForTimeout(300);
+      exige((await d.inputValue('[data-tarifa="dron"]')) === "3500" && (await d.inputValue('[data-tarifa="porLote"]')) === "20" && (await d.inputValue('[data-tarifa="whatsapp"]')) === "524777217228", "las tarifas no salen en el panel");
       if (process.env.CAPTURAS) await d.screenshot({ path: path.join(process.env.CAPTURAS, "panel-solicitudes.png") });
-      await d.selectOption("[data-sol]", "cotizada"); await d.waitForTimeout(1200);
-      exige((await d.evaluate(() => fetch("api/admin/cotizaciones").then((r) => r.json()))).cotizaciones[0].estado === "cotizada", "no se guardó el estado de la solicitud");
+      await d.fill('[data-tarifa="porLote"]', "25"); await d.click("[data-tarifas-guardar]"); await d.waitForTimeout(1200);
+      exige((await d.evaluate(() => fetch("api/admin/cotizacion-tarifas").then((r) => r.json()))).tarifas.porLote === 25, "no se guardó la tarifa nueva");
+      await d.evaluate(() => fetch("api/admin/cotizacion-tarifas", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ porLote: 20 }) }));
+      exige([401, 403].includes((await fetch(ESTUDIO + "/api/admin/cotizacion-tarifas")).status), "las tarifas se pueden leer sin ser el dueño");
+      await d.selectOption('[data-sol="' + ana.id + '"]', "cotizada"); await d.waitForTimeout(1200);
+      exige((await d.evaluate(() => fetch("api/admin/cotizaciones").then((r) => r.json()))).cotizaciones.find((x) => x.id === ana.id).estado === "cotizada", "no se guardó el estado de la solicitud");
       exige(!d.errs.length, "errores: " + d.errs.join(" | ").slice(0, 160));
       await d.context().close();
     });
@@ -3981,6 +4037,73 @@ async function capasPesadas(p) {
         exige(!(await u.$("#ver-tutorial")), "una cuenta sin la función ya ve el tutorial (debe nacer Solo yo)");
       } finally {
         await u.context().close(); await n.context().close();
+      }
+    });
+    // Pedido de Amar (17 nov 2026): abrir el Laboratorio a todos. La landing en la cuenta de prueba sale con la marca de agua
+    // (como su tour) y con licencia sale limpia. Y en las licencias, el ícono de la pestaña es el del cliente (o uno neutro), nunca el de Mozari.
+    await paso("Para todos: landing con marca de agua en cuenta de prueba y limpia con licencia; ícono propio de la pestaña en las licencias", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const n = await pagina(DUENO), ts = Date.now(), cG = "prueba-ld-" + ts + "@prueba.mx", cP = "pro-icono-" + ts + "@prueba.mx";
+      let g = null, pr = null;
+      const conLanding = async (p, id) => { const d = (await api(p, "api/tours/" + id)).d; d.proyecto.landing = Object.assign({}, d.proyecto.landing, { activa: true, plantilla: "propiedad", pagos: { precio: "2500000", m2: "180" }, contacto: { whatsapp: "4770000000" } }); exige((await api(p, "api/tours/" + id, J("PUT", d))).s === 200, "no se guardó la landing"); };
+      const publicar = async (p, id) => exige((await api(p, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+      const iconos = (t) => t.evaluate(() => [...document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')].map((l) => l.getAttribute("href")));
+      try {
+        exige((await api(n, "api/admin/laboratorio/landing", J("PUT", { modo: "todos" }))).s === 200, "no se pudo abrir la landing a todos");
+        g = await pagina(cG); pr = await pagina(cP);
+        // Cuenta de prueba: puede usarla, con la marca de agua
+        await nuevoTour(g, "Casa de prueba"); const idG = await idTour(g);
+        await g.click('#nav button:has-text("Publicar")'); await g.waitForTimeout(600);
+        await g.click('#subtabs button:has-text("Landing")'); await g.waitForTimeout(1500); await pasarGuias(g);
+        exige(await g.isVisible("#ld-marca-nota"), "la cuenta de prueba no ve que su landing lleva la marca de Mozari");
+        await g.click('#nav button:has-text("Interfaz")'); await g.waitForTimeout(900); await pasarGuias(g);
+        exige(/sale el de Mozari/.test(await g.textContent("#sk-icono-grupo").catch(() => "")) && !(await g.$("#sk-icono-archivo")), "la cuenta de prueba puede cambiar el ícono de la pestaña");
+        await conLanding(g, idG); await publicar(g, idG);
+        const lg = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
+        await lg.goto(TOURS + "/" + idG + "/landing"); await lg.waitForTimeout(2500);
+        exige(await lg.isVisible(".hecho-mz") && (await lg.$(".agua-mz")) && /Hecho con Mozari/.test(await lg.textContent(".hecho-mz")), "la landing de la cuenta de prueba no lleva la marca de agua");
+        if (process.env.CAPTURAS) await lg.screenshot({ path: path.join(process.env.CAPTURAS, "landing-prueba-marca.png") });
+        exige(!(await iconos(lg)).some((h) => /archivos\/|^data:/.test(h)), "la cuenta de prueba no debe llevar ícono propio: " + (await iconos(lg)).join(","));
+        await lg.goto(TOURS + "/" + idG + "/"); await lg.waitForTimeout(1500);
+        exige((await iconos(lg)).some((h) => /favicon/.test(h)), "el tour de la cuenta de prueba perdió el ícono de Mozari");
+        await lg.context().close();
+        // Licencia Pro: landing limpia y su ícono en la pestaña
+        const cu = (await api(n, "api/admin/cuentas")).d.cuentas.find((c) => c.email === cP);
+        exige(cu && (await api(n, "api/admin/cuentas/" + cu.uid, J("PUT", { plan: "pro" }))).s === 200, "no se pudo pasar la cuenta a Pro");
+        await pr.reload(); await pr.waitForTimeout(1500);
+        await nuevoTour(pr, "Casa con licencia"); const idP = await idTour(pr);
+        await pr.click('#nav button:has-text("Interfaz")'); await pr.waitForTimeout(1000); await pasarGuias(pr);
+        exige(await pr.$("#sk-icono-archivo"), "la cuenta Pro no puede subir su ícono");
+        await pr.evaluate(async () => {
+          const c = document.createElement("canvas"); c.width = 600; c.height = 400; const x = c.getContext("2d"); x.fillStyle = "#C6A15E"; x.fillRect(0, 0, 600, 400); x.fillStyle = "#0E3A40"; x.fillRect(200, 100, 200, 200);
+          const b = await new Promise((o) => c.toBlob(o, "image/png")), dt = new DataTransfer(); dt.items.add(new File([b], "icono.png", { type: "image/png" }));
+          const i = document.getElementById("sk-icono-archivo"); i.files = dt.files; i.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+        await pr.waitForTimeout(2500);
+        if (process.env.CAPTURAS) { await pr.$eval("#sk-icono-grupo", (e) => e.scrollIntoView({ block: "center" })); await pr.screenshot({ path: path.join(process.env.CAPTURAS, "icono-interfaz.png") }); }
+        const dP = (await api(pr, "api/tours/" + idP)).d;
+        exige(/^archivos\/icono-[a-z0-9]+\.png$/.test(dP.skin.icono || ""), "no se guardó el ícono: " + dP.skin.icono);
+        await conLanding(pr, idP); await publicar(pr, idP);
+        const t = await pagina(null);
+        for (const ruta of ["/", "/landing"]) {
+          await t.goto(TOURS + "/" + idP + ruta); await t.waitForTimeout(2000);
+          const hs = await iconos(t);
+          exige(hs.length && hs.every((h) => h.includes("archivos/icono-")) && !hs.some((h) => /favicon|apple-touch-icon\.png/.test(h)), "en " + ruta + " no sale su ícono (o queda el de Mozari): " + hs.join(","));
+          if (ruta === "/landing") exige(!(await t.$(".agua-mz")) && !(await t.$(".hecho-mz")), "la landing con licencia lleva la marca de Mozari");
+        }
+        const ic = await t.request.get(TOURS + "/" + idP + "/" + dP.skin.icono);
+        exige(ic.status() === 200 && /image\/png/.test(ic.headers()["content-type"] || ""), "el ícono no se puede ver: " + ic.status());
+        // Sin ícono propio: uno neutro, tampoco el de Mozari
+        await pr.click("#sk-icono-quitar"); await pr.waitForTimeout(1200); await publicar(pr, idP);
+        await t.goto(TOURS + "/" + idP + "/"); await t.waitForTimeout(1500);
+        const hn = await iconos(t);
+        exige(hn.length === 1 && /^data:image\/svg\+xml/.test(hn[0]), "sin ícono propio no sale el neutro: " + hn.join(","));
+        await t.context().close();
+        exige(!g.errs.length && !pr.errs.length, "errores en el estudio: " + g.errs.concat(pr.errs).join(" | ").slice(0, 200));
+      } finally {
+        await api(n, "api/admin/laboratorio/landing", J("PUT", { modo: "yo" })).catch(() => {});
+        if (g) await g.context().close(); if (pr) await pr.context().close(); await n.context().close();
       }
     });
     // Pedido de Amar (16 nov 2026): las métricas de los tours publicados de los usuarios, en su Panel de dueño

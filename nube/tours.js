@@ -14,6 +14,16 @@ const pagina = (titulo, texto) => `<!doctype html><html lang="es"><head><meta ch
 const INICIO = pagina("MOZARI", "Abre el link completo de tu tour.");
 const NO_PUBLICADO = pagina("Tour no disponible", "Este tour todavía no está publicado.");
 const EN_PAUSA = pagina("Tour no disponible", "Este tour no está disponible por ahora.");
+// Ícono de la pestaña (pedido de Amar, nov 2026): en las licencias de pago no queda rastro de Mozari. Si el cliente
+// subió su ícono (Interfaz), sale ese; si no, uno neutro (una esfera de líneas). En la cuenta de prueba, el de Mozari.
+const ICONO_NEUTRO = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#151515"/><g fill="none" stroke="#fff" stroke-width="3.2"><circle cx="32" cy="32" r="17"/><ellipse cx="32" cy="32" rx="7.5" ry="17"/><path d="M15 32h34"/></g></svg>');
+export function iconoPropio(p, base) {
+  if (!p || !p.proyecto || p.proyecto.marcaMozari !== false) return null;
+  const i = p.skin && p.skin.icono;
+  return typeof i === "string" && /^archivos\/[A-Za-z0-9._-]+\.(png|jpe?g|webp|svg)$/.test(i) && rutaValida(i) ? base + i : ICONO_NEUTRO;
+}
+const conIcono = (rw, icono) => !icono ? rw : rw.on('link[rel="icon"]', { element: (el) => el.remove() }).on('link[rel="apple-touch-icon"]', { element: (el) => el.remove() })
+  .on("head", { element: (el) => el.append('<link rel="icon" href="' + icono.replace(/"/g, "%22") + '">' + (icono.startsWith("data:") ? "" : '<link rel="apple-touch-icon" href="' + icono.replace(/"/g, "%22") + '">'), { html: true }) });
 const html = (cuerpo, status) => new Response(cuerpo, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
 
 export default {
@@ -56,6 +66,7 @@ export default {
         .on('meta[property="og:title"]', meta(nombre)).on('meta[property="og:description"]', meta(desc)).on('meta[name="description"]', meta(desc))
         .on('meta[property="og:url"]', meta(base + "landing"));
       if (imagen) rw = rw.on('meta[property="og:image"]', meta(imagen));
+      rw = conIcono(rw, iconoPropio(p, base));
       const out = rw.transform(r), h = new Headers(out.headers);
       h.set("cache-control", "no-cache"); h.set("content-type", "text/html; charset=utf-8");
       return new Response(out.body, { status: 200, headers: h });
@@ -91,6 +102,7 @@ export default {
       // Pantalla de carga con el logo del proyecto (si el plan y el Laboratorio lo permiten)
       const viejo = !!(p && p.proyecto && p.proyecto.cargaPropia === undefined && p.proyecto.marcaMozari === false);
       rw = conCarga(rw, p, viejo && (await cargaEnViejos(env).catch(() => false)));
+      rw = conIcono(rw, iconoPropio(p, url.origin + "/" + id + "/"));
       const r = rw.transform(pagina);
       const h = new Headers(r.headers);
       h.set("cache-control", "no-cache");
