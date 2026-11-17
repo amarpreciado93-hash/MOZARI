@@ -6,7 +6,7 @@
 //
 // Este Worker no tiene ninguna forma de escribir ni borrar: aunque alguien lo intente, no puede.
 
-import { error, rutaValida, servirR2, ID_TOUR, conCarga, cargaEnViejos } from "./comun.js";
+import { error, rutaValida, servirR2, ID_TOUR, conCarga, cargaEnViejos, rutasEdicion } from "./comun.js";
 
 const pagina = (titulo, texto) => `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${titulo}</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0B0B0B;color:#F2F5EC;font:15px/1.5 system-ui,sans-serif;text-align:center}p{color:#9CA38F}</style></head>
@@ -112,15 +112,19 @@ export default {
     if (ruta === "proyecto.json") return servirR2(env, request, "publicado/" + id + "/proyecto.json", "no-cache");
     // Solo se sirven piezas de esferas y archivos del tour, nunca el borrador
     if (!ruta.startsWith("escenas/") && !ruta.startsWith("archivos/")) return error(404, "No existe");
-    if (ruta.endsWith(".json") || request.headers.has("range")) return servirR2(env, request, "tours/" + id + "/" + ruta, ruta.endsWith(".json") ? "no-cache" : "public, max-age=31536000, immutable");
+    // Esfera editada (piso retocado o ajustes de imagen): cada pieza sale de lo editado o, si no cambió, del original
+    const ed = rutasEdicion(ruta);
+    const claveDe = async () => { if (!ed) return "tours/" + id + "/" + ruta; for (const c of ed.slice(0, -1)) if (await env.R2.head("tours/" + id + "/" + c)) return "tours/" + id + "/" + c; return "tours/" + id + "/" + ed[ed.length - 1]; };
+    if (ruta.endsWith(".json") || request.headers.has("range")) return servirR2(env, request, await claveDe(), ruta.endsWith(".json") ? "no-cache" : "public, max-age=31536000, immutable");
     // Piezas de las esferas: nunca cambian. Se guardan en la caché de Cloudflare cerca del visitante
     // (la segunda vez ya no se pide a R2) y, si R2 falla un instante, se reintenta antes de rendirse.
     const cache = caches.default, llave = new Request(url.origin + url.pathname, { method: "GET" });
     const guardada = await cache.match(llave);
     if (guardada) return guardada;
     let r = null;
+    const clave = await claveDe();
     for (let i = 0; i < 3; i++) {
-      try { r = await servirR2(env, new Request(llave), "tours/" + id + "/" + ruta, "public, max-age=31536000, immutable"); } catch (e) { r = null; }
+      try { r = await servirR2(env, new Request(llave), clave, "public, max-age=31536000, immutable"); } catch (e) { r = null; }
       if (r && (r.status === 200 || r.status === 404)) break;
       await new Promise((ok) => setTimeout(ok, 150 * (i + 1)));
     }

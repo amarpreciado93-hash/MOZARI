@@ -27,6 +27,20 @@ export function rutaValida(r) {
   return RUTA.test(r) && !r.includes("..") && !r.includes("//");
 }
 
+// Mejora de esferas (Laboratorio «mejora»): el piso retocado (quitar el tripié) vive en escenas/<esfera>/ret<N>/ (solo la
+// cara de abajo y la vista previa) y los ajustes de imagen en escenas/<esfera>/aj<M>/ (todas las piezas). El visor pide
+// escenas/<esfera>/e<N>-<M>/…: cada pieza sale de aj<M>/; si no, de ret<N>/; y si no, del original. El link cambia con
+// cada edición, así nadie ve la versión vieja guardada en caché.
+export function rutasEdicion(ruta) {
+  const m = /^(escenas\/[A-Za-z0-9_-]{1,80}\/)e(\d{1,4})-(\d{1,4})\/(.+)$/.exec(ruta);
+  if (!m) return null;
+  const [, base, n, a, resto] = m, pieza = /^\d{1,2}\/[bdflru]\/\d{1,3}\/\d{1,3}\.jpg$/.test(resto), previa = resto === "preview.jpg", l = [];
+  if (+a > 0 && (pieza || previa)) l.push(base + "aj" + +a + "/" + resto);
+  if (+n > 0 && (previa || (pieza && /^\d{1,2}\/d\//.test(resto)))) l.push(base + "ret" + +n + "/" + resto);
+  l.push(base + resto);
+  return l;
+}
+
 export function tipoDe(ruta) {
   const ext = ruta.split(".").pop().toLowerCase();
   return TIPOS[ext] || "application/octet-stream";

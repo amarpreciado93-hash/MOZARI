@@ -1077,6 +1077,52 @@
   /* Panel de dueño con colores: cada dato tiene el suyo para ubicarlo de un vistazo */
   .cuentas-conteo span[style*="--c"] { border-color: color-mix(in srgb, var(--c) 45%, transparent); background: color-mix(in srgb, var(--c) 9%, var(--mz-superficie)); box-shadow: inset 3px 0 0 var(--c); }
   .cuentas-conteo span[style*="--c"] b { color: var(--c); }
+
+
+  /* Mejora: la edición de las esferas (Laboratorio «mejora») */
+  .mj { height: 100%; display: grid; grid-template-columns: 196px minmax(0, 1fr) 316px; min-height: 0; }
+  .mj-lista { overflow: auto; padding: 12px; display: grid; gap: 10px; align-content: start; border-right: 1px solid var(--mz-linea-neutra); }
+  .mj-esf { display: grid; gap: 4px; padding: 6px; border-radius: 12px; border: 1px solid transparent; background: transparent; color: var(--mz-texto); font: 500 12px Poppins, sans-serif; text-align: left; cursor: pointer; }
+  .mj-esf img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 8px; background: var(--mz-negro); }
+  .mj-esf span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .mj-esf small { color: var(--mz-lima); font-size: 10.5px; }
+  .mj-esf[aria-pressed="true"] { border-color: var(--mz-lima); background: color-mix(in srgb, var(--mz-lima) 8%, transparent); }
+  .mj-visor { position: relative; min-width: 0; min-height: 0; background: #0b0b0b; }
+  .mj-stage, .mj-prev { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .mj-prev { pointer-events: none; }
+  .mj-antes { position: absolute; left: 14px; top: 14px; z-index: 2; background: rgba(11, 11, 11, 0.7); }
+  .mj-progreso { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 3; min-width: 280px; padding: 12px 16px; border-radius: 14px; background: rgba(11, 11, 11, 0.86); border: 1px solid var(--mz-linea-neutra); display: grid; gap: 8px; font-size: 12.5px; }
+  .mj-progreso b { font-weight: 500; } .mj-progreso i { display: block; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.14); overflow: hidden; } .mj-progreso u { display: block; height: 100%; width: 0; background: var(--mz-lima); }
+  .mj-panel { overflow: auto; padding: 16px; display: grid; gap: 18px; align-content: start; border-left: 1px solid var(--mz-linea-neutra); }
+  .mj-panel.ocupado { pointer-events: none; opacity: 0.55; }
+  .mj-panel .grupo { display: grid; gap: 10px; } .mj-panel .grupo > b { font-size: 13px; }
+  .mj-fila { display: grid; grid-template-columns: 86px 1fr 30px; align-items: center; gap: 8px; font-size: 12px; }
+  .mj-fila output { text-align: right; color: var(--mz-tenue); font-variant-numeric: tabular-nums; }
+  .mj-acc { display: flex; gap: 8px; justify-content: space-between; align-items: center; }
+  .mj-panel .btn-sec { display: inline-flex; align-items: center; gap: 8px; justify-self: start; } .mj-panel .btn-sec svg { width: 16px; height: 16px; color: var(--mz-lima); }
+  /* Retocar el piso: quitar el tripié */
+  .card .foto .card-retocar { position: absolute; left: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 8px; border: 0; border-radius: 999px; background: rgba(11, 11, 11, 0.72); color: #fff; font: 600 11px Poppins, sans-serif; cursor: pointer; opacity: 0; transition: opacity 0.2s; }
+  .card:hover .foto .card-retocar, .card:focus-within .foto .card-retocar { opacity: 1; }
+  .card .foto .card-retocar svg { width: 14px; height: 14px; color: var(--mz-lima); }
+  .rt-velo { position: fixed; inset: 0; z-index: 58; background: rgba(5, 6, 5, 0.86); display: grid; padding: 18px; }
+  .rt-caja { display: grid; grid-template-rows: auto 1fr; background: var(--mz-negro, #0b0b0b); border: 1px solid var(--mz-linea-neutra); border-radius: 18px; overflow: hidden; min-height: 0; }
+  .rt-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--mz-linea-neutra); flex-wrap: wrap; }
+  .rt-cab b { font-size: 15px; } .rt-cab span { display: block; font-size: 12px; color: var(--mz-tenue); }
+  .rt-cab-acc { display: flex; gap: 8px; align-items: center; }
+  .rt-cuerpo { display: grid; grid-template-columns: 240px 1fr; min-height: 0; }
+  .rt-herr { padding: 14px; display: grid; gap: 14px; align-content: start; border-right: 1px solid var(--mz-linea-neutra); overflow: auto; }
+  .rt-grupo { display: grid; gap: 6px; } .rt-grupo > b { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mz-tenue); }
+  .rt-grupo label { display: grid; gap: 4px; font-size: 12px; } .rt-grupo label span { float: right; color: var(--mz-tenue); }
+  .rt-fila { grid-template-columns: 1fr 1fr; }
+  .rt-h { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--mz-linea-neutra); background: transparent; color: var(--mz-texto); font: 500 13px Poppins, sans-serif; cursor: pointer; text-align: left; }
+  .rt-h svg { width: 18px; height: 18px; flex: none; } .rt-h kbd { font: 600 10px Poppins, sans-serif; color: var(--mz-tenue); border: 1px solid var(--mz-linea-neutra); border-radius: 4px; padding: 0 4px; margin-left: 4px; }
+  .rt-h[aria-pressed="true"] { border-color: var(--mz-lima); background: color-mix(in srgb, var(--mz-lima) 12%, transparent); }
+  .rt-ayuda { margin: 0; font-size: 12px; line-height: 1.5; color: var(--mz-tenue); }
+  .rt-lienzo { position: relative; min-height: 0; overflow: hidden; background: #0b0b0b; cursor: none; }
+  .rt-lienzo[data-herr="mano"] { cursor: grab; }
+  .rt-lienzo canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+  .rt-lienzo #rt-ui { pointer-events: none; }
+  .rt-lienzo.curando::after { content: "Rellenando…"; position: absolute; left: 50%; top: 14px; transform: translateX(-50%); background: rgba(11,11,11,.8); color: #fff; font-size: 12px; padding: 6px 12px; border-radius: 999px; }
+  .rt-carga { position: absolute; inset: 0; display: grid; place-items: center; color: var(--mz-tenue); font-size: 13px; }
   .rep-tabs .tab-punto { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 7px; vertical-align: 1px; }
   .lotes-tabla select.plan-gratis { color: #B8BEAE; border-color: rgba(184, 190, 174, 0.45); }
   .lotes-tabla select.plan-pro { color: #6DB4FF; border-color: rgba(109, 180, 255, 0.6); background: rgba(109, 180, 255, 0.08); }
@@ -2186,6 +2232,7 @@
         <div class="pl-esfera"><div class="stage" id="pl-stage"></div></div>
       </aside>
     </section>
+    <section data-vista="mejora/esferas" class="mj" id="mj" hidden></section>
     <section data-vista="panoramas/lista" hidden>
       <div class="contenido" style="max-width:none">
         <h1>Panoramas</h1>
@@ -2522,7 +2569,12 @@
     btn.addEventListener("click", (ev) => { ev.stopPropagation(); const m = document.getElementById("cuenta-menu"); m.hidden = !m.hidden; });
     document.addEventListener("click", (ev) => { if (!ev.target.closest("#cuenta")) document.getElementById("cuenta-menu").hidden = true; });
   }
-  const R = (id) => (MODO === "nube" ? "t/" + TOUR + "/escenas/" : "escenas/") + id + "/";
+  // Mejora de esferas (Laboratorio «mejora»): una esfera con el piso retocado (N) o con ajustes de imagen (M) se pide en
+  // e<N>-<M>/ y el servidor da cada pieza de lo editado o, si no cambió, del original. El link cambia con cada edición,
+  // así nadie ve la versión vieja guardada en caché.
+  const RAIZ = (id) => (MODO === "nube" ? "t/" + TOUR + "/escenas/" : "escenas/") + id + "/";
+  const R = (id) => { const m = meta[id], n = (m && m.retoque) || 0, a = (m && m.ajuste) || 0; return RAIZ(id) + (n || a ? "e" + n + "-" + a + "/" : ""); };
+  const RB = (id) => { const m = meta[id], n = (m && m.retoque) || 0; return RAIZ(id) + (n ? "e" + n + "-0/" : ""); }; // la esfera sin los ajustes de imagen
   document.documentElement.dataset.modo = MODO;
 
   // =================== DATOS ===================
@@ -3275,11 +3327,13 @@
     "publicar/compartir": [ICO.compartir, "Compartir", "Link, código para insertar en sitios web y QR para impresos."],
   };
   const nav = { sec: "proyecto", sub: "general", ultimoSub: { panoramas: "lista" } };
+  // «Mejora» (Laboratorio): la edición de las esferas, junto a Mis Tours (pedido de Amar, 17 nov 2026)
+  if (MODO === "nube" && enLab("mejora")) SECCIONES.splice(1, 0, { id: "mejora", nombre: "Mejora", subs: [["esferas", "Esferas"]] });
   $("nav").innerHTML = SECCIONES.map((s) => '<button data-sec="' + s.id + '">' + s.nombre + "</button>").join("");
   $("nav").addEventListener("click", (ev) => { const b = ev.target.closest("[data-sec]"); if (b) ir(b.dataset.sec); });
   $("subtabs").addEventListener("click", (ev) => { const b = ev.target.closest("[data-sub]"); if (b) ir(nav.sec, b.dataset.sub); });
 
-  const SIN_ESFERAS = ["panoramas/mapa", "panoramas/capas", "panoramas/piloto", "panoramas/terreno", "skin/h", "skin/v"];
+  const SIN_ESFERAS = ["mejora/esferas", "panoramas/mapa", "panoramas/capas", "panoramas/piloto", "panoramas/terreno", "skin/h", "skin/v"];
   if (enLab("estadisticas")) SECCIONES.find((x) => x.id === "publicar").subs.push(["estadisticas", "Estadísticas"]);
   if (MODO === "nube" && enLab("landing")) SECCIONES.find((x) => x.id === "publicar").subs.splice(1, 0, ["landing", "Landing"]);
   // Secciones de «Próximo bloque» que ya existen en el Laboratorio: [función, sección]
@@ -3298,6 +3352,7 @@
     const enEditor = clave === "panoramas/capas" || clave === "panoramas/piloto";
     if (!enEditor && (antes === "panoramas/capas" || antes === "panoramas/piloto")) cerrarEditor();
     if (antes.startsWith("skin/") && sec !== "skin") cerrarSkin();
+    if (antes === "mejora/esferas" && clave !== antes) cerrarMejora();
     if (antes === "panoramas/terreno" && clave !== antes) cerrarTerreno();
     document.querySelectorAll("#contenedor > section").forEach((s) => (s.hidden = !s.dataset.vista.split(" ").includes(clave)));
     Object.entries(LAB_VISTAS).forEach(([k, [lab, el]]) => { if (clave === k && !enLab(lab)) $(el).hidden = true; }); // sin el Laboratorio sigue «Próximo bloque»
@@ -3319,6 +3374,7 @@
     if (sec === "proyecto") pintarProyecto();
     if (clave === "proyecto/presentacion") pintarPresentacion();
     if (clave === "panoramas/lista") pintarLista();
+    if (clave === "mejora/esferas") requestAnimationFrame(abrirMejora);
     if (clave === "media/fotos") pintarFotos();
     if (clave === "media/videos") pintarVideos();
     if (clave === "media/planos" && enLab("planos")) requestAnimationFrame(abrirPlanos);
@@ -3982,6 +4038,31 @@
     h += CURSOR_G(cx, cy) + pieG(t > 2.7 ? "La aguja ya apunta al norte y ahí se queda" : "Mueves la barra hasta que apunte al norte", t > 2.7);
     svg.innerHTML = h;
   }
+  // Mejora: las barras se mueven y la foto gana luz, color y detalle
+  function animMejora(svg, t) {
+    const u = sv((t - 0.6) / 1.2), u2 = sv((t - 2.0) / 1.0), luz = 0.55 + 0.45 * u;
+    const mez = (a, b, k) => "rgb(" + a.map((x, i) => Math.round(x + (b[i] - x) * k)).join(",") + ")";
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="16" y="18" width="196" height="150" rx="10" fill="' + mez([78, 96, 110], [127, 176, 214], luz) + '"/><path d="M16 116 L70 78 L112 100 L160 64 L212 108 V158 q0 10 -10 10 H26 q-10 0 -10 -10Z" fill="' + mez([58, 70, 48], [92, 150, 66], 0.4 * u + 0.6 * u2) + '"/>' +
+      '<circle cx="176" cy="46" r="13" fill="' + mez([190, 180, 150], [255, 226, 130], luz) + '"/>';
+    h += '<rect x="226" y="18" width="120" height="150" rx="10" fill="#111" stroke="rgba(255,255,255,.15)"/><text x="236" y="36" fill="#fff" font-size="9" font-weight="700">Ajustes de imagen</text>';
+    [["Brillo", u], ["Contraste", u * 0.6], ["Saturación", u2], ["Sombras", u2 * 0.7], ["Detalle", u2 * 0.5]].forEach(([n, k], i) => { const y = 54 + i * 22; h += '<text x="236" y="' + y + '" fill="rgba(255,255,255,.75)" font-size="7.5">' + n + '</text><rect x="236" y="' + (y + 5) + '" width="100" height="3" rx="2" fill="rgba(255,255,255,.2)"/><circle cx="' + (286 + 40 * k).toFixed(1) + '" cy="' + (y + 6.5) + '" r="4.5" fill="#D5FF40"/>'; });
+    const [cx, cy] = camino([[0, 330, 190], [0.6, 288, 62], [1.8, 328, 62], [2.0, 288, 106], [3.0, 328, 106], [4.0, 330, 190]], t);
+    h += CURSOR_G(cx, cy) + pieG(t > 3 ? "Aplicar lo guarda en toda la esfera" : "Mueves las barras y se ve al momento", t > 3);
+    svg.innerHTML = h;
+  }
+  // Quitar el tripié: el pincel pasa encima y el piso de alrededor lo cubre
+  function animRetoque(svg, t) {
+    const pinta = Math.max(0, Math.min(1, (t - 0.8) / 1.4)), cura = t > 2.5, u = sv((t - 2.5) / 0.6);
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="70" y="10" width="220" height="170" rx="10" fill="#6E8F4E"/>';
+    for (let i = 0; i < 14; i++) h += '<path d="M' + (78 + i * 16) + ' 10 l-8 170" stroke="rgba(255,255,255,.07)" stroke-width="5"/>';
+    h += '<g opacity="' + (1 - u).toFixed(2) + '"><circle cx="180" cy="95" r="10" fill="#222"/><path d="M180 95 L132 140 M180 95 L230 138 M180 95 L184 34" stroke="#222" stroke-width="6" stroke-linecap="round"/><ellipse cx="180" cy="100" rx="38" ry="14" fill="rgba(0,0,0,.25)"/></g>';
+    if (!cura && pinta > 0) { const pts = [[132, 140], [180, 95], [230, 138], [180, 95], [184, 34]], k = Math.max(1, Math.floor(pinta * 4)); h += '<path d="M' + pts.slice(0, k + 1).map((p) => p.join(" ")).join(" L") + '" stroke="rgba(255,70,70,.45)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'; }
+    const [cx, cy] = camino([[0, 330, 190], [0.8, 132, 140], [1.2, 180, 95], [1.6, 230, 138], [2.0, 180, 95], [2.3, 184, 34], [3.6, 330, 190]], t);
+    h += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="11" fill="none" stroke="#fff" stroke-width="1.5"/>' + CURSOR_G(cx + 8, cy + 8);
+    h += '<rect x="8" y="34" width="54" height="22" rx="7" fill="#111" stroke="#D5FF40"/><text x="35" y="49" fill="#fff" font-size="8" font-weight="700" text-anchor="middle">Corrector</text>';
+    h += pieG(cura ? "Al soltar, el piso de alrededor lo cubre" : "Pinta sobre el tripié y su sombra", cura);
+    svg.innerHTML = h;
+  }
   // =================== MINI TUTORIALES DE LAS FUNCIONES PARA INTERIORES (nov 2026) ===================
   // Regla de Amar: toda función nueva lleva su mini tutorial la primera vez que se usa (y un botón para volver a verlo).
   const PLANO_G = (x, y, w, h) => '<g transform="translate(' + x + " " + y + ')"><rect width="' + w + '" height="' + h + '" rx="6" fill="#F4F2EC"/><path d="M6 6h' + (w - 12) + "v" + (h - 12) + "h-" + (w - 12) + 'Z M' + (w * 0.5) + " 6v" + (h * 0.38) + " M" + (w * 0.5) + " " + (h * 0.6) + "v" + (h * 0.4 - 6) + " M" + (w * 0.5) + " " + (h * 0.55) + "h" + (w * 0.5 - 6) + '" fill="none" stroke="#2a2a2a" stroke-width="3"/></g>';
@@ -4153,6 +4234,10 @@
       texto: "Una página para mandar por WhatsApp o poner en tus anuncios. Sube tu <b>logo</b> y tu <b>plano maestro</b>, pon los <b>colores y letras</b> de tu marca y tu <b>WhatsApp</b>. Los lotes, sus precios, las fotos y los lugares cercanos salen solos del tour. A la derecha la ves como en el celular." }].filter(Boolean), () => nav.sub === "landing" && esVisible("#ld-form .comp-tarjeta"));
     if (clave === "tours/todos" && enLab("tutorial-video")) guiaNueva("nuevo-tutorial-video", () => [esVisible("#ver-tutorial") && { el: "#ver-tutorial", titulo: "Nuevo: tutorial en video",
       texto: "Si es tu primera vez, aquí está el <b>paso a paso</b> para armar un tour, de subir tus esferas a publicarlo. También sale en Panoramas mientras tu tour no tiene esferas." }].filter(Boolean), () => nav.sec === "tours" && esVisible("#ver-tutorial"));
+    if (clave === "mejora/esferas" && enLab("mejora")) guiaNueva("nuevo-mejora", () => [esVisible("#mj-ajustes") && { el: "#mj-ajustes", titulo: "Nuevo: mejora tus esferas", anim: animMejora, dur: 4.4,
+      texto: "Aquí vive la edición de tus esferas. Mueve <b>brillo, contraste, saturación, sombras, altas luces, temperatura y detalle</b> y se ve al momento. <b>Aplicar</b> lo guarda en toda la esfera; tu foto original no se pierde." },
+      esVisible("#mj-tripie") && { el: "#mj-tripie", titulo: "Quitar el tripié", anim: animRetoque, dur: 4,
+      texto: "Abre el piso de la esfera visto desde arriba. Con el <b>corrector puntual</b> pintas sobre el tripié y se rellena con el piso de alrededor; con el <b>tampón de clonar</b> (Alt + clic para elegir de dónde) copias a mano, como en Photoshop." }].filter(Boolean), () => nav.sec === "mejora" && esVisible("#mj-ajustes"));
     if (clave === "proyecto/general" && enLab("transiciones")) guiaNueva("nuevo-transiciones", () => [esVisible("#abrir-previa") && { el: "#abrir-previa", titulo: "Nuevo: transiciones inmersivas", anim: animTransicion, dur: 5,
       texto: "Al tocar un punto, tu cliente <b>avanza hacia él</b> y entra a la siguiente esfera sin cortes, también en celular. Mientras abre, el tour <b>precarga todas sus esferas</b> con una foto de portada. Pruébalo aquí en Vista previa y vuelve a publicar." }].filter(Boolean), () => nav.sub === "general" && esVisible("#abrir-previa"));
     if (clave === "proyecto/general" && enLab("bienvenida")) guiaNueva("nuevo-bienvenida", () => [esVisible("#p-bv-fila") && { el: "#p-bv", titulo: "Nuevo: pantalla de bienvenida", anim: animBienvenida, dur: 4.8,
@@ -4241,7 +4326,15 @@
     let hechos = 0;
     const bajar = async (ruta) => {
       for (let i = 0; i < 3; i++) {
-        try { const r = await fetch("t/" + TOUR + "/" + ruta); if (r.ok) return new Uint8Array(await r.arrayBuffer()); if (r.status === 404) return null; } catch (e) { /* reintenta */ }
+        try {
+          const r = await fetch("t/" + TOUR + "/" + ruta);
+          if (r.ok) {
+            // Esfera con el piso retocado: en el .zip va con sus piezas ya retocadas, sin el número de retoque
+            if (/^escenas\/[^/]+\/escena\.json$/.test(ruta)) { const j = await r.json(); delete j.retoque; delete j.retoqueUlt; delete j.retocado; return new TextEncoder().encode(JSON.stringify(j)); }
+            return new Uint8Array(await r.arrayBuffer());
+          }
+          if (r.status === 404) return null;
+        } catch (e) { /* reintenta */ }
         await new Promise((ok) => setTimeout(ok, 400 * (i + 1)));
       }
       throw new Error("No se pudo bajar " + ruta);
@@ -4249,7 +4342,7 @@
     const pendientes = [];
     try {
       for (let i = 0; i < lista.length; i++) {
-        while (pendientes.length < ADELANTE && i + pendientes.length < lista.length) pendientes.push(bajar(lista[i + pendientes.length].ruta));
+        while (pendientes.length < ADELANTE && i + pendientes.length < lista.length) { const a = lista[i + pendientes.length]; pendientes.push(bajar(a.desde || a.ruta)); }
         const datos = await pendientes.shift();
         if (datos) meter(lista[i].ruta, datos);
         hechos += lista[i].bytes;
@@ -4645,7 +4738,7 @@
   // =================== NOVEDADES ===================
   // Cada anuncio se ve una vez por cuenta (se anota en el servidor). El botón ✦ junto a BETA los vuelve a abrir.
   const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Fichas técnicas"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Interfaz"], ["publicar/web", "Publicar"], ["publicar/landing", "Publicar → Landing"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"]];
-  const LAB_DESTINO = { "descarga-pdf": "skin/h", "tutorial-video": "tours/todos", transiciones: "proyecto/general", landing: "publicar/landing", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
+  const LAB_DESTINO = { mejora: "mejora/esferas", "descarga-pdf": "skin/h", "tutorial-video": "tours/todos", transiciones: "proyecto/general", landing: "publicar/landing", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
   let novedades = [], novActual = null;
   const fechaCorta = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
   function htmlNovedad(n, media) {
@@ -5658,6 +5751,8 @@
   // Manita con la barra espaciadora (Laboratorio). Mientras está activa, un clic en la esfera no pone puntos ni selecciona.
   const MANO = { activa: false };
   // =================== MOTOR (esfera + capas) ===================
+  const MOTORES = new Set();
+  function refrescarEsferaEnTodos(id) { MOTORES.forEach((m) => { try { m.refrescarEsfera(id); } catch (e) { /* sigue con los demás */ } }); }
   function crearMotor(stage, opciones) {
     const editable = !!opciones.editable;
     const viewer = new Marzipano.Viewer(stage, { controls: { mouseViewMode: "drag" }, stage: { preserveDrawingBuffer: editable } });
@@ -6812,7 +6907,16 @@
       lupa: (ev) => precision(ev),
       sinPrecision: () => precision(null),
       captura: () => viewer.stage().takeSnapshot({ quality: 92 }),
+      // Una esfera cambió (retoque del piso): se vuelve a armar con sus piezas nuevas
+      refrescarEsfera(id) {
+        const e = escenasM[id]; if (!e) return;
+        const era = actual && actual.id === id, v = era ? { yaw: e.view.yaw(), pitch: e.view.pitch(), fov: e.view.fov() } : null;
+        delete escenasM[id];
+        if (era) { motor.mostrar(id, 0, v); setTimeout(() => { try { viewer.destroyScene(e.scene); } catch (x) { /* ya no estaba */ } }, 1500); }
+        else { try { viewer.destroyScene(e.scene); } catch (x) { /* ya no estaba */ } }
+      },
       destruir() {
+        MOTORES.delete(motor);
         ro.disconnect();
         if (editable) { window.removeEventListener("pointermove", alMover); window.removeEventListener("pointerup", alSoltar); }
         if (lupa) lupa.v.destroy();
@@ -6820,6 +6924,7 @@
         stage.innerHTML = "";
       },
     };
+    MOTORES.add(motor);
     return motor;
   }
 
@@ -6933,6 +7038,545 @@
           (enLab("ejemplo") && !est.escenas.length ? '<button class="hueco ejemplo" id="subir-ejemplo" type="button"><span class="ej-fotos"><img src="ejemplos/vista-aerea-chica.jpg" alt=""><img src="ejemplos/entrada-chica.jpg" alt=""></span><b>Probar con fotos de ejemplo</b><span class="nota">¿No traes tus fotos 360 a la mano? Carga 2 de muestra y practica: conéctalas, ponles texto y publica.</span></button>' : "")
         : '<div class="hueco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir esfera</b><span class="nota">En el estudio en línea puedes subir tus propias esferas.</span></div>');
   }
+
+
+  // =================== MEJORA: LA EDICIÓN DE LAS ESFERAS (Laboratorio «mejora») ===================
+  // Pedido de Amar (17 nov 2026): una ventana junto a Mis Tours donde viva la edición de las esferas: brillo, contraste,
+  // saturación, sombras, altas luces, temperatura y detalle, y quitar el tripié. Los ajustes se ven al momento sobre la
+  // vista (la misma cuenta que al guardar) y «Aplicar» los pone en todas las piezas de la esfera, en aj<M>/. La original
+  // no se toca: con todo en 0 regresa. Más adelante aquí irá también el armado (stitch) de esferas.
+  const AJ_DEF = [["brillo", "Brillo", -100], ["contraste", "Contraste", -100], ["saturacion", "Saturación", -100], ["sombras", "Sombras", -100], ["luces", "Altas luces", -100], ["temperatura", "Temperatura", -100], ["detalle", "Detalle", 0]];
+  const AJ_CLAVES = AJ_DEF.map((x) => x[0]);
+  // La cuenta de los ajustes, pixel por pixel (la misma para la vista en vivo y para guardar)
+  function prepararAjustes(A) {
+    const v = (k) => Math.max(-1, Math.min(1, (+A[k] || 0) / 100));
+    const b = v("brillo"), c = v("contraste"), s = v("saturacion"), sh = v("sombras"), hl = v("luces"), t = v("temperatura"), det = Math.max(0, v("detalle"));
+    const gam = Math.pow(2, -b * 0.9);
+    const curva = (u) => { u = Math.pow(u, gam); if (c > 0) { const q = u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u); u += (q - u) * c * 0.85; } else if (c < 0) u += (0.5 - u) * -c * 0.6; return u; };
+    const lut = [0, 1, 2].map((ch) => { const g = ch === 0 ? 1 + 0.16 * t : ch === 2 ? 1 - 0.16 * t : 1, l = new Uint8ClampedArray(256); for (let i = 0; i < 256; i++) l[i] = Math.round(curva(Math.min(1, (i / 255) * g)) * 255); return l; });
+    // Sombras y altas luces: suben o bajan la luz según qué tan oscuro o claro es cada punto, sin cambiarle el color
+    const ks = sh > 0 ? 1.5 : 0.9, kh = hl > 0 ? 0.9 : 1.5, gan = new Float32Array(256);
+    for (let i = 0; i < 256; i++) { const L = i / 255, L2 = L + sh * ks * L * (1 - L) * (1 - L) + hl * kh * L * L * (1 - L); gan[i] = L > 0 ? Math.max(0, L2) / L : 1; }
+    const fs = 1 + s * (s > 0 ? 0.9 : 1), plano = !sh && !hl && !s && !det;
+    return (d, w, h) => {
+      const N = w * h, lum = det ? new Float32Array(N) : null, l0 = lut[0], l1 = lut[1], l2 = lut[2];
+      for (let i = 0, p = 0; p < N; i += 4, p++) {
+        let r = l0[d[i]], g = l1[d[i + 1]], bl = l2[d[i + 2]];
+        if (!plano) {
+          let L = 0.299 * r + 0.587 * g + 0.114 * bl; const k = gan[(L + 0.5) | 0];
+          if (k !== 1) { r *= k; g *= k; bl *= k; L *= k; }
+          if (fs !== 1) { r = L + (r - L) * fs; g = L + (g - L) * fs; bl = L + (bl - L) * fs; }
+          if (lum) lum[p] = L;
+        }
+        d[i] = r; d[i + 1] = g; d[i + 2] = bl;
+      }
+      if (lum) { // Detalle: enfoque suave sobre la luz de cada punto (3×3)
+        const a = det * 1.4;
+        for (let y = 0; y < h; y++) {
+          const y0 = (y > 0 ? y - 1 : y) * w, y1 = (y < h - 1 ? y + 1 : y) * w, yc = y * w;
+          for (let x = 0; x < w; x++) {
+            const x0 = x > 0 ? x - 1 : x, x1 = x < w - 1 ? x + 1 : x, p = yc + x;
+            const dl = (lum[p] - (lum[y0 + x0] + 2 * lum[y0 + x] + lum[y0 + x1] + 2 * lum[yc + x0] + 4 * lum[p] + 2 * lum[yc + x1] + lum[y1 + x0] + 2 * lum[y1 + x] + lum[y1 + x1]) / 16) * a;
+            if (dl > 0.5 || dl < -0.5) { const i = p * 4; d[i] += dl; d[i + 1] += dl; d[i + 2] += dl; }
+          }
+        }
+      }
+    };
+  }
+  // Poner los ajustes en las piezas de la esfera (todas, o solo la cara de abajo cuando cambió el piso)
+  async function hornearAjustes(id, A, o = {}) {
+    const d = meta[id], M = o.carpeta || Math.max(d.ajuste || 0, d.ajusteUlt || 0) + 1, dest = "escenas/" + id + "/aj" + M + "/", base = RB(id), lista = [];
+    for (let z = 1; z < d.niveles.length; z++) { const nv = d.niveles[z], n = Math.ceil(nv.size / nv.tileSize); for (const f of o.soloD ? "d" : "bdflru") for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) lista.push(z + "/" + f + "/" + y + "/" + x + ".jpg"); }
+    lista.push("preview.jpg");
+    const total = lista.length, fn = prepararAjustes(A); let hechos = 0, error = null;
+    const uno = async (ruta) => {
+      const r = await fetch(base + ruta); if (!r.ok) throw new Error("No se pudo leer la esfera. Revisa tu internet.");
+      const bm = await createImageBitmap(await r.blob()), c = new OffscreenCanvas(bm.width, bm.height), x = c.getContext("2d", { willReadFrequently: true });
+      x.drawImage(bm, 0, 0); bm.close();
+      const im = x.getImageData(0, 0, c.width, c.height); fn(im.data, c.width, c.height); x.putImageData(im, 0, 0);
+      await subirArchivo(dest + ruta, await c.convertToBlob({ type: "image/jpeg", quality: 0.88 }));
+      hechos++; if (o.aviso) o.aviso(hechos / total);
+    };
+    const obrero = async () => { while (lista.length && !error) { const r = lista.shift(); try { await uno(r); } catch (e) { error = e; } } };
+    await Promise.all([obrero(), obrero(), obrero(), obrero()]);
+    if (error) throw error;
+    return M;
+  }
+  async function aplicarAjustes(id, A, aviso) {
+    const d = meta[id], previo = d.ajuste || 0, cero = AJ_CLAVES.every((k) => !+A[k]);
+    let nuevo;
+    if (cero) { if (!previo) return; nuevo = Object.assign({}, d, { ajusteUlt: Math.max(previo, d.ajusteUlt || 0) }); delete nuevo.ajuste; delete nuevo.ajustes; }
+    else { const M = await hornearAjustes(id, A, { aviso }); nuevo = Object.assign({}, meta[id], { ajuste: M, ajusteUlt: M, ajustes: Object.fromEntries(AJ_CLAVES.map((k) => [k, Math.round(+A[k] || 0)])) }); }
+    await subirArchivo("escenas/" + id + "/escena.json", new Blob([JSON.stringify(nuevo)], { type: "application/json" }));
+    meta[id] = nuevo;
+    if (previo) fetch("api/tours/" + TOUR + "/f/escenas/" + id + "/aj" + previo + "/", { method: "DELETE" }).catch(() => {});
+    refrescarEsferaEnTodos(id);
+  }
+  let MJ = null;
+  const ajCero = () => Object.fromEntries(AJ_CLAVES.map((k) => [k, 0]));
+  const ajIgual = (a, b) => AJ_CLAVES.every((k) => (+a[k] || 0) === (+b[k] || 0));
+  function abrirMejora() {
+    const caja = $("mj"); if (!caja || nav.sec !== "mejora" || !est.escenas.length) return;
+    const id = (MJ && escena(MJ.id) ? MJ.id : null) || (edPano && escena(edPano) ? edPano : null) || (escena(P().escenaInicial) ? P().escenaInicial : est.escenas[0].id);
+    cerrarMejora();
+    caja.innerHTML = '<aside class="mj-lista" id="mj-lista" aria-label="Esferas"></aside><div class="mj-visor"><div class="mj-stage" id="mj-stage"></div><canvas class="mj-prev" id="mj-prev" hidden></canvas>' +
+      '<button class="mini mj-antes" id="mj-antes" type="button">Mantén para ver el antes</button><div class="mj-progreso" id="mj-progreso" hidden><b></b><i><u></u></i></div></div><aside class="mj-panel" id="mj-panel"></aside>';
+    MJ = { id, A: ajCero(), sucio: false, viewer: null, escena: null, antes: false, ocupado: false, raf: 0, fn: null, borradores: {} };
+    MJ.viewer = new Marzipano.Viewer($("mj-stage"), { controls: { mouseViewMode: "drag" }, stage: { preserveDrawingBuffer: true } });
+    MJ.viewer.stage().addEventListener("renderComplete", mejoraPrevia);
+    mejoraElegir(id);
+  }
+  function cerrarMejora() { if (!MJ) return; cancelAnimationFrame(MJ.raf); try { MJ.viewer.destroy(); } catch (e) { /* ya no estaba */ } MJ = null; const c = $("mj"); if (c) c.innerHTML = ""; }
+  function mejoraElegir(id) {
+    if (!MJ || !meta[id]) return;
+    const guardados = Object.assign(ajCero(), meta[id].ajustes || {});
+    MJ.id = id; MJ.A = Object.assign({}, MJ.borradores[id] || guardados); MJ.sucio = !ajIgual(MJ.A, guardados); MJ.fn = null;
+    const d = meta[id], b = RB(id), niveles = d.niveles.filter((l, i) => i === 0 || l.size <= 4096);
+    const view = new Marzipano.RectilinearView(vistaDe(id), Marzipano.RectilinearView.limit.traditional(Math.min(d.cara, 4096) * 2, (110 * Math.PI) / 180));
+    const scene = MJ.viewer.createScene({ source: Marzipano.ImageUrlSource.fromString(b + "{z}/{f}/{y}/{x}.jpg", { cubeMapPreviewUrl: b + "preview.jpg" }), geometry: new Marzipano.CubeGeometry(niveles.length > 1 ? niveles : d.niveles.slice(0, 2)), view, pinFirstLevel: true });
+    const vieja = MJ.escena; MJ.escena = { scene, view }; scene.switchTo({ transitionDuration: 0 });
+    if (vieja) { const vw = MJ.viewer; setTimeout(() => { try { vw.destroyScene(vieja.scene); } catch (e) { /* ya no estaba */ } }, 400); }
+    pintarMejora();
+  }
+  function pintarMejora() {
+    if (!MJ) return;
+    const m = meta[MJ.id] || {}, hay = AJ_CLAVES.some((k) => MJ.A[k]);
+    $("mj-lista").innerHTML = est.escenas.map((e) => { const x = meta[e.id] || {}, et = [x.ajuste ? "Ajustada" : "", x.retoque ? "Sin tripié" : ""].filter(Boolean).join(" · ");
+      return '<button type="button" class="mj-esf" data-mj-esf="' + e.id + '" aria-pressed="' + (e.id === MJ.id) + '"><img src="' + thumbDe(e.id) + '" alt="" loading="lazy"><span>' + esc(e.nombre) + "</span>" + (et ? "<small>" + et + "</small>" : "") + "</button>"; }).join("");
+    $("mj-panel").innerHTML = '<div class="grupo" id="mj-ajustes"><b>Ajustes de imagen</b>' +
+      AJ_DEF.map(([k, n, min]) => '<label class="mj-fila"><span>' + n + '</span><input type="range" data-mj-aj="' + k + '" min="' + min + '" max="100" step="1" value="' + (MJ.A[k] || 0) + '" aria-label="' + n + '"><output>' + (MJ.A[k] || 0) + "</output></label>").join("") +
+      '<div class="mj-acc"><button class="mini" type="button" id="mj-cero"' + (hay ? "" : " disabled") + '>Restablecer</button><button class="btn-prim" type="button" id="mj-aplicar"' + (MJ.sucio ? "" : " disabled") + ">Aplicar a la esfera</button></div>" +
+      (est.escenas.length > 1 ? '<button class="mini" type="button" id="mj-todas"' + (hay || m.ajuste ? "" : " disabled") + ">Aplicar a todas las esferas</button>" : "") +
+      '<p class="nota">Mueve las barras y se ve al momento. <b>Aplicar</b> lo guarda en toda la esfera (en las grandes tarda un minuto) y así sale en tu tour. Tu foto original no se pierde: con todo en 0 regresa.</p></div>' +
+      '<div class="grupo" id="mj-tripie"><b>Quitar el tripié</b><button class="btn-sec" type="button" data-retocar="' + MJ.id + '">' + ICO_RETOQUE + "<span>" + (m.retoque ? "Seguir retocando el piso" : "Abrir el piso") + "</span></button>" +
+      '<p class="nota">El piso de la esfera visto desde arriba, con <b>corrector puntual</b> y <b>tampón de clonar</b>.</p></div>';
+    mejoraPrevia();
+  }
+  // Vista en vivo: la imagen que pinta el visor, con los ajustes encima
+  function mejoraPrevia() {
+    if (!MJ || MJ.raf) return;
+    MJ.raf = requestAnimationFrame(() => {
+      if (!MJ) return; MJ.raf = 0;
+      const cv = $("mj-prev"), src = MJ.viewer.stage().domElement(), activo = !MJ.antes && AJ_CLAVES.some((k) => MJ.A[k]);
+      if (!cv) return; cv.hidden = !activo; if (!activo || !src || !src.width) return;
+      const k = Math.min(1, 1280 / src.width), w = Math.max(1, Math.round(src.width * k)), h = Math.max(1, Math.round(src.height * k));
+      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+      const x = cv.getContext("2d", { willReadFrequently: true }); x.drawImage(src, 0, 0, w, h);
+      const im = x.getImageData(0, 0, w, h); (MJ.fn || (MJ.fn = prepararAjustes(MJ.A)))(im.data, w, h); x.putImageData(im, 0, 0);
+    });
+  }
+  function mejoraCambio() {
+    const guardados = Object.assign(ajCero(), (meta[MJ.id] || {}).ajustes || {}), hay = AJ_CLAVES.some((k) => MJ.A[k]);
+    MJ.sucio = !ajIgual(MJ.A, guardados); MJ.fn = null; MJ.borradores[MJ.id] = Object.assign({}, MJ.A);
+    const q = (i, v) => { const e = $(i); if (e) e.disabled = v; };
+    q("mj-cero", !hay); q("mj-aplicar", !MJ.sucio); q("mj-todas", !(hay || (meta[MJ.id] || {}).ajuste));
+    mejoraPrevia();
+  }
+  async function mejoraAplicar(ids) {
+    if (!MJ || MJ.ocupado) return;
+    MJ.ocupado = true;
+    const A = Object.assign({}, MJ.A), pr = $("mj-progreso"), panel = $("mj-panel"); pr.hidden = false; panel.classList.add("ocupado");
+    let bien = false;
+    try {
+      for (let i = 0; i < ids.length; i++) {
+        const nombre = (escena(ids[i]) || {}).nombre || "";
+        const av = (f) => { pr.querySelector("b").textContent = (ids.length > 1 ? "Esfera " + (i + 1) + " de " + ids.length + " · " : "") + "Aplicando a " + nombre + "… " + Math.round(f * 100) + "%"; pr.querySelector("u").style.width = (f * 100).toFixed(1) + "%"; };
+        av(0); await aplicarAjustes(ids[i], A, av);
+      }
+      bien = true;
+    } catch (e) { avisar(e.message || "No se pudieron aplicar los ajustes"); }
+    if (bien) avisar(ids.length > 1 ? "Listo: los ajustes quedaron en todas las esferas" : "Listo: los ajustes quedaron en la esfera. También se ve así en tu tour publicado.", 4000);
+    if (MJ) { MJ.ocupado = false; if (bien) MJ.borradores = {}; pr.hidden = true; panel.classList.remove("ocupado"); mejoraElegir(MJ.id); }
+  }
+  document.addEventListener("input", (ev) => {
+    const k = ev.target.dataset && ev.target.dataset.mjAj; if (!k || !MJ) return;
+    MJ.A[k] = +ev.target.value; const o = ev.target.parentNode.querySelector("output"); if (o) o.textContent = ev.target.value;
+    mejoraCambio();
+  });
+  document.addEventListener("dblclick", (ev) => { const r = ev.target.closest && ev.target.closest(".mj-fila"); if (!r || !MJ) return; const i = r.querySelector("input"); i.value = 0; MJ.A[i.dataset.mjAj] = 0; r.querySelector("output").textContent = "0"; mejoraCambio(); });
+  document.addEventListener("click", (ev) => {
+    if (!MJ || !ev.target.closest) return;
+    const e = ev.target.closest("[data-mj-esf]");
+    if (e) { if (!MJ.ocupado && e.dataset.mjEsf !== MJ.id) mejoraElegir(e.dataset.mjEsf); return; }
+    if (ev.target.closest("#mj-cero")) { MJ.A = ajCero(); mejoraCambio(); pintarMejora(); return; }
+    if (ev.target.closest("#mj-aplicar")) { mejoraAplicar([MJ.id]); return; }
+    if (ev.target.closest("#mj-todas")) mejoraAplicar([MJ.id].concat(est.escenas.map((x) => x.id).filter((x) => x !== MJ.id)));
+  });
+  { const suelta = () => { if (MJ && MJ.antes) { MJ.antes = false; mejoraPrevia(); } };
+    document.addEventListener("pointerdown", (ev) => { if (MJ && ev.target.closest && ev.target.closest("#mj-antes")) { MJ.antes = true; mejoraPrevia(); } });
+    document.addEventListener("pointerup", suelta); document.addEventListener("pointercancel", suelta); }
+  // =================== RETOCAR EL PISO: QUITAR EL TRIPIÉ (Laboratorio «mejora») ===================
+  // Pedido de Amar (17 nov 2026): quitar el tripié como en Photoshop o Affinity, dentro de Mozari: «pincel tampón clonar» y
+  // «pincel corrector puntual». Mozari guarda cada esfera en 6 caras; la de abajo (d) es una foto plana del piso con el tripié
+  // al centro. Se edita el centro de esa cara a su resolución (hasta 4096 px), y al guardar se suben solo las piezas que
+  // cambiaron a ret<N>/ (y los niveles chicos y la vista previa). La original no se toca: «Restaurar original» la regresa.
+  const ICO_RETOQUE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4.5l5 5L9 20H4v-5z"/><path d="M12.5 6.5l5 5"/></svg>';
+  const ICO_TAMPON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v4l-1 3h-4L9 7z"/><path d="M5 13h14v4H5z"/><path d="M5 20h14"/></svg>';
+  const ICO_CORRECTOR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="6" rx="3" transform="rotate(-45 12 12)"/><path d="M10 10l4 4M12 8.5v0M15.5 12v0"/></svg>';
+  const ICO_MANO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 11V5.5a1.5 1.5 0 0 1 3 0V11M11 10V4.5a1.5 1.5 0 0 1 3 0V11M14 10.5V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a6 6 0 0 1-4.6-2.2L3 15a1.6 1.6 0 0 1 2.3-2.2L8 15V9.5a1.5 1.5 0 0 1 3 0"/></svg>';
+  const RT_MAX = 4096, RT_PASOS = 30;
+  let RT = null;
+  // Corrector puntual: rellena lo pintado con piso parecido de alrededor, parche por parche y de lo grueso a lo fino (sin IA)
+  function curarZona(lienzo, mascara, caja) {
+    const W = lienzo.width, H = lienzo.height, x = lienzo.getContext("2d", { willReadFrequently: true }), mfull = mascara.getContext("2d", { willReadFrequently: true });
+    const c0x = Math.max(0, Math.floor(caja.x) - 2), c0y = Math.max(0, Math.floor(caja.y) - 2), c1x = Math.min(W, Math.ceil(caja.x + caja.w) + 2), c1y = Math.min(H, Math.ceil(caja.y + caja.h) + 2);
+    if (c1x <= c0x || c1y <= c0y) return { ok: 0, fallos: 0 };
+    // La caja justa de lo pintado
+    let bx0 = W, by0 = H, bx1 = -1, by1 = -1;
+    { const md = mfull.getImageData(c0x, c0y, c1x - c0x, c1y - c0y).data, mw = c1x - c0x;
+      for (let i = 3, n = 0; i < md.length; i += 4, n++) if (md[i]) { const xx = c0x + (n % mw), yy = c0y + ((n / mw) | 0); if (xx < bx0) bx0 = xx; if (xx > bx1) bx1 = xx; if (yy < by0) by0 = yy; if (yy > by1) by1 = yy; } }
+    if (bx1 < 0) return { ok: 0, fallos: 0 };
+    // Se trabaja solo con lo pintado y el piso de alrededor (de ahí sale con qué rellenar)
+    const diam = Math.max(bx1 - bx0, by1 - by0) + 1, marg = Math.round(Math.min(600, Math.max(48, diam)));
+    const rx0 = Math.max(0, bx0 - marg), ry0 = Math.max(0, by0 - marg), rw = Math.min(W, bx1 + 1 + marg) - rx0, rh = Math.min(H, by1 + 1 + marg) - ry0;
+    const foto = x.getImageData(rx0, ry0, rw, rh), fd = foto.data, mm = mfull.getImageData(rx0, ry0, rw, rh).data;
+    const HP = 3, LADO3 = (2 * HP + 1) * 3, NP3 = (2 * HP + 1) * LADO3;
+    const base = { w: rw, h: rh, img: new Uint8ClampedArray(rw * rh * 3), hoyo: new Uint8Array(rw * rh), tam: diam };
+    for (let i = 0, n = rw * rh; i < n; i++) { base.img[i * 3] = fd[i * 4]; base.img[i * 3 + 1] = fd[i * 4 + 1]; base.img[i * 3 + 2] = fd[i * 4 + 2]; if (mm[i * 4 + 3]) base.hoyo[i] = 1; }
+    // Versiones cada vez más chicas (una celda es hoyo si tiene cualquier pixel pintado)
+    const reducir = (a) => {
+      const w = (a.w + 1) >> 1, h = (a.h + 1) >> 1, img = new Uint8ClampedArray(w * h * 3), hoyo = new Uint8Array(w * h);
+      for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) {
+        let r = 0, g = 0, b = 0, n = 0, hu = 0;
+        for (let dy = 0; dy < 2; dy++) { const yy = 2 * y + dy; if (yy >= a.h) continue; for (let dx = 0; dx < 2; dx++) { const xf = 2 * xx + dx; if (xf >= a.w) continue; const i = yy * a.w + xf; if (a.hoyo[i]) { hu = 1; continue; } r += a.img[i * 3]; g += a.img[i * 3 + 1]; b += a.img[i * 3 + 2]; n++; } }
+        const j = y * w + xx; hoyo[j] = hu; if (n) { img[j * 3] = r / n; img[j * 3 + 1] = g / n; img[j * 3 + 2] = b / n; }
+      }
+      return { w, h, img, hoyo, tam: a.tam / 2 };
+    };
+    const niveles = [base];
+    while (niveles[niveles.length - 1].tam > 10 && Math.min(niveles[niveles.length - 1].w, niveles[niveles.length - 1].h) >= 56) niveles.push(reducir(niveles[niveles.length - 1]));
+    let semilla = 0x9e3779b9;
+    const azar = () => { semilla ^= semilla << 13; semilla ^= semilla >>> 17; semilla ^= semilla << 5; return semilla >>> 0; };
+    const CONF = new Float64Array(61); for (let i = 0; i <= 60; i++) CONF[i] = Math.pow(1.3, -i);
+    // Lo que hace falta saber de un nivel: de dónde se puede copiar, qué hay que rellenar y qué tan adentro queda cada pixel
+    const preparar = (L) => {
+      const { w, h, hoyo } = L, N = w * h, S = new Int32Array((w + 1) * (h + 1));
+      for (let y = 0; y < h; y++) { let f = 0; for (let xx = 0; xx < w; xx++) { f += hoyo[y * w + xx]; S[(y + 1) * (w + 1) + xx + 1] = S[y * (w + 1) + xx + 1] + f; } }
+      const fuente = new Uint8Array(N), meta2 = new Uint8Array(N); let nf = 0, nm = 0, tx0 = w, ty0 = h, tx1 = -1, ty1 = -1, hx0 = w, hy0 = h, hx1 = -1, hy1 = -1;
+      for (let y = HP; y < h - HP; y++) for (let xx = HP; xx < w - HP; xx++) {
+        const c = S[(y + HP + 1) * (w + 1) + xx + HP + 1] - S[(y - HP) * (w + 1) + xx + HP + 1] - S[(y + HP + 1) * (w + 1) + xx - HP] + S[(y - HP) * (w + 1) + xx - HP], i = y * w + xx;
+        if (c) { meta2[i] = 1; nm++; if (xx < tx0) tx0 = xx; if (xx > tx1) tx1 = xx; if (y < ty0) ty0 = y; if (y > ty1) ty1 = y; } else { fuente[i] = 1; nf++; }
+      }
+      const lista = new Int32Array(nf); for (let i = 0, k = 0; i < N; i++) if (fuente[i]) lista[k++] = i;
+      const hondo = new Uint8Array(N);
+      for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) { const i = y * w + xx; if (!hoyo[i]) continue; if (xx < hx0) hx0 = xx; if (xx > hx1) hx1 = xx; if (y < hy0) hy0 = y; if (y > hy1) hy1 = y; hondo[i] = Math.min(60, 1 + Math.min(xx > 0 ? hondo[i - 1] : 60, y > 0 ? hondo[i - w] : 60)); }
+      for (let y = h - 1; y >= 0; y--) for (let xx = w - 1; xx >= 0; xx--) { const i = y * w + xx; if (!hoyo[i]) continue; hondo[i] = Math.min(hondo[i], 1 + Math.min(xx < w - 1 ? hondo[i + 1] : 60, y < h - 1 ? hondo[i + w] : 60)); }
+      Object.assign(L, { fuente, meta: meta2, lista, nm, hondo, t: [tx0, ty0, tx1, ty1], hb: [hx0, hy0, hx1, hy1] });
+      return nf;
+    };
+    // Si en lo más chico no queda de dónde copiar, se empieza un nivel más fino
+    while (niveles.length && preparar(niveles[niveles.length - 1]) < 12) niveles.pop();
+    if (!niveles.length) return { ok: 0, fallos: 1 };
+    for (let l = niveles.length - 2; l >= 0; l--) preparar(niveles[l]);
+    let pase = 0;
+    const procesar = (L, previo, vueltas, pases, radio) => {
+      const { w, h, img, hoyo, fuente, lista, hondo } = L, N = w * h, [tx0, ty0, tx1, ty1] = L.t, [hx0, hy0, hx1, hy1] = L.hb, hw = hx1 - hx0 + 1, hh = hy1 - hy0 + 1, esM = L.meta;
+      const nnf = new Int32Array(N).fill(-1), dist = new Float32Array(N), acc = new Float64Array(hw * hh * 3), ws = new Float64Array(hw * hh);
+      const D = (p, q, tope) => {
+        let s = 0;
+        for (let dy = -HP; dy <= HP; dy++) {
+          const a = (p + dy * w - HP) * 3, b = (q + dy * w - HP) * 3;
+          for (let n = 0; n < LADO3; n++) { const e = img[a + n] - img[b + n]; s += e * e; }
+          if (s >= tope) return s;
+        }
+        return s;
+      };
+      const votar = (conParecido) => {
+        acc.fill(0); ws.fill(0);
+        let s = 30;
+        if (conParecido) { let sum = 0; for (let y = ty0; y <= ty1; y++) for (let xx = tx0; xx <= tx1; xx++) { const p = y * w + xx; if (esM[p]) sum += dist[p]; } s = Math.max(30, sum / L.nm / NP3); }
+        for (let y = ty0; y <= ty1; y++) for (let xx = tx0; xx <= tx1; xx++) {
+          const p = y * w + xx; if (!esM[p]) continue;
+          const q = nnf[p]; let g = CONF[hondo[p]]; if (conParecido) g *= Math.exp(-Math.min(30, dist[p] / NP3 / s));
+          for (let dy = -HP; dy <= HP; dy++) for (let dx = -HP; dx <= HP; dx++) {
+            const pi = p + dy * w + dx; if (!hoyo[pi]) continue;
+            const qi = (q + dy * w + dx) * 3, a = (y + dy - hy0) * hw + (xx + dx - hx0);
+            acc[a * 3] += g * img[qi]; acc[a * 3 + 1] += g * img[qi + 1]; acc[a * 3 + 2] += g * img[qi + 2]; ws[a] += g;
+          }
+        }
+        for (let y = hy0; y <= hy1; y++) for (let xx = hx0; xx <= hx1; xx++) { const i = y * w + xx; if (!hoyo[i]) continue; const a = (y - hy0) * hw + (xx - hx0); if (!(ws[a] > 0)) continue; img[i * 3] = acc[a * 3] / ws[a]; img[i * 3 + 1] = acc[a * 3 + 1] / ws[a]; img[i * 3 + 2] = acc[a * 3 + 2] / ws[a]; }
+      };
+      // De dónde copia cada parche: lo que ya se sabía del nivel más chico, o al azar
+      for (let y = ty0; y <= ty1; y++) for (let xx = tx0; xx <= tx1; xx++) {
+        const p = y * w + xx; if (!esM[p]) continue;
+        let q = -1;
+        if (previo) { const qc = previo.nnf[(y >> 1) * previo.w + (xx >> 1)]; if (qc >= 0) { const qx = 2 * (qc % previo.w) + (xx & 1), qy = 2 * ((qc / previo.w) | 0) + (y & 1); if (qx < w && qy < h && fuente[qy * w + qx]) q = qy * w + qx; } }
+        nnf[p] = q < 0 ? lista[azar() % lista.length] : q;
+      }
+      if (previo) votar(false);
+      else {
+        // Primer relleno en lo más chico: el color de la orilla hacia adentro
+        const lleno = new Uint8Array(N); let pend = []; for (let i = 0; i < N; i++) { if (hoyo[i]) pend.push(i); else lleno[i] = 1; }
+        while (pend.length) {
+          const sig = [], nuevos = [];
+          for (const i of pend) { const yy = (i / w) | 0, xx = i % w; let r = 0, g = 0, b = 0, n = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const x2 = xx + dx, y2 = yy + dy; if (x2 < 0 || y2 < 0 || x2 >= w || y2 >= h) continue; const j = y2 * w + x2; if (!lleno[j]) continue; r += img[j * 3]; g += img[j * 3 + 1]; b += img[j * 3 + 2]; n++; } if (n) nuevos.push(i, r / n, g / n, b / n); else sig.push(i); }
+          if (!nuevos.length) break;
+          for (let k = 0; k < nuevos.length; k += 4) { const i = nuevos[k]; img[i * 3] = nuevos[k + 1]; img[i * 3 + 1] = nuevos[k + 2]; img[i * 3 + 2] = nuevos[k + 3]; lleno[i] = 1; }
+          pend = sig;
+        }
+      }
+      for (let v = 0; v < vueltas; v++) {
+        for (let y = ty0; y <= ty1; y++) for (let xx = tx0; xx <= tx1; xx++) { const p = y * w + xx; if (esM[p]) dist[p] = D(p, nnf[p], Infinity); }
+        for (let pa = 0; pa < pases; pa++) {
+          const dir = pase++ & 1 ? -1 : 1, ya = dir > 0 ? ty0 : ty1, yb = dir > 0 ? ty1 + 1 : ty0 - 1, xa = dir > 0 ? tx0 : tx1, xb = dir > 0 ? tx1 + 1 : tx0 - 1;
+          for (let y = ya; y !== yb; y += dir) for (let xx = xa; xx !== xb; xx += dir) {
+            const p = y * w + xx; if (!esM[p]) continue;
+            let bq = nnf[p], bd = dist[p];
+            // Lo que le sirvió al vecino casi siempre sirve aquí (así se continúan las líneas y las vetas)
+            let nb = p - dir; if (esM[nb]) { const c = nnf[nb] + dir; if (c !== bq && fuente[c]) { const d = D(p, c, bd); if (d < bd) { bd = d; bq = c; } } }
+            nb = p - dir * w; if (nb >= 0 && nb < N && esM[nb]) { const c = nnf[nb] + dir * w; if (c !== bq && c >= 0 && c < N && fuente[c]) { const d = D(p, c, bd); if (d < bd) { bd = d; bq = c; } } }
+            // Y se prueban otros lugares, cada vez más cerca del mejor
+            for (let R = radio; R >= 1; R >>= 1) {
+              const qx = (bq % w) + (azar() % (2 * R + 1)) - R, qy = ((bq / w) | 0) + (azar() % (2 * R + 1)) - R;
+              if (qx < HP || qy < HP || qx >= w - HP || qy >= h - HP) continue;
+              const c = qy * w + qx; if (!fuente[c]) continue;
+              const d = D(p, c, bd); if (d < bd) { bd = d; bq = c; }
+            }
+            nnf[p] = bq; dist[p] = bd;
+          }
+        }
+        votar(true);
+      }
+      L.nnf = nnf;
+    };
+    for (let l = niveles.length - 1; l >= 0; l--) {
+      const L = niveles[l], grueso = l === niveles.length - 1, carga = L.nm;
+      // Entre más pixeles, menos vueltas: lo fino ya llega casi resuelto de lo grueso
+      const vueltas = grueso ? 8 : carga > 400000 ? 1 : carga > 120000 ? 2 : carga > 30000 ? 3 : 5;
+      const pases = grueso ? 2 : carga > 120000 ? 1 : 2, radio = grueso ? Math.max(L.w, L.h) : carga > 120000 ? 2 : carga > 30000 ? 8 : 32;
+      procesar(L, grueso ? null : niveles[l + 1], vueltas, pases, radio);
+      if (!grueso) niveles[l + 1] = null;
+    }
+    // Se pone el relleno en la foto, suave en la orilla de lo pintado
+    const img = base.img;
+    for (let i = 0, n = rw * rh; i < n; i++) { const al = mm[i * 4 + 3]; if (!al) continue; const a = Math.min(1, (al / 255) * 1.2); for (let c = 0; c < 3; c++) fd[i * 4 + c] = fd[i * 4 + c] * (1 - a) + img[i * 3 + c] * a; }
+    x.putImageData(foto, rx0, ry0);
+    mfull.clearRect(rx0, ry0, rw, rh);
+    return { ok: 1, fallos: 0 };
+  }
+  async function abrirRetoque(id) {
+    if (MODO !== "nube" || !meta[id]) return;
+    if (MOVIL) { avisar("Retocar el piso se hace en la compu"); return; }
+    const d = meta[id], L = d.niveles.length - 1, nv = d.niveles[L], S = nv.size, ts = nv.tileSize, n = S / ts;
+    const C = Math.min(S, RT_MAX), O = Math.round((S - C) / 2);
+    const v = document.createElement("div"); v.className = "rt-velo"; v.setAttribute("role", "dialog"); v.setAttribute("aria-label", "Retocar el piso");
+    v.innerHTML = '<div class="rt-caja"><header class="rt-cab"><div><b>Quitar el tripié</b><span>' + esc((escena(id) || {}).nombre || "") + ' · el piso de la esfera, visto desde arriba</span></div>' +
+      '<div class="rt-cab-acc">' + (d.retoque ? '<button class="mini" type="button" data-rt="original">Restaurar original</button>' : "") + '<button class="mini" type="button" data-rt="cancelar">Cancelar</button><button class="btn-prim" type="button" data-rt="guardar">Guardar</button></div></header>' +
+      '<div class="rt-cuerpo"><aside class="rt-herr">' +
+      '<div class="rt-grupo"><b>Herramienta</b><button class="rt-h" type="button" data-rt-h="corrector" aria-pressed="true" title="Corrector puntual (J)">' + ICO_CORRECTOR + '<span>Corrector puntual <kbd>J</kbd></span></button>' +
+      '<button class="rt-h" type="button" data-rt-h="tampon" aria-pressed="false" title="Tampón de clonar (S)">' + ICO_TAMPON + '<span>Tampón de clonar <kbd>S</kbd></span></button>' +
+      '<button class="rt-h" type="button" data-rt-h="mano" aria-pressed="false" title="Mano (H o barra espaciadora)">' + ICO_MANO + '<span>Mano <kbd>H</kbd></span></button></div>' +
+      '<div class="rt-grupo"><b>Pincel</b><label>Tamaño <span id="rt-tam-v"></span><input type="range" id="rt-tam" min="4" max="900" value="120"></label>' +
+      '<label>Dureza <span id="rt-dur-v"></span><input type="range" id="rt-dur" min="0" max="100" value="40"></label>' +
+      '<label id="rt-op-fila" hidden>Opacidad <span id="rt-op-v"></span><input type="range" id="rt-op" min="5" max="100" value="100"></label></div>' +
+      '<p class="rt-ayuda" id="rt-ayuda"></p>' +
+      '<div class="rt-grupo rt-fila"><button class="mini" type="button" data-rt="deshacer" title="Deshacer (Cmd/Ctrl + Z)">Deshacer</button><button class="mini" type="button" data-rt="rehacer" title="Rehacer (Cmd/Ctrl + Shift + Z)">Rehacer</button></div>' +
+      '<div class="rt-grupo rt-fila"><button class="mini" type="button" data-rt="antes" aria-pressed="false">Antes / después</button><button class="mini" type="button" data-rt="ajustar">Ver todo</button></div>' +
+      '</aside><div class="rt-lienzo" id="rt-lienzo"><canvas id="rt-c"></canvas><canvas id="rt-ui"></canvas><div class="rt-carga" id="rt-carga">Cargando el piso…</div></div></div></div>';
+    document.body.appendChild(v);
+    const work = document.createElement("canvas"); work.width = work.height = C;
+    const wx = work.getContext("2d", { willReadFrequently: true });
+    const orig = document.createElement("canvas"); orig.width = orig.height = C;
+    const piezas = {}; // las del nivel grande que tocan el centro (para guardar sin perder lo de alrededor)
+    const t0 = Math.floor(O / ts), t1 = Math.floor((O + C - 1) / ts);
+    const carga = (u) => new Promise((ok, mal) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => ok(im); im.onerror = () => mal(new Error("pieza")); im.src = u; });
+    try {
+      const lista = [];
+      for (let ty = t0; ty <= t1; ty++) for (let tx = t0; tx <= t1; tx++) lista.push([tx, ty]);
+      await Promise.all(lista.map(async ([tx, ty]) => { const im = await carga(RB(id) + L + "/d/" + ty + "/" + tx + ".jpg"); piezas[ty + "/" + tx] = im; wx.drawImage(im, tx * ts - O, ty * ts - O, ts, ts); }));
+    } catch (e) { v.remove(); avisar("No se pudo abrir el piso de esta esfera. Revisa tu internet."); return; }
+    orig.getContext("2d").drawImage(work, 0, 0);
+    const lienzo = v.querySelector("#rt-lienzo"), cv = v.querySelector("#rt-c"), ui = v.querySelector("#rt-ui"), cx = cv.getContext("2d", { willReadFrequently: true }), ux = ui.getContext("2d");
+    v.querySelector("#rt-carga").remove();
+    const st = RT = { id, herr: "corrector", k: 1, ox: 0, oy: 0, tam: 120, dur: 40, op: 100, fuente: null, desfase: null, antes: false, deshacer: [], rehacer: [], cambios: false, espacio: false, trazo: null, raton: null };
+    const tamReal = () => st.tam; // en pixeles de la foto
+    const ajustar = () => { const W = lienzo.clientWidth, H = lienzo.clientHeight; st.k = Math.min(W, H) / C * 0.96; st.ox = (W - C * st.k) / 2; st.oy = (H - C * st.k) / 2; pintar(); };
+    const aFoto = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left - st.ox) / st.k, (e.clientY - r.top - st.oy) / st.k]; };
+    function pintar() {
+      const W = lienzo.clientWidth, H = lienzo.clientHeight, dpr = devicePixelRatio || 1;
+      [cv, ui].forEach((c) => { if (c.width !== Math.round(W * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); c.style.width = W + "px"; c.style.height = H + "px"; } });
+      cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.fillStyle = "#0b0b0b"; cx.fillRect(0, 0, W, H);
+      cx.imageSmoothingQuality = "high"; cx.drawImage(st.antes ? orig : work, st.ox, st.oy, C * st.k, C * st.k);
+      pintarUI();
+    }
+    function pintarUI() {
+      const W = lienzo.clientWidth, H = lienzo.clientHeight, dpr = devicePixelRatio || 1;
+      ux.setTransform(dpr, 0, 0, dpr, 0, 0); ux.clearRect(0, 0, W, H);
+      if (st.trazo && st.herr === "corrector") { ux.globalAlpha = 0.45; ux.drawImage(st.trazo.mascara, st.ox, st.oy, C * st.k, C * st.k); ux.globalAlpha = 1; }
+      if (st.raton && st.herr !== "mano" && !st.espacio) {
+        const [mx, my] = st.raton, r = (tamReal() / 2) * st.k;
+        ux.lineWidth = 1.5; ux.strokeStyle = "rgba(0,0,0,.6)"; ux.beginPath(); ux.arc(st.ox + mx * st.k, st.oy + my * st.k, r + 1, 0, 7); ux.stroke();
+        ux.strokeStyle = "#fff"; ux.beginPath(); ux.arc(st.ox + mx * st.k, st.oy + my * st.k, r, 0, 7); ux.stroke();
+        // Tampón: la cruz de dónde se está copiando
+        const f = st.herr === "tampon" && (st.desfase ? [mx + st.desfase[0], my + st.desfase[1]] : st.fuente);
+        if (f) { const fx = st.ox + f[0] * st.k, fy = st.oy + f[1] * st.k; ux.strokeStyle = "#D5FF40"; ux.lineWidth = 2; ux.beginPath(); ux.moveTo(fx - 9, fy); ux.lineTo(fx + 9, fy); ux.moveTo(fx, fy - 9); ux.lineTo(fx, fy + 9); ux.stroke(); }
+      }
+    }
+    const ayuda = () => { v.querySelector("#rt-ayuda").innerHTML = st.herr === "tampon" ? (st.fuente ? "Pinta sobre el tripié: copia de la cruz verde. <b>Alt + clic</b> para elegir otro lugar." : "<b>Alt + clic</b> (Option en Mac) en un pedazo de piso limpio para elegir de dónde copiar, y luego pinta sobre el tripié.") : st.herr === "corrector" ? "Pinta sobre el tripié y su sombra. Al soltar, Mozari lo rellena con el piso de alrededor. Si el piso tiene líneas rectas o dibujos, termínalos con el tampón de clonar." : "Arrastra para moverte. La rueda acerca y aleja."; };
+    const herr = (h) => { st.herr = h; v.querySelectorAll("[data-rt-h]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.rtH === h))); v.querySelector("#rt-op-fila").hidden = h !== "tampon"; lienzo.dataset.herr = h; ayuda(); pintarUI(); };
+    const valores = () => { st.tam = +v.querySelector("#rt-tam").value; st.dur = +v.querySelector("#rt-dur").value; st.op = +v.querySelector("#rt-op").value; v.querySelector("#rt-tam-v").textContent = st.tam + " px"; v.querySelector("#rt-dur-v").textContent = st.dur + "%"; v.querySelector("#rt-op-v").textContent = st.op + "%"; pintarUI(); };
+    // Deshacer: se guarda solo el pedazo que cambió (antes y después)
+    function guardarPaso(caja, antes) {
+      const x0 = Math.max(0, Math.floor(caja.x)), y0 = Math.max(0, Math.floor(caja.y)), x1 = Math.min(C, Math.ceil(caja.x + caja.w)), y1 = Math.min(C, Math.ceil(caja.y + caja.h));
+      if (x1 <= x0 || y1 <= y0) return;
+      const a = document.createElement("canvas"), b = document.createElement("canvas"); a.width = b.width = x1 - x0; a.height = b.height = y1 - y0;
+      a.getContext("2d").drawImage(antes, x0, y0, x1 - x0, y1 - y0, 0, 0, x1 - x0, y1 - y0); b.getContext("2d").drawImage(work, x0, y0, x1 - x0, y1 - y0, 0, 0, x1 - x0, y1 - y0);
+      st.deshacer.push({ x: x0, y: y0, a, b }); if (st.deshacer.length > RT_PASOS) st.deshacer.shift(); st.rehacer = []; st.cambios = true;
+    }
+    function aplicarPaso(p, cual) { wx.clearRect(p.x, p.y, p.a.width, p.a.height); wx.drawImage(cual === "a" ? p.a : p.b, p.x, p.y); }
+    const deshacer = () => { const p = st.deshacer.pop(); if (!p) return; aplicarPaso(p, "a"); st.rehacer.push(p); st.cambios = true; pintar(); };
+    const rehacer = () => { const p = st.rehacer.pop(); if (!p) return; aplicarPaso(p, "b"); st.deshacer.push(p); pintar(); };
+    // Un toque de pincel (tampón): de la foto como estaba al empezar el trazo, con borde suave según la dureza
+    const gota = document.createElement("canvas"), gx = gota.getContext("2d");
+    function sello(px, py) {
+      const t = st.trazo, r = tamReal() / 2, lado = Math.ceil(r * 2) + 2;
+      if (gota.width !== lado) { gota.width = gota.height = lado; }
+      gx.globalCompositeOperation = "source-over"; gx.clearRect(0, 0, lado, lado);
+      gx.drawImage(t.antes, px + st.desfase[0] - lado / 2, py + st.desfase[1] - lado / 2, lado, lado, 0, 0, lado, lado);
+      const g = gx.createRadialGradient(lado / 2, lado / 2, r * (st.dur / 100) * 0.98, lado / 2, lado / 2, r);
+      g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(1, "rgba(0,0,0,0)");
+      gx.globalCompositeOperation = "destination-in"; gx.fillStyle = g; gx.fillRect(0, 0, lado, lado);
+      wx.globalAlpha = st.op / 100; wx.drawImage(gota, px - lado / 2, py - lado / 2); wx.globalAlpha = 1;
+      t.caja = unir(t.caja, { x: px - r - 1, y: py - r - 1, w: 2 * r + 2, h: 2 * r + 2 });
+    }
+    const unir = (a, b) => (!a ? b : { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.max(a.x + a.w, b.x + b.w) - Math.min(a.x, b.x), h: Math.max(a.y + a.h, b.y + b.h) - Math.min(a.y, b.y) });
+    function marcar(px, py) {
+      const t = st.trazo, r = tamReal() / 2, m = t.mascara.getContext("2d");
+      m.fillStyle = "rgba(255,70,70,1)"; m.beginPath(); m.arc(px, py, r, 0, 7); m.fill();
+      t.caja = unir(t.caja, { x: px - r, y: py - r, w: 2 * r, h: 2 * r });
+    }
+    function seguir(px, py) {
+      const t = st.trazo, [qx, qy] = t.ultimo, dist = Math.hypot(px - qx, py - qy), paso = Math.max(1, tamReal() * 0.12), k = Math.max(1, Math.ceil(dist / paso));
+      for (let i = 1; i <= k; i++) { const ax = qx + ((px - qx) * i) / k, ay = qy + ((py - qy) * i) / k; if (st.herr === "tampon") sello(ax, ay); else marcar(ax, ay); }
+      t.ultimo = [px, py];
+    }
+    let arrastre = null;
+    cv.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      cv.setPointerCapture(e.pointerId);
+      const [px, py] = aFoto(e);
+      if (st.herr === "mano" || st.espacio) { arrastre = [e.clientX, e.clientY, st.ox, st.oy]; return; }
+      if (st.herr === "tampon" && e.altKey) { st.fuente = [px, py]; st.desfase = null; ayuda(); pintarUI(); return; }
+      if (st.herr === "tampon" && !st.fuente) { avisar("Primero Alt + clic (Option en Mac) en el piso limpio para elegir de dónde copiar"); return; }
+      const antes = document.createElement("canvas"); antes.width = antes.height = C; antes.getContext("2d").drawImage(work, 0, 0);
+      st.trazo = { antes, caja: null, ultimo: [px, py] };
+      if (st.herr === "tampon") { if (!st.desfase) st.desfase = [st.fuente[0] - px, st.fuente[1] - py]; sello(px, py); }
+      else { st.trazo.mascara = document.createElement("canvas"); st.trazo.mascara.width = st.trazo.mascara.height = C; marcar(px, py); }
+      pintar();
+    });
+    cv.addEventListener("pointermove", (e) => {
+      st.raton = aFoto(e);
+      if (arrastre) { st.ox = arrastre[2] + e.clientX - arrastre[0]; st.oy = arrastre[3] + e.clientY - arrastre[1]; pintar(); return; }
+      if (st.trazo) { seguir(...st.raton); pintar(); } else pintarUI();
+    });
+    const soltar = () => {
+      if (arrastre) { arrastre = null; return; }
+      const t = st.trazo; if (!t) return; st.trazo = null;
+      if (st.herr === "corrector" && t.caja) {
+        lienzo.classList.add("curando");
+        requestAnimationFrame(() => setTimeout(() => {
+          const res = curarZona(work, t.mascara, t.caja);
+          lienzo.classList.remove("curando");
+          if (!res.ok) avisar("No encontré piso limpio alrededor para rellenar: usa el tampón de clonar");
+          else if (res.fallos) avisar("Una parte no se pudo rellenar sola: termínala con el tampón de clonar");
+          guardarPaso({ x: t.caja.x - 4, y: t.caja.y - 4, w: t.caja.w + 8, h: t.caja.h + 8 }, t.antes); pintar();
+        }, 20));
+        return;
+      }
+      if (t.caja) guardarPaso(t.caja, t.antes);
+      pintar();
+    };
+    cv.addEventListener("pointerup", soltar); cv.addEventListener("pointercancel", soltar);
+    cv.addEventListener("pointerleave", () => { st.raton = null; pintarUI(); });
+    cv.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, f = Math.exp(-e.deltaY * 0.0015), k2 = Math.min(8, Math.max(0.05, st.k * f));
+      st.ox = mx - ((mx - st.ox) * k2) / st.k; st.oy = my - ((my - st.oy) * k2) / st.k; st.k = k2; pintar();
+    }, { passive: false });
+    const tecla = (e) => {
+      e.stopPropagation(); // los atajos del estudio (deshacer, borrar capas…) no corren mientras se retoca
+      const cmd = e.metaKey || e.ctrlKey;
+      if (cmd && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? rehacer() : deshacer(); return; }
+      if (e.key === " " && e.type === "keydown") { e.preventDefault(); st.espacio = true; lienzo.dataset.herr = "mano"; return; }
+      if (e.key === " " && e.type === "keyup") { st.espacio = false; lienzo.dataset.herr = st.herr; return; }
+      if (e.type !== "keydown" || cmd) return;
+      const k = e.key.toLowerCase();
+      if (k === "s") herr("tampon"); else if (k === "j") herr("corrector"); else if (k === "h") herr("mano");
+      else if (k === "[" || k === "]") { const t = v.querySelector("#rt-tam"); t.value = Math.max(4, Math.min(900, +t.value + (k === "]" ? 1 : -1) * Math.max(4, Math.round(+t.value * 0.15)))); valores(); }
+      else if (k === "escape") v.querySelector('[data-rt="cancelar"]').click();
+    };
+    addEventListener("keydown", tecla, true); addEventListener("keyup", tecla, true);
+    const ro = new ResizeObserver(() => pintar()); ro.observe(lienzo);
+    function cerrar() { removeEventListener("keydown", tecla, true); removeEventListener("keyup", tecla, true); ro.disconnect(); v.remove(); RT = null; }
+    v.addEventListener("input", (e) => { if (/^rt-(tam|dur|op)$/.test(e.target.id)) valores(); });
+    v.addEventListener("click", async (e) => {
+      const h = e.target.closest("[data-rt-h]"); if (h) { herr(h.dataset.rtH); return; }
+      const b = e.target.closest("[data-rt]"); if (!b) return;
+      const q = b.dataset.rt;
+      if (q === "deshacer") deshacer(); else if (q === "rehacer") rehacer(); else if (q === "ajustar") ajustar();
+      else if (q === "antes") { st.antes = !st.antes; b.setAttribute("aria-pressed", String(st.antes)); pintar(); }
+      else if (q === "cancelar") { if (st.cambios && b.dataset.seguro !== "1") { b.dataset.seguro = "1"; b.textContent = "Salir sin guardar"; return; } cerrar(); }
+      else if (q === "guardar") { if (!st.cambios) { cerrar(); return; } b.disabled = true; try { await guardarRetoque(id, work, piezas, { L, S, ts, n, C, O }, (t) => (b.textContent = t)); cerrar(); avisar("Listo: el piso quedó retocado. También se ve así en tu tour publicado.", 4000); } catch (err) { b.disabled = false; b.textContent = "Guardar"; avisar(err.message || "No se pudo guardar el retoque"); } }
+      else if (q === "original") { b.disabled = true; try { await quitarRetoque(id); cerrar(); avisar("Listo: la esfera regresó a su original"); } catch (err) { b.disabled = false; avisar("No se pudo restaurar"); } }
+    });
+    herr("corrector"); valores(); ajustar();
+  }
+  // Guardar: las piezas grandes que tocan el centro, los niveles chicos (de una cara armada) y la vista previa
+  async function guardarRetoque(id, work, piezas, g, aviso) {
+    const d = meta[id], N = Math.max(d.retoque || 0, d.retoqueUlt || 0) + 1, dest = "escenas/" + id + "/ret" + N + "/", ant = RB(id);
+    const cola = [];
+    const jpg = (c) => (c.convertToBlob ? c.convertToBlob({ type: "image/jpeg", quality: SUBIDA.CALIDAD }) : new Promise((ok) => c.toBlob(ok, "image/jpeg", SUBIDA.CALIDAD)));
+    const t0 = Math.floor(g.O / g.ts), t1 = Math.floor((g.O + g.C - 1) / g.ts);
+    for (let ty = t0; ty <= t1; ty++) for (let tx = t0; tx <= t1; tx++) {
+      const c = new OffscreenCanvas(g.ts, g.ts), x = c.getContext("2d");
+      x.drawImage(piezas[ty + "/" + tx], 0, 0, g.ts, g.ts); x.drawImage(work, g.O - tx * g.ts, g.O - ty * g.ts);
+      cola.push([g.L + "/d/" + ty + "/" + tx + ".jpg", await jpg(c)]);
+    }
+    // Niveles chicos: la cara completa a la mitad, con el centro retocado encima
+    let cara = null;
+    if (g.L >= 2) {
+      const nv = meta[id].niveles[g.L - 1], S1 = nv.size, n1 = S1 / nv.tileSize;
+      cara = new OffscreenCanvas(S1, S1); const x = cara.getContext("2d"); x.imageSmoothingQuality = "high";
+      const carga = (u) => new Promise((ok, mal) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => ok(im); im.onerror = () => mal(new Error("No se pudo leer la esfera. Revisa tu internet.")); im.src = u; });
+      const ims = [];
+      for (let ty = 0; ty < n1; ty++) for (let tx = 0; tx < n1; tx++) ims.push(carga(ant + (g.L - 1) + "/d/" + ty + "/" + tx + ".jpg").then((im) => x.drawImage(im, tx * nv.tileSize, ty * nv.tileSize, nv.tileSize, nv.tileSize)));
+      await Promise.all(ims);
+      const f = S1 / g.S; x.drawImage(work, g.O * f, g.O * f, g.C * f, g.C * f);
+    } else { cara = new OffscreenCanvas(g.S, g.S); const x = cara.getContext("2d"); Object.entries(piezas).forEach(([k, im]) => { const [ty, tx] = k.split("/").map(Number); x.drawImage(im, tx * g.ts, ty * g.ts, g.ts, g.ts); }); x.drawImage(work, g.O, g.O); }
+    for (let z = Math.min(g.L - 1, meta[id].niveles.length - 1); z >= 1; z--) {
+      const nv = meta[id].niveles[z], nn = nv.size / nv.tileSize;
+      for (let ty = 0; ty < nn; ty++) for (let tx = 0; tx < nn; tx++) {
+        const c = new OffscreenCanvas(nv.tileSize, nv.tileSize), x = c.getContext("2d"); x.imageSmoothingQuality = "high";
+        const k = cara.width / nv.size; x.drawImage(cara, tx * nv.tileSize * k, ty * nv.tileSize * k, nv.tileSize * k, nv.tileSize * k, 0, 0, nv.tileSize, nv.tileSize);
+        cola.push([z + "/d/" + ty + "/" + tx + ".jpg", await jpg(c)]);
+      }
+    }
+    // Vista previa (tira de 6 caras en orden b d f l r u): se cambia la de abajo
+    const pv = await new Promise((ok, mal) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => ok(im); im.onerror = () => mal(new Error("No se pudo leer la vista previa")); im.src = ant + "preview.jpg"; });
+    const tira = new OffscreenCanvas(256, 1536), tx2 = tira.getContext("2d"); tx2.imageSmoothingQuality = "high";
+    tx2.drawImage(pv, 0, 0, 256, 1536); tx2.drawImage(cara, 0, 256, 256, 256);
+    cola.push(["preview.jpg", await jpg(tira)]);
+    let hechos = 0;
+    const subir = async () => { while (cola.length) { const [r, b] = cola.shift(); await subirArchivo(dest + r, b); hechos++; aviso("Guardando " + Math.round((hechos / total) * 100) + "%"); } };
+    const total = cola.length;
+    await Promise.all([subir(), subir(), subir(), subir()]);
+    // escena.json con el número de retoque (el visor pide r<N>/) y se borra el retoque anterior
+    const previo = d.retoque || 0, nuevo = Object.assign({}, d, { retoque: N, retoqueUlt: N, retocado: new Date().toISOString() });
+    await subirArchivo("escenas/" + id + "/escena.json", new Blob([JSON.stringify(nuevo)], { type: "application/json" }));
+    meta[id] = nuevo;
+    if (nuevo.ajuste > 0) { aviso("Poniendo tus ajustes…"); await hornearAjustes(id, nuevo.ajustes, { soloD: true, carpeta: nuevo.ajuste }); }
+    if (previo) fetch("api/tours/" + TOUR + "/f/escenas/" + id + "/ret" + previo + "/", { method: "DELETE" }).catch(() => {});
+    refrescarEsferaEnTodos(id); if (MJ) mejoraElegir(MJ.id);
+  }
+  async function quitarRetoque(id) {
+    const d = meta[id], N = d.retoque || 0, nuevo = Object.assign({}, d, { retoqueUlt: Math.max(N, d.retoqueUlt || 0) }); delete nuevo.retoque; delete nuevo.retocado;
+    await subirArchivo("escenas/" + id + "/escena.json", new Blob([JSON.stringify(nuevo)], { type: "application/json" }));
+    meta[id] = nuevo;
+    if (nuevo.ajuste > 0) await hornearAjustes(id, nuevo.ajustes, { soloD: true, carpeta: nuevo.ajuste });
+    if (N) fetch("api/tours/" + TOUR + "/f/escenas/" + id + "/ret" + N + "/", { method: "DELETE" }).catch(() => {});
+    refrescarEsferaEnTodos(id); if (MJ) mejoraElegir(MJ.id);
+  }
+  document.addEventListener("click", (ev) => { const b = ev.target.closest && ev.target.closest("[data-retocar]"); if (!b) return; ev.preventDefault(); ev.stopPropagation(); abrirRetoque(b.dataset.retocar); }, true);
   // =================== TUTORIAL EN VIDEO (Laboratorio «tutorial-video») ===================
   // Amar, 16 nov 2026: «tengo un tutorial paso a paso… para los que no saben cómo armar». Va en Loom (se ve menos
   // informal que YouTube). Se grabó antes de las últimas actualizaciones, así que lo dice: algunos botones cambian.

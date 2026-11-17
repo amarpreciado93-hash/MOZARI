@@ -27,7 +27,7 @@
 // Cada tour pertenece a una cuenta: cuentas/<uid>/tours/<id>. Nadie puede leer, cambiar ni borrar
 // tours de otra cuenta. Los tours publicados se ven en el Worker de tours (público, solo lectura).
 
-import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR, conCarga, cargaEnViejos } from "./comun.js";
+import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR, conCarga, cargaEnViejos, rutasEdicion } from "./comun.js";
 import { rutasSesion, cuentaDe, perfil, leerCupo, contarCuentas, firmarLink, verificarLink } from "./sesion.js";
 import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoCompra, correoCotizacion, htmlCotizacion, textoCotizacion, TIPOS_COTIZACION, correoDeNovedad, correoCampana, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja, CAMPANA, iniciarCampana, correoCompu, mandarRecordatorios, sembrarRecordatorios } from "./correos.js";
 import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
@@ -252,6 +252,7 @@ export const LABORATORIO = {
   "landing": { nombre: "Landing del desarrollo", texto: "Publicar → Landing: una página de venta con la marca del proyecto (logos, colores y letras de su manual), portada, plano maestro (se amplía con los dedos), lotes con su precio y calculadora de pagos, recorrido 360, galería, ubicación y WhatsApp con el lote elegido. Se ve en celular y compu y se publica con el tour en su link /landing." },
   "bienvenida": { nombre: "Pantalla de bienvenida", texto: "Proyecto → General: el tour abre con tu logo, el nombre y un botón sobre la esfera girando despacio. Al tocarlo empieza el recorrido con su música y su piloto automático, sin la pregunta de «Activar sonido». Se aplica al volver a publicar." },
   "tutorial-video": { nombre: "Tutorial en video", texto: "En Mis Tours y en Panoramas (mientras el tour no tiene esferas) sale la tarjeta «Tutorial paso a paso»: abre el video de cómo armar un tour, dentro de Mozari, con un aviso de que se grabó antes de las últimas actualizaciones." },
+  "mejora": { nombre: "Mejora de esferas", texto: "Ventana «Mejora», junto a Mis Tours: la edición de tus esferas. Ajustes de imagen (brillo, contraste, saturación, sombras, altas luces, temperatura y detalle) que se ven al momento y se guardan en toda la esfera, y «Quitar el tripié»: el piso visto desde arriba con corrector puntual y tampón de clonar. Sale así en el tour publicado y en el .zip; la foto original no se pierde." },
   "descarga-pdf": { nombre: "Botón para descargar un PDF", texto: "En Interfaz → Descargar PDF: sube el plano, el brochure o la ficha de venta (hasta 25 MB) y en el tour sale un botón junto al de contacto («Descargar plano» o el texto que quieras). En el celular sale solo el ícono para no tapar la vista. También viaja en el .zip." },
   "transiciones": { nombre: "Transiciones inmersivas", texto: "Al tocar un punto para pasar a otra esfera, la vista gira hacia él, avanza y la siguiente esfera entra en vivo (también en celular), sin la foto plana que se veía como página doblada. Antes de abrir, el tour precarga todas sus esferas con una foto de portada, el nombre y el avance." },
   "acabado": { nombre: "Acabado fino del tour", texto: "Retoques a lo que ve tu cliente. Diseño Cine: el título, el nombre y el botón de contacto salen blancos (antes un velo oscuro los dejaba grises); en celular ya salen el botón de contacto y el nombre del proyecto, y las flechas se leen sobre fondos claros. Diseño Brújula: el nombre de la esfera ya no se repite ni se corta en la orilla y los puntos de la ruta se tocan fácil. Se aplica al volver a publicar." },
@@ -1112,6 +1113,15 @@ async function api(request, env, partes, yo) {
         cursor = l.truncated ? l.cursor : undefined;
       } while (cursor);
     }
+    // Esferas editadas (Mejora): sus piezas se bajan ya editadas (e<N>-<M>/) con el nombre de siempre, y no van las
+    // carpetas ret<N>/ ni aj<M>/. El escena.json del .zip va sin el número de edición (lo quita el estudio al armarlo).
+    const edic = {};
+    await Promise.all([...escenas].map(async (e) => { const o = await env.R2.get(base + "escenas/" + e + "/escena.json"), j = o ? await o.json().catch(() => null) : null; if (j && (j.retoque > 0 || j.ajuste > 0)) edic[e] = "e" + (j.retoque || 0) + "-" + (j.ajuste || 0); }));
+    for (let i = archivos.length - 1; i >= 0; i--) {
+      const a = archivos[i], m = /^escenas\/([A-Za-z0-9_-]{1,80})\/(.+)$/.exec(a.ruta); if (!m) continue;
+      if (/^(ret|aj)\d+\//.test(m[2])) { archivos.splice(i, 1); continue; }
+      if (edic[m[1]] && (/^\d{1,2}\/[bdflru]\/\d+\/\d+\.jpg$/.test(m[2]) || m[2] === "preview.jpg")) a.desde = "escenas/" + m[1] + "/" + edic[m[1]] + "/" + m[2];
+    }
     const nombre = String(pr.nombre || "Recorrido virtual 360").slice(0, 90);
     const desc = (typeof pr.descripcion === "string" && pr.descripcion.replace(/\s+/g, " ").trim().slice(0, 200)) || "Recorrido virtual 360";
     const pon = (v) => ({ element: (el) => el.setAttribute("content", v) });
@@ -1266,7 +1276,9 @@ export default {
       if (!ID_TOUR.test(id || "") || !rutaValida(ruta)) return error(400, "Ruta inválida");
       if (request.method !== "GET" && request.method !== "HEAD") return error(405, "Método no permitido");
       if (!(await esDueno(env, yo.uid, id))) return error(404, "No existe");
-      return servirR2(env, request, "tours/" + id + "/" + ruta, ruta.endsWith(".json") ? "no-store" : "private, max-age=31536000, immutable");
+      const ed = rutasEdicion(ruta), cc = ruta.endsWith(".json") ? "no-store" : "private, max-age=31536000, immutable";
+      if (ed) { for (const c of ed.slice(0, -1)) { const r = await servirR2(env, request, "tours/" + id + "/" + c, cc); if (r.status !== 404) return r; } return servirR2(env, request, "tours/" + id + "/" + ed[ed.length - 1], cc); }
+      return servirR2(env, request, "tours/" + id + "/" + ruta, cc);
     }
 
     // Página principal: el escaparate para quien no ha entrado, el estudio para quien sí

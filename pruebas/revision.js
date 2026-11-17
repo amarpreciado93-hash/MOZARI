@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -4038,6 +4038,93 @@ async function capasPesadas(p) {
       } finally {
         await u.context().close(); await n.context().close();
       }
+    });
+    // Pedido de Amar (17 nov 2026): ventana «Mejora», junto a Mis Tours, donde vive la edición de las esferas: ajustes de imagen
+    // (brillo, contraste, saturación, sombras, altas luces, temperatura, detalle) y quitar el tripié con corrector puntual y
+    // tampón de clonar, como en Photoshop. La foto original no se toca; el tour publicado y el .zip salen con lo editado.
+    await paso("Mejora (Laboratorio, nace Solo yo): ajustes de imagen en vivo y guardados en la esfera; quitar el tripié con corrector y tampón; sale en el tour y en el .zip; la original regresa", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const pix = (p, url, x, y) => p.evaluate(async ([u, x, y]) => { const r = await fetch(u, { cache: "no-store" }); if (!r.ok) return [-1, -1, -1]; const b = await createImageBitmap(await r.blob()), c = new OffscreenCanvas(b.width, b.height), q = c.getContext("2d"); q.drawImage(b, 0, 0); const d = q.getImageData(x, y, 4, 4).data; let s = [0, 0, 0]; for (let i = 0; i < d.length; i += 4) { s[0] += d[i]; s[1] += d[i + 1]; s[2] += d[i + 2]; } return s.map((v) => Math.round(v / 16)); }, [url, x, y]);
+      const negro = (c) => c[0] >= 0 && c[0] + c[1] + c[2] < 90, verde = (c) => c[1] > 90 && c[1] > c[0];
+      const n = await pagina(DUENO), u = await pagina("sin-mejora-" + Date.now() + "@prueba.mx");
+      try {
+        await nuevoTour(n, "Mejora de esferas"); const tour = await idTour(n);
+        // Una esfera con «tripié»: una mancha negra en el piso (el nadir)
+        await n.evaluate(async () => {
+          const cv = document.createElement("canvas"); cv.width = 4096; cv.height = 2048; const x = cv.getContext("2d");
+          x.fillStyle = "#7ab"; x.fillRect(0, 0, 4096, 1024); x.fillStyle = "#6a5"; x.fillRect(0, 1024, 4096, 1024); x.fillStyle = "#000"; x.fillRect(0, 1878, 4096, 170);
+          const bl = await new Promise((o) => cv.toBlob(o, "image/jpeg", 0.9)), inp = document.querySelector("#subir-zona input[type=file]"), dt = new DataTransfer(); dt.items.add(new File([bl], "tripie.jpg", { type: "image/jpeg" }));
+          inp.files = dt.files; inp.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+        for (let i = 0; i < 45; i++) { await n.waitForTimeout(1000); if ((await n.$$("#pano-lista [data-abrir]")).length > 1) break; }
+        await n.waitForTimeout(1000);
+        const esf = (await api(n, "api/tours/" + tour)).d.escenas.find((e) => e.nombre === "tripie").id, base = "t/" + tour + "/escenas/" + esf + "/";
+        const json = async () => (await api(n, base + "escena.json")).d;
+        exige(negro(await pix(n, base + "2/d/0/0.jpg", 760, 760)), "la esfera de prueba no trae el tripié en el piso");
+        // La ventana Mejora
+        exige(await n.isVisible('#nav [data-sec="mejora"]') && !(await u.$('#nav [data-sec="mejora"]')), "«Mejora» no sale para el dueño (o ya sale para una cuenta sin la función)");
+        await n.click('#nav [data-sec="mejora"]'); await n.waitForTimeout(1800);
+        await pasarGuias(n);
+        await n.click('[data-mj-esf="' + esf + '"]'); await n.waitForTimeout(2500);
+        exige(await n.isVisible("#mj-ajustes") && (await n.$$("#mj-ajustes [data-mj-aj]")).length === 7 && !(await n.isVisible("#mj-prev")), "no salen los 7 ajustes (o la vista en vivo sale sin mover nada)");
+        // En vivo: con más brillo la vista se aclara
+        const luz = (sel) => n.$eval(sel, (c) => { const k = document.createElement("canvas"); k.width = 64; k.height = 36; const x = k.getContext("2d"); x.drawImage(c, 0, 0, 64, 36); const d = x.getImageData(0, 0, 64, 36).data; let s = 0; for (let i = 0; i < d.length; i += 4) s += d[i] + d[i + 1] + d[i + 2]; return s / (d.length / 4) / 3; });
+        await n.$eval('[data-mj-aj="brillo"]', (e) => { e.value = "60"; e.dispatchEvent(new Event("input", { bubbles: true })); }); await n.waitForTimeout(900);
+        const l0 = await luz("#mj-stage canvas"), l1 = await luz("#mj-prev");
+        exige(await n.isVisible("#mj-prev") && l1 > l0 + 8, "al subir el brillo la vista en vivo no se aclara: " + l0.toFixed(1) + " → " + l1.toFixed(1));
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "mejora-ajustes.png") });
+        const espera = async (sel, t) => { for (let i = 0; i < t; i++) { await n.waitForTimeout(1000); if (!(await n.isVisible(sel))) return true; } return false; };
+        await n.click("#mj-aplicar"); await n.waitForTimeout(600);
+        exige(await espera("#mj-progreso", 120), "aplicar los ajustes no terminó");
+        let j = await json();
+        exige(j.ajuste === 1 && j.ajustes.brillo === 60 && !j.retoque, "los ajustes no quedaron guardados en la esfera: " + JSON.stringify({ a: j.ajuste, v: j.ajustes }));
+        const o1 = await pix(n, base + "1/f/0/0.jpg", 380, 500), a1 = await pix(n, base + "e0-1/1/f/0/0.jpg", 380, 500);
+        exige(a1[1] > o1[1] + 12 && /Ajustada/.test(await n.textContent('[data-mj-esf="' + esf + '"]')), "la esfera guardada no quedó más clara (o no dice «Ajustada»): " + o1 + " → " + a1);
+        // Quitar el tripié: corrector puntual, deshacer, tampón de clonar y guardar
+        await n.click("#mj-tripie [data-retocar]"); await n.waitForSelector("#rt-c", { timeout: 20000 });
+        for (let i = 0; i < 20 && (await n.$("#rt-carga")); i++) await n.waitForTimeout(500);
+        await n.waitForTimeout(600);
+        const centro = () => n.$eval("#rt-c", (c) => { const d = c.getContext("2d").getImageData((c.width / 2) | 0, (c.height / 2) | 0, 2, 2).data; return [d[0], d[1], d[2]]; });
+        const r = await (await n.$("#rt-c")).boundingBox(), cx = r.x + r.width / 2, cy = r.y + r.height / 2;
+        exige(negro(await centro()), "el piso no abre con el tripié al centro: " + (await centro()));
+        await n.$eval("#rt-tam", (e) => { e.value = "520"; e.dispatchEvent(new Event("input", { bubbles: true })); });
+        await n.mouse.move(cx, cy); await n.mouse.down(); await n.mouse.up(); await n.waitForTimeout(2000);
+        exige(verde(await centro()), "el corrector puntual no rellenó el tripié con el piso: " + (await centro()));
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "mejora-tripie.png") });
+        await n.keyboard.press("Control+z"); await n.waitForTimeout(500);
+        exige(negro(await centro()), "deshacer no regresó el tripié");
+        await n.keyboard.press("s"); await n.waitForTimeout(200);
+        await n.mouse.click(cx, cy); await n.waitForTimeout(300);
+        exige(negro(await centro()), "el tampón pintó sin haber elegido de dónde copiar");
+        await n.keyboard.down("Alt"); await n.mouse.click(cx + r.height * 0.34, cy); await n.keyboard.up("Alt"); await n.waitForTimeout(200);
+        await n.mouse.click(cx, cy); await n.waitForTimeout(600);
+        exige(verde(await centro()), "el tampón de clonar no copió el piso sobre el tripié: " + (await centro()));
+        await n.click('.rt-velo [data-rt="guardar"]');
+        exige(await espera(".rt-velo", 90), "guardar el retoque no terminó");
+        j = await json();
+        exige(j.retoque === 1 && j.ajuste === 1, "el retoque no quedó guardado: " + JSON.stringify({ r: j.retoque, a: j.ajuste }));
+        const piso = { orig: await pix(n, base + "2/d/0/0.jpg", 760, 760), ret: await pix(n, base + "e1-0/2/d/0/0.jpg", 760, 760), todo: await pix(n, base + "e1-1/2/d/0/0.jpg", 760, 760) };
+        exige(negro(piso.orig) && verde(piso.ret) && verde(piso.todo) && piso.todo[1] > piso.ret[1] + 8, "el piso guardado no cuadra (original intacto, retocado sin tripié y con los ajustes encima): " + JSON.stringify(piso));
+        // Publicado y en el .zip
+        exige((await api(n, "api/tours/" + tour + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        const t = await pagina(null); await t.goto(TOURS + "/" + tour + "/"); await t.waitForTimeout(3500);
+        const pub = "escenas/" + esf + "/";
+        exige((await api(t, pub + "escena.json")).d.retoque === 1 && verde(await pix(t, pub + "e1-1/preview.jpg", 126, 382)) && negro(await pix(t, pub + "preview.jpg", 126, 382)) && verde(await pix(t, pub + "e1-1/2/d/0/0.jpg", 760, 760)), "el tour publicado no entrega la esfera editada");
+        exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160)); await t.context().close();
+        const z = (await api(n, "api/tours/" + tour + "/descargar")).d.archivos;
+        const zd = z.find((a) => a.ruta === "escenas/" + esf + "/2/d/0/0.jpg"), zc = z.find((a) => /\/1\/f\/0\/0\.jpg$/.test(a.ruta) && !a.ruta.includes(esf));
+        exige(!z.some((a) => /\/(ret|aj)\d+\//.test(a.ruta)) && zd && zd.desde === "escenas/" + esf + "/e1-1/2/d/0/0.jpg" && zc && !zc.desde, "el .zip no lleva la esfera editada con su nombre de siempre: " + JSON.stringify(zd));
+        // Regresar: ajustes en 0 y «Restaurar original» del piso
+        await n.click("#mj-cero"); await n.waitForTimeout(400); await n.click("#mj-aplicar"); await n.waitForTimeout(600);
+        exige(await espera("#mj-progreso", 60), "quitar los ajustes no terminó");
+        j = await json(); exige(!j.ajuste && j.retoque === 1 && j.ajusteUlt === 1, "con todo en 0 no se quitaron los ajustes: " + JSON.stringify({ a: j.ajuste, r: j.retoque }));
+        await n.click("#mj-tripie [data-retocar]"); await n.waitForSelector('.rt-velo [data-rt="original"]', { timeout: 20000 });
+        for (let i = 0; i < 20 && (await n.$("#rt-carga")); i++) await n.waitForTimeout(500);
+        await n.click('.rt-velo [data-rt="original"]');
+        exige(await espera(".rt-velo", 60), "restaurar el original no terminó");
+        j = await json(); exige(!j.retoque && j.retoqueUlt === 1, "restaurar el original no quitó el retoque");
+        exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      } finally { await u.context().close(); await n.context().close(); }
     });
     // Novedad con los tours de ejemplo (Amar, 17 nov 2026): los links del texto se pueden tocar en el correo
     await paso("Novedades: los links del texto (tours de ejemplo) salen como link en el correo", async () => {

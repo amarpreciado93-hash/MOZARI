@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-17T20:10:50.161Z",
- "bien": 113,
- "total": 113,
+ "fecha": "2026-11-17T21:29:19.491Z",
+ "bien": 114,
+ "total": 114,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -421,6 +421,10 @@
   },
   {
    "nombre": "Tutorial en video (Laboratorio, nace Solo yo): tarjeta en Mis Tours y en un tour sin esferas que abre el video de Loom",
+   "ok": true
+  },
+  {
+   "nombre": "Mejora (Laboratorio, nace Solo yo): ajustes de imagen en vivo y guardados en la esfera; quitar el tripié con corrector y tampón; sale en el tour y en el .zip; la original regresa",
    "ok": true
   },
   {
