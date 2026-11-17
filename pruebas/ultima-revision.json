@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-17T18:29:43.643Z",
- "bien": 111,
- "total": 111,
+ "fecha": "2026-11-17T20:10:50.161Z",
+ "bien": 113,
+ "total": 113,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -421,6 +421,14 @@
   },
   {
    "nombre": "Tutorial en video (Laboratorio, nace Solo yo): tarjeta en Mis Tours y en un tour sin esferas que abre el video de Loom",
+   "ok": true
+  },
+  {
+   "nombre": "Novedades: los links del texto (tours de ejemplo) salen como link en el correo",
+   "ok": true
+  },
+  {
+   "nombre": "Brújula: el norte se gira en Interfaz, se guarda en cada esfera (o en todas) y el tour publicado marca el norte",
    "ok": true
   },
   {

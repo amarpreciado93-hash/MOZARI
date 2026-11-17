@@ -154,14 +154,16 @@ export function correoCotizacion({ nombre, base, sol }) {
 
 // Novedad: título, texto (con saltos de línea), imagen opcional y un botón
 // Novedad (la misma que se anuncia dentro del estudio): cada renglón del texto es un punto
+// Los links que vienen en el texto de una novedad (ej. tours de ejemplo) se pueden tocar
+const enlazar = (t) => esc(t).replace(/https:\/\/[^\s<"]+/g, (u) => '<a href="' + u + '" style="color:' + TINTA + ';font-weight:600;text-decoration:underline">' + u.replace(/^https:\/\//, "") + "</a>");
 export function correoNovedad({ nombre, base, etiqueta, titulo, texto, imagen, boton: btn, destino, baja }) {
   const n = primerNombre(nombre), ir = /^https:\/\//.test(destino || "") ? destino : base + "/";
   const parrafos = String(texto || "").trim().split(/\n+/).map((x) => x.replace(/^[\s•·\-–*]+/, "").trim()).filter(Boolean);
   const puntos = parrafos.length > 1
     ? '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">' + parrafos.map((p) =>
       '<tr><td valign="top" style="padding:9px 12px 0 0;font-size:0;line-height:0"><div style="width:8px;height:8px;border-radius:50%;background:' + LIMA + ';border:1px solid #B9DE22"></div></td>' +
-      '<td valign="top" style="padding:0 0 10px;font:400 16px/1.55 ' + FUENTE + ";color:" + TEXTO + '">' + esc(p) + "</td></tr>").join("") + "</table>"
-    : parrafos.map((p) => '<p style="margin:0 0 14px">' + esc(p) + "</p>").join("");
+      '<td valign="top" style="padding:0 0 10px;font:400 16px/1.55 ' + FUENTE + ";color:" + TEXTO + '">' + enlazar(p) + "</td></tr>").join("") + "</table>"
+    : parrafos.map((p) => '<p style="margin:0 0 14px">' + enlazar(p) + "</p>").join("");
   const cuerpo =
     '<p style="margin:0 0 6px;font:600 12px ' + FUENTE + ';letter-spacing:2px;text-transform:uppercase;color:' + TENUE + '">' + esc(etiqueta || "Novedad en Mozari") + "</p>" +
     '<h1 style="margin:0 0 18px;font:700 26px/1.25 ' + FUENTE + ";color:" + TINTA + '">' + esc(titulo) + "</h1>" +

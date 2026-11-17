@@ -1918,6 +1918,8 @@
   .logo-fila .muestra-logo img { max-height: 22px; max-width: 120px; }
   .logo-fila .muestra-logo svg { width: 20px; height: 20px; color: var(--mz-lima); }
   .icono-fila { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .norte-fila { display: grid; gap: 8px; margin-top: 4px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); }
+  .norte-acc { display: flex; gap: 8px; flex-wrap: wrap; }
   .icono-fila .muestra-icono { width: 34px; height: 34px; border-radius: 9px; overflow: hidden; flex: none; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); display: grid; place-items: center; }
   .icono-fila .muestra-icono img, .icono-fila .muestra-icono svg { width: 100%; height: 100%; object-fit: cover; }
   .sk-vista { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #20241c 0%, var(--mz-fondo) 70%); }
@@ -3968,6 +3970,18 @@
     h += pieG(t > 2.2 ? "Tu ícono, sin rastro de Mozari" : "Subes el ícono de tu cliente en Interfaz", t > 2.2);
     svg.innerHTML = h.replace('y="194"', 'y="194"');
   }
+  // Brújula: la barra gira la aguja hasta que apunta al norte de verdad, y ahí se queda
+  function animNorte(svg, t) {
+    const u = sv((t - 0.8) / 1.8), deg = Math.round(338 + 22 * u) % 360;
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="20" y="16" width="200" height="150" rx="10" fill="#7FA9C9"/><path d="M20 120 L70 74 L104 98 L150 58 L220 112 V166 H20Z" fill="#5d7f45"/>' +
+      '<text x="150" y="44" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">Norte</text><path d="M150 48 v8" stroke="#fff" stroke-width="2"/>';
+    h += '<g transform="translate(56 50)"><circle r="22" fill="rgba(11,11,11,.7)" stroke="rgba(255,255,255,.3)"/><g transform="rotate(' + (-deg) + ')"><path d="M0 -16 L4 0 L0 -3 L-4 0Z" fill="#D5FF40"/><path d="M0 16 L4 0 L0 3 L-4 0Z" fill="rgba(255,255,255,.6)"/></g><text y="36" fill="#fff" font-size="9" text-anchor="middle">' + deg + '°</text></g>';
+    h += '<rect x="238" y="40" width="108" height="96" rx="10" fill="#111" stroke="rgba(255,255,255,.15)"/><text x="248" y="58" fill="#fff" font-size="9" font-weight="700">Norte de la brújula</text>' +
+      '<rect x="248" y="78" width="88" height="4" rx="2" fill="rgba(255,255,255,.2)"/><circle cx="' + (262 + 60 * u).toFixed(1) + '" cy="80" r="6" fill="#D5FF40"/>' + BTN_G(248, 98, 88, "Aquí es el norte", t > 3 ? "#D5FF40" : "transparent", t > 3 ? "#0b0b0b" : "#fff", "rgba(255,255,255,.4)");
+    const [cx, cy] = camino([[0, 330, 190], [0.7, 264, 84], [2.6, 324, 84], [3.0, 292, 110], [4.2, 330, 190]], t);
+    h += CURSOR_G(cx, cy) + pieG(t > 2.7 ? "La aguja ya apunta al norte y ahí se queda" : "Mueves la barra hasta que apunte al norte", t > 2.7);
+    svg.innerHTML = h;
+  }
   // =================== MINI TUTORIALES DE LAS FUNCIONES PARA INTERIORES (nov 2026) ===================
   // Regla de Amar: toda función nueva lleva su mini tutorial la primera vez que se usa (y un botón para volver a verlo).
   const PLANO_G = (x, y, w, h) => '<g transform="translate(' + x + " " + y + ')"><rect width="' + w + '" height="' + h + '" rx="6" fill="#F4F2EC"/><path d="M6 6h' + (w - 12) + "v" + (h - 12) + "h-" + (w - 12) + 'Z M' + (w * 0.5) + " 6v" + (h * 0.38) + " M" + (w * 0.5) + " " + (h * 0.6) + "v" + (h * 0.4 - 6) + " M" + (w * 0.5) + " " + (h * 0.55) + "h" + (w * 0.5 - 6) + '" fill="none" stroke="#2a2a2a" stroke-width="3"/></g>';
@@ -4159,6 +4173,8 @@
     if (/^skin\//.test(clave) && enLab("carga-logo")) guiaNueva("nuevo-carga-logo", [{ el: () => document.querySelector(".logo-fila") && document.querySelector(".logo-fila").closest(".grupo"),
       titulo: "Nuevo: tu logo al cargar el tour", anim: animCarga, dur: 4.5,
       texto: "Elige <b>Del cliente</b> y sube su logo: el tour publicado carga con ese logo, el nombre y los colores de la Interfaz, sin Mozari. Se ve al <b>volver a publicar</b>." + (conMarcaPrueba() ? " En tu plan actual se queda la de Mozari." : "") }], () => nav.sec === "skin" && esVisible(".logo-fila"));
+    if (/^skin\//.test(clave)) guiaNueva("nuevo-norte", () => [esVisible("#sk-norte") && { el: "#sk-norte", titulo: "Nuevo: el norte de tu brújula", anim: animNorte, dur: 4.6,
+      texto: "Si tu brújula no marcaba el norte, ya puedes girarla: mira hacia el norte y toca <b>Aquí es el norte</b>, o mueve la barra hasta que la aguja apunte bien. Se guarda en cada esfera (o en todas) y se ve al <b>volver a publicar</b>." }].filter(Boolean), () => nav.sec === "skin" && esVisible("#sk-norte"));
     if (/^skin\//.test(clave) && !conMarcaPrueba()) guiaNueva("nuevo-icono", () => [esVisible("#sk-icono-grupo") && { el: "#sk-icono-grupo", titulo: "Nuevo: tu ícono en la pestaña", anim: animIcono, dur: 4,
       texto: "Con tu licencia, el tour y su landing ya no llevan el ícono de Mozari: sube el de tu cliente (cuadrado, PNG) y sale en la pestaña del navegador y en el acceso directo del celular. Sin ícono propio sale uno neutro." }].filter(Boolean), () => nav.sec === "skin" && esVisible("#sk-icono-grupo"));
   }
@@ -4637,7 +4653,7 @@
     const m = media ? (n.mediaTipo === "video" ? '<video class="nov-media" src="' + esc(media) + '" autoplay muted loop playsinline></video>' : '<img class="nov-media" src="' + esc(media) + '" alt="">') : "";
     const otras = novedades.filter((x) => x.id !== n.id).slice(0, 4);
     return '<div class="nov-cuerpo"><span class="nov-etiq">' + esc((n.etiqueta || "Actualización").toUpperCase()) + '</span><h2 id="nov-titulo">' + esc(n.titulo) + "</h2>" + m +
-      (puntos.length ? "<ul>" + puntos.map((x) => "<li>" + esc(x) + "</li>").join("") + "</ul>" : "") +
+      (puntos.length ? "<ul>" + puntos.map((x) => "<li>" + esc(x).replace(/https:\/\/[^\s<"]+/g, (u) => '<a href="' + u + '" target="_blank" rel="noopener">' + u.replace(/^https:\/\//, "") + "</a>") + "</li>").join("") + "</ul>" : "") +
       '<div class="nov-acc"><button class="btn-sec" data-nov-cerrar>' + (n.destino ? "Después" : "Cerrar") + "</button>" +
       (n.destino ? '<button class="btn-prim nov-ir" data-nov-ir="' + esc(n.destino) + '">' + esc(n.boton || "Probar ahora") + "</button>" : "") + "</div>" +
       (otras.length && !n.previa ? '<div class="nov-mas"><b>Actualizaciones anteriores</b>' + otras.map((x) => '<button data-nov-ver="' + x.id + '"><span>' + esc(x.titulo) + "</span><small>" + fechaCorta(x.publicada) + "</small></button>").join("") + "</div>" : "") + "</div>";
@@ -12405,7 +12421,9 @@ void main(){
       },
       vista(v) {
         if (!v) return;
-        const deg = Math.round((((v.yaw() * 180) / Math.PI) % 360 + 360) % 360);
+        // Norte de cada esfera (pedido de usuarios del diseño Brújula, nov 2026): en qué giro de la foto queda el norte
+        const e = escena(actualId), norte = e && Number.isFinite(+e.norte) ? +e.norte : 0;
+        const deg = Math.round(((((v.yaw() * 180) / Math.PI) - norte) % 360 + 360) % 360) % 360;
         ui.querySelectorAll(".sk-aguja").forEach((a) => a.setAttribute("transform", "rotate(" + -deg + " 40 40)"));
         ui.querySelectorAll('[data-txt="grados"]').forEach((el) => (el.textContent = deg + "°"));
       },
@@ -12966,7 +12984,7 @@ void main(){
     pintar(o.orientacion);
     motor = crearMotor(stage, {
       editable: false,
-      alMostrar: (id) => { actualId = id; statsEsfera(id); vigiaEsfera(id); tQuieto = Date.now(); api.escena(id); api.vista(motor.view()); arrancarPiloto(id); if (!o.sinPrecarga) precarga.alrededor(id); },
+      alMostrar: (id) => { actualId = id; statsEsfera(id); vigiaEsfera(id); tQuieto = Date.now(); api.escena(id); api.vista(motor.view()); arrancarPiloto(id); if (!o.sinPrecarga) precarga.alrededor(id); if (o.alEscena) o.alEscena(id); },
       alPreparar: (id) => (o.sinPrecarga ? Promise.resolve() : precarga.ya(id)),
       inmersiva: transInmersiva(),
       alInteractuar: () => { if (piloto) piloto.interrumpir(true); },
@@ -12975,6 +12993,9 @@ void main(){
     });
     motor.mostrar(o.inicio || P().escenaInicial, 0);
     return {
+      actual: () => actualId,
+      yawGrados: () => (motor && motor.actual ? (((motor.actual.view.yaw() * 180) / Math.PI) % 360 + 360) % 360 : 0),
+      refrescar: () => { if (api && motor) api.vista(motor.view()); },
       nitido: (ms) => (motor ? motor.nitido(ms) : Promise.resolve()),
       repintar(orientacion) { pintar(orientacion); if (piloto) api.piloto(true, pilotoFin); },
       cerrarPop,
@@ -13026,7 +13047,7 @@ void main(){
     if (tourSk) tourSk.destruir();
     tourSk = crearTour($("sk-stage"), $("sk-ui"), {
       orientacion: v ? "v" : "h", hayMusica: !!musicaUrl, sinPresentacion: true, sinPrecarga: true,
-      alMusica: () => true, alPantalla: () => avisar("En el tour publicado esto abre pantalla completa"),
+      alMusica: () => true, alPantalla: () => avisar("En el tour publicado esto abre pantalla completa"), alEscena: () => pintarNorte(),
     });
     pintarPanelSkin();
     ajustarMarco();
@@ -13071,6 +13092,27 @@ void main(){
   const SK_MUESTRAS = [BLANCO, "#E9E1D3", "#C9A55C", "#2F6BFF", "#127A5E", "#C4553B"];
   const seg = (k, val, opciones) => '<div class="seg" role="group">' + opciones.map(([v, n]) => '<button data-sk-k="' + k + '" data-v="' + v + '" aria-pressed="' + (String(val) === String(v)) + '">' + n + "</button>").join("") + "</div>";
   const tgl = (k, on, etq) => '<label class="interruptor"><span style="font-size:12px">' + etq + '</span><input type="checkbox" class="toggle" data-sk-k="' + k + '"' + (on ? " checked" : "") + "></label>";
+  // Norte de la brújula: se gira hasta que apunte al norte y se queda en la esfera (o en todas)
+  function norteHtml() {
+    const id = tourSk && tourSk.actual(), e = id && escena(id), n = e && Number.isFinite(+e.norte) ? Math.round(+e.norte) : 0;
+    return '<b>Norte de la brújula</b><span class="nota" style="margin:0">Esfera: <b>' + esc(e ? e.nombre : "—") + "</b></span>" +
+      '<div class="rango"><input type="range" id="sk-norte-rango" min="0" max="359" step="1" value="' + n + '" aria-label="Girar la brújula"><span class="valor" id="sk-norte-v">' + n + "°</span></div>" +
+      '<div class="norte-acc"><button class="mini" type="button" id="sk-norte-aqui">Aquí es el norte</button><button class="mini" type="button" id="sk-norte-todas">Usar en todas las esferas</button></div>' +
+      '<p class="nota" style="margin:0">Gira la vista hasta ver el norte y toca <b>Aquí es el norte</b>, o mueve la barra hasta que la aguja apunte bien. Se guarda en cada esfera.</p>';
+  }
+  function pintarNorte() { const c = $("sk-norte"); if (c) c.innerHTML = norteHtml(); }
+  function ponerNorte(n, todas) {
+    const id = tourSk && tourSk.actual(); if (!id) return;
+    n = Math.round(((+n % 360) + 360) % 360);
+    (todas ? est.escenas : [escena(id)]).forEach((e) => { if (e) e.norte = n; });
+    guardar(); tourSk.refrescar();
+    const r = $("sk-norte-rango"), v = $("sk-norte-v"); if (r) r.value = n; if (v) v.textContent = n + "°";
+  }
+  document.addEventListener("input", (ev) => { if (ev.target.id === "sk-norte-rango") ponerNorte(+ev.target.value); });
+  document.addEventListener("click", (ev) => {
+    if (ev.target.id === "sk-norte-aqui" && tourSk) { ponerNorte(tourSk.yawGrados()); avisar("Listo: la brújula marca el norte hacia donde miras"); }
+    if (ev.target.id === "sk-norte-todas" && tourSk) { const e = escena(tourSk.actual()); ponerNorte(e && Number.isFinite(+e.norte) ? +e.norte : 0, true); avisar("El mismo norte en todas las esferas"); }
+  });
   function pintarPanelSkin() {
     const sk = SK(), T = sk.plantilla;
     const logoMuestra = sk.logo.tipo === "propio" && sk.logo.img ? '<img src="' + esc(urlArchivo(sk.logo.img)) + '" alt="Logo del cliente">' : sk.logo.tipo === "mozari" ? '<svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg>' : '<span style="font-size:11px;color:var(--mz-tenue)">—</span>';
@@ -13107,7 +13149,7 @@ void main(){
         '<p class="nota">Sale chiquito abajo del tour, con tu marca. ' + (conMarcaPrueba() ? "En tu plan actual sale la marca de Mozari en su lugar." : "Déjalo vacío para no mostrar nada.") + "</p></div>" +
       '<div class="grupo"><b>Elementos</b>' +
       (T === "cine" || T === "dock" ? tgl("extra.numero", sk.extra.numero, "Número de panorama (01 / 03)") : "") +
-      (T === "brujula" ? tgl("extra.brujula", sk.extra.brujula, "Brújula de orientación") + tgl("extra.ruta", sk.extra.ruta, "Ruta paso a paso") : "") +
+      (T === "brujula" ? tgl("extra.brujula", sk.extra.brujula, "Brújula de orientación") + (sk.extra.brujula ? '<div class="norte-fila" id="sk-norte">' + norteHtml() + "</div>" : "") + tgl("extra.ruta", sk.extra.ruta, "Ruta paso a paso") : "") +
       tgl("extra.leyenda", sk.extra.leyenda, "Leyenda de " + plural(terminos().lote).toLowerCase() + " (qué color es cada estado)") +
       (sk.extra.leyenda ? tgl("extra.leyendaCantidad", sk.extra.leyendaCantidad, "Con cuántos hay de cada uno") : "") +
       tgl("botones.pantalla", sk.botones.pantalla, "Pantalla completa") + tgl("botones.musica", sk.botones.musica, "Música (si el tour tiene)") +

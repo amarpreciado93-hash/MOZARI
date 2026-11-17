@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -4038,6 +4038,40 @@ async function capasPesadas(p) {
       } finally {
         await u.context().close(); await n.context().close();
       }
+    });
+    // Novedad con los tours de ejemplo (Amar, 17 nov 2026): los links del texto se pueden tocar en el correo
+    await paso("Novedades: los links del texto (tours de ejemplo) salen como link en el correo", async () => {
+      const { correoNovedad } = await import(path.join(__dirname, "../nube/correos.js"));
+      const c = correoNovedad({ nombre: "Ana", base: ESTUDIO, titulo: "Nuevo", texto: "Una página con tu marca\nMira un ejemplo: https://tours.mozari.app/encino-alto-1jcqf/landing", boton: "Ver", destino: "publicar/landing", baja: ESTUDIO + "/baja" });
+      exige(/<a href="https:\/\/tours\.mozari\.app\/encino-alto-1jcqf\/landing"[^>]*>tours\.mozari\.app\/encino-alto-1jcqf\/landing<\/a>/.test(c.html) && /https:\/\/tours\.mozari\.app\/encino-alto-1jcqf\/landing/.test(c.texto), "el link del ejemplo no sale como link en el correo");
+    });
+    // Pedido de usuarios del diseño Brújula (Amar, 17 nov 2026): «que el norte sí apunte hacia el norte». En Interfaz se gira la
+    // brújula (o se toca «Aquí es el norte» mirando al norte) y se queda en cada esfera; el tour publicado cuenta desde ahí.
+    await paso("Brújula: el norte se gira en Interfaz, se guarda en cada esfera (o en todas) y el tour publicado marca el norte", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const n = await pagina(DUENO);
+      try {
+        await nuevoTour(n, "Brújula con norte"); const id = await idTour(n); await otraEsfera(n, "Lago", "#9bd", "#6a5"); await n.waitForTimeout(800);
+        await n.click('#nav button:has-text("Interfaz")'); await n.waitForTimeout(1000); await pasarGuias(n);
+        await n.click('#sk-panel button[data-sk-k="plantilla"][data-v="brujula"]'); await n.waitForTimeout(1500); await pasarGuias(n);
+        exige(await n.isVisible("#sk-norte"), "en Interfaz no sale para girar la brújula");
+        const grados = async (p) => +String(await p.textContent('[data-txt="grados"]')).replace(/\D/g, "");
+        const g0 = await grados(n);
+        await n.$eval("#sk-norte-rango", (e) => { e.value = "90"; e.dispatchEvent(new Event("input", { bubbles: true })); }); await n.waitForTimeout(500);
+        exige((await grados(n)) === (g0 - 90 + 360) % 360 && /90°/.test(await n.textContent("#sk-norte-v")), "al girar la brújula no cambia lo que marca: " + g0 + " → " + (await grados(n)));
+        await n.click("#sk-norte-aqui"); await n.waitForTimeout(400);
+        exige((await grados(n)) === 0, "«Aquí es el norte» no deja la brújula en 0°: " + (await grados(n)));
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "brujula-norte.png") });
+        await n.click("#sk-norte-todas"); await n.waitForTimeout(1800);
+        const d = (await api(n, "api/tours/" + id)).d, ns = d.escenas.map((e) => e.norte);
+        exige(ns.length === 2 && ns.every((x) => Number.isFinite(x) && x === ns[0]), "el norte no quedó en todas las esferas: " + JSON.stringify(ns));
+        exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        const t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(3500); await t.click(".snd-no").catch(() => {});
+        const gt = await grados(t);
+        exige(gt <= 4 || gt >= 356, "el tour publicado no marca el norte: " + gt + "°");
+        await t.context().close();
+        exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      } finally { await n.context().close(); }
     });
     // Pedido de Amar (17 nov 2026): abrir el Laboratorio a todos. La landing en la cuenta de prueba sale con la marca de agua
     // (como su tour) y con licencia sale limpia. Y en las licencias, el ícono de la pestaña es el del cliente (o uno neutro), nunca el de Mozari.
