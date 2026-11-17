@@ -515,13 +515,15 @@ async function apiGaleria(request, env, partes) {
     // Todos los tours publicados (de todas las cuentas) para elegir
     const [cuentas, elegidos] = await Promise.all([todasLasCuentas(env), leerGaleria(env)]);
     const correo = new Map(cuentas.map((p) => [p.uid, p.email || ""])), publicados = [];
+    // Plan de quien lo publicó, para separarlos en el panel (Desarrollos, Pro, cuenta de prueba o del dueño)
+    const planPub = new Map(cuentas.map((p) => [p.uid, p.admin ? "dueno" : PLANES[p.plan] ? p.plan : "gratis"]));
     let cur;
     do {
       const l = await env.R2.list({ prefix: "cuentas/", cursor: cur, limit: 1000, include: ["customMetadata"] });
       for (const o of l.objects) {
         const t = o.key.match(/^cuentas\/([^/]+)\/tours\/([^/]+)$/), md = o.customMetadata || {};
         if (!t || !md.publicado) continue;
-        publicados.push({ id: t[2], nombre: md.nombre || "Tour", dueno: correo.get(t[1]) || "", publicado: md.publicado, portada: portadaDe(host + "/" + t[2] + "/", { thumbnail: md.portada }, md.inicial), url: host + "/" + t[2] + "/" });
+        publicados.push({ id: t[2], nombre: md.nombre || "Tour", dueno: correo.get(t[1]) || "", plan: planPub.get(t[1]) || "gratis", publicado: md.publicado, portada: portadaDe(host + "/" + t[2] + "/", { thumbnail: md.portada }, md.inicial), url: host + "/" + t[2] + "/" });
       }
       cur = l.truncated ? l.cursor : undefined;
     } while (cur);
@@ -813,6 +815,10 @@ async function admin(request, env, partes, yo) {
     const ultimaSesion = (uid) => (sesiones[uid] || []).filter((x) => x && (x.ciudad || x.pais)).sort((a, b) => String(b.ultima || b.creada).localeCompare(String(a.ultima || a.creada)))[0] || {};
     const dueno = new Set(cuentas.filter((p) => p.admin).map((p) => p.uid)), pub = tours.filter((t) => t.publicado);
     const resumenTours = { creados: tours.length, publicados: pub.length, publicadosClientes: pub.filter((t) => !dueno.has(t.uid)).length };
+    // Publicados según el plan de la cuenta (el dueño aparte, en «tuyos»)
+    const planCuenta = new Map(cuentas.map((p) => [p.uid, PLANES[p.plan] ? p.plan : "gratis"]));
+    resumenTours.porPlan = { desarrollos: 0, pro: 0, gratis: 0 };
+    pub.forEach((t) => { if (!dueno.has(t.uid)) resumenTours.porPlan[planCuenta.get(t.uid) || "gratis"]++; });
     cuentas.sort((a, b) => String(b.ultimaEntrada).localeCompare(String(a.ultimaEntrada)));
     // Desde dónde se registró: lo anota la cuenta nueva; las de antes, su primer dispositivo con sesión
     const registroDe = (p) => p.registro || ((sesiones[p.uid] || []).slice().sort((a, b) => String(a.creada).localeCompare(String(b.creada)))[0] || {}).tipo || "";

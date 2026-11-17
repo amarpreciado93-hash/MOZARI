@@ -166,6 +166,11 @@
   .gal-acc { display: flex; gap: 6px; align-items: center; }
   .gal-acc a.mini { text-decoration: none; color: var(--mz-texto); }
   .gal-busca { max-width: 360px; }
+  .gal-planes { display: flex; flex-wrap: wrap; gap: 6px; }
+  .gal-planes .tab-punto { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 7px; vertical-align: 1px; }
+  .gal-planes b { margin-left: 4px; font-weight: 600; opacity: 0.75; }
+  .cuentas-conteo .ir-tours { cursor: pointer; }
+  .cuentas-conteo .ir-tours:hover { filter: brightness(1.15); }
   /* Correos a los usuarios (bienvenida y novedades) */
   .cor-caja { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 13px; }
   .cor-caja > div { flex: 1 1 240px; display: grid; gap: 3px; }
@@ -4315,7 +4320,9 @@
   // Respaldos: copia diaria de los datos (proyectos, cuentas, planes); las fotos no cambian con las actualizaciones
   const MOTIVO_RESP = { noche: "Copia de la noche", actualizacion: "Antes de una actualización", primero: "Primer respaldo", manual: "Hecho a mano" };
   // Tours hechos con Mozari: el dueño elige qué tours publicados salen en mozari.app (con permiso de su cliente)
-  let galeria = null, galBusca = "";
+  let galeria = null, galBusca = "", galPlan = "desarrollos";
+  // Tours publicados separados por el plan de la cuenta que los publicó (pedido de Amar, nov 2026)
+  const GAL_PLANES = [["desarrollos", "Desarrollos", "#F5BE4E"], ["pro", "Pro", "#6DB4FF"], ["gratis", "Gratis", "#B8BEAE"], ["dueno", "Tuyos", "#B48CFF"]];
   async function pintarGaleria(recargar = true) {
     if (recargar || !galeria) {
       const r = await fetch("api/admin/galeria", { cache: "no-store" }).catch(() => null);
@@ -4323,7 +4330,11 @@
       galeria = await r.json();
     }
     const { elegidos, publicados } = galeria, info = (id) => publicados.find((x) => x.id === id) || { nombre: id, portada: "", url: "" };
-    const q = galBusca.trim().toLowerCase(), libres = publicados.filter((t) => !elegidos.some((e) => e.id === t.id) && (!q || (t.nombre + " " + t.dueno).toLowerCase().includes(q)));
+    const q = galBusca.trim().toLowerCase(), candidatos = publicados.filter((t) => !elegidos.some((e) => e.id === t.id) && (!q || (t.nombre + " " + t.dueno).toLowerCase().includes(q)));
+    const planT = (t) => t.plan || "gratis", libres = candidatos.filter((t) => planT(t) === galPlan);
+    const chipsPlan = '<div class="gal-planes" role="group" aria-label="Plan de la cuenta">' + GAL_PLANES.map(([k, txt, color]) =>
+      '<button class="mini' + (galPlan === k ? " primario" : "") + '" data-gal-plan="' + k + '"><i class="tab-punto" style="--c:' + color + '"></i>' + txt + " <b>" + candidatos.filter((t) => planT(t) === k).length + "</b></button>").join("") + "</div>";
+    const nombrePlan = (GAL_PLANES.find((g) => g[0] === galPlan) || [, ""])[1];
     const mini = (src) => '<span class="gal-mini"' + (src ? ' style="background-image:url(&quot;' + esc(src) + '&quot;)"' : "") + "></span>";
     $("cuentas").innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) +
       '<div class="gal-admin"><p class="nota">Estos tours salen en mozari.app, en «Tours hechos con Mozari», en este orden. Pon solo los de clientes que te dieron permiso. Si uno se despublica o pasa a modo privado, se quita solo de la web. <a href="/escaparate#tours" target="_blank" rel="noopener">Ver la web</a></p>' +
@@ -4333,9 +4344,9 @@
         '<div class="gal-acc"><button class="mini" data-gal-mover="-1"' + (i ? "" : " disabled") + ' aria-label="Subir">↑</button><button class="mini" data-gal-mover="1"' + (i < elegidos.length - 1 ? "" : " disabled") + ' aria-label="Bajar">↓</button>' +
         (t.url ? '<a class="mini" href="' + esc(t.url) + '" target="_blank" rel="noopener">Ver</a>' : "") + '<button class="mini peligro" data-gal-quitar>Quitar</button></div></div>'; }).join("")
         : '<p class="nota">Todavía no hay ninguno: la sección no se ve en la web hasta que agregues uno.</p>') +
-      '<h4>Tours publicados</h4><input class="entrada gal-busca" id="gal-busca" placeholder="Buscar por nombre o correo" value="' + esc(galBusca) + '">' +
-      (libres.length ? libres.slice(0, 60).map((t) => '<div class="gal-fila" data-gal-libre="' + esc(t.id) + '">' + mini(t.portada) + '<div class="gal-campos"><b>' + esc(t.nombre) + "</b><small>" + esc(t.dueno) + " · " + fechaCorta(t.publicado) + '</small></div><div class="gal-acc"><a class="mini" href="' + esc(t.url) + '" target="_blank" rel="noopener">Ver</a><button class="mini primario" data-gal-agregar>Agregar</button></div></div>').join("")
-        : '<p class="nota">No hay más tours publicados' + (q ? " con esa búsqueda" : "") + ".</p>") + "</div>";
+      '<h4>Tours publicados</h4>' + chipsPlan + '<input class="entrada gal-busca" id="gal-busca" placeholder="Buscar por nombre o correo" value="' + esc(galBusca) + '">' +
+      (libres.length ? libres.slice(0, 150).map((t) => '<div class="gal-fila" data-gal-libre="' + esc(t.id) + '">' + mini(t.portada) + '<div class="gal-campos"><b>' + esc(t.nombre) + "</b><small>" + esc(t.dueno) + " · " + fechaCorta(t.publicado) + '</small></div><div class="gal-acc"><a class="mini" href="' + esc(t.url) + '" target="_blank" rel="noopener">Ver</a><button class="mini primario" data-gal-agregar>Agregar</button></div></div>').join("")
+        : '<p class="nota">No hay ' + (galPlan === "dueno" ? "más tours tuyos publicados" : "más tours publicados de cuentas " + nombrePlan) + (q ? " con esa búsqueda" : "") + ".</p>") + "</div>";
   }
   async function guardarGaleria(lista) {
     const r = await fetch("api/admin/galeria", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ tours: lista }) }).catch(() => null);
@@ -4351,6 +4362,13 @@
     if (ev.target.matches("[data-gal-lugar]")) e.lugar = ev.target.value.trim();
     if (await guardarGaleria(galeria.elegidos)) avisar("Guardado");
   });
+  document.addEventListener("click", (ev) => {
+    const c = ev.target.closest("[data-gal-plan]");
+    if (c) { galPlan = c.dataset.galPlan; pintarGaleria(false); return; }
+    const d = ev.target.closest("[data-tours-plan]");
+    if (d) { galPlan = d.dataset.toursPlan; vistaDueno = "galeria"; pintarCuentas(); }
+  });
+  document.addEventListener("keydown", (ev) => { if ((ev.key === "Enter" || ev.key === " ") && ev.target.closest && ev.target.closest("[data-tours-plan]")) { ev.preventDefault(); ev.target.click(); } });
   document.addEventListener("click", async (ev) => {
     if (!galeria || !ev.target.closest(".gal-admin")) return;
     const libre = ev.target.closest("[data-gal-agregar]") && ev.target.closest("[data-gal-libre]");
@@ -4773,6 +4791,8 @@
     const hoy = new Date().toDateString(), semana = new Date(Date.now() - 7 * 864e5).toISOString(); // "hoy" en la hora de tu compu
     const usuarios = todas.filter((c) => !c.admin), cuantos = (f) => usuarios.filter(f).length;
     const dato = (n, txt, color) => '<span style="--c:' + color + '"><b>' + n + "</b> " + txt + "</span>";
+    // Tours publicados por plan: un toque abre su lista en «Tours en la web»
+    const datoTours = (k, n, txt, color) => '<span class="ir-tours" role="button" tabindex="0" data-tours-plan="' + k + '" title="Ver la lista" style="--c:' + color + '"><b>' + n + "</b> " + txt + "</span>";
     const resumen = '<div class="cuentas-conteo">' + dato(usuarios.length, "usuarios", "#F2F5EC") +
       dato(cuantos((c) => !!c.creado && new Date(c.creado).toDateString() === hoy), "nuevos hoy", "#D5FF40") +
       dato(cuantos((c) => String(c.creado || "") >= semana), "esta semana", "#3DDC84") +
@@ -4780,7 +4800,9 @@
       dato(cuantos((c) => c.plan === "pro"), "Pro", "#6DB4FF") +
       dato(cuantos((c) => c.plan === "desarrollos"), "Desarrollos", "#F5BE4E") + "</div>" +
       // Tours hechos con Mozari: los publicados (con link para sus clientes), cuántos son de usuarios y cuántos se han creado
-      (tt ? '<div class="cuentas-conteo tours-conteo">' + dato(tt.publicados, "tours publicados", "#3FD5E0") + dato(tt.publicadosClientes, "de usuarios", "#7FE7EE") + dato(tt.publicados - tt.publicadosClientes, "tuyos", "#B48CFF") + dato(tt.creados, "creados en total", "#8FA6AD") + "</div>" : "") +
+      (tt ? '<div class="cuentas-conteo tours-conteo">' + dato(tt.publicados, "tours publicados", "#3FD5E0") +
+        (tt.porPlan ? GAL_PLANES.filter((g) => g[0] !== "dueno").map(([k, txt, color]) => datoTours(k, tt.porPlan[k] || 0, "de " + txt, color)).join("") : dato(tt.publicadosClientes, "de usuarios", "#7FE7EE")) +
+        datoTours("dueno", tt.publicados - tt.publicadosClientes, "tuyos", "#B48CFF") + dato(tt.creados, "creados en total", "#8FA6AD") + "</div>" : "") +
       // Entrada de la semana: desde dónde se registraron y cuántos ya hicieron su primer tour
       embudoSemana(usuarios.filter((c) => String(c.creado || "") >= semana)) +
       // De qué países son (lo da Cloudflare al usar Mozari; los que no han vuelto desde que se guarda, «sin dato»)

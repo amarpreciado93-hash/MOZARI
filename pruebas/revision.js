@@ -1056,6 +1056,10 @@ async function capasPesadas(p) {
       if (process.env.CAPTURAS) await a.screenshot({ path: path.join(process.env.CAPTURAS, "panel-tours.png") });
       const tt = await a.textContent(".tours-conteo").catch(() => "");
       exige(/[1-9]\d* tours publicados/.test(tt) && /creados en total/.test(tt), "no se ve cuántos tours se han publicado: " + tt);
+      // Pedido de Amar: los publicados separados por plan (Desarrollos, Pro, Gratis y los suyos) y que sumen
+      exige(/\d+ de Desarrollos/.test(tt) && /\d+ de Pro/.test(tt) && /\d+ de Gratis/.test(tt) && /\d+ tuyos/.test(tt), "los tours publicados no vienen separados por plan: " + tt);
+      const nums = (re) => +((tt.match(re) || [])[1] || NaN);
+      exige(nums(/(\d+) de Desarrollos/) + nums(/(\d+) de Pro/) + nums(/(\d+) de Gratis/) + nums(/(\d+) tuyos/) === nums(/(\d+) tours publicados/), "las partes no suman el total: " + tt);
       // De qué países son los usuarios, con bandera (aquí Cloudflare dice Estados Unidos)
       const pz = await a.textContent(".paises-conteo").catch(() => "");
       exige(/🇺🇸\s*[1-9]\d*\s*Estados Unidos/.test(pz), "no se ven los países de los usuarios con su bandera: " + pz);
@@ -3408,7 +3412,18 @@ async function capasPesadas(p) {
       // Panel de dueño → Tours en la web: agregar el tour, ponerle nombre y lugar
       await n.click('#nav button:has-text("Mis Tours")'); await n.waitForTimeout(800); await pasarGuias(n);
       await n.click("#ver-cuentas"); await n.waitForTimeout(1200);
-      await n.click('[data-dueno="galeria"]'); await n.waitForTimeout(1500);
+      // Desde el conteo de Cuentas, «tuyos» abre la lista con los tours del dueño; luego se elige el plan del tour de prueba
+      await n.click('[data-tours-plan="dueno"]'); await n.waitForTimeout(1500);
+      exige(await n.isVisible('.gal-planes [data-gal-plan="dueno"].primario'), "el conteo de Cuentas no lleva a la lista de ese plan");
+      const gp = (await api("api/admin/galeria")).d, mio = (gp.publicados || []).find((t) => t.id === tour);
+      exige(mio && ["desarrollos", "pro", "gratis", "dueno"].includes(mio.plan) && gp.publicados.every((t) => t.plan), "los tours publicados no traen el plan de su cuenta: " + JSON.stringify(mio));
+      const otro = mio.plan === "pro" ? "gratis" : "pro";
+      await n.click('[data-gal-plan="' + otro + '"]'); await n.waitForTimeout(500);
+      exige(!(await n.isVisible('[data-gal-libre="' + tour + '"]')), "el tour sale en un plan que no es el suyo");
+      await n.click('[data-gal-plan="' + mio.plan + '"]'); await n.waitForTimeout(500);
+      const chip = await n.textContent('[data-gal-plan="' + mio.plan + '"]');
+      exige(+(chip.match(/(\d+)\s*$/) || [])[1] === gp.publicados.filter((t) => t.plan === mio.plan).length, "el número del botón no cuadra: " + chip);
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "galeria-planes.png") });
       exige(await n.isVisible('[data-gal-libre="' + tour + '"]'), "el tour publicado no sale para elegirlo");
       await n.click('[data-gal-libre="' + tour + '"] [data-gal-agregar]'); await n.waitForTimeout(1200);
       await n.fill('[data-gal-id="' + tour + '"] [data-gal-titulo]', "Desarrollo de prueba"); await n.press('[data-gal-id="' + tour + '"] [data-gal-titulo]', "Tab"); await n.waitForTimeout(800);
