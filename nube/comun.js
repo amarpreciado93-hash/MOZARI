@@ -27,18 +27,34 @@ export function rutaValida(r) {
   return RUTA.test(r) && !r.includes("..") && !r.includes("//");
 }
 
-// Mejora de esferas (Laboratorio «mejora»): el piso retocado (quitar el tripié) vive en escenas/<esfera>/ret<N>/ (solo la
-// cara de abajo y la vista previa) y los ajustes de imagen en escenas/<esfera>/aj<M>/ (todas las piezas). El visor pide
-// escenas/<esfera>/e<N>-<M>/…: cada pieza sale de aj<M>/; si no, de ret<N>/; y si no, del original. El link cambia con
-// cada edición, así nadie ve la versión vieja guardada en caché.
+// Mejora de esferas (Laboratorio «mejora»): lo retocado (quitar el tripié, borrar objetos) vive en escenas/<esfera>/ret<N>/
+// (las piezas de las caras que cambiaron y la vista previa). El visor pide escenas/<esfera>/e<retoques>-<ajuste>/…: cada
+// pieza sale de aj<M>/ (ajustes horneados, de la primera versión: ahora se pintan en vivo y no hay carpeta); si no, de
+// la carpeta ret de su cara; y si no, del original. El link cambia con cada edición, así nadie ve la versión vieja
+// guardada en caché.
 export function rutasEdicion(ruta) {
-  const m = /^(escenas\/[A-Za-z0-9_-]{1,80}\/)e(\d{1,4})-(\d{1,4})\/(.+)$/.exec(ruta);
+  // e<retoques>-<ajuste>/…  ·  retoques: «3» (el piso, de la primera versión) o cara+carpeta juntas: «d3f5» = la cara d en ret3/ y la f en ret5/
+  const m = /^(escenas\/[A-Za-z0-9_-]{1,80}\/)e(\d{1,4}|(?:[bdflru]\d{1,4}){1,6})-(\d{1,4})\/(.+)$/.exec(ruta);
   if (!m) return null;
-  const [, base, n, a, resto] = m, pieza = /^\d{1,2}\/[bdflru]\/\d{1,3}\/\d{1,3}\.jpg$/.test(resto), previa = resto === "preview.jpg", l = [];
-  if (+a > 0 && (pieza || previa)) l.push(base + "aj" + +a + "/" + resto);
-  if (+n > 0 && (previa || (pieza && /^\d{1,2}\/d\//.test(resto)))) l.push(base + "ret" + +n + "/" + resto);
+  const [, base, n, a, resto] = m, pz = /^\d{1,2}\/([bdflru])\/\d{1,3}\/\d{1,3}\.jpg$/.exec(resto), previa = resto === "preview.jpg", l = [], caras = {};
+  let ultima = 0;
+  if (/^\d+$/.test(n)) { if (+n > 0) { caras.d = +n; ultima = +n; } }
+  else for (const x of n.matchAll(/([bdflru])(\d{1,4})/g)) { caras[x[1]] = +x[2]; if (+x[2] > ultima) ultima = +x[2]; }
+  if (+a > 0 && (pz || previa)) l.push(base + "aj" + +a + "/" + resto);
+  if (pz && caras[pz[1]] > 0) l.push(base + "ret" + caras[pz[1]] + "/" + resto);
+  if (previa && ultima > 0) l.push(base + "ret" + ultima + "/" + resto); // la vista previa va en la carpeta del último retoque
   l.push(base + resto);
   return l;
+}
+
+// El prefijo con que se piden las piezas de una esfera editada, según su escena.json (lo mismo que arma el visor)
+export function prefijoEdicion(j) {
+  if (!j) return "";
+  let n = 0;
+  if (j.ret && typeof j.ret === "object") n = Object.keys(j.ret).filter((c) => /^[bdflru]$/.test(c) && Array.isArray(j.ret[c]) && j.ret[c][0] > 0).sort().map((c) => c + Math.floor(j.ret[c][0])).join("") || 0;
+  else if (j.retoque > 0) n = Math.floor(j.retoque);
+  const a = j.ajuste > 0 ? Math.floor(j.ajuste) : 0;
+  return n || a ? "e" + n + "-" + a : "";
 }
 
 export function tipoDe(ruta) {

@@ -1086,9 +1086,10 @@
   .mj-esf img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 8px; background: var(--mz-negro); }
   .mj-esf span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .mj-esf small { color: var(--mz-lima); font-size: 10.5px; }
   .mj-esf[aria-pressed="true"] { border-color: var(--mz-lima); background: color-mix(in srgb, var(--mz-lima) 8%, transparent); }
-  .mj-visor { position: relative; min-width: 0; min-height: 0; background: #0b0b0b; }
-  .mj-stage, .mj-prev { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .mj-prev { pointer-events: none; }
+  .mj-visor { position: relative; min-width: 0; min-height: 0; background: #0b0b0b; overflow: hidden; }
+  .mj-stage { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .mj-mira { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; pointer-events: none; border: 2px dashed var(--mz-lima); border-radius: 6px; box-shadow: 0 0 0 4000px rgba(5, 6, 5, 0.45); opacity: 0; transition: opacity 0.15s; }
+  .mj-mira.ver { opacity: 1; }
   .mj-antes { position: absolute; left: 14px; top: 14px; z-index: 2; background: rgba(11, 11, 11, 0.7); }
   .mj-progreso { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 3; min-width: 280px; padding: 12px 16px; border-radius: 14px; background: rgba(11, 11, 11, 0.86); border: 1px solid var(--mz-linea-neutra); display: grid; gap: 8px; font-size: 12.5px; }
   .mj-progreso b { font-weight: 500; } .mj-progreso i { display: block; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.14); overflow: hidden; } .mj-progreso u { display: block; height: 100%; width: 0; background: var(--mz-lima); }
@@ -2573,8 +2574,19 @@
   // e<N>-<M>/ y el servidor da cada pieza de lo editado o, si no cambió, del original. El link cambia con cada edición,
   // así nadie ve la versión vieja guardada en caché.
   const RAIZ = (id) => (MODO === "nube" ? "t/" + TOUR + "/escenas/" : "escenas/") + id + "/";
-  const R = (id) => { const m = meta[id], n = (m && m.retoque) || 0, a = (m && m.ajuste) || 0; return RAIZ(id) + (n || a ? "e" + n + "-" + a + "/" : ""); };
-  const RB = (id) => { const m = meta[id], n = (m && m.retoque) || 0; return RAIZ(id) + (n ? "e" + n + "-0/" : ""); }; // la esfera sin los ajustes de imagen
+  // Retoques de una esfera, por cara: ret = { d: [carpeta, x0, y0, x1, y1], f: […] } → las piezas retocadas de esa cara
+  // están en ret<carpeta>/ y, de las grandes, cambiaron las de ese rango. (La primera versión solo retocaba el piso y
+  // lo guardaba como «retoque: N».) El visor pide e<cara><carpeta>…-<ajuste>/ y el servidor sabe de dónde sacar cada pieza.
+  const retDe = (m) => {
+    if (!m) return null;
+    if (m.ret) return m.ret;
+    if (!(m.retoque > 0) || !m.niveles) return null;
+    const nv = m.niveles[m.niveles.length - 1], C = Math.min(nv.size, 4096), O = Math.round((nv.size - C) / 2), t0 = Math.floor(O / nv.tileSize), t1 = Math.floor((O + C - 1) / nv.tileSize);
+    return { d: [m.retoque, t0, t0, t1, t1] };
+  };
+  const claveRet = (m) => { if (m && m.ret) return Object.keys(m.ret).filter((c) => "bdflru".includes(c) && m.ret[c] && m.ret[c][0] > 0).sort().map((c) => c + m.ret[c][0]).join("") || 0; return (m && m.retoque) || 0; };
+  const R = (id) => { const m = meta[id], n = claveRet(m), a = (m && m.ajuste) || 0; return RAIZ(id) + (n || a ? "e" + n + "-" + a + "/" : ""); };
+  const RB = (id) => { const m = meta[id], n = claveRet(m); return RAIZ(id) + (n ? "e" + n + "-0/" : ""); }; // la esfera sin ajustes de imagen horneados
   document.documentElement.dataset.modo = MODO;
 
   // =================== DATOS ===================
@@ -3328,7 +3340,8 @@
   };
   const nav = { sec: "proyecto", sub: "general", ultimoSub: { panoramas: "lista" } };
   // «Mejora» (Laboratorio): la edición de las esferas, junto a Mis Tours (pedido de Amar, 17 nov 2026)
-  if (MODO === "nube" && enLab("mejora")) SECCIONES.splice(1, 0, { id: "mejora", nombre: "Mejora", subs: [["esferas", "Esferas"]] });
+  // Es edición de compu: en el celular no sale (la ventana no cabe en pantalla chica)
+  if (MODO === "nube" && enLab("mejora") && !(() => { try { return matchMedia("(pointer: coarse)").matches && Math.min(screen.width, screen.height) <= 1100; } catch (e) { return false; } })()) SECCIONES.splice(1, 0, { id: "mejora", nombre: "Mejora", subs: [["esferas", "Esferas"]] });
   $("nav").innerHTML = SECCIONES.map((s) => '<button data-sec="' + s.id + '">' + s.nombre + "</button>").join("");
   $("nav").addEventListener("click", (ev) => { const b = ev.target.closest("[data-sec]"); if (b) ir(b.dataset.sec); });
   $("subtabs").addEventListener("click", (ev) => { const b = ev.target.closest("[data-sub]"); if (b) ir(nav.sec, b.dataset.sub); });
@@ -3342,6 +3355,7 @@
     // En la nube, sin tour abierto solo existe Mis Tours
     if (MODO === "nube" && !TOUR && sec !== "tours") { avisar("Abre o crea un tour primero"); sec = "tours"; sub = "todos"; }
     const S = SECCIONES.find((s) => s.id === sec);
+    if (!S) { if (sec === "mejora") avisar("La edición de esferas (Mejora) se usa en la compu"); return; } // una sección que aquí no existe (Mejora en el celular)
     sub = sub || nav.ultimoSub[sec] || S.subs[0][0];
     if (!est.escenas.length && SIN_ESFERAS.includes(sec + "/" + sub)) { avisar("Primero sube una esfera"); sec = "panoramas"; sub = "lista"; return ir(sec, sub); }
     const antes = nav.sec + "/" + nav.sub;
@@ -4063,6 +4077,17 @@
     h += pieG(cura ? "Al soltar, el piso de alrededor lo cubre" : "Pinta sobre el tripié y su sombra", cura);
     svg.innerHTML = h;
   }
+  function animBorrar(svg, t) {
+    const pinta = Math.max(0, Math.min(1, (t - 0.9) / 1.2)), cura = t > 2.5, u = sv((t - 2.5) / 0.6);
+    let h = '<rect width="360" height="200" fill="#14181c"/><rect x="70" y="10" width="220" height="170" rx="10" fill="#8FB7C9"/><path d="M70 112q55-24 110-8t110-6v72a10 10 0 0 1-10 10H80a10 10 0 0 1-10-10z" fill="#7C8F5E"/><path d="M70 132q60-14 120-4t100-8v50a10 10 0 0 1-10 10H80a10 10 0 0 1-10-10z" fill="#6E8F4E"/>';
+    h += '<g opacity="' + (1 - u).toFixed(2) + '"><ellipse cx="204" cy="161" rx="22" ry="5" fill="rgba(0,0,0,.25)"/><circle cx="196" cy="90" r="9" fill="#2b2b2b"/><path d="M196 100v36M196 110l-13 15M196 110l13 15M196 136l-9 24M196 136l9 24" stroke="#2b2b2b" stroke-width="6" stroke-linecap="round" fill="none"/></g>';
+    if (!cura && pinta > 0) h += '<path d="M196 86L196 ' + (86 + pinta * 74).toFixed(1) + '" stroke="rgba(255,70,70,.45)" stroke-width="40" stroke-linecap="round" fill="none"/>';
+    const [cx, cy] = camino([[0, 330, 190], [0.9, 196, 86], [2.1, 196, 160], [2.4, 196, 160], [3.6, 330, 190]], t);
+    h += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="20" fill="none" stroke="#fff" stroke-width="1.5"/>' + CURSOR_G(cx + 14, cy + 14);
+    h += '<rect x="8" y="34" width="54" height="22" rx="7" fill="#111" stroke="#D5FF40"/><text x="35" y="49" fill="#fff" font-size="8" font-weight="700" text-anchor="middle">Corrector</text>';
+    h += pieG(cura ? "Al soltar, se rellena con lo de alrededor" : "Pinta sobre lo que quieres borrar", cura);
+    svg.innerHTML = h;
+  }
   // =================== MINI TUTORIALES DE LAS FUNCIONES PARA INTERIORES (nov 2026) ===================
   // Regla de Amar: toda función nueva lleva su mini tutorial la primera vez que se usa (y un botón para volver a verlo).
   const PLANO_G = (x, y, w, h) => '<g transform="translate(' + x + " " + y + ')"><rect width="' + w + '" height="' + h + '" rx="6" fill="#F4F2EC"/><path d="M6 6h' + (w - 12) + "v" + (h - 12) + "h-" + (w - 12) + 'Z M' + (w * 0.5) + " 6v" + (h * 0.38) + " M" + (w * 0.5) + " " + (h * 0.6) + "v" + (h * 0.4 - 6) + " M" + (w * 0.5) + " " + (h * 0.55) + "h" + (w * 0.5 - 6) + '" fill="none" stroke="#2a2a2a" stroke-width="3"/></g>';
@@ -4235,9 +4260,11 @@
     if (clave === "tours/todos" && enLab("tutorial-video")) guiaNueva("nuevo-tutorial-video", () => [esVisible("#ver-tutorial") && { el: "#ver-tutorial", titulo: "Nuevo: tutorial en video",
       texto: "Si es tu primera vez, aquí está el <b>paso a paso</b> para armar un tour, de subir tus esferas a publicarlo. También sale en Panoramas mientras tu tour no tiene esferas." }].filter(Boolean), () => nav.sec === "tours" && esVisible("#ver-tutorial"));
     if (clave === "mejora/esferas" && enLab("mejora")) guiaNueva("nuevo-mejora", () => [esVisible("#mj-ajustes") && { el: "#mj-ajustes", titulo: "Nuevo: mejora tus esferas", anim: animMejora, dur: 4.4,
-      texto: "Aquí vive la edición de tus esferas. Mueve <b>brillo, contraste, saturación, sombras, altas luces, temperatura y detalle</b> y se ve al momento. <b>Aplicar</b> lo guarda en toda la esfera; tu foto original no se pierde." },
+      texto: "Aquí vive la edición de tus esferas. Mueve <b>brillo, contraste, saturación, sombras, altas luces, temperatura y detalle</b> y se ve al momento. <b>Aplicar</b> lo guarda al instante; tu foto original no se toca." },
       esVisible("#mj-tripie") && { el: "#mj-tripie", titulo: "Quitar el tripié", anim: animRetoque, dur: 4,
       texto: "Abre el piso de la esfera visto desde arriba. Con el <b>corrector puntual</b> pintas sobre el tripié y se rellena con el piso de alrededor; con el <b>tampón de clonar</b> (Alt + clic para elegir de dónde) copias a mano, como en Photoshop." }].filter(Boolean), () => nav.sec === "mejora" && esVisible("#mj-ajustes"));
+    if (clave === "mejora/esferas" && enLab("mejora")) guiaNueva("nuevo-borrar", () => [esVisible("#mj-borrar") && { el: "#mj-borrar", titulo: "Nuevo: borrar objetos", anim: animBorrar, dur: 4,
+      texto: "¿Salió una persona, un coche o un cable? Gira la esfera hasta dejarlo <b>al centro</b> y pulsa <b>Borrar algo de esta vista</b>. Se abre esa parte de la esfera con el <b>corrector puntual</b> y el <b>tampón de clonar</b>, igual que el piso." }].filter(Boolean), () => nav.sec === "mejora" && esVisible("#mj-borrar"));
     if (clave === "proyecto/general" && enLab("transiciones")) guiaNueva("nuevo-transiciones", () => [esVisible("#abrir-previa") && { el: "#abrir-previa", titulo: "Nuevo: transiciones inmersivas", anim: animTransicion, dur: 5,
       texto: "Al tocar un punto, tu cliente <b>avanza hacia él</b> y entra a la siguiente esfera sin cortes, también en celular. Mientras abre, el tour <b>precarga todas sus esferas</b> con una foto de portada. Pruébalo aquí en Vista previa y vuelve a publicar." }].filter(Boolean), () => nav.sub === "general" && esVisible("#abrir-previa"));
     if (clave === "proyecto/general" && enLab("bienvenida")) guiaNueva("nuevo-bienvenida", () => [esVisible("#p-bv-fila") && { el: "#p-bv", titulo: "Nuevo: pantalla de bienvenida", anim: animBienvenida, dur: 4.8,
@@ -4330,7 +4357,7 @@
           const r = await fetch("t/" + TOUR + "/" + ruta);
           if (r.ok) {
             // Esfera con el piso retocado: en el .zip va con sus piezas ya retocadas, sin el número de retoque
-            if (/^escenas\/[^/]+\/escena\.json$/.test(ruta)) { const j = await r.json(); delete j.retoque; delete j.retoqueUlt; delete j.retocado; return new TextEncoder().encode(JSON.stringify(j)); }
+            if (/^escenas\/[^/]+\/escena\.json$/.test(ruta)) { const j = await r.json(); if (j.ajuste > 0) { delete j.ajustes; delete j.ajuste; } delete j.ajusteUlt; delete j.retoque; delete j.ret; delete j.retoqueUlt; delete j.retocado; return new TextEncoder().encode(JSON.stringify(j)); }
             return new Uint8Array(await r.arrayBuffer());
           }
           if (r.status === 404) return null;
@@ -5750,9 +5777,76 @@
   };
   // Manita con la barra espaciadora (Laboratorio). Mientras está activa, un clic en la esfera no pone puntos ni selecciona.
   const MANO = { activa: false };
+  // =================== AJUSTES EN VIVO (como Lightroom) ===================
+  // Amar, 17 nov 2026: «aplicar a la esfera se tarda muchísimo… en Lightroom lo haces muy rápido». Antes los ajustes se
+  // horneaban en cada pieza de la esfera (cientos de piezas a bajar, pintar y subir). Ahora solo se guardan los números
+  // de las barras en escena.json y la tarjeta de video los pinta al mostrar la esfera, en el estudio, en el tour
+  // publicado y en el .zip. La foto original no se toca. Se cuela un sombreador propio en el visor (Marzipano) y a
+  // cada capa se le pasan sus números al empezar a pintarla.
+  const AJ_K = ["brillo", "contraste", "saturacion", "sombras", "luces", "temperatura", "detalle"];
+  // Los ajustes que se pintan en vivo (una esfera con ajustes ya horneados, de antes, no se pinta dos veces)
+  const ajVivo = (m) => (m && !(m.ajuste > 0) && m.ajustes && AJ_K.some((k) => +m.ajustes[k]) ? m.ajustes : null);
+  const ajParam = (A) => {
+    if (!A || !AJ_K.some((k) => +A[k])) return null;
+    const v = (k) => Math.max(-1, Math.min(1, (+A[k] || 0) / 100)), b = v("brillo"), s = v("saturacion"), sh = v("sombras"), hl = v("luces"), t = v("temperatura");
+    return { gan: [1 + 0.16 * t, 1, 1 - 0.16 * t], a: [Math.pow(2, -b * 0.9), v("contraste"), 1 + s * (s > 0 ? 0.9 : 1), Math.max(0, v("detalle")) * 1.05], b: [sh * (sh > 0 ? 1.5 : 0.9), hl * (hl > 0 ? 0.9 : 1.5)] };
+  };
+  const FRAG_AJ = ["#ifdef GL_FRAGMENT_PRECISION_HIGH", "precision highp float;", "#else", "precision mediump float;", "#endif",
+    "uniform sampler2D uSampler;", "uniform float uOpacity;", "uniform vec4 uColorOffset;", "uniform mat4 uColorMatrix;",
+    "uniform float uAjOn;", "uniform vec3 uAjGan;", "uniform vec4 uAjA;", "uniform vec2 uAjB;", "uniform float uAjPx;",
+    "varying vec2 vTextureCoord;", "const vec3 LUM = vec3(0.299, 0.587, 0.114);",
+    "void main(void) {",
+    "  vec4 t = texture2D(uSampler, vTextureCoord);",
+    "  if (uAjOn > 0.5) {",
+    "    vec3 c = t.rgb;",
+    "    if (uAjA.w > 0.0) {", // detalle: enfoque suave con los 4 vecinos
+    "      vec3 v = texture2D(uSampler, vTextureCoord + vec2(uAjPx, 0.0)).rgb + texture2D(uSampler, vTextureCoord - vec2(uAjPx, 0.0)).rgb + texture2D(uSampler, vTextureCoord + vec2(0.0, uAjPx)).rgb + texture2D(uSampler, vTextureCoord - vec2(0.0, uAjPx)).rgb;",
+    "      c = clamp(c + (dot(c, LUM) - dot(v, LUM) * 0.25) * uAjA.w, 0.0, 1.0);",
+    "    }",
+    "    c = min(c * uAjGan, 1.0);", // temperatura
+    "    c = pow(max(c, vec3(0.00001)), vec3(uAjA.x));", // brillo
+    "    if (uAjA.y > 0.0) { vec3 q = mix(2.0 * c * c, 1.0 - 2.0 * (1.0 - c) * (1.0 - c), step(0.5, c)); c += (q - c) * uAjA.y * 0.85; }",
+    "    else if (uAjA.y < 0.0) { c += (0.5 - c) * (-uAjA.y) * 0.6; }", // contraste
+    "    float L = dot(c, LUM);", // sombras y altas luces: según qué tan oscuro o claro es el punto, sin cambiarle el color
+    "    float L2 = L + uAjB.x * L * (1.0 - L) * (1.0 - L) + uAjB.y * L * L * (1.0 - L);",
+    "    float k = L > 0.0001 ? max(L2, 0.0) / L : 1.0;",
+    "    c *= k; L *= k;",
+    "    c = L + (c - L) * uAjA.z;", // saturación
+    "    t.rgb = clamp(c, 0.0, 1.0);",
+    "  }",
+    "  vec4 color = t * uColorMatrix + uColorOffset;",
+    "  gl_FragColor = vec4(color.rgba * uOpacity);",
+    "}"].join("\n");
+  const AJ_VIVO = (() => {
+    try {
+      const C = window.Marzipano && Marzipano.WebGlCubeRenderer; if (!C || !C.prototype.startLayer || !C.prototype.renderTile) return false;
+      // 1. Al armar el sombreador de las caras de la esfera, se cambia por el que sabe de ajustes (con todo en 0 pinta igual)
+      [window.WebGLRenderingContext, window.WebGL2RenderingContext].forEach((K) => {
+        if (!K || K.prototype.__ajMozari) return; const orig = K.prototype.shaderSource; K.prototype.__ajMozari = true;
+        K.prototype.shaderSource = function (sh, src) { if (typeof src === "string" && src.includes("vTextureCoord") && src.includes("uColorMatrix") && src.includes("gl_FragColor") && !src.includes("uAjOn")) src = FRAG_AJ; return orig.call(this, sh, src); };
+      });
+      const donde = new WeakMap(), u = (gl, pr) => { let l = donde.get(pr); if (!l) { l = {}; ["uAjOn", "uAjGan", "uAjA", "uAjB", "uAjPx"].forEach((k) => (l[k] = gl.getUniformLocation(pr, k))); donde.set(pr, l); } return l; };
+      // 2. Al empezar cada capa se le pasan sus ajustes (dos esferas en una transición llevan cada una los suyos)
+      const ini = C.prototype.startLayer, pieza = C.prototype.renderTile;
+      C.prototype.startLayer = function (layer, rect) {
+        ini.call(this, layer, rect);
+        const gl = this.gl, l = u(gl, this.shaderProgram), q = layer.__aj; if (!l.uAjOn) return;
+        gl.uniform1f(l.uAjOn, q ? 1 : 0);
+        if (q) { gl.uniform3fv(l.uAjGan, q.gan); gl.uniform4fv(l.uAjA, q.a); gl.uniform2fv(l.uAjB, q.b); }
+      };
+      C.prototype.renderTile = function (tile, texture, layer, z) {
+        const q = layer.__aj; if (q && q.a[3] > 0) { const l = u(this.gl, this.shaderProgram); if (l.uAjPx) this.gl.uniform1f(l.uAjPx, 1 / ((tile._level && tile._level._tileSize) || 512)); }
+        pieza.call(this, tile, texture, layer, z);
+      };
+      return true;
+    } catch (e) { return false; }
+  })();
+  // Poner (o quitar) los ajustes en una esfera ya armada y volver a pintarla
+  const ponerAjustes = (scene, A) => { try { const l = scene.layer(); l.__aj = ajParam(A); l.mergeEffects({}); } catch (e) { /* la esfera ya no estaba */ } };
   // =================== MOTOR (esfera + capas) ===================
   const MOTORES = new Set();
   function refrescarEsferaEnTodos(id) { MOTORES.forEach((m) => { try { m.refrescarEsfera(id); } catch (e) { /* sigue con los demás */ } }); }
+  function ajustesEnTodos(id) { MOTORES.forEach((m) => { try { m.ajustesEsfera(id); } catch (e) { /* sigue con los demás */ } }); }
   function crearMotor(stage, opciones) {
     const editable = !!opciones.editable;
     const viewer = new Marzipano.Viewer(stage, { controls: { mouseViewMode: "drag" }, stage: { preserveDrawingBuffer: editable } });
@@ -5820,6 +5914,7 @@
       const limiter = Marzipano.RectilinearView.limit.traditional(resMax, (110 * Math.PI) / 180, (150 * Math.PI) / 180);
       const view = new Marzipano.RectilinearView(vistaDe(id), limiter);
       const scene = viewer.createScene({ source, geometry, view, pinFirstLevel: true, textureStoreOpts: { previouslyVisibleCacheSize: MOVIL ? 8 : 40 } });
+      scene.layer().__aj = ajParam(ajVivo(d));
       view.addEventListener("change", () => { if (actual && actual.view === view) { programar(); if (opciones.alMoverVista) opciones.alMoverVista(); } });
       return (escenasM[id] = { id, scene, view });
     }
@@ -6617,6 +6712,7 @@
         const d = meta[id], b = R(id);
         const view = new Marzipano.RectilinearView({ yaw: 0, pitch: 0, fov: 0.4 });
         const scene = lupa.v.createScene({ source: Marzipano.ImageUrlSource.fromString(b + "{z}/{f}/{y}/{x}.jpg", { cubeMapPreviewUrl: b + "preview.jpg" }), geometry: new Marzipano.CubeGeometry(d.niveles), view, pinFirstLevel: true });
+        scene.layer().__aj = ajParam(ajVivo(d));
         lupa.escenas[id] = { scene, view };
       }
       const e = lupa.escenas[id];
@@ -6907,6 +7003,8 @@
       lupa: (ev) => precision(ev),
       sinPrecision: () => precision(null),
       captura: () => viewer.stage().takeSnapshot({ quality: 92 }),
+      // Cambiaron los ajustes de imagen de una esfera: solo se vuelve a pintar (las piezas son las mismas)
+      ajustesEsfera(id) { const e = escenasM[id]; if (e) ponerAjustes(e.scene, ajVivo(meta[id])); if (lupa && lupa.escenas[id]) ponerAjustes(lupa.escenas[id].scene, ajVivo(meta[id])); },
       // Una esfera cambió (retoque del piso): se vuelve a armar con sus piezas nuevas
       refrescarEsfera(id) {
         const e = escenasM[id]; if (!e) return;
@@ -7042,12 +7140,12 @@
 
   // =================== MEJORA: LA EDICIÓN DE LAS ESFERAS (Laboratorio «mejora») ===================
   // Pedido de Amar (17 nov 2026): una ventana junto a Mis Tours donde viva la edición de las esferas: brillo, contraste,
-  // saturación, sombras, altas luces, temperatura y detalle, y quitar el tripié. Los ajustes se ven al momento sobre la
-  // vista (la misma cuenta que al guardar) y «Aplicar» los pone en todas las piezas de la esfera, en aj<M>/. La original
+  // saturación, sombras, altas luces, temperatura y detalle, y quitar el tripié. Los ajustes se pintan en vivo (ver
+  // «AJUSTES EN VIVO», arriba): «Aplicar» solo guarda los números de las barras en escena.json, al instante. La original
   // no se toca: con todo en 0 regresa. Más adelante aquí irá también el armado (stitch) de esferas.
   const AJ_DEF = [["brillo", "Brillo", -100], ["contraste", "Contraste", -100], ["saturacion", "Saturación", -100], ["sombras", "Sombras", -100], ["luces", "Altas luces", -100], ["temperatura", "Temperatura", -100], ["detalle", "Detalle", 0]];
   const AJ_CLAVES = AJ_DEF.map((x) => x[0]);
-  // La cuenta de los ajustes, pixel por pixel (la misma para la vista en vivo y para guardar)
+  // La misma cuenta de los ajustes, pixel por pixel, para lo que no pasa por el visor (la foto 360 que se descarga)
   function prepararAjustes(A) {
     const v = (k) => Math.max(-1, Math.min(1, (+A[k] || 0) / 100));
     const b = v("brillo"), c = v("contraste"), s = v("saturacion"), sh = v("sombras"), hl = v("luces"), t = v("temperatura"), det = Math.max(0, v("detalle"));
@@ -7083,34 +7181,18 @@
       }
     };
   }
-  // Poner los ajustes en las piezas de la esfera (todas, o solo la cara de abajo cuando cambió el piso)
-  async function hornearAjustes(id, A, o = {}) {
-    const d = meta[id], M = o.carpeta || Math.max(d.ajuste || 0, d.ajusteUlt || 0) + 1, dest = "escenas/" + id + "/aj" + M + "/", base = RB(id), lista = [];
-    for (let z = 1; z < d.niveles.length; z++) { const nv = d.niveles[z], n = Math.ceil(nv.size / nv.tileSize); for (const f of o.soloD ? "d" : "bdflru") for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) lista.push(z + "/" + f + "/" + y + "/" + x + ".jpg"); }
-    lista.push("preview.jpg");
-    const total = lista.length, fn = prepararAjustes(A); let hechos = 0, error = null;
-    const uno = async (ruta) => {
-      const r = await fetch(base + ruta); if (!r.ok) throw new Error("No se pudo leer la esfera. Revisa tu internet.");
-      const bm = await createImageBitmap(await r.blob()), c = new OffscreenCanvas(bm.width, bm.height), x = c.getContext("2d", { willReadFrequently: true });
-      x.drawImage(bm, 0, 0); bm.close();
-      const im = x.getImageData(0, 0, c.width, c.height); fn(im.data, c.width, c.height); x.putImageData(im, 0, 0);
-      await subirArchivo(dest + ruta, await c.convertToBlob({ type: "image/jpeg", quality: 0.88 }));
-      hechos++; if (o.aviso) o.aviso(hechos / total);
-    };
-    const obrero = async () => { while (lista.length && !error) { const r = lista.shift(); try { await uno(r); } catch (e) { error = e; } } };
-    await Promise.all([obrero(), obrero(), obrero(), obrero()]);
-    if (error) throw error;
-    return M;
-  }
-  async function aplicarAjustes(id, A, aviso) {
-    const d = meta[id], previo = d.ajuste || 0, cero = AJ_CLAVES.every((k) => !+A[k]);
-    let nuevo;
-    if (cero) { if (!previo) return; nuevo = Object.assign({}, d, { ajusteUlt: Math.max(previo, d.ajusteUlt || 0) }); delete nuevo.ajuste; delete nuevo.ajustes; }
-    else { const M = await hornearAjustes(id, A, { aviso }); nuevo = Object.assign({}, meta[id], { ajuste: M, ajusteUlt: M, ajustes: Object.fromEntries(AJ_CLAVES.map((k) => [k, Math.round(+A[k] || 0)])) }); }
+  // Guardar los ajustes de una esfera: solo los números (se pintan en vivo). Si la esfera traía ajustes horneados en
+  // sus piezas (la primera versión de Mejora), esa carpeta se borra y queda con los números.
+  async function aplicarAjustes(id, A) {
+    const d = meta[id], horneado = d.ajuste || 0, cero = AJ_CLAVES.every((k) => !+A[k]);
+    if (cero && !horneado && !d.ajustes) return;
+    const nuevo = Object.assign({}, d); delete nuevo.ajuste;
+    if (horneado) nuevo.ajusteUlt = Math.max(horneado, d.ajusteUlt || 0);
+    if (cero) delete nuevo.ajustes; else nuevo.ajustes = Object.fromEntries(AJ_CLAVES.map((k) => [k, Math.round(+A[k] || 0)]));
     await subirArchivo("escenas/" + id + "/escena.json", new Blob([JSON.stringify(nuevo)], { type: "application/json" }));
     meta[id] = nuevo;
-    if (previo) fetch("api/tours/" + TOUR + "/f/escenas/" + id + "/aj" + previo + "/", { method: "DELETE" }).catch(() => {});
-    refrescarEsferaEnTodos(id);
+    if (horneado) { fetch("api/tours/" + TOUR + "/f/escenas/" + id + "/aj" + horneado + "/", { method: "DELETE" }).catch(() => {}); refrescarEsferaEnTodos(id); }
+    else ajustesEnTodos(id);
   }
   let MJ = null;
   const ajCero = () => Object.fromEntries(AJ_CLAVES.map((k) => [k, 0]));
@@ -7119,21 +7201,23 @@
     const caja = $("mj"); if (!caja || nav.sec !== "mejora" || !est.escenas.length) return;
     const id = (MJ && escena(MJ.id) ? MJ.id : null) || (edPano && escena(edPano) ? edPano : null) || (escena(P().escenaInicial) ? P().escenaInicial : est.escenas[0].id);
     cerrarMejora();
-    caja.innerHTML = '<aside class="mj-lista" id="mj-lista" aria-label="Esferas"></aside><div class="mj-visor"><div class="mj-stage" id="mj-stage"></div><canvas class="mj-prev" id="mj-prev" hidden></canvas>' +
+    caja.innerHTML = '<aside class="mj-lista" id="mj-lista" aria-label="Esferas"></aside><div class="mj-visor"><div class="mj-stage" id="mj-stage"></div><div class="mj-mira" id="mj-mira" aria-hidden="true"></div>' +
       '<button class="mini mj-antes" id="mj-antes" type="button">Mantén para ver el antes</button><div class="mj-progreso" id="mj-progreso" hidden><b></b><i><u></u></i></div></div><aside class="mj-panel" id="mj-panel"></aside>';
-    MJ = { id, A: ajCero(), sucio: false, viewer: null, escena: null, antes: false, ocupado: false, raf: 0, fn: null, borradores: {} };
+    MJ = { id, A: ajCero(), sucio: false, viewer: null, escena: null, antes: false, ocupado: false, borradores: {} };
     MJ.viewer = new Marzipano.Viewer($("mj-stage"), { controls: { mouseViewMode: "drag" }, stage: { preserveDrawingBuffer: true } });
-    MJ.viewer.stage().addEventListener("renderComplete", mejoraPrevia);
     mejoraElegir(id);
   }
-  function cerrarMejora() { if (!MJ) return; cancelAnimationFrame(MJ.raf); try { MJ.viewer.destroy(); } catch (e) { /* ya no estaba */ } MJ = null; const c = $("mj"); if (c) c.innerHTML = ""; }
+  function cerrarMejora() { if (!MJ) return; try { MJ.viewer.destroy(); } catch (e) { /* ya no estaba */ } MJ = null; const c = $("mj"); if (c) c.innerHTML = ""; }
   function mejoraElegir(id) {
     if (!MJ || !meta[id]) return;
     const guardados = Object.assign(ajCero(), meta[id].ajustes || {});
-    MJ.id = id; MJ.A = Object.assign({}, MJ.borradores[id] || guardados); MJ.sucio = !ajIgual(MJ.A, guardados); MJ.fn = null;
+    // Si es la misma esfera (se acaba de guardar algo), se queda viendo hacia donde estaba
+    const sigue = MJ.escena && MJ.id === id ? { yaw: MJ.escena.view.yaw(), pitch: MJ.escena.view.pitch(), fov: MJ.escena.view.fov() } : null;
+    MJ.id = id; MJ.A = Object.assign({}, MJ.borradores[id] || guardados); MJ.sucio = !ajIgual(MJ.A, guardados);
     const d = meta[id], b = RB(id), niveles = d.niveles.filter((l, i) => i === 0 || l.size <= 4096);
-    const view = new Marzipano.RectilinearView(vistaDe(id), Marzipano.RectilinearView.limit.traditional(Math.min(d.cara, 4096) * 2, (110 * Math.PI) / 180));
+    const view = new Marzipano.RectilinearView(sigue || vistaDe(id), Marzipano.RectilinearView.limit.traditional(Math.min(d.cara, 4096) * 2, (110 * Math.PI) / 180));
     const scene = MJ.viewer.createScene({ source: Marzipano.ImageUrlSource.fromString(b + "{z}/{f}/{y}/{x}.jpg", { cubeMapPreviewUrl: b + "preview.jpg" }), geometry: new Marzipano.CubeGeometry(niveles.length > 1 ? niveles : d.niveles.slice(0, 2)), view, pinFirstLevel: true });
+    scene.layer().__aj = ajParam(MJ.antes ? null : MJ.A);
     const vieja = MJ.escena; MJ.escena = { scene, view }; scene.switchTo({ transitionDuration: 0 });
     if (vieja) { const vw = MJ.viewer; setTimeout(() => { try { vw.destroyScene(vieja.scene); } catch (e) { /* ya no estaba */ } }, 400); }
     pintarMejora();
@@ -7141,51 +7225,41 @@
   function pintarMejora() {
     if (!MJ) return;
     const m = meta[MJ.id] || {}, hay = AJ_CLAVES.some((k) => MJ.A[k]);
-    $("mj-lista").innerHTML = est.escenas.map((e) => { const x = meta[e.id] || {}, et = [x.ajuste ? "Ajustada" : "", x.retoque ? "Sin tripié" : ""].filter(Boolean).join(" · ");
+    $("mj-lista").innerHTML = est.escenas.map((e) => { const x = meta[e.id] || {}, rr = retDe(x), et = [x.ajuste || ajVivo(x) ? "Ajustada" : "", rr && rr.d ? "Sin tripié" : "", rr && Object.keys(rr).some((c) => c !== "d") ? "Retocada" : ""].filter(Boolean).join(" · ");
       return '<button type="button" class="mj-esf" data-mj-esf="' + e.id + '" aria-pressed="' + (e.id === MJ.id) + '"><img src="' + thumbDe(e.id) + '" alt="" loading="lazy"><span>' + esc(e.nombre) + "</span>" + (et ? "<small>" + et + "</small>" : "") + "</button>"; }).join("");
     $("mj-panel").innerHTML = '<div class="grupo" id="mj-ajustes"><b>Ajustes de imagen</b>' +
       AJ_DEF.map(([k, n, min]) => '<label class="mj-fila"><span>' + n + '</span><input type="range" data-mj-aj="' + k + '" min="' + min + '" max="100" step="1" value="' + (MJ.A[k] || 0) + '" aria-label="' + n + '"><output>' + (MJ.A[k] || 0) + "</output></label>").join("") +
       '<div class="mj-acc"><button class="mini" type="button" id="mj-cero"' + (hay ? "" : " disabled") + '>Restablecer</button><button class="btn-prim" type="button" id="mj-aplicar"' + (MJ.sucio ? "" : " disabled") + ">Aplicar a la esfera</button></div>" +
-      (est.escenas.length > 1 ? '<button class="mini" type="button" id="mj-todas"' + (hay || m.ajuste ? "" : " disabled") + ">Aplicar a todas las esferas</button>" : "") +
-      '<p class="nota">Mueve las barras y se ve al momento. <b>Aplicar</b> lo guarda en toda la esfera (en las grandes tarda un minuto) y así sale en tu tour. Tu foto original no se pierde: con todo en 0 regresa.</p></div>' +
-      '<div class="grupo" id="mj-tripie"><b>Quitar el tripié</b><button class="btn-sec" type="button" data-retocar="' + MJ.id + '">' + ICO_RETOQUE + "<span>" + (m.retoque ? "Seguir retocando el piso" : "Abrir el piso") + "</span></button>" +
-      '<p class="nota">El piso de la esfera visto desde arriba, con <b>corrector puntual</b> y <b>tampón de clonar</b>.</p></div>';
+      (est.escenas.length > 1 ? '<button class="mini" type="button" id="mj-todas"' + (hay || m.ajuste || ajVivo(m) ? "" : " disabled") + ">Aplicar a todas las esferas</button>" : "") +
+      '<p class="nota">Mueve las barras y se ve al momento. <b>Aplicar</b> lo guarda al instante y así sale en tu tour. Tu foto original no se toca: con todo en 0 regresa. Doble clic en una barra la regresa a 0.</p></div>' +
+      '<div class="grupo" id="mj-tripie"><b>Quitar el tripié</b><button class="btn-sec" type="button" data-retocar="' + MJ.id + '">' + ICO_RETOQUE + "<span>" + ((retDe(m) || {}).d ? "Seguir retocando el piso" : "Abrir el piso") + "</span></button>" +
+      '<p class="nota">El piso de la esfera visto desde arriba, con <b>corrector puntual</b> y <b>tampón de clonar</b>.</p></div>' +
+      '<div class="grupo" id="mj-borrar"><b>Borrar objetos</b><button class="btn-sec" type="button" id="mj-borrar-aqui">' + ICO_CORRECTOR + "<span>Borrar algo de esta vista</span></button>" +
+      '<p class="nota">Gira la esfera hasta dejar <b>al centro</b> lo que quieres borrar (una persona, un coche, un cable) y pulsa el botón. Se abre esa parte de la esfera con las mismas herramientas.</p></div>';
     mejoraPrevia();
   }
-  // Vista en vivo: la imagen que pinta el visor, con los ajustes encima
-  function mejoraPrevia() {
-    if (!MJ || MJ.raf) return;
-    MJ.raf = requestAnimationFrame(() => {
-      if (!MJ) return; MJ.raf = 0;
-      const cv = $("mj-prev"), src = MJ.viewer.stage().domElement(), activo = !MJ.antes && AJ_CLAVES.some((k) => MJ.A[k]);
-      if (!cv) return; cv.hidden = !activo; if (!activo || !src || !src.width) return;
-      const k = Math.min(1, 1280 / src.width), w = Math.max(1, Math.round(src.width * k)), h = Math.max(1, Math.round(src.height * k));
-      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
-      const x = cv.getContext("2d", { willReadFrequently: true }); x.drawImage(src, 0, 0, w, h);
-      const im = x.getImageData(0, 0, w, h); (MJ.fn || (MJ.fn = prepararAjustes(MJ.A)))(im.data, w, h); x.putImageData(im, 0, 0);
-    });
-  }
+  // Vista en vivo: el visor pinta la esfera con los ajustes de las barras (o sin ellos, mientras se ve el «antes»)
+  function mejoraPrevia() { if (MJ && MJ.escena) ponerAjustes(MJ.escena.scene, MJ.antes ? null : MJ.A); }
   function mejoraCambio() {
     const guardados = Object.assign(ajCero(), (meta[MJ.id] || {}).ajustes || {}), hay = AJ_CLAVES.some((k) => MJ.A[k]);
-    MJ.sucio = !ajIgual(MJ.A, guardados); MJ.fn = null; MJ.borradores[MJ.id] = Object.assign({}, MJ.A);
+    MJ.sucio = !ajIgual(MJ.A, guardados); MJ.borradores[MJ.id] = Object.assign({}, MJ.A);
     const q = (i, v) => { const e = $(i); if (e) e.disabled = v; };
-    q("mj-cero", !hay); q("mj-aplicar", !MJ.sucio); q("mj-todas", !(hay || (meta[MJ.id] || {}).ajuste));
+    q("mj-cero", !hay); q("mj-aplicar", !MJ.sucio); q("mj-todas", !(hay || (meta[MJ.id] || {}).ajuste || ajVivo(meta[MJ.id])));
     mejoraPrevia();
   }
   async function mejoraAplicar(ids) {
     if (!MJ || MJ.ocupado) return;
     MJ.ocupado = true;
-    const A = Object.assign({}, MJ.A), pr = $("mj-progreso"), panel = $("mj-panel"); pr.hidden = false; panel.classList.add("ocupado");
+    const A = Object.assign({}, MJ.A), pr = $("mj-progreso"), panel = $("mj-panel"), varias = ids.length > 1; panel.classList.add("ocupado");
     let bien = false;
     try {
       for (let i = 0; i < ids.length; i++) {
-        const nombre = (escena(ids[i]) || {}).nombre || "";
-        const av = (f) => { pr.querySelector("b").textContent = (ids.length > 1 ? "Esfera " + (i + 1) + " de " + ids.length + " · " : "") + "Aplicando a " + nombre + "… " + Math.round(f * 100) + "%"; pr.querySelector("u").style.width = (f * 100).toFixed(1) + "%"; };
-        av(0); await aplicarAjustes(ids[i], A, av);
+        if (varias) { pr.hidden = false; pr.querySelector("b").textContent = "Guardando esfera " + (i + 1) + " de " + ids.length + "…"; pr.querySelector("u").style.width = (((i + 1) / ids.length) * 100).toFixed(1) + "%"; }
+        await aplicarAjustes(ids[i], A);
       }
       bien = true;
-    } catch (e) { avisar(e.message || "No se pudieron aplicar los ajustes"); }
-    if (bien) avisar(ids.length > 1 ? "Listo: los ajustes quedaron en todas las esferas" : "Listo: los ajustes quedaron en la esfera. También se ve así en tu tour publicado.", 4000);
+    } catch (e) { avisar(e.message || "No se pudieron guardar los ajustes"); }
+    if (bien) avisar(varias ? "Listo: los ajustes quedaron en todas las esferas" : "Listo: los ajustes quedaron en la esfera. También se ve así en tu tour publicado.", 4000);
     if (MJ) { MJ.ocupado = false; if (bien) MJ.borradores = {}; pr.hidden = true; panel.classList.remove("ocupado"); mejoraElegir(MJ.id); }
   }
   document.addEventListener("input", (ev) => {
@@ -7200,8 +7274,13 @@
     if (e) { if (!MJ.ocupado && e.dataset.mjEsf !== MJ.id) mejoraElegir(e.dataset.mjEsf); return; }
     if (ev.target.closest("#mj-cero")) { MJ.A = ajCero(); mejoraCambio(); pintarMejora(); return; }
     if (ev.target.closest("#mj-aplicar")) { mejoraAplicar([MJ.id]); return; }
+    if (ev.target.closest("#mj-borrar-aqui")) { if (MJ.escena) abrirRetoque(MJ.id, { yaw: MJ.escena.view.yaw(), pitch: MJ.escena.view.pitch() }); return; }
     if (ev.target.closest("#mj-todas")) mejoraAplicar([MJ.id].concat(est.escenas.map((x) => x.id).filter((x) => x !== MJ.id)));
   });
+  // Al pasar por «Borrar algo de esta vista» se enseña el recuadro de la esfera que se va a abrir
+  { const mira = (si) => { const m = $("mj-mira"); if (!m || !MJ || !MJ.escena) return; if (si) { const st = $("mj-stage"), lado = Math.min(st.clientWidth, st.clientHeight * (Math.tan(RT_FOV / 2) / Math.tan(MJ.escena.view.fov() / 2))); m.style.width = m.style.height = Math.round(lado) + "px"; } m.classList.toggle("ver", si); };
+    document.addEventListener("pointerover", (ev) => { if (ev.target.closest && ev.target.closest("#mj-borrar-aqui")) mira(true); });
+    document.addEventListener("pointerout", (ev) => { if (ev.target.closest && ev.target.closest("#mj-borrar-aqui")) mira(false); }); }
   { const suelta = () => { if (MJ && MJ.antes) { MJ.antes = false; mejoraPrevia(); } };
     document.addEventListener("pointerdown", (ev) => { if (MJ && ev.target.closest && ev.target.closest("#mj-antes")) { MJ.antes = true; mejoraPrevia(); } });
     document.addEventListener("pointerup", suelta); document.addEventListener("pointercancel", suelta); }
@@ -7214,7 +7293,7 @@
   const ICO_TAMPON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v4l-1 3h-4L9 7z"/><path d="M5 13h14v4H5z"/><path d="M5 20h14"/></svg>';
   const ICO_CORRECTOR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="6" rx="3" transform="rotate(-45 12 12)"/><path d="M10 10l4 4M12 8.5v0M15.5 12v0"/></svg>';
   const ICO_MANO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 11V5.5a1.5 1.5 0 0 1 3 0V11M11 10V4.5a1.5 1.5 0 0 1 3 0V11M14 10.5V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a6 6 0 0 1-4.6-2.2L3 15a1.6 1.6 0 0 1 2.3-2.2L8 15V9.5a1.5 1.5 0 0 1 3 0"/></svg>';
-  const RT_MAX = 4096, RT_PASOS = 30;
+  const RT_MAX = 4096, RT_PASOS = 30, RT_FOV = (70 * Math.PI) / 180; // la ventana de «Borrar objetos»: 70° de la esfera
   let RT = null;
   // Corrector puntual: rellena lo pintado con piso parecido de alrededor, parche por parche y de lo grueso a lo fino (sin IA)
   function curarZona(lienzo, mascara, caja) {
@@ -7354,14 +7433,16 @@
     mfull.clearRect(rx0, ry0, rw, rh);
     return { ok: 1, fallos: 0 };
   }
-  async function abrirRetoque(id) {
-    if (MODO !== "nube" || !meta[id]) return;
-    if (MOVIL) { avisar("Retocar el piso se hace en la compu"); return; }
+  // vista = null abre el piso (quitar el tripié); vista = { yaw, pitch } abre esa parte de la esfera (borrar objetos)
+  async function abrirRetoque(id, vista) {
+    if (MODO !== "nube" || !meta[id] || RT) return;
+    if (MOVIL) { avisar("Retocar la esfera se hace en la compu"); return; }
     const d = meta[id], L = d.niveles.length - 1, nv = d.niveles[L], S = nv.size, ts = nv.tileSize, n = S / ts;
-    const C = Math.min(S, RT_MAX), O = Math.round((S - C) / 2);
-    const v = document.createElement("div"); v.className = "rt-velo"; v.setAttribute("role", "dialog"); v.setAttribute("aria-label", "Retocar el piso");
-    v.innerHTML = '<div class="rt-caja"><header class="rt-cab"><div><b>Quitar el tripié</b><span>' + esc((escena(id) || {}).nombre || "") + ' · el piso de la esfera, visto desde arriba</span></div>' +
-      '<div class="rt-cab-acc">' + (d.retoque ? '<button class="mini" type="button" data-rt="original">Restaurar original</button>' : "") + '<button class="mini" type="button" data-rt="cancelar">Cancelar</button><button class="btn-prim" type="button" data-rt="guardar">Guardar</button></div></header>' +
+    const C = vista ? Math.min(RT_MAX, Math.max(256, Math.round(S * Math.tan(RT_FOV / 2)))) : Math.min(S, RT_MAX), O = Math.round((S - C) / 2);
+    const cam = vista ? camVentana(vista.yaw, vista.pitch, C) : null, que = vista ? "lo que quieres borrar" : "el tripié";
+    const v = document.createElement("div"); v.className = "rt-velo"; v.setAttribute("role", "dialog"); v.setAttribute("aria-label", vista ? "Borrar objetos" : "Retocar el piso");
+    v.innerHTML = '<div class="rt-caja"><header class="rt-cab"><div><b>' + (vista ? "Borrar objetos" : "Quitar el tripié") + "</b><span>" + esc((escena(id) || {}).nombre || "") + (vista ? " · la parte de la esfera que tenías al centro" : " · el piso de la esfera, visto desde arriba") + "</span></div>" +
+      '<div class="rt-cab-acc">' + (retDe(d) ? '<button class="mini" type="button" data-rt="original">Restaurar original</button>' : "") + '<button class="mini" type="button" data-rt="cancelar">Cancelar</button><button class="btn-prim" type="button" data-rt="guardar">Guardar</button></div></header>' +
       '<div class="rt-cuerpo"><aside class="rt-herr">' +
       '<div class="rt-grupo"><b>Herramienta</b><button class="rt-h" type="button" data-rt-h="corrector" aria-pressed="true" title="Corrector puntual (J)">' + ICO_CORRECTOR + '<span>Corrector puntual <kbd>J</kbd></span></button>' +
       '<button class="rt-h" type="button" data-rt-h="tampon" aria-pressed="false" title="Tampón de clonar (S)">' + ICO_TAMPON + '<span>Tampón de clonar <kbd>S</kbd></span></button>' +
@@ -7372,7 +7453,7 @@
       '<p class="rt-ayuda" id="rt-ayuda"></p>' +
       '<div class="rt-grupo rt-fila"><button class="mini" type="button" data-rt="deshacer" title="Deshacer (Cmd/Ctrl + Z)">Deshacer</button><button class="mini" type="button" data-rt="rehacer" title="Rehacer (Cmd/Ctrl + Shift + Z)">Rehacer</button></div>' +
       '<div class="rt-grupo rt-fila"><button class="mini" type="button" data-rt="antes" aria-pressed="false">Antes / después</button><button class="mini" type="button" data-rt="ajustar">Ver todo</button></div>' +
-      '</aside><div class="rt-lienzo" id="rt-lienzo"><canvas id="rt-c"></canvas><canvas id="rt-ui"></canvas><div class="rt-carga" id="rt-carga">Cargando el piso…</div></div></div></div>';
+      '</aside><div class="rt-lienzo" id="rt-lienzo"><canvas id="rt-c"></canvas><canvas id="rt-ui"></canvas><div class="rt-carga" id="rt-carga">' + (vista ? "Abriendo esa parte de la esfera…" : "Cargando el piso…") + '</div></div></div></div>';
     document.body.appendChild(v);
     const work = document.createElement("canvas"); work.width = work.height = C;
     const wx = work.getContext("2d", { willReadFrequently: true });
@@ -7380,11 +7461,16 @@
     const piezas = {}; // las del nivel grande que tocan el centro (para guardar sin perder lo de alrededor)
     const t0 = Math.floor(O / ts), t1 = Math.floor((O + C - 1) / ts);
     const carga = (u) => new Promise((ok, mal) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => ok(im); im.onerror = () => mal(new Error("pieza")); im.src = u; });
+    RT = { id }; // mientras carga, para que no se abra dos veces
     try {
-      const lista = [];
-      for (let ty = t0; ty <= t1; ty++) for (let tx = t0; tx <= t1; tx++) lista.push([tx, ty]);
-      await Promise.all(lista.map(async ([tx, ty]) => { const im = await carga(RB(id) + L + "/d/" + ty + "/" + tx + ".jpg"); piezas[ty + "/" + tx] = im; wx.drawImage(im, tx * ts - O, ty * ts - O, ts, ts); }));
-    } catch (e) { v.remove(); avisar("No se pudo abrir el piso de esta esfera. Revisa tu internet."); return; }
+      if (vista) { await new Promise((ok) => setTimeout(ok, 30)); wx.putImageData(await pintarVentana(id, cam), 0, 0); }
+      else {
+        const lista = [];
+        for (let ty = t0; ty <= t1; ty++) for (let tx = t0; tx <= t1; tx++) lista.push([tx, ty]);
+        await Promise.all(lista.map(async ([tx, ty]) => { const im = await carga(RB(id) + L + "/d/" + ty + "/" + tx + ".jpg"); piezas[ty + "/" + tx] = im; wx.drawImage(im, tx * ts - O, ty * ts - O, ts, ts); }));
+      }
+    } catch (e) { RT = null; v.remove(); avisar(vista ? "No se pudo abrir esta parte de la esfera. Revisa tu internet." : "No se pudo abrir el piso de esta esfera. Revisa tu internet."); return; }
+    if (!v.isConnected) { RT = null; return; }
     orig.getContext("2d").drawImage(work, 0, 0);
     const lienzo = v.querySelector("#rt-lienzo"), cv = v.querySelector("#rt-c"), ui = v.querySelector("#rt-ui"), cx = cv.getContext("2d", { willReadFrequently: true }), ux = ui.getContext("2d");
     v.querySelector("#rt-carga").remove();
@@ -7412,7 +7498,7 @@
         if (f) { const fx = st.ox + f[0] * st.k, fy = st.oy + f[1] * st.k; ux.strokeStyle = "#D5FF40"; ux.lineWidth = 2; ux.beginPath(); ux.moveTo(fx - 9, fy); ux.lineTo(fx + 9, fy); ux.moveTo(fx, fy - 9); ux.lineTo(fx, fy + 9); ux.stroke(); }
       }
     }
-    const ayuda = () => { v.querySelector("#rt-ayuda").innerHTML = st.herr === "tampon" ? (st.fuente ? "Pinta sobre el tripié: copia de la cruz verde. <b>Alt + clic</b> para elegir otro lugar." : "<b>Alt + clic</b> (Option en Mac) en un pedazo de piso limpio para elegir de dónde copiar, y luego pinta sobre el tripié.") : st.herr === "corrector" ? "Pinta sobre el tripié y su sombra. Al soltar, Mozari lo rellena con el piso de alrededor. Si el piso tiene líneas rectas o dibujos, termínalos con el tampón de clonar." : "Arrastra para moverte. La rueda acerca y aleja."; };
+    const ayuda = () => { v.querySelector("#rt-ayuda").innerHTML = st.herr === "tampon" ? (st.fuente ? "Pinta sobre " + que + ": copia de la cruz verde. <b>Alt + clic</b> para elegir otro lugar." : "<b>Alt + clic</b> (Option en Mac) en un pedazo limpio para elegir de dónde copiar, y luego pinta sobre " + que + ".") : st.herr === "corrector" ? (vista ? "Pinta sobre lo que quieres borrar y su sombra. Al soltar, Mozari lo rellena con lo de alrededor. Si atrás hay líneas rectas (una barda, una ventana), termínalas con el tampón de clonar." : "Pinta sobre el tripié y su sombra. Al soltar, Mozari lo rellena con el piso de alrededor. Si el piso tiene líneas rectas o dibujos, termínalos con el tampón de clonar.") : "Arrastra para moverte. La rueda acerca y aleja."; };
     const herr = (h) => { st.herr = h; v.querySelectorAll("[data-rt-h]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.rtH === h))); v.querySelector("#rt-op-fila").hidden = h !== "tampon"; lienzo.dataset.herr = h; ayuda(); pintarUI(); };
     const valores = () => { st.tam = +v.querySelector("#rt-tam").value; st.dur = +v.querySelector("#rt-dur").value; st.op = +v.querySelector("#rt-op").value; v.querySelector("#rt-tam-v").textContent = st.tam + " px"; v.querySelector("#rt-dur-v").textContent = st.dur + "%"; v.querySelector("#rt-op-v").textContent = st.op + "%"; pintarUI(); };
     // Deshacer: se guarda solo el pedazo que cambió (antes y después)
@@ -7457,7 +7543,7 @@
       const [px, py] = aFoto(e);
       if (st.herr === "mano" || st.espacio) { arrastre = [e.clientX, e.clientY, st.ox, st.oy]; return; }
       if (st.herr === "tampon" && e.altKey) { st.fuente = [px, py]; st.desfase = null; ayuda(); pintarUI(); return; }
-      if (st.herr === "tampon" && !st.fuente) { avisar("Primero Alt + clic (Option en Mac) en el piso limpio para elegir de dónde copiar"); return; }
+      if (st.herr === "tampon" && !st.fuente) { avisar("Primero Alt + clic (Option en Mac) en un pedazo limpio para elegir de dónde copiar"); return; }
       const antes = document.createElement("canvas"); antes.width = antes.height = C; antes.getContext("2d").drawImage(work, 0, 0);
       st.trazo = { antes, caja: null, ultimo: [px, py] };
       if (st.herr === "tampon") { if (!st.desfase) st.desfase = [st.fuente[0] - px, st.fuente[1] - py]; sello(px, py); }
@@ -7477,7 +7563,7 @@
         requestAnimationFrame(() => setTimeout(() => {
           const res = curarZona(work, t.mascara, t.caja);
           lienzo.classList.remove("curando");
-          if (!res.ok) avisar("No encontré piso limpio alrededor para rellenar: usa el tampón de clonar");
+          if (!res.ok) avisar("No encontré de dónde rellenar alrededor: usa el tampón de clonar");
           else if (res.fallos) avisar("Una parte no se pudo rellenar sola: termínala con el tampón de clonar");
           guardarPaso({ x: t.caja.x - 4, y: t.caja.y - 4, w: t.caja.w + 8, h: t.caja.h + 8 }, t.antes); pintar();
         }, 20));
@@ -7516,64 +7602,208 @@
       if (q === "deshacer") deshacer(); else if (q === "rehacer") rehacer(); else if (q === "ajustar") ajustar();
       else if (q === "antes") { st.antes = !st.antes; b.setAttribute("aria-pressed", String(st.antes)); pintar(); }
       else if (q === "cancelar") { if (st.cambios && b.dataset.seguro !== "1") { b.dataset.seguro = "1"; b.textContent = "Salir sin guardar"; return; } cerrar(); }
-      else if (q === "guardar") { if (!st.cambios) { cerrar(); return; } b.disabled = true; try { await guardarRetoque(id, work, piezas, { L, S, ts, n, C, O }, (t) => (b.textContent = t)); cerrar(); avisar("Listo: el piso quedó retocado. También se ve así en tu tour publicado.", 4000); } catch (err) { b.disabled = false; b.textContent = "Guardar"; avisar(err.message || "No se pudo guardar el retoque"); } }
-      else if (q === "original") { b.disabled = true; try { await quitarRetoque(id); cerrar(); avisar("Listo: la esfera regresó a su original"); } catch (err) { b.disabled = false; avisar("No se pudo restaurar"); } }
+      else if (q === "guardar") {
+        if (!st.cambios) { cerrar(); return; }
+        b.disabled = true; const av = (t) => (b.textContent = t);
+        try {
+          av("Preparando…"); await new Promise((ok) => setTimeout(ok, 30));
+          const ed = vista ? await edicionVentana(id, cam, work, orig) : await edicionPiso(id, work, piezas, { L, S, ts, n, C, O });
+          if (ed) await guardarCaras(id, ed, av);
+          cerrar(); avisar(vista ? "Listo: quedó borrado en la esfera. También se ve así en tu tour publicado." : "Listo: el piso quedó retocado. También se ve así en tu tour publicado.", 4000);
+        } catch (err) { b.disabled = false; b.textContent = "Guardar"; avisar(err.message || "No se pudo guardar el retoque"); }
+      }
+      else if (q === "original") {
+        // Regresa toda la esfera (el piso y lo que se haya borrado): se pide confirmar con un segundo clic
+        if (b.dataset.seguro !== "1") { b.dataset.seguro = "1"; b.textContent = "Sí, quitar todos los retoques"; return; }
+        b.disabled = true; try { await quitarRetoque(id); cerrar(); avisar("Listo: la esfera regresó a su original"); } catch (err) { b.disabled = false; avisar("No se pudo restaurar"); }
+      }
     });
     herr("corrector"); valores(); ajustar();
   }
-  // Guardar: las piezas grandes que tocan el centro, los niveles chicos (de una cara armada) y la vista previa
-  async function guardarRetoque(id, work, piezas, g, aviso) {
-    const d = meta[id], N = Math.max(d.retoque || 0, d.retoqueUlt || 0) + 1, dest = "escenas/" + id + "/ret" + N + "/", ant = RB(id);
-    const cola = [];
-    const jpg = (c) => (c.convertToBlob ? c.convertToBlob({ type: "image/jpeg", quality: SUBIDA.CALIDAD }) : new Promise((ok) => c.toBlob(ok, "image/jpeg", SUBIDA.CALIDAD)));
-    const t0 = Math.floor(g.O / g.ts), t1 = Math.floor((g.O + g.C - 1) / g.ts);
+  // Una esfera con los ajustes horneados en sus piezas (primera versión de Mejora) pasa a pintarlos en vivo: se le
+  // quita el número de carpeta y se regresa cuál era, para borrarla
+  const sinHorneado = (m) => { const h = m.ajuste || 0; if (h) { m.ajusteUlt = Math.max(h, m.ajusteUlt || 0); delete m.ajuste; } return h; };
+  // ---- La esfera en 6 caras: la misma cuenta que cuando se parte al subirla (ver SOMBREADOR_F) ----
+  // Dirección (x a la derecha, y arriba, z al frente) → cara (0…5 = b d f l r u) y su punto (u, v de −1 a 1)
+  function caraDe(dx, dy, dz, o) {
+    const ax = Math.abs(dx), ay = Math.abs(dy), az = Math.abs(dz);
+    if (az >= ax && az >= ay) { if (dz < 0) { o.c = 0; o.u = -dx / az; o.v = -dy / az; } else { o.c = 2; o.u = dx / az; o.v = -dy / az; } }
+    else if (ay >= ax) { if (dy < 0) { o.c = 1; o.u = dx / ay; o.v = -dz / ay; } else { o.c = 5; o.u = dx / ay; o.v = dz / ay; } }
+    else if (dx < 0) { o.c = 3; o.u = dz / ax; o.v = -dy / ax; } else { o.c = 4; o.u = -dz / ax; o.v = -dy / ax; }
+  }
+  // La «ventana»: una foto plana de la esfera, de RT_FOV de ancho, centrada en donde se estaba viendo (yaw y pitch del visor)
+  const camVentana = (yaw, pitch, C) => ({ cy: Math.cos(yaw), sy: Math.sin(yaw), cp: Math.cos(pitch), sp: Math.sin(pitch), C, f: C / 2 / Math.tan(RT_FOV / 2) });
+  // De un pixel de la ventana a su cara
+  function ventanaACara(cam, i, j, o) {
+    const X = (i + 0.5 - cam.C / 2) / cam.f, Y = -(j + 0.5 - cam.C / 2) / cam.f, y = Y * cam.cp - cam.sp, z1 = Y * cam.sp + cam.cp;
+    caraDe(X * cam.cy + z1 * cam.sy, y, -X * cam.sy + z1 * cam.cy, o);
+  }
+  // De un punto de una cara a la ventana (en pixeles de la ventana). false si no se ve en ella.
+  function caraAVentana(cam, c, u, v, o) {
+    let x, y, z;
+    if (c === 0) { x = -u; y = -v; z = -1; } else if (c === 1) { x = u; y = -1; z = -v; } else if (c === 2) { x = u; y = -v; z = 1; } else if (c === 3) { x = -1; y = -v; z = u; } else if (c === 4) { x = 1; y = -v; z = -u; } else { x = u; y = 1; z = v; }
+    const x1 = x * cam.cy - z * cam.sy, z1 = x * cam.sy + z * cam.cy, y2 = y * cam.cp + z1 * cam.sp, z2 = -y * cam.sp + z1 * cam.cp;
+    if (z2 <= 0.02) return false;
+    o.x = cam.C / 2 + (x1 / z2) * cam.f - 0.5; o.y = cam.C / 2 - (y2 / z2) * cam.f - 0.5;
+    return o.x >= 0 && o.y >= 0 && o.x <= cam.C - 1 && o.y <= cam.C - 1;
+  }
+  const CARAS = "bdflru";
+  const leerPieza = async (url, lado, x) => { const r = await fetch(url); if (!r.ok) throw new Error("pieza"); const bm = await createImageBitmap(await r.blob()); x.clearRect(0, 0, lado, lado); x.drawImage(bm, 0, 0, lado, lado); bm.close(); };
+  // Pintar la ventana: se bajan las piezas grandes que se ven y cada pixel se toma de la suya
+  async function pintarVentana(id, cam) {
+    const d = meta[id], L = d.niveles.length - 1, nv = d.niveles[L], S = nv.size, ts = nv.tileSize, n = S / ts, C = cam.C, base = RB(id), o = {};
+    const usa = new Uint8Array(6 * n * n);
+    for (let j = 0; j < C; j++) for (let i = 0; i < C; i++) {
+      ventanaACara(cam, i, j, o);
+      const fx = Math.min(S - 1.001, Math.max(0, ((o.u + 1) / 2) * S - 0.5)), fy = Math.min(S - 1.001, Math.max(0, ((o.v + 1) / 2) * S - 0.5));
+      usa[(o.c * n + ((fy / ts) | 0)) * n + ((fx / ts) | 0)] = 1;
+    }
+    const datos = new Array(6 * n * n), lista = []; usa.forEach((q, k) => { if (q) lista.push(k); });
+    const lee = new OffscreenCanvas(ts, ts), lx = lee.getContext("2d", { willReadFrequently: true });
+    let error = null;
+    const obrero = async () => { while (lista.length && !error) { const k = lista.pop(), c = (k / (n * n)) | 0, ty = ((k / n) | 0) % n, tx = k % n; try { await leerPieza(base + L + "/" + CARAS[c] + "/" + ty + "/" + tx + ".jpg", ts, lx); datos[k] = lx.getImageData(0, 0, ts, ts).data; } catch (e) { error = e; } } };
+    await Promise.all([obrero(), obrero(), obrero(), obrero(), obrero(), obrero()]);
+    if (error) throw error;
+    const img = new ImageData(C, C), out = img.data;
+    for (let j = 0, p = 0; j < C; j++) for (let i = 0; i < C; i++, p += 4) {
+      ventanaACara(cam, i, j, o);
+      const fx = Math.min(S - 1.001, Math.max(0, ((o.u + 1) / 2) * S - 0.5)), fy = Math.min(S - 1.001, Math.max(0, ((o.v + 1) / 2) * S - 0.5)), tx = (fx / ts) | 0, ty = (fy / ts) | 0, t = datos[(o.c * n + ty) * n + tx];
+      const x0 = Math.min(ts - 2, (fx - tx * ts) | 0), y0 = Math.min(ts - 2, (fy - ty * ts) | 0), ax = Math.min(1, fx - tx * ts - x0), ay = Math.min(1, fy - ty * ts - y0), q = (y0 * ts + x0) * 4, q2 = q + ts * 4;
+      out[p] = (t[q] * (1 - ax) + t[q + 4] * ax) * (1 - ay) + (t[q2] * (1 - ax) + t[q2 + 4] * ax) * ay;
+      out[p + 1] = (t[q + 1] * (1 - ax) + t[q + 5] * ax) * (1 - ay) + (t[q2 + 1] * (1 - ax) + t[q2 + 5] * ax) * ay;
+      out[p + 2] = (t[q + 2] * (1 - ax) + t[q + 6] * ax) * (1 - ay) + (t[q2 + 2] * (1 - ax) + t[q2 + 6] * ax) * ay;
+      out[p + 3] = 255;
+    }
+    return img;
+  }
+  // Una cara completa a la mitad (o entera si la esfera es chica), armada con sus piezas de ahora: de ahí salen los
+  // niveles chicos y la vista previa
+  async function armarCara(id, c, L) {
+    const d = meta[id], z = L >= 2 ? L - 1 : L, nv = d.niveles[z], n1 = nv.size / nv.tileSize, cara = new OffscreenCanvas(nv.size, nv.size), x = cara.getContext("2d"), ant = RB(id);
+    x.imageSmoothingQuality = "high";
+    const carga = (u) => new Promise((ok, mal) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => ok(im); im.onerror = () => mal(new Error("No se pudo leer la esfera. Revisa tu internet.")); im.src = u; });
+    const ims = [];
+    for (let ty = 0; ty < n1; ty++) for (let tx = 0; tx < n1; tx++) ims.push(carga(ant + z + "/" + c + "/" + ty + "/" + tx + ".jpg").then((im) => x.drawImage(im, tx * nv.tileSize, ty * nv.tileSize, nv.tileSize, nv.tileSize)));
+    await Promise.all(ims);
+    return cara;
+  }
+  const aJpgRt = (c) => (c.convertToBlob ? c.convertToBlob({ type: "image/jpeg", quality: SUBIDA.CALIDAD }) : new Promise((ok) => c.toBlob(ok, "image/jpeg", SUBIDA.CALIDAD)));
+  // Lo retocado en el piso → piezas de la cara de abajo
+  async function edicionPiso(id, work, piezas, g) {
+    const t0 = Math.floor(g.O / g.ts), t1 = Math.floor((g.O + g.C - 1) / g.ts), mapa = new Map();
     for (let ty = t0; ty <= t1; ty++) for (let tx = t0; tx <= t1; tx++) {
       const c = new OffscreenCanvas(g.ts, g.ts), x = c.getContext("2d");
       x.drawImage(piezas[ty + "/" + tx], 0, 0, g.ts, g.ts); x.drawImage(work, g.O - tx * g.ts, g.O - ty * g.ts);
-      cola.push([g.L + "/d/" + ty + "/" + tx + ".jpg", await jpg(c)]);
+      mapa.set(ty + "/" + tx, await aJpgRt(c));
     }
-    // Niveles chicos: la cara completa a la mitad, con el centro retocado encima
-    let cara = null;
-    if (g.L >= 2) {
-      const nv = meta[id].niveles[g.L - 1], S1 = nv.size, n1 = S1 / nv.tileSize;
-      cara = new OffscreenCanvas(S1, S1); const x = cara.getContext("2d"); x.imageSmoothingQuality = "high";
-      const carga = (u) => new Promise((ok, mal) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => ok(im); im.onerror = () => mal(new Error("No se pudo leer la esfera. Revisa tu internet.")); im.src = u; });
-      const ims = [];
-      for (let ty = 0; ty < n1; ty++) for (let tx = 0; tx < n1; tx++) ims.push(carga(ant + (g.L - 1) + "/d/" + ty + "/" + tx + ".jpg").then((im) => x.drawImage(im, tx * nv.tileSize, ty * nv.tileSize, nv.tileSize, nv.tileSize)));
-      await Promise.all(ims);
-      const f = S1 / g.S; x.drawImage(work, g.O * f, g.O * f, g.C * f, g.C * f);
-    } else { cara = new OffscreenCanvas(g.S, g.S); const x = cara.getContext("2d"); Object.entries(piezas).forEach(([k, im]) => { const [ty, tx] = k.split("/").map(Number); x.drawImage(im, tx * g.ts, ty * g.ts, g.ts, g.ts); }); x.drawImage(work, g.O, g.O); }
-    for (let z = Math.min(g.L - 1, meta[id].niveles.length - 1); z >= 1; z--) {
-      const nv = meta[id].niveles[z], nn = nv.size / nv.tileSize;
-      for (let ty = 0; ty < nn; ty++) for (let tx = 0; tx < nn; tx++) {
-        const c = new OffscreenCanvas(nv.tileSize, nv.tileSize), x = c.getContext("2d"); x.imageSmoothingQuality = "high";
-        const k = cara.width / nv.size; x.drawImage(cara, tx * nv.tileSize * k, ty * nv.tileSize * k, nv.tileSize * k, nv.tileSize * k, 0, 0, nv.tileSize, nv.tileSize);
-        cola.push([z + "/d/" + ty + "/" + tx + ".jpg", await jpg(c)]);
+    const cara = await armarCara(id, "d", g.L), f = cara.width / g.S, x = cara.getContext("2d");
+    x.drawImage(work, g.O * f, g.O * f, g.C * f, g.C * f);
+    return { d: { piezas: mapa, cara, rango: [t0, t0, t1, t1] } };
+  }
+  // Lo retocado en una ventana → de regreso a las caras que toca. Solo se cambia lo que se pintó (con la orilla suave).
+  async function edicionVentana(id, cam, work, orig) {
+    const d = meta[id], L = d.niveles.length - 1, nv = d.niveles[L], S = nv.size, ts = nv.tileSize, n = S / ts, C = cam.C, base = RB(id), o = {};
+    const a = orig.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, C, C).data, w = work.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, C, C).data;
+    // 1. Qué cambió
+    let x0 = C, y0 = C, x1 = -1, y1 = -1; const m0 = new Uint8Array(C * C);
+    for (let p = 0, i = 0; p < C * C; p++, i += 4) if (a[i] !== w[i] || a[i + 1] !== w[i + 1] || a[i + 2] !== w[i + 2]) { m0[p] = 1; const xx = p % C, yy = (p / C) | 0; if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+    if (x1 < 0) return null;
+    // 2. La orilla del cambio, suave (2 px hacia afuera y difuminada): adentro vale 1
+    const G = 5; x0 = Math.max(0, x0 - G); y0 = Math.max(0, y0 - G); x1 = Math.min(C - 1, x1 + G); y1 = Math.min(C - 1, y1 + G);
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1, t1 = new Float32Array(bw * bh), alfa = new Float32Array(bw * bh);
+    const pasada = (src, dst, lee, radio, modo) => { // modo 0: máximo (engordar) · 1: promedio (difuminar); por filas y luego por columnas
+      const tmp = new Float32Array(bw * bh);
+      for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) { let s = 0; for (let k = -radio; k <= radio; k++) { const xx = Math.min(bw - 1, Math.max(0, x + k)), q = lee(src, xx, y); s = modo ? s + q : q > s ? q : s; } tmp[y * bw + x] = modo ? s / (2 * radio + 1) : s; }
+      for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) { let s = 0; for (let k = -radio; k <= radio; k++) { const yy = Math.min(bh - 1, Math.max(0, y + k)), q = tmp[yy * bw + x]; s = modo ? s + q : q > s ? q : s; } dst[y * bw + x] = modo ? s / (2 * radio + 1) : s; }
+    };
+    pasada(m0, t1, (src, x, y) => src[(y0 + y) * C + x0 + x], 2, 0);
+    pasada(t1, alfa, (src, x, y) => src[y * bw + x], 2, 1);
+    // 3. Las piezas grandes que toca
+    const toca = new Uint8Array(6 * n * n);
+    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+      if (alfa[y * bw + x] <= 0) continue;
+      ventanaACara(cam, x0 + x, y0 + y, o);
+      const fx = Math.min(S - 1, Math.max(0, ((o.u + 1) / 2) * S)) | 0, fy = Math.min(S - 1, Math.max(0, ((o.v + 1) / 2) * S)) | 0;
+      toca[(o.c * n + ((fy / ts) | 0)) * n + ((fx / ts) | 0)] = 1;
+    }
+    // 4. Cada pieza: como está ahora, con lo cambiado encima (cada pixel de la cara se busca en la ventana)
+    const lee = new OffscreenCanvas(ts, ts), lx = lee.getContext("2d", { willReadFrequently: true }), ed = {}, q = {};
+    for (let k = 0; k < toca.length; k++) {
+      if (!toca[k]) continue;
+      const c = (k / (n * n)) | 0, ty = ((k / n) | 0) % n, tx = k % n, letra = CARAS[c];
+      await leerPieza(base + L + "/" + letra + "/" + ty + "/" + tx + ".jpg", ts, lx);
+      const im = lx.getImageData(0, 0, ts, ts), dd = im.data; let algo = false;
+      for (let py = 0, i = 0; py < ts; py++) for (let px = 0; px < ts; px++, i += 4) {
+        if (!caraAVentana(cam, c, ((tx * ts + px + 0.5) / S) * 2 - 1, ((ty * ts + py + 0.5) / S) * 2 - 1, q)) continue;
+        const bx = q.x - x0, by = q.y - y0; if (bx < 0 || by < 0 || bx > bw - 1 || by > bh - 1) continue;
+        const ix = Math.min(bw - 2, bx | 0), iy = Math.min(bh - 2, by | 0), fx = bx - ix, fy = by - iy, ai = iy * bw + ix;
+        const al = (alfa[ai] * (1 - fx) + alfa[ai + 1] * fx) * (1 - fy) + (alfa[ai + bw] * (1 - fx) + alfa[ai + bw + 1] * fx) * fy;
+        if (al <= 0.004) continue;
+        const wx0 = Math.min(C - 2, q.x | 0), wy0 = Math.min(C - 2, q.y | 0), gx = q.x - wx0, gy = q.y - wy0, wi = (wy0 * C + wx0) * 4, wj = wi + C * 4;
+        for (let ch = 0; ch < 3; ch++) { const col = (w[wi + ch] * (1 - gx) + w[wi + 4 + ch] * gx) * (1 - gy) + (w[wj + ch] * (1 - gx) + w[wj + 4 + ch] * gx) * gy; dd[i + ch] = dd[i + ch] * (1 - al) + col * al; }
+        algo = true;
       }
+      if (!algo) continue;
+      lx.putImageData(im, 0, 0);
+      const e = ed[letra] || (ed[letra] = { piezas: new Map(), cara: await armarCara(id, letra, L), rango: [tx, ty, tx, ty] });
+      e.piezas.set(ty + "/" + tx, await aJpgRt(lee));
+      e.rango = [Math.min(e.rango[0], tx), Math.min(e.rango[1], ty), Math.max(e.rango[2], tx), Math.max(e.rango[3], ty)];
+      // …y en la cara armada (a su tamaño), para los niveles chicos y la vista previa
+      const f = e.cara.width / S, xc = e.cara.getContext("2d"); xc.imageSmoothingQuality = "high"; xc.drawImage(lee, tx * ts * f, ty * ts * f, ts * f, ts * f);
     }
-    // Vista previa (tira de 6 caras en orden b d f l r u): se cambia la de abajo
+    return Object.keys(ed).length ? ed : null;
+  }
+  // Guardar las caras retocadas en una carpeta nueva (ret<N>/): sus piezas grandes que cambiaron (y las que esa cara ya
+  // traía retocadas de antes), todos sus niveles chicos y la vista previa. Las piezas que no cambian se siguen sirviendo
+  // de la esfera original, y las otras caras retocadas se quedan en su carpeta.
+  async function guardarCaras(id, ed, aviso) {
+    const d = meta[id], L = d.niveles.length - 1, previo = retDe(d) || {}, ant = RB(id);
+    const N = Math.max(d.retoqueUlt || 0, d.retoque || 0, ...Object.values(previo).map((x) => x[0] || 0)) + 1, dest = "escenas/" + id + "/ret" + N + "/", cola = [], ret = {};
+    Object.keys(previo).forEach((c) => (ret[c] = previo[c].slice()));
+    for (const c of Object.keys(ed)) {
+      const e = ed[c], v = previo[c]; let [x0, y0, x1, y1] = e.rango;
+      e.piezas.forEach((blob, k) => cola.push([L + "/" + c + "/" + k + ".jpg", blob]));
+      if (v) { // lo que esta cara ya traía retocado de antes se copia tal cual a la carpeta nueva
+        for (let ty = v[2]; ty <= v[4]; ty++) for (let tx = v[1]; tx <= v[3]; tx++) if (!e.piezas.has(ty + "/" + tx)) { const r = L + "/" + c + "/" + ty + "/" + tx + ".jpg"; cola.push([r, () => fetch(ant + r).then((x) => { if (!x.ok) throw new Error("No se pudo leer la esfera. Revisa tu internet."); return x.blob(); })]); }
+        x0 = Math.min(x0, v[1]); y0 = Math.min(y0, v[2]); x1 = Math.max(x1, v[3]); y1 = Math.max(y1, v[4]);
+      }
+      for (let z = Math.min(L - 1, d.niveles.length - 1); z >= 1; z--) {
+        const nv = d.niveles[z], nn = nv.size / nv.tileSize, k = e.cara.width / nv.size;
+        for (let ty = 0; ty < nn; ty++) for (let tx = 0; tx < nn; tx++) {
+          const cv = new OffscreenCanvas(nv.tileSize, nv.tileSize), x = cv.getContext("2d"); x.imageSmoothingQuality = "high";
+          x.drawImage(e.cara, tx * nv.tileSize * k, ty * nv.tileSize * k, nv.tileSize * k, nv.tileSize * k, 0, 0, nv.tileSize, nv.tileSize);
+          cola.push([z + "/" + c + "/" + ty + "/" + tx + ".jpg", await aJpgRt(cv)]);
+        }
+      }
+      ret[c] = [N, x0, y0, x1, y1];
+    }
+    // Vista previa (tira de 6 caras en orden b d f l r u): se cambian las caras retocadas
     const pv = await new Promise((ok, mal) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => ok(im); im.onerror = () => mal(new Error("No se pudo leer la vista previa")); im.src = ant + "preview.jpg"; });
     const tira = new OffscreenCanvas(256, 1536), tx2 = tira.getContext("2d"); tx2.imageSmoothingQuality = "high";
-    tx2.drawImage(pv, 0, 0, 256, 1536); tx2.drawImage(cara, 0, 256, 256, 256);
-    cola.push(["preview.jpg", await jpg(tira)]);
-    let hechos = 0;
-    const subir = async () => { while (cola.length) { const [r, b] = cola.shift(); await subirArchivo(dest + r, b); hechos++; aviso("Guardando " + Math.round((hechos / total) * 100) + "%"); } };
-    const total = cola.length;
+    tx2.drawImage(pv, 0, 0, 256, 1536); Object.keys(ed).forEach((c) => tx2.drawImage(ed[c].cara, 0, CARAS.indexOf(c) * 256, 256, 256));
+    cola.push(["preview.jpg", await aJpgRt(tira)]);
+    let hechos = 0; const total = cola.length;
+    const subir = async () => { while (cola.length) { const [r, b] = cola.shift(); await subirArchivo(dest + r, typeof b === "function" ? await b() : b); hechos++; aviso("Guardando " + Math.round((hechos / total) * 100) + "%"); } };
     await Promise.all([subir(), subir(), subir(), subir()]);
-    // escena.json con el número de retoque (el visor pide r<N>/) y se borra el retoque anterior
-    const previo = d.retoque || 0, nuevo = Object.assign({}, d, { retoque: N, retoqueUlt: N, retocado: new Date().toISOString() });
+    // escena.json con sus retoques (el visor pide las piezas con ese número) y se borran las carpetas que ya nadie usa
+    const nuevo = Object.assign({}, d, { ret, retoqueUlt: N, retocado: new Date().toISOString() }); delete nuevo.retoque;
+    const horneado = sinHorneado(nuevo);
     await subirArchivo("escenas/" + id + "/escena.json", new Blob([JSON.stringify(nuevo)], { type: "application/json" }));
     meta[id] = nuevo;
-    if (nuevo.ajuste > 0) { aviso("Poniendo tus ajustes…"); await hornearAjustes(id, nuevo.ajustes, { soloD: true, carpeta: nuevo.ajuste }); }
-    if (previo) fetch("api/tours/" + TOUR + "/f/escenas/" + id + "/ret" + previo + "/", { method: "DELETE" }).catch(() => {});
+    const vivas = new Set(Object.values(ret).map((x) => x[0]));
+    new Set(Object.values(previo).map((x) => x[0])).forEach((k) => { if (!vivas.has(k)) fetch("api/tours/" + TOUR + "/f/escenas/" + id + "/ret" + k + "/", { method: "DELETE" }).catch(() => {}); });
+    if (horneado) fetch("api/tours/" + TOUR + "/f/escenas/" + id + "/aj" + horneado + "/", { method: "DELETE" }).catch(() => {});
     refrescarEsferaEnTodos(id); if (MJ) mejoraElegir(MJ.id);
   }
+  // Restaurar original: se quitan todos los retoques de la esfera (el piso y lo borrado)
   async function quitarRetoque(id) {
-    const d = meta[id], N = d.retoque || 0, nuevo = Object.assign({}, d, { retoqueUlt: Math.max(N, d.retoqueUlt || 0) }); delete nuevo.retoque; delete nuevo.retocado;
+    const d = meta[id], previo = retDe(d) || {}, nums = [...new Set(Object.values(previo).map((x) => x[0]))];
+    const nuevo = Object.assign({}, d, { retoqueUlt: Math.max(d.retoqueUlt || 0, d.retoque || 0, ...nums, 0) }); delete nuevo.retoque; delete nuevo.ret; delete nuevo.retocado;
+    const horneado = sinHorneado(nuevo);
     await subirArchivo("escenas/" + id + "/escena.json", new Blob([JSON.stringify(nuevo)], { type: "application/json" }));
     meta[id] = nuevo;
-    if (nuevo.ajuste > 0) await hornearAjustes(id, nuevo.ajustes, { soloD: true, carpeta: nuevo.ajuste });
-    if (N) fetch("api/tours/" + TOUR + "/f/escenas/" + id + "/ret" + N + "/", { method: "DELETE" }).catch(() => {});
+    nums.forEach((k) => fetch("api/tours/" + TOUR + "/f/escenas/" + id + "/ret" + k + "/", { method: "DELETE" }).catch(() => {}));
+    if (horneado) fetch("api/tours/" + TOUR + "/f/escenas/" + id + "/aj" + horneado + "/", { method: "DELETE" }).catch(() => {});
     refrescarEsferaEnTodos(id); if (MJ) mejoraElegir(MJ.id);
   }
   document.addEventListener("click", (ev) => { const b = ev.target.closest && ev.target.closest("[data-retocar]"); if (!b) return; ev.preventDefault(); ev.stopPropagation(); abrirRetoque(b.dataset.retocar); }, true);
@@ -8507,7 +8737,7 @@ void main(){
       for (let k = 0; k < 3; k++) dst[o + k] = (c[i00 + k] * (1 - ax) + c[i10 + k] * ax) * (1 - ay) + (c[i01 + k] * (1 - ax) + c[i11 + k] * ax) * ay;
       dst[o + 3] = 255;
     };
-    const FILAS = 128;
+    const FILAS = 128, fnAj = ajVivo(d) ? prepararAjustes(ajVivo(d)) : null; // los ajustes de imagen que el visor pinta en vivo
     for (let y0 = 0; y0 < H; y0 += FILAS) {
       const h = Math.min(FILAS, H - y0), img = ox.createImageData(W, h), dd = img.data;
       for (let yy = 0; yy < h; yy++) {
@@ -8519,6 +8749,7 @@ void main(){
           else if (dx < 0) muestra(3, dz / ax, -dy / ax, o, dd); else muestra(4, -dz / ax, -dy / ax, o, dd);
         }
       }
+      if (fnAj) fnAj(dd, W, h);
       ox.putImageData(img, 0, y0);
       await new Promise((ok) => setTimeout(ok, 0));
     }
