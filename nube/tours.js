@@ -6,7 +6,7 @@
 //
 // Este Worker no tiene ninguna forma de escribir ni borrar: aunque alguien lo intente, no puede.
 
-import { error, rutaValida, servirR2, ID_TOUR, conCarga, cargaEnViejos, rutasEdicion } from "./comun.js";
+import { error, rutaValida, servirR2, ID_TOUR, conCarga, cargaEnViejos, rutasEdicion, satDe, conSat, paginaMapa, entregarMapa } from "./comun.js";
 
 const pagina = (titulo, texto) => `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${titulo}</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0B0B0B;color:#F2F5EC;font:15px/1.5 system-ui,sans-serif;text-align:center}p{color:#9CA38F}</style></head>
@@ -42,8 +42,8 @@ export default {
 
     const ruta = segs.slice(1).join("/");
     // Cuenta en pausa (lo decide el dueño de Mozari) o tour en modo privado (lo decide su dueño): no se muestra
-    if (ruta === "landing/") return Response.redirect(url.origin + "/" + id + "/landing" + url.search, 301);
-    if (ruta === "" || ruta === "index.html" || ruta === "proyecto.json" || ruta === "landing") {
+    if (ruta === "landing/" || ruta === "mapa/") return Response.redirect(url.origin + "/" + id + "/" + ruta.slice(0, -1) + url.search, 301);
+    if (ruta === "" || ruta === "index.html" || ruta === "proyecto.json" || ruta === "landing" || ruta === "mapa") {
       const [pausa, privado] = await Promise.all([env.R2.head("pausados/" + id), env.R2.head("privados/" + id)]);
       if (pausa || privado) return ruta === "proyecto.json" ? error(404, "No disponible") : html(EN_PAUSA, 403);
     }
@@ -70,6 +70,25 @@ export default {
       const out = rw.transform(r), h = new Headers(out.headers);
       h.set("cache-control", "no-cache"); h.set("content-type", "text/html; charset=utf-8");
       return new Response(out.body, { status: 200, headers: h });
+    }
+    // Ubicación en satélite (Laboratorio «ubicacion»): el KMZ del desarrollo sobre el mapa satelital. Una página ligera
+    // que lee proyecto.json y su plano (archivos/ubicacion-*.json). Solo existe si el tour se publicó con la ubicación.
+    if (ruta === "mapa") {
+      const pub = await env.R2.get("publicado/" + id + "/proyecto.json");
+      let p = null; try { p = pub ? await pub.json() : null; } catch (e) { p = null; }
+      const U = p && p.proyecto && p.proyecto.ubicacion;
+      if (!U || U.activa === false || typeof U.archivo !== "string" || !/^archivos\/ubicacion-[a-z0-9]{4,20}\.json$/.test(U.archivo)) return html(pagina("Mapa no disponible", "Este desarrollo no tiene su ubicación publicada."), 404);
+      const r = await paginaMapa(env, request);
+      if (r.status !== 200) return html(pagina("Mapa no disponible", "Vuelve a intentarlo en un momento."), 503);
+      const pr = p.proyecto, nombre = String(pr.nombre || "Desarrollo").slice(0, 90), base = url.origin + "/" + id + "/", desc = "Dónde está " + nombre + ", sobre el mapa satelital.";
+      const imagen = typeof pr.thumbnail === "string" && rutaValida(pr.thumbnail) ? base + pr.thumbnail : pr.escenaInicial && /^[A-Za-z0-9_-]{1,80}$/.test(pr.escenaInicial) ? base + "escenas/" + pr.escenaInicial + "/1/f/0/0.jpg" : "";
+      const meta = (v) => ({ element: (el) => el.setAttribute("content", v) });
+      let rw = new HTMLRewriter().on("title", { element: (el) => el.setInnerContent(nombre + " · Ubicación") })
+        .on('meta[property="og:title"]', meta(nombre + " · Ubicación")).on('meta[property="og:description"]', meta(desc)).on('meta[name="description"]', meta(desc))
+        .on('meta[property="og:url"]', meta(base + "mapa"));
+      if (imagen) rw = rw.on('meta[property="og:image"]', meta(imagen));
+      rw = conIcono(conSat(rw, await satDe(env)), iconoPropio(p, base));
+      return entregarMapa(rw.transform(r), "no-cache");
     }
     // Página del visor (la misma para todos los tours; ella lee proyecto.json de su carpeta)
     if (ruta === "" || ruta === "index.html") {

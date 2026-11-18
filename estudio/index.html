@@ -1379,6 +1379,36 @@
   .ld-marco[data-ver="compu"] { border-radius: 14px; border-width: 6px; height: calc(var(--k, 0.35) * 820px); }
   .ld-marco[data-ver="compu"] iframe { width: 1300px; height: 820px; border: 0; transform: scale(var(--k, 0.35)); transform-origin: 0 0; display: block; background: #fff; }
   @media (max-width: 1100px) { .ld-grid { grid-template-columns: minmax(0, 1fr); } .ld-vista { position: static; } }
+  /* Media / Ubicación (Laboratorio «ubicacion»): el KMZ del desarrollo sobre el mapa satelital */
+  .ub-grid { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 18px; align-items: start; }
+  .ub-vista { position: sticky; top: 12px; height: min(76vh, 780px); min-height: 420px; border-radius: 18px; overflow: hidden; border: 1px solid var(--mz-linea-neutra); background: #0B0B0B; }
+  .ub-vista iframe { width: 100%; height: 100%; border: 0; display: block; background: #0B0B0B; }
+  #ub-form .comp-tarjeta { grid-template-columns: minmax(0, 1fr); } /* el link largo se corta con «…» en vez de ensanchar la tarjeta */
+  .ub-soltar { display: grid; gap: 10px; justify-items: center; text-align: center; padding: 24px 16px; border-radius: 14px; border: 1.5px dashed var(--mz-linea); transition: border-color 0.15s, background 0.15s; }
+  .ub-soltar svg { width: 30px; height: 30px; color: var(--mz-lima); }
+  .ub-soltar.sobre { border-color: var(--mz-lima); background: var(--mz-lima-suave); }
+  .ub-acc { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .ub-acc a.btn-sec { text-decoration: none; }
+  .ub-quitar { margin-left: auto; color: var(--mz-tenue); }
+  #ub-form .ub-error { margin: 0; color: #FFB4B4; } html[data-claro="1"] #ub-form .ub-error { color: #A11D1D; }
+  .ub-error { margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 13px; line-height: 1.45; color: #FFB4B4; background: rgba(255, 90, 90, 0.12); border: 1px solid rgba(255, 90, 90, 0.35); }
+  html[data-claro="1"] .ub-error { color: #A11D1D; }
+  .ub-archivo-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ub-rev { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .ub-rev li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; align-items: start; font-size: 13px; line-height: 1.4; }
+  .ub-rev .m { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+  .ub-rev b { font-weight: 600; display: block; }
+  .ub-rev small { display: block; margin-top: 2px; color: var(--mz-tenue); font-size: 11.5px; line-height: 1.45; }
+  .ub-rev [data-e="ok"] .m { background: color-mix(in srgb, var(--mz-lima) 24%, transparent); color: var(--mz-lima); }
+  html[data-claro="1"] .ub-rev [data-e="ok"] .m { color: #3F5200; }
+  .ub-rev [data-e="falta"] .m { background: rgba(255, 90, 90, 0.2); color: #FF8080; }
+  .ub-rev [data-e="ojo"] .m { background: rgba(242, 169, 0, 0.2); color: #F2A900; }
+  .ub-pide { margin: 0; padding: 0; list-style: none; counter-reset: ub; display: grid; gap: 10px; }
+  .ub-pide li { counter-increment: ub; display: grid; grid-template-columns: 26px minmax(0, 1fr); column-gap: 10px; font-size: 13.5px; line-height: 1.4; }
+  .ub-pide li::before { content: counter(ub); grid-row: span 2; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: var(--mz-lima); color: var(--mz-tinta); }
+  .ub-pide b { font-weight: 600; }
+  .ub-pide span { grid-column: 2; color: var(--mz-tenue); font-size: 12.5px; }
+  @media (max-width: 1100px) { .ub-grid { grid-template-columns: minmax(0, 1fr); } .ub-vista { position: static; height: 66vh; min-height: 360px; order: -1; } }
   .comp-cab h1 { margin: 4px 0 6px; }
   .comp-cab p { max-width: 640px; }
   .comp-aviso { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: 12px; border: 1px solid color-mix(in srgb, #F2A900 45%, transparent); background: color-mix(in srgb, #F2A900 10%, transparent); font-size: 13px; }
@@ -2059,6 +2089,7 @@
 <body>
 <dialog class="dlg-nov" id="dlg-nov" aria-labelledby="nov-titulo"></dialog>
 <dialog class="dlg-pago" id="dlg-pago" aria-labelledby="dp-titulo"><div class="dp-cuerpo" id="dp-cuerpo"></div></dialog>
+<dialog class="dlg-pago" id="dlg-ub" aria-labelledby="ub-guia-titulo"></dialog>
 <aside class="manual" id="manual" hidden aria-label="Manual de Mozari"><div class="mn-cab"><b>Manual de Mozari</b><button class="dp-cerrar" id="mn-cerrar" aria-label="Cerrar el manual">×</button></div><input class="mn-buscar" id="mn-buscar" type="search" placeholder="Busca: lote, PDF, publicar…" aria-label="Buscar en el manual"><div class="mn-cuerpo" id="mn-cuerpo"></div><div class="mn-pie"><span>¿No se resolvió?</span><button class="btn-sec" data-reportar>Reportar un error</button></div></aside>
 
 <!-- ======================= ARRANQUE ======================= -->
@@ -2413,6 +2444,15 @@
     </section>
 
     <!-- Secciones por venir (se llenan desde el script) -->
+    <!-- Media / Ubicación (Laboratorio «ubicacion»): el KMZ del desarrollo sobre el mapa satelital -->
+    <section data-vista="media/ubicacion" id="v-ubicacion" hidden><div class="contenido"><div class="ld">
+      <div class="ld-cab"><span class="etiq">Media</span><h1>Ubicación en satélite</h1><p>Sube el KMZ de tu desarrollo y míralo sobre el mapa satelital, en su lugar real. Tu cliente ve dónde está, se acerca y encuentra su lote.</p></div>
+      <div class="ub-grid">
+        <div class="ld-form" id="ub-form"></div>
+        <div class="ub-vista" id="ub-vista"><iframe id="ub-iframe" title="Mapa satelital del desarrollo"></iframe></div>
+      </div>
+      <input type="file" id="ub-archivo" accept=".kmz,.kml" hidden>
+    </div></div></section>
     <section data-vista="proximo" id="v-proximo" hidden><div class="contenido"><div class="proximo" id="proximo"></div></div></section>
     <!-- Publicar / Landing (Laboratorio «landing»): la página de venta del desarrollo, con vista previa en vivo -->
     <section data-vista="publicar/landing" id="v-landing" hidden><div class="contenido"><div class="ld">
@@ -3349,6 +3389,7 @@
   const SIN_ESFERAS = ["mejora/esferas", "panoramas/mapa", "panoramas/capas", "panoramas/piloto", "panoramas/terreno", "skin/h", "skin/v"];
   if (enLab("estadisticas")) SECCIONES.find((x) => x.id === "publicar").subs.push(["estadisticas", "Estadísticas"]);
   if (MODO === "nube" && enLab("landing")) SECCIONES.find((x) => x.id === "publicar").subs.splice(1, 0, ["landing", "Landing"]);
+  if (MODO === "nube" && enLab("ubicacion")) SECCIONES.find((x) => x.id === "media").subs.push(["ubicacion", "Ubicación"]);
   // Secciones de «Próximo bloque» que ya existen en el Laboratorio: [función, sección]
   const LAB_VISTAS = { "media/planos": ["planos", "v-planos"], "media/audios": ["narracion", "v-audios"] };
   function ir(sec, sub) {
@@ -3370,6 +3411,7 @@
     if (antes === "panoramas/terreno" && clave !== antes) cerrarTerreno();
     document.querySelectorAll("#contenedor > section").forEach((s) => (s.hidden = !s.dataset.vista.split(" ").includes(clave)));
     Object.entries(LAB_VISTAS).forEach(([k, [lab, el]]) => { if (clave === k && !enLab(lab)) $(el).hidden = true; }); // sin el Laboratorio sigue «Próximo bloque»
+    if (clave === "media/ubicacion" && !(MODO === "nube" && enLab("ubicacion"))) $("v-ubicacion").hidden = true;
     if (antes === "media/planos" && clave !== antes) cerrarPlanos();
     if (antes === "media/audios" && clave !== antes) cerrarAudios();
     $("sel-pano-wrap").hidden = !enEditor;
@@ -3393,6 +3435,7 @@
     if (clave === "media/videos") pintarVideos();
     if (clave === "media/planos" && enLab("planos")) requestAnimationFrame(abrirPlanos);
     if (clave === "media/audios" && enLab("narracion")) pintarAudios();
+    if (clave === "media/ubicacion" && MODO === "nube" && enLab("ubicacion")) abrirUbicacion();
     if (clave === "panoramas/mapa") requestAnimationFrame(() => mapa.dibujar());
     if (enEditor) abrirEditor(edPano || P().escenaInicial, sub);
     if (clave === "panoramas/terreno") requestAnimationFrame(abrirTerreno);
@@ -3524,7 +3567,7 @@
       portada: { foto: "", lugar: "", titulo: "", texto: "" },
       proyecto: { titulo: "", texto: "", foto: "", cifras: [{ v: "", t: "" }, { v: "", t: "" }, { v: "", t: "" }, { v: "", t: "" }], amenidades: [] },
       ubicacion: { titulo: "", texto: "", mapa: "" },
-      contacto: { whatsapp: "", telefono: "", correo: "", mensaje: "", texto: "" },
+      contacto: { whatsapp: "", pais: "52", telefono: "", correo: "", mensaje: "", texto: "" },
       pagos: { mostrar: true, planes: [{ t: "Contado", meses: 0, ajuste: -8 }, { t: "12 meses", meses: 12, ajuste: 0 }, { t: "24 meses", meses: 24, ajuste: 5 }], engMin: 20, engMax: 60, engDef: 30 },
       secciones: { lotes: true, recorrido: true, proyecto: true, galeria: true, ubicacion: true, visita: true } };
   };
@@ -3549,6 +3592,9 @@
     pintarLanding(); ldEscala(); ldEnviar(true);
     if (!toursNube) cargarToursNube().then(() => nav.sec + "/" + nav.sub === "publicar/landing" && pintarLanding());
   }
+  // País del WhatsApp de la landing (reporte de Javier, Colombia, 18 nov 2026: todo número salía con +52 de México).
+  // «0» = otro país: el número va escrito con su lada. Argentina va con el 9 de los celulares (wa.me/549…).
+  const PAISES_WA = [["52", "México (+52)"], ["57", "Colombia (+57)"], ["549", "Argentina (+54)"], ["591", "Bolivia (+591)"], ["55", "Brasil (+55)"], ["56", "Chile (+56)"], ["506", "Costa Rica (+506)"], ["593", "Ecuador (+593)"], ["503", "El Salvador (+503)"], ["34", "España (+34)"], ["1", "EE. UU., Canadá, Puerto Rico o R. Dominicana (+1)"], ["502", "Guatemala (+502)"], ["504", "Honduras (+504)"], ["505", "Nicaragua (+505)"], ["507", "Panamá (+507)"], ["595", "Paraguay (+595)"], ["51", "Perú (+51)"], ["598", "Uruguay (+598)"], ["58", "Venezuela (+58)"], ["0", "Otro país (escribe la lada)"]];
   function pintarLanding() {
     const L = LD(), M = L.marca, t = (toursNube || []).find((x) => x.id === TOUR) || {};
     const v = (r) => esc(ldGet(r) == null ? "" : ldGet(r));
@@ -3592,9 +3638,11 @@
       imagen("proyecto.foto", "Foto del proyecto", "Si no subes una, se usa una de Media → Fotos.", false, true) + "</section>";
     h += '<section class="comp-tarjeta"><h3>Galería y ubicación</h3><p>La galería usa tus fotos de Media → Fotos (' + fotos + (fotos === 1 ? " foto" : " fotos") + "). Los lugares cercanos salen de tus puntos de interés (" + pis + ").</p>" +
       campo("ubicacion.titulo", "Título de ubicación", "Ej.: Cancún, Quintana Roo") + area("ubicacion.texto", "Texto", "Cómo se llega y qué hay cerca.", 2) + campo("ubicacion.mapa", "Link de Google Maps (para «Cómo llegar»)", "https://maps.app.goo.gl/…", ' inputmode="url"') + "</section>";
-    h += '<section class="comp-tarjeta"><h3>Contacto</h3><div class="ld-fila">' + campo("contacto.whatsapp", "WhatsApp (10 dígitos)", "477 123 4567", ' inputmode="tel"') + campo("contacto.telefono", "Teléfono que se muestra", "477 123 4567", ' inputmode="tel"') + "</div>" +
+    const paisWA = String(L.contacto.pais || "52");
+    h += '<section class="comp-tarjeta"><h3>Contacto</h3><div class="ld-fila"><label class="fe-campo">País del WhatsApp<select class="entrada" data-ld-pais>' + PAISES_WA.map(([c, n]) => '<option value="' + c + '"' + (c === paisWA ? " selected" : "") + ">" + esc(n) + "</option>").join("") + "</select></label>" +
+      campo("contacto.whatsapp", paisWA === "0" ? "WhatsApp, con su lada" : "WhatsApp", paisWA === "0" ? "+57 310 123 4567" : paisWA === "52" ? "477 123 4567" : "Como se marca en tu país", ' inputmode="tel"') + campo("contacto.telefono", "Teléfono que se muestra", "477 123 4567", ' inputmode="tel"') + "</div>" +
       campo("contacto.correo", "Correo (opcional)", "ventas@tudesarrollo.com", ' inputmode="email"') + campo("contacto.mensaje", "Primer mensaje de WhatsApp", "Hola, quiero información de " + (P().nombre || "el desarrollo") + ".") +
-      '<p class="nota" id="ld-sin-wa" style="margin:0;color:#F2A900"' + (String(L.contacto.whatsapp || "").replace(/\D/g, "").length < 10 ? "" : " hidden") + ">Sin WhatsApp no salen los botones para escribir ni para apartar.</p></section>";
+      '<p class="nota" id="ld-sin-wa" style="margin:0;color:#F2A900"' + (String(L.contacto.whatsapp || "").replace(/\D/g, "").length < 7 ? "" : " hidden") + ">Sin WhatsApp no salen los botones para escribir ni para apartar.</p></section>";
     h += '<section class="comp-tarjeta"><h3>Secciones</h3>' + [["lotes", "Elige tu " + terminos().lote.toLowerCase()], ["recorrido", "Recorrido 360"], ["proyecto", "El proyecto"], ["galeria", "Galería"], ["ubicacion", "Ubicación"], ["visita", "Agenda tu visita"]]
       .filter(([k]) => k !== "lotes" || L.plantilla === "lotes").map(([k, n]) => sw("secciones." + k, n)).join("") + "</section>";
     $("ld-form").innerHTML = h;
@@ -3642,7 +3690,7 @@
     if (d.ld && el.tagName !== "SELECT") {
       if (d.ld === "proyecto.amenidadesTxt") LD().proyecto.amenidades = el.value.split(/[,\n]/).map((x) => x.trim()).filter(Boolean).slice(0, 20);
       else ldSet(d.ld, el.type === "number" ? (el.value === "" ? "" : +el.value) : el.value);
-      if (d.ld === "contacto.whatsapp" && $("ld-sin-wa")) $("ld-sin-wa").hidden = el.value.replace(/\D/g, "").length >= 10;
+      if (d.ld === "contacto.whatsapp" && $("ld-sin-wa")) $("ld-sin-wa").hidden = el.value.replace(/\D/g, "").length >= 7;
     } else if (d.ldPlan) { const [i, k] = d.ldPlan.split("."); const x = LD().pagos.planes[+i]; if (x) x[k] = k === "t" ? el.value : +el.value || 0; }
     else if (d.ldCifra) { const [i, k] = d.ldCifra.split("."); const cf = LD().proyecto.cifras; while (cf.length <= +i) cf.push({ v: "", t: "" }); cf[+i][k] = el.value; }
     else if (d.ldColor) { ldSet(d.ldColor, el.value.toUpperCase()); const hx = el.parentNode.querySelector("[data-ld-hex]"); if (hx) hx.value = el.value.toUpperCase(); }
@@ -3653,8 +3701,263 @@
   $("v-landing").addEventListener("change", (ev) => {
     const el = ev.target, d = el.dataset;
     if (d.ldSi) { ldSet(d.ldSi, el.checked); guardar(); pintarLanding(); ldEnviar(true); if (d.ldSi === "activa" && el.checked) avisar("Listo. Publica el tour para que tu landing tenga link"); return; }
+    if (el.matches("[data-ld-pais]")) { LD().contacto.pais = el.value; guardar(); pintarLanding(); ldEnviar(true); return; }
     if (d.ld && el.tagName === "SELECT") { if (el.value === "__subir") return; ldSet(d.ld, el.value); if (el.value) cargarFuente(el.value); guardar(); ldEnviar(true); return; }
   });
+  // =================== UBICACIÓN EN SATÉLITE (Laboratorio «ubicacion», pedido de Amar 18 nov 2026) ===================
+  // El KMZ del desarrollo sobre el mapa satelital, para ver dónde está y moverse por él. Aquí no van los datos de cada
+  // lote (precio, metros, estado: eso vive en el tour y en Fichas técnicas), solo su forma, su número y su manzana.
+  // El archivo se lee en el navegador, se revisa (qué trae y qué le falta, en palabras simples) y se guarda ya limpio
+  // en archivos/ubicacion-*.json. El mapa es otra página (mapa.html): aquí va en un marco y publicado vive en /mapa.
+  // Los KMZ llegan mal seguido (solo el contorno, lotes sin nombre, líneas sin cerrar): nada de eso debe romper.
+  const UB_TIPOS = [["calle", /calle|vialidad|avenida|\bav\b|camino|andador|boulevard|bulevar|blvd|circuito|acceso|banqueta|glorieta/i], ["verde", /verde|parque|jard[ií]n|donaci[oó]n|reserva|camell[oó]n|bosque/i], ["amenidad", /amenidad|casa\s*club|alberca|piscina|\bclub\b|caseta|cancha|gimnasio|palapa|\blago\b|terraza|juegos|pet\s*park|ciclo|asador|sal[oó]n|kiosko|quiosco|equipamiento/i]];
+  const ubTipo = (t) => { const x = UB_TIPOS.find(([, re]) => re.test(t || "")); return x ? x[0] : ""; };
+  const UB_CONTORNO = /contorno|per[ií]metro|l[ií]mite|lindero|poligonal|envolvente|exterior/i;
+  // Manzana y lote de un polígono: además de «Lote 12» o «Mz 3 Lt 12» (datosLoteKML), los nombres cortos «MZ-59-13» y «59-13».
+  // La carpeta solo cuenta como manzana si lo dice («Manzana 3», «Mz 3») o es un número («3»): «Etapa 2» no es una manzana.
+  function ubNombreLote(p) {
+    const d = datosLoteKML({ nombre: p.nombre, datos: p.datos, carpeta: /^\s*(?:(?:MZA?|MANZANA|BLOQUE)\b.*|\d{1,4}\s*[A-Z]?)\s*$/i.test(p.carpeta || "") ? p.carpeta : "" });
+    let n = d.num, mz = d.mz; const t = String(p.nombre || "").trim();
+    if (!n) {
+      const m = /(?:^|[^A-Z])(?:MZA?|MANZANA|M)\s*[-.:#_ ]?\s*([0-9]{1,4}[A-Z]?|[A-Z]{1,2})\s*[-_,\/ ]+\s*(?:L(?:OTE|T)?\s*[-.:#]?\s*)?(\d{1,4}\s*-?\s*[A-Z]?)\s*$/i.exec(t) || /^\s*([0-9]{1,4}[A-Z]?|[A-Z]{1,2})\s*[-_\/]\s*(\d{1,4}[A-Z]?)\s*$/i.exec(t);
+      if (m && !/^(M|MZ|L|LT)$/i.test(m[1])) { mz = m[1].toUpperCase(); n = m[2].replace(/[\s-]+/g, "").toUpperCase(); }
+    }
+    return { n: n || "", mz: mz || "" };
+  }
+  function ubLeer(texto) {
+    if (!/\S/.test(texto || "")) throw errKML("Ese archivo está vacío. Vuelve a exportarlo de Google Earth.");
+    const doc = new DOMParser().parseFromString(texto, "application/xml");
+    if (!doc.documentElement || doc.getElementsByTagName("parsererror").length) throw errKML("No se pudo leer ese archivo: está dañado o incompleto. Vuelve a exportarlo de Google Earth.");
+    const de = (el, tag) => [...el.getElementsByTagNameNS("*", tag)], txt = (el, tag) => ((de(el, tag)[0] || {}).textContent || "").trim();
+    let total = 0, fuera = 0;
+    const coords = (el) => {
+      const out = []; if (!el) return out;
+      el.textContent.trim().replace(/\s*,\s*/g, ",").split(/\s+/).forEach((t) => { const c = t.split(",").map(Number); if (c.length < 2 || !isFinite(c[0]) || !isFinite(c[1])) return; total++; if (Math.abs(c[0]) > 180 || Math.abs(c[1]) > 90) { fuera++; return; } out.push([c[0], c[1]]); });
+      return out;
+    };
+    const CERCA = 3e-6; // unos 30 cm: una línea que regresa a su inicio es una figura cerrada
+    const cerrada = (c) => c.length >= 4 && Math.abs(c[0][0] - c[c.length - 1][0]) < CERCA && Math.abs(c[0][1] - c[c.length - 1][1]) < CERCA;
+    const anillo = (c) => { // sin el punto repetido del cierre ni puntos pegados
+      const o = []; c.forEach((p) => { const u = o[o.length - 1]; if (!u || Math.abs(u[0] - p[0]) > 1e-8 || Math.abs(u[1] - p[1]) > 1e-8) o.push(p); });
+      if (o.length > 1 && Math.abs(o[0][0] - o[o.length - 1][0]) < CERCA && Math.abs(o[0][1] - o[o.length - 1][1]) < CERCA) o.pop();
+      return o;
+    };
+    const crudos = [], cont = { lineas: 0, puntos: 0, abiertos: 0 };
+    de(doc, "Placemark").forEach((pm) => {
+      const datos = {};
+      de(pm, "Data").forEach((d) => { const k = d.getAttribute("name"); if (k) datos[k.trim().toLowerCase()] = txt(d, "value"); });
+      de(pm, "SimpleData").forEach((d) => { const k = d.getAttribute("name"); if (k) datos[k.trim().toLowerCase()] = d.textContent.trim(); });
+      const carpetas = []; for (let a = pm.parentElement; a; a = a.parentElement) if (a.localName === "Folder") { const n = [...a.children].find((x) => x.localName === "name"); carpetas.push(n ? n.textContent.trim() : ""); }
+      const nom = [...pm.children].find((x) => x.localName === "name");
+      const base = { nombre: nom ? nom.textContent.trim() : "", datos, carpeta: carpetas[0] || "", ruta: carpetas.join(" / ") };
+      de(pm, "Polygon").forEach((pg) => { const ob = de(pg, "outerBoundaryIs")[0], c = anillo(coords(ob && de(ob, "coordinates")[0])); if (c.length >= 3) crudos.push(Object.assign({ c }, base)); else cont.abiertos++; });
+      de(pm, "LineString").forEach((ls) => { const c = coords(de(ls, "coordinates")[0]); if (cerrada(c)) { const a = anillo(c); if (a.length >= 3) crudos.push(Object.assign({ c: a }, base)); else cont.abiertos++; } else if (c.length) cont.lineas++; });
+      cont.puntos += de(pm, "Point").length;
+    });
+    if (total && fuera > total * 0.5) throw errKML("Las coordenadas de ese archivo no son las de Google Earth (WGS84): parecen de AutoCAD (UTM). Pide que lo exporten con coordenadas geográficas.");
+    if (!crudos.length) {
+      if (cont.lineas) throw errKML("Ese archivo solo trae líneas sueltas, sin figuras cerradas. Pide el contorno del terreno y cada lote como polígono cerrado.");
+      if (cont.puntos) throw errKML("Ese archivo solo trae puntos (marcadores). Hace falta el contorno del terreno o los lotes como polígonos.");
+      throw errKML(total ? "Ese archivo no trae polígonos que se puedan dibujar." : "Ese archivo no trae coordenadas: no hay nada que ubicar en el mapa.");
+    }
+    if (crudos.length > 30000) throw errKML("Ese archivo trae demasiadas figuras (" + crudos.length.toLocaleString("es-MX") + "). Pide uno solo con el contorno, los lotes, las calles y las áreas verdes.");
+    // A metros (plano local) para medir, quitar repetidos y puntos de más (curvas de AutoCAD con cientos de puntos)
+    let x0 = 180, y0 = 90, x1 = -180, y1 = -90;
+    crudos.forEach((p) => p.c.forEach((c) => { if (c[0] < x0) x0 = c[0]; if (c[0] > x1) x1 = c[0]; if (c[1] < y0) y0 = c[1]; if (c[1] > y1) y1 = c[1]; }));
+    const lon0 = (x0 + x1) / 2, lat0 = (y0 + y1) / 2, kx = (Math.PI / 180) * 6378137 * Math.cos((lat0 * Math.PI) / 180), ky = (Math.PI / 180) * 6378137;
+    const vistos = new Map(), polis = []; let repetidos = 0;
+    crudos.forEach((p) => {
+      let M = p.c.map((c, i) => [(c[0] - lon0) * kx, (c[1] - lat0) * ky, i]);
+      if (M.length > 8) { const S = simplificarPol(M, M.length > 200 ? 0.15 : 0.04); if (S.length >= 3 && S.length < M.length) M = S; }
+      const a = Math.abs(areaPol(M)); if (!(a >= 1)) { cont.abiertos++; return; } // sin área: no es una figura
+      const ce = centroPol(M), k = Math.round(ce[0] * 2) + "," + Math.round(ce[1] * 2) + "," + Math.round(Math.log(a) * 40), ya = vistos.get(k);
+      if (ya) { repetidos++; if (!ya.nombre && p.nombre) Object.assign(ya, { nombre: p.nombre, datos: p.datos, carpeta: p.carpeta, ruta: p.ruta }); return; }
+      let a0 = 1e18, b0 = 1e18, a1 = -1e18, b1 = -1e18; M.forEach((m) => { if (m[0] < a0) a0 = m[0]; if (m[0] > a1) a1 = m[0]; if (m[1] < b0) b0 = m[1]; if (m[1] > b1) b1 = m[1]; });
+      const q = { c: M.map((m) => p.c[m[2]]), M, a, pin: puntoDentro(M), caja: [a0, b0, a1, b1], hijos: 0, nombre: p.nombre, datos: p.datos, carpeta: p.carpeta, ruta: p.ruta };
+      vistos.set(k, q); polis.push(q);
+    });
+    if (!polis.length) throw errKML("Ese archivo no trae polígonos que se puedan dibujar.");
+    // Quién encierra a quién (para hallar el contorno y las manzanas). Con una rejilla: miles de lotes en un instante.
+    polis.sort((a, b) => b.a - a.a);
+    const N = polis.length, G = Math.max(1, Math.ceil(Math.sqrt(N))), gx0 = (x0 - lon0) * kx, gy0 = (y0 - lat0) * ky, cw = Math.max(1e-6, ((x1 - x0) * kx) / G), ch = Math.max(1e-6, ((y1 - y0) * ky) / G);
+    const col = (x) => Math.max(0, Math.min(G - 1, Math.floor((x - gx0) / cw))), fil = (y) => Math.max(0, Math.min(G - 1, Math.floor((y - gy0) / ch))), rej = new Map();
+    polis.forEach((p, i) => { const k = fil(p.pin[1]) * G + col(p.pin[0]); let l = rej.get(k); if (!l) rej.set(k, (l = [])); l.push(i); });
+    polis.forEach((A, i) => {
+      if (i === N - 1) return;
+      for (let f = fil(A.caja[1]), f1 = fil(A.caja[3]); f <= f1; f++) for (let c = col(A.caja[0]), c1 = col(A.caja[2]); c <= c1; c++) {
+        const l = rej.get(f * G + c); if (!l) continue;
+        for (const j of l) { if (j <= i) continue; const B = polis[j], q = B.pin; if (B.a < A.a * 0.98 && q[0] >= A.caja[0] && q[0] <= A.caja[2] && q[1] >= A.caja[1] && q[1] <= A.caja[3] && dentroPol(A.M, q[0], q[1])) A.hijos++; }
+      }
+    });
+    // El contorno: el polígono más grande, si encierra a casi todos los demás (o si es el único, o si así se llama)
+    const mayor = polis[0];
+    const contorno = N === 1 || mayor.hijos >= Math.max(1, Math.ceil((N - 1) * 0.6)) || (UB_CONTORNO.test(mayor.nombre) && !ubNombreLote(mayor).n) ? mayor : null;
+    const r7 = (c) => c.map((p) => [Math.round(p[0] * 1e7) / 1e7, Math.round(p[1] * 1e7) / 1e7]);
+    const lotes = [], otras = [], mzs = new Set(); let sinNombre = 0;
+    // Calles, áreas verdes y amenidades: por su nombre («Calle Roble», «Área verde 2») o por su carpeta («Vialidades»).
+    // Si la carpeta «con tipo» trae a más de la mitad de las figuras, es el nombre del desarrollo («Jardines del Lago») y no cuenta.
+    const DICE_LOTE = /lote|\blt\b|\bmz|manzana/i, porCarpeta = polis.filter((p) => p !== contorno && ubTipo(p.carpeta)).length <= (N - 1) * 0.5;
+    polis.forEach((p) => {
+      if (p === contorno) return;
+      const nl = ubNombreLote(p), tipo = DICE_LOTE.test(p.nombre) ? "" : ubTipo(p.nombre) || (porCarpeta ? ubTipo(p.carpeta) : "");
+      if (tipo) { otras.push({ t: tipo, c: r7(p.c) }); return; }
+      if (p.hijos >= 2) { otras.push({ t: "manzana", c: r7(p.c) }); return; } // la orilla de una manzana, con sus lotes adentro
+      lotes.push({ c: r7(p.c), n: nl.n, mz: nl.mz }); if (!nl.n) sinNombre++; if (nl.mz) mzs.add(nl.mz);
+    });
+    const cuenta = (t) => otras.filter((o) => o.t === t).length;
+    return { datos: { v: 1, contorno: contorno ? [r7(contorno.c)] : [], lotes, otras },
+      resumen: { lotes: lotes.length, sinNombre, manzanas: mzs.size, contorno: !!contorno, m2: contorno ? Math.round(contorno.a) : 0, calles: cuenta("calle"), verdes: cuenta("verde"), amenidades: cuenta("amenidad"), lineas: cont.lineas + cont.abiertos, repetidos, centro: [+lon0.toFixed(5), +lat0.toFixed(5)] } };
+  }
+  // La revisión, en palabras simples: [estado, qué, detalle] · ok ✓ · falta ✗ · ojo ⚠
+  function ubRevision(r) {
+    const mil = (n) => Number(n).toLocaleString("es-MX"), pl = (n, uno, varios) => mil(n) + " " + (n === 1 ? uno : varios), L = [];
+    L.push(["ok", "Ubicación encontrada", r.centro ? r.centro[1].toFixed(5) + ", " + r.centro[0].toFixed(5) : ""]);
+    L.push(r.contorno ? ["ok", "Contorno del terreno", r.m2 >= 10000 ? (r.m2 / 1e4).toLocaleString("es-MX", { maximumFractionDigits: 1 }) + " hectáreas" : mil(r.m2) + " m²"]
+      : ["ojo", "No trae el contorno del terreno", "Se usa la orilla de los lotes. Pide un polígono que encierre todo el desarrollo."]);
+    if (!r.lotes) L.push(["falta", "No trae lotes (solo el contorno)", "El mapa enseña dónde está el terreno. Para ver los lotes, pide cada lote como polígono cerrado."]);
+    else {
+      L.push(["ok", pl(r.lotes, "lote", "lotes"), r.manzanas ? "en " + pl(r.manzanas, "manzana", "manzanas") : ""]);
+      L.push(!r.sinNombre ? ["ok", "Todos los lotes traen nombre", ""] : ["ojo", r.sinNombre === r.lotes ? (r.lotes === 1 ? "El lote no trae nombre" : "Ningún lote trae nombre") : pl(r.sinNombre, "lote sin nombre", "lotes sin nombre"), "Se muestran igual, pero sin su número. Pide que cada lote lleve manzana y lote, por ejemplo «MZ-59-13»."]);
+    }
+    const ex = [r.calles && pl(r.calles, "calle", "calles"), r.verdes && pl(r.verdes, "área verde", "áreas verdes"), r.amenidades && pl(r.amenidades, "amenidad", "amenidades")].filter(Boolean);
+    if (ex.length) L.push(["ok", "Trae " + ex.join(", ").replace(/, ([^,]*)$/, " y $1"), ""]);
+    const ig = [r.lineas && pl(r.lineas, "línea suelta o polígono abierto", "líneas sueltas o polígonos abiertos"), r.repetidos && pl(r.repetidos, "polígono repetido", "polígonos repetidos")].filter(Boolean);
+    if (ig.length) L.push(["ojo", ((r.lineas || 0) + (r.repetidos || 0) === 1 ? "Se ignoró " : "Se ignoraron ") + ig.join(" y "), "No son figuras cerradas o están encimadas, así que no se dibujan."]);
+    return L;
+  }
+  const UB = () => P().ubicacion || null;
+  const linkMapa = () => linkTour() + "mapa";
+  let ubDatos = null, ubDe = "", ubListo = false, ubSat = null, ubMsj = "", ubOcupado = false, ubQuitar = 0, ubAmarrando = false; // ubSat: null = aún no se sabe
+  function ubEnviar(encuadrar) {
+    const w = $("ub-iframe") && $("ub-iframe").contentWindow, u = UB(); if (!w || !ubListo) return;
+    w.postMessage({ tipo: "mapa", datos: u && ubDatos && ubDe === u.archivo ? ubDatos : null, nombre: P().nombre || "", pares: (u && u.ajuste && u.ajuste.pares) || [], acento: (est.skin || {}).acento || "", sat: ubSat || "", encuadrar: !!encuadrar }, location.origin);
+  }
+  addEventListener("message", (ev) => {
+    if (ev.origin !== location.origin || !ev.data || !$("ub-iframe") || ev.source !== $("ub-iframe").contentWindow) return;
+    if (ev.data.tipo === "mapa-lista") { ubListo = true; ubEnviar(true); if (nav.sec + "/" + nav.sub === "media/ubicacion") pintarUbicacion(); }
+    else if (ev.data.tipo === "mapa-amarre") {
+      const u = UB(); ubAmarrando = false;
+      if (u && ev.data.guardar) { u.ajuste = { pares: (Array.isArray(ev.data.pares) ? ev.data.pares : []).slice(0, 2) }; guardar(); avisar(u.ajuste.pares.length ? "Plano amarrado al satélite" : "Amarre quitado"); }
+      pintarUbicacion();
+    }
+  });
+  async function abrirUbicacion() {
+    const ifr = $("ub-iframe"); if (!ifr.src) { ubListo = false; ifr.src = "mapa#previa"; }
+    pintarUbicacion();
+    // El satélite lo da el servidor (la llave la pega el dueño en su panel); sin él, el plano se ve sobre fondo oscuro
+    if (ubSat === null) { ubSat = await fetch("api/mapa", { cache: "no-store" }).then((r) => (r.ok ? r.json() : {})).then((d) => (typeof d.sat === "string" ? d.sat : "")).catch(() => ""); pintarUbicacion(); ubEnviar(); }
+    const u = UB();
+    if (u && u.archivo && ubDe !== u.archivo) {
+      const arch = u.archivo;
+      try { const r = await fetch("t/" + TOUR + "/" + arch, { cache: "no-store" }); if (!r.ok) throw 0; const d = await r.json(); if (!UB() || UB().archivo !== arch) return; ubDatos = d; ubDe = arch; ubMsj = ""; }
+      catch (e) { ubMsj = "No se pudo abrir el plano guardado. Vuelve a subir tu KMZ."; }
+      pintarUbicacion();
+    }
+    ubEnviar(true);
+    if (!toursNube) cargarToursNube().then(() => nav.sec + "/" + nav.sub === "media/ubicacion" && pintarUbicacion());
+  }
+  async function ubSubir(file) {
+    if (!file || ubOcupado) return;
+    ubOcupado = true; ubMsj = ""; pintarUbicacion();
+    try {
+      if (!file.size) throw errKML("Ese archivo está vacío. Vuelve a exportarlo de Google Earth.");
+      if (file.size > 60 * 1024 * 1024) throw errKML("Ese archivo pesa más de 60 MB. Pide uno solo con el contorno y los lotes, sin fotos.");
+      const cab = new Uint8Array(await file.slice(0, 800).arrayBuffer()), zip = cab[0] === 0x50 && cab[1] === 0x4b;
+      if (!zip && !/<\s*(\?xml|kml|Document|Folder|Placemark)/i.test(new TextDecoder().decode(cab))) throw errKML("Ese archivo no es un KMZ ni un KML. Pídelo como KMZ, el formato de Google Earth.");
+      const { datos, resumen } = ubLeer(await textoKMZ(file));
+      const ruta = "archivos/ubicacion-" + Date.now().toString(36) + ".json";
+      await subirArchivo(ruta, new Blob([JSON.stringify(datos)], { type: "application/json" }));
+      // El archivo anterior no se borra: el tour ya publicado lo sigue usando hasta que se vuelva a publicar
+      P().ubicacion = { archivo: ruta, nombre: String(file.name || "plano.kmz").slice(0, 120), fecha: new Date().toISOString(), resumen, ajuste: { pares: [] }, activa: UB() ? UB().activa !== false : true };
+      ubDatos = datos; ubDe = ruta; guardar();
+      avisar(resumen.lotes ? "Listo: " + resumen.lotes.toLocaleString("es-MX") + (resumen.lotes === 1 ? " lote" : " lotes") + " en el mapa" : "Listo: el contorno ya está en el mapa");
+    } catch (e) {
+      ubMsj = e && e.kml ? e.message : e && e.message && /límite|espacio|sesión|plan/i.test(e.message) ? e.message : "No se pudo leer ese archivo. Revisa que sea el KMZ de Google Earth y vuelve a intentarlo.";
+    }
+    ubOcupado = false; pintarUbicacion(); ubEnviar(true);
+  }
+  const UB_MARCA = { ok: "✓", falta: "✗", ojo: "!" }, UB_VOZ = { ok: "Bien", falta: "Falta", ojo: "Ojo" };
+  function pintarUbicacion() {
+    const f = $("ub-form"), u = UB(); if (!f) return;
+    const t = (toursNube || []).find((x) => x.id === TOUR) || {}, guia = '<button type="button" class="btn-sec" data-ub="guia">Cómo debe venir tu KMZ</button>';
+    const error = ubMsj ? '<p class="ub-error" id="ub-error" role="alert">' + esc(ubMsj) + "</p>" : "";
+    const sinSat = ubSat === "" ? '<p class="nota" id="ub-sin-sat">El mapa satelital aún no está conectado: por ahora ves el plano sobre fondo oscuro.</p>' : "";
+    let h = "";
+    if (!u) {
+      h += '<section class="comp-tarjeta" id="ub-subir"><h3>Sube el KMZ de tu desarrollo</h3><p>Es el plano en el formato de Google Earth. Lo hace tu ingeniero, topógrafo o arquitecto. También sirve en KML.</p>' +
+        '<div class="ub-soltar" id="ub-soltar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.500A7 7 0 0 0 5 9.500C5 14.800 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg><b>Arrastra aquí tu KMZ</b>' +
+        '<button type="button" class="btn-prim" data-ub="elegir"' + (ubOcupado ? " disabled" : "") + ">" + (ubOcupado ? "Leyendo tu archivo…" : "Elegir archivo") + "</button></div>" + error +
+        '<div class="ub-acc">' + guia + '</div><p class="nota">¿Aún no lo tienes? Ese botón trae las instrucciones listas para mandárselas a tu ingeniero.</p>' + sinSat + "</section>";
+    } else {
+      const r = u.resumen || {}, pares = ((u.ajuste || {}).pares || []).length;
+      h += '<section class="comp-tarjeta" id="ub-revision"><h3>Revisión de tu archivo</h3><p class="ub-archivo-nombre" title="' + esc(u.nombre || "") + '">' + esc(u.nombre || "Tu plano") + "</p>" +
+        '<ul class="ub-rev">' + ubRevision(r).map(([e, q, d]) => '<li data-e="' + e + '"><span class="m" aria-label="' + UB_VOZ[e] + '">' + UB_MARCA[e] + "</span><div><b>" + esc(q) + "</b>" + (d ? "<small>" + esc(d) + "</small>" : "") + "</div></li>").join("") + "</ul>" + error +
+        '<div class="ub-acc"><button type="button" class="btn-sec" data-ub="cambiar"' + (ubOcupado ? " disabled" : "") + ">" + (ubOcupado ? "Leyendo tu archivo…" : "Cambiar archivo") + "</button>" + guia + '<button type="button" class="btn-sec ub-quitar" data-ub="quitar">Quitar</button></div>' + sinSat + "</section>";
+      h += '<section class="comp-tarjeta" id="ub-amarre"><h3>¿No cae en su lugar?</h3><p>Si el plano se ve movido, girado o de otro tamaño que el satélite, amárralo: tocas una esquina del plano y luego dónde va en el satélite. Con 2 esquinas queda exacto.</p>' +
+        '<div class="ub-acc"><button type="button" class="btn-sec" data-ub="amarrar"' + (ubAmarrando || !ubListo || ubDe !== u.archivo ? " disabled" : "") + ">" + (ubAmarrando ? "Amarrando en el mapa…" : pares ? "Volver a amarrar" : "Amarrar al satélite") + "</button>" +
+        (pares ? '<span class="nota" id="ub-amarrado">Amarrado con ' + pares + (pares === 1 ? " punto" : " puntos") + "</span>" : "") + "</div></section>";
+      h += '<section class="comp-tarjeta" id="ub-publicar"><h3>En tu tour publicado</h3><label class="ld-switch"><b>Publicar la ubicación</b><input type="checkbox" class="toggle" data-ub-activa' + (u.activa !== false ? " checked" : "") + "></label>" +
+        (u.activa !== false ? '<div class="pub-caja"><code id="ub-link">' + esc(linkMapa()) + '</code><button type="button" class="btn-sec" data-ub="copiar">Copiar link</button></div>' +
+          '<p class="nota">Es un link aparte, para mandarlo por WhatsApp o ponerlo en tu sitio. ' + (t.publicado ? "Los cambios salen al volver a publicar tu tour." : "Sale cuando publiques tu tour.") + "</p>" +
+          (t.publicado ? '<div class="ub-acc"><a class="btn-sec" href="' + esc(linkMapa()) + '" target="_blank" rel="noopener">Abrir mapa ↗</a></div>' : "")
+          : '<p class="nota">Apagada: el mapa solo se ve aquí, en tu estudio.</p>') + "</section>";
+    }
+    f.innerHTML = h;
+  }
+  $("v-ubicacion").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-ub]"); if (!b) return; const a = b.dataset.ub;
+    if (a === "elegir" || a === "cambiar") { $("ub-archivo").value = ""; $("ub-archivo").click(); }
+    else if (a === "guia") abrirGuiaKMZ();
+    else if (a === "quitar") {
+      if (Date.now() - ubQuitar > 4000) { ubQuitar = Date.now(); b.textContent = "¿Quitar? Toca otra vez"; return; }
+      ubQuitar = 0; delete P().ubicacion; ubDatos = null; ubDe = ""; ubMsj = ""; ubAmarrando = false; guardar(); pintarUbicacion(); ubEnviar(); avisar("Ubicación quitada");
+    }
+    else if (a === "amarrar") { const w = $("ub-iframe").contentWindow; if (!w || !ubListo) return; ubAmarrando = true; pintarUbicacion(); w.postMessage({ tipo: "mapa-amarrar" }, location.origin); $("ub-vista").scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+    else if (a === "copiar") navigator.clipboard.writeText(linkMapa()).then(() => avisar("Link copiado: " + linkMapa())).catch(() => avisar(linkMapa()));
+  });
+  $("v-ubicacion").addEventListener("change", (ev) => { if (ev.target.matches("[data-ub-activa]") && UB()) { UB().activa = ev.target.checked; guardar(); pintarUbicacion(); } });
+  $("ub-archivo").addEventListener("change", (ev) => ubSubir(ev.target.files[0]));
+  // Arrastrar el archivo a cualquier parte de la sección
+  ["dragenter", "dragover"].forEach((n) => $("v-ubicacion").addEventListener(n, (ev) => { if (![...(ev.dataTransfer ? ev.dataTransfer.types : [])].includes("Files")) return; ev.preventDefault(); const s = $("ub-soltar"); if (s) s.classList.add("sobre"); }));
+  ["dragleave", "drop"].forEach((n) => $("v-ubicacion").addEventListener(n, (ev) => { const s = $("ub-soltar"); if (s && (n === "drop" || !$("v-ubicacion").contains(ev.relatedTarget))) s.classList.remove("sobre"); }));
+  $("v-ubicacion").addEventListener("drop", (ev) => { const a = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]; if (!a) return; ev.preventDefault(); ubSubir(a); });
+  // Guía «Cómo debe venir tu KMZ»: corta y para reenviar a quien hace el plano
+  const UB_PIDE = [["El contorno del terreno", "Un polígono cerrado que encierre todo el desarrollo."], ["Cada lote, un polígono cerrado", "Uno por lote. No líneas sueltas ni figuras abiertas."], ["Cada lote con su nombre", "Manzana y lote, por ejemplo «MZ-59-13» o «Mz 59 Lote 13»."], ["Si se puede: calles, áreas verdes y amenidades", "Cada una en su carpeta o capa, separadas de los lotes."], ["Coordenadas reales (WGS84)", "Como lo exporta Google Earth. No en UTM ni en coordenadas del dibujo."]];
+  const ubInstrucciones = () => ["Hola. Para poner " + (P().nombre ? "«" + P().nombre + "»" : "el desarrollo") + " en un mapa satelital necesito el plano en KMZ (o KML), así:", ""]
+    .concat(UB_PIDE.map(([a, b], i) => i + 1 + ". " + a + ": " + b.charAt(0).toLowerCase() + b.slice(1)), ["", "Antes de mandarlo, ábrelo en Google Earth y revisa que caiga en su lugar. Gracias."]).join("\n");
+  function abrirGuiaKMZ() {
+    const d = $("dlg-ub");
+    d.innerHTML = '<div class="dp-cuerpo"><button type="button" class="dp-cerrar" data-ubg="cerrar" aria-label="Cerrar">×</button><span class="etiq">Ubicación en satélite</span><h2 id="ub-guia-titulo">Cómo debe venir tu KMZ</h2>' +
+      "<p>El KMZ es el plano de tu desarrollo en el formato de Google Earth. Lo hace quien dibujó el plano: tu ingeniero, topógrafo o arquitecto. Pídeselo así:</p>" +
+      '<ol class="ub-pide">' + UB_PIDE.map(([a, b]) => "<li><b>" + esc(a) + "</b><span>" + esc(b) + "</span></li>").join("") + "</ol>" +
+      '<div class="ub-acc"><button type="button" class="btn-prim" data-ubg="copiar">Copiar instrucciones para mi ingeniero</button><a class="btn-sec" data-ubg="wa" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(ubInstrucciones()) + '">Mandar por WhatsApp</a></div>' +
+      '<p class="nota">Cuando te lo manden, súbelo aquí: Mozari lo revisa y te dice qué trae y qué le falta.</p></div>';
+    if (!d.open) d.showModal();
+  }
+  $("dlg-ub").addEventListener("click", async (ev) => {
+    if (ev.target === $("dlg-ub") || ev.target.closest('[data-ubg="cerrar"]')) { $("dlg-ub").close(); return; }
+    const c = ev.target.closest('[data-ubg="copiar"]'); if (!c) return;
+    try { await navigator.clipboard.writeText(ubInstrucciones()); c.textContent = "Instrucciones copiadas ✓"; } catch (e) { c.textContent = "No se pudo copiar"; }
+    setTimeout(() => { if (c.isConnected) c.textContent = "Copiar instrucciones para mi ingeniero"; }, 2600);
+  });
+  // Mini tutorial: el archivo cae sobre el satélite, el plano queda en su lugar y al acercar salen los números de lote
+  function animUbicacion(svg, t) {
+    const z = sv((t - 2.5) / 1.2), k = 1 + 1.25 * z, ap = Math.max(0, Math.min(1, (t - 1.15) / 0.5)), lat = t > 4 ? ((t - 4) % 1.4) / 1.4 : -1;
+    let h = '<rect width="360" height="200" fill="#1b2416"/><g transform="translate(180 92) scale(' + k.toFixed(3) + ') translate(-180 -92)">';
+    h += '<rect x="-90" y="-70" width="540" height="340" fill="#283421"/><path d="M-90 20L130 -70H210L-90 86Z" fill="#32412a"/><path d="M228 270L450 116V270Z" fill="#3b3a27"/><path d="M40 270L96 150L176 172L150 270Z" fill="#22301d"/>' +
+      '<path d="M-90 158Q110 150 190 148T450 70" stroke="#8d8875" stroke-width="5" fill="none"/><path d="M282 -70Q270 40 300 108" stroke="#6f6b5c" stroke-width="3" fill="none"/>';
+    h += '<g opacity="' + ap.toFixed(2) + '">';
+    for (let f = 0; f < 2; f++) for (let c = 0; c < 6; c++) {
+      const x = 114 + c * 22, y = 60 + f * 33;
+      h += '<rect x="' + x + '" y="' + y + '" width="20" height="29" fill="#D5FF40" fill-opacity=".26" stroke="#fff" stroke-width=".7"/>';
+      if (z > 0.05) h += '<g opacity="' + z.toFixed(2) + '"><rect x="' + (x + 5) + '" y="' + (y + 10.5) + '" width="10" height="8" rx="4" fill="rgba(11,11,11,.8)"/><text x="' + (x + 10) + '" y="' + (y + 16.6) + '" fill="#fff" font-size="5.2" font-weight="700" text-anchor="middle">' + (f * 6 + c + 1) + "</text></g>";
+    }
+    if (lat >= 0) h += '<rect x="108" y="54" width="144" height="74" rx="3" fill="none" stroke="#D5FF40" stroke-width="' + (2 + lat * 9).toFixed(1) + '" opacity="' + (0.6 * (1 - lat)).toFixed(2) + '"/>';
+    h += '<rect x="108" y="54" width="144" height="74" rx="3" fill="none" stroke="#D5FF40" stroke-width="1.8"/></g></g>';
+    if (t < 1.5) { const y = -26 + 112 * sv(t / 1.05), o = t < 1.1 ? 1 : Math.max(0, 1 - (t - 1.1) / 0.35); h += '<g opacity="' + o.toFixed(2) + '" transform="translate(133 ' + y.toFixed(1) + ')"><rect width="94" height="26" rx="8" fill="#111" stroke="#D5FF40"/><path d="M12 6h7l4 4v10h-11z" fill="none" stroke="#D5FF40" stroke-width="1.4" stroke-linejoin="round"/><text x="30" y="17" fill="#fff" font-size="9" font-weight="700">desarrollo.kmz</text></g>'; }
+    h += pieG(t > 3.7 ? "Al acercar salen los números de lote" : t > 1.5 ? "Tu plano, en su lugar real" : "Sube tu KMZ", t > 3.7);
+    svg.innerHTML = h;
+  }
   function pintarCompartir() {
     const t = (toursNube || []).find((x) => x.id === TOUR) || {}, nombre = P().nombre || "Tour 360";
     const caja = $("proximo"); caja.classList.add("ancho"); $("v-proximo").hidden = false;
@@ -4257,6 +4560,10 @@
       texto: "Los navegadores no dejan sonar un tour hasta que el visitante toca la pantalla. Ahora, al abrirlo le preguntamos <b>Activar sonido</b> o <b>Sin sonido</b>, con los colores de tu tour, y la música y las voces arrancan con su respuesta." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "musica");
     if (clave === "publicar/landing" && enLab("landing")) guiaNueva("nuevo-landing", () => [esVisible("#ld-form .comp-tarjeta") && { el: "#ld-form .comp-tarjeta", titulo: "Nuevo: la landing de tu desarrollo", anim: animLanding, dur: 5.8,
       texto: "Una página para mandar por WhatsApp o poner en tus anuncios. Sube tu <b>logo</b> y tu <b>plano maestro</b>, pon los <b>colores y letras</b> de tu marca y tu <b>WhatsApp</b>. Los lotes, sus precios, las fotos y los lugares cercanos salen solos del tour. A la derecha la ves como en el celular." }].filter(Boolean), () => nav.sub === "landing" && esVisible("#ld-form .comp-tarjeta"));
+    if (clave === "media/ubicacion" && enLab("ubicacion")) guiaNueva("nuevo-ubicacion", () => [esVisible("#ub-form .comp-tarjeta") && { el: "#ub-form .comp-tarjeta", titulo: "Nuevo: tu desarrollo en el satélite", anim: animUbicacion, dur: 5.6,
+      texto: "Sube el <b>KMZ</b> de tu desarrollo y míralo sobre el mapa satelital, en su lugar real. Al <b>acercar</b> salen los números de lote. Mozari revisa el archivo y te dice <b>qué trae y qué le falta</b>." },
+      esVisible('#ub-form [data-ub="guia"]') && { el: '#ub-form [data-ub="guia"]', titulo: "¿Tu ingeniero no sabe cómo mandarlo?",
+      texto: "Aquí están las instrucciones de cómo debe venir el KMZ, listas para <b>copiar y mandárselas</b>." }].filter(Boolean), () => nav.sec === "media" && nav.sub === "ubicacion" && esVisible("#ub-form .comp-tarjeta"));
     if (clave === "tours/todos" && enLab("tutorial-video")) guiaNueva("nuevo-tutorial-video", () => [esVisible("#ver-tutorial") && { el: "#ver-tutorial", titulo: "Nuevo: tutorial en video",
       texto: "Si es tu primera vez, aquí está el <b>paso a paso</b> para armar un tour, de subir tus esferas a publicarlo. También sale en Panoramas mientras tu tour no tiene esferas." }].filter(Boolean), () => nav.sec === "tours" && esVisible("#ver-tutorial"));
     if (clave === "mejora/esferas" && enLab("mejora")) guiaNueva("nuevo-mejora", () => [esVisible("#mj-ajustes") && { el: "#mj-ajustes", titulo: "Nuevo: mejora tus esferas", anim: animMejora, dur: 4.4,
@@ -4737,12 +5044,13 @@
   async function pintarLaboratorio() {
     const r = await fetch("api/admin/laboratorio", { cache: "no-store" }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudo leer el Laboratorio"); return; }
-    const { funciones } = await r.json();
+    const { funciones, mapa } = await r.json();
     $("cuentas").innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) +
       '<p class="nota lab-intro">Herramientas nuevas en prueba. Tú siempre las ves. Cuando una te convenza, dásela a tus probadores, a Pro y Desarrollos, o a todos (también las cuentas de prueba). Si alguna falla, regrésala a «Solo yo». Ojo: lo que publiques con ellas sí lo ven tus clientes en el tour.</p>' +
       funciones.map((f) => '<div class="lab-fila" data-lab="' + esc(f.clave) + '"><div><b>' + esc(f.nombre) + " " + CHIP_LAB + "</b><span>" + esc(f.texto) + "</span></div>" +
         '<div class="estados">' + MODOS_LAB.map(([v, n]) => '<button data-lab-modo="' + v + '" aria-pressed="' + (f.modo === v) + '">' + n + "</button>").join("") + "</div>" +
         (f.modo === "todos" || f.modo === "pago" ? '<button class="mini primario" data-lab-anunciar>' + (f.modo === "pago" ? "Anunciarla a Pro y Desarrollos" : "Anunciarla a todos") + "</button>" : "") +
+        (f.clave === "ubicacion" ? '<label class="lab-probadores">Llave del mapa satelital (pégala tú). Sin llave, el plano sale sobre fondo oscuro.<input class="entrada" type="password" data-lab-llave autocomplete="off" placeholder="' + (mapa && mapa.hay ? "Guardada · termina en " + esc(mapa.fin) : "Pega aquí la llave") + '"><button class="mini primario" data-lab-llave-guardar>Guardar llave</button></label>' : "") +
         (f.modo === "probadores" ? '<label class="lab-probadores">Correos de tus probadores (uno por renglón o separados por coma)<textarea rows="3" data-lab-correos placeholder="marco@ejemplo.com">' + esc(f.probadores.join("\n")) + '</textarea><button class="mini primario" data-lab-guardar>Guardar probadores</button></label>' : "") + "</div>").join("");
   }
   document.addEventListener("click", async (ev) => {
@@ -4752,6 +5060,12 @@
       const nombre = fila.querySelector("b").firstChild.textContent.trim(), texto = fila.querySelector("span:not(.chip-lab)").textContent.trim();
       const enPago = fila.querySelector('[data-lab-modo="pago"][aria-pressed="true"]');
       await crearNovedad({ titulo: nombre, texto, destino: LAB_DESTINO[fila.dataset.lab] || "", publico: enPago ? "pagados" : "todos" });
+      return;
+    }
+    if (ev.target.closest("[data-lab-llave-guardar]")) { // la llave del mapa satelital (Ubicación): la pega el dueño
+      const v = fila.querySelector("[data-lab-llave]").value.trim(); if (!v) { avisar("Pega primero la llave"); return; }
+      const r = await fetch("api/admin/mapa", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ esri: v }) }).catch(() => null), d = r ? await r.json().catch(() => ({})) : {};
+      avisar(r && r.ok ? "Llave guardada: el mapa satelital ya está conectado" : d.error || "No se pudo guardar la llave"); if (r && r.ok) pintarLaboratorio();
       return;
     }
     if (!modo && !guardar) return;
@@ -4764,8 +5078,8 @@
   });
   // =================== NOVEDADES ===================
   // Cada anuncio se ve una vez por cuenta (se anota en el servidor). El botón ✦ junto a BETA los vuelve a abrir.
-  const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Fichas técnicas"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Interfaz"], ["publicar/web", "Publicar"], ["publicar/landing", "Publicar → Landing"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"]];
-  const LAB_DESTINO = { mejora: "mejora/esferas", "descarga-pdf": "skin/h", "tutorial-video": "tours/todos", transiciones: "proyecto/general", landing: "publicar/landing", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
+  const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Fichas técnicas"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Interfaz"], ["publicar/web", "Publicar"], ["publicar/landing", "Publicar → Landing"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"], ["media/ubicacion", "Media → Ubicación"]];
+  const LAB_DESTINO = { mejora: "mejora/esferas", "descarga-pdf": "skin/h", "tutorial-video": "tours/todos", transiciones: "proyecto/general", landing: "publicar/landing", ubicacion: "media/ubicacion", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
   let novedades = [], novActual = null;
   const fechaCorta = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
   function htmlNovedad(n, media) {

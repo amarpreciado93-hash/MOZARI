@@ -27,7 +27,7 @@
 // Cada tour pertenece a una cuenta: cuentas/<uid>/tours/<id>. Nadie puede leer, cambiar ni borrar
 // tours de otra cuenta. Los tours publicados se ven en el Worker de tours (público, solo lectura).
 
-import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR, conCarga, cargaEnViejos, rutasEdicion, prefijoEdicion } from "./comun.js";
+import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR, conCarga, cargaEnViejos, rutasEdicion, prefijoEdicion, LLAVE_MAPA, ESTILO_MAPA, confMapa, satDe, olvidarSat } from "./comun.js";
 import { rutasSesion, cuentaDe, perfil, leerCupo, contarCuentas, firmarLink, verificarLink } from "./sesion.js";
 import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoCompra, correoCotizacion, htmlCotizacion, textoCotizacion, TIPOS_COTIZACION, correoDeNovedad, correoCampana, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja, CAMPANA, iniciarCampana, correoCompu, mandarRecordatorios, sembrarRecordatorios } from "./correos.js";
 import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
@@ -258,6 +258,7 @@ export const LABORATORIO = {
   "acabado": { nombre: "Acabado fino del tour", texto: "Retoques a lo que ve tu cliente. Diseño Cine: el título, el nombre y el botón de contacto salen blancos (antes un velo oscuro los dejaba grises); en celular ya salen el botón de contacto y el nombre del proyecto, y las flechas se leen sobre fondos claros. Diseño Brújula: el nombre de la esfera ya no se repite ni se corta en la orilla y los puntos de la ruta se tocan fácil. Se aplica al volver a publicar." },
   "ejemplo": { nombre: "Fotos de ejemplo", texto: "En un tour sin esferas: «Probar con fotos de ejemplo» sube 2 fotos 360 de muestra (una aérea y una a pie) para practicar sin traer fotos propias. Quedan como esferas normales y se borran igual." },
   "tours-link": { nombre: "Link a la mano en Mis Tours", texto: "En Mis Tours, cada tour publicado trae «Copiar link» y «Abrir» en su tarjeta, sin tener que entrar al tour e ir a Publicar." },
+  "ubicacion": { nombre: "Ubicación en satélite", texto: "Media → Ubicación: sube el KMZ (o KML) de tu desarrollo y míralo sobre el mapa satelital, en su lugar real. Mozari revisa el archivo y dice en palabras simples qué trae y qué le falta (contorno, lotes, nombres), con la guía «Cómo debe venir tu KMZ» lista para mandársela al ingeniero. Los números de lote salen al acercar y el contorno late al mover el mapa. Si no cae en su lugar, se amarra al satélite con 2 puntos. Se publica con el tour en su link /mapa." },
   "cotas": { nombre: "Cotas en paredes", texto: "En Capas → «Cota»: tocas el inicio y el final de un muro (en el piso) y Mozari calcula su largo con la altura de la cámara; un punto en el piso y otro arriba da la altura. Si tienes la medida del plano, la escribes y manda esa. Salen en el tour como en un plano." },
 };
 // "pago": las cuentas Pro y Desarrollos (con su plan vigente); "todos" incluye también Gratis
@@ -790,7 +791,8 @@ async function admin(request, env, partes, yo) {
   if (partes[2] === "laboratorio") {
     if (partes.length === 3 && m === "GET") {
       const cfg = await leerLab(env);
-      return json({ funciones: Object.entries(LABORATORIO).map(([clave, f]) => Object.assign({ clave }, f, cfg[clave])) });
+      const llave = (await confMapa(env)).esri; // la llave del mapa satelital (Ubicación): al panel solo va si existe y cómo termina
+      return json({ funciones: Object.entries(LABORATORIO).map(([clave, f]) => Object.assign({ clave }, f, cfg[clave])), mapa: { hay: !!llave, fin: llave ? llave.slice(-4) : "" } });
     }
     if (partes.length === 4 && m === "PUT" && LABORATORIO[partes[3]]) {
       const cuerpo = await request.json().catch(() => ({}));
@@ -804,6 +806,15 @@ async function admin(request, env, partes, yo) {
       await env.R2.put("config/laboratorio.json", JSON.stringify(c), { httpMetadata: { contentType: "application/json" } });
       return json({ ok: true, funcion: c[partes[3]] });
     }
+  }
+  // Mapa satelital de «Ubicación»: el dueño pega la llave de su proveedor (vacía = quitarla). El estilo es opcional.
+  if (partes[2] === "mapa" && partes.length === 3 && m === "PUT") {
+    const c = await request.json().catch(() => ({})), antes = await confMapa(env);
+    const esri = typeof c.esri === "string" ? c.esri.trim() : antes.esri, estilo = typeof c.estilo === "string" ? c.estilo.trim() : antes.estilo;
+    if ((esri && !LLAVE_MAPA.test(esri)) || !ESTILO_MAPA.test(estilo)) return error(400, "Esa llave no parece válida. Cópiala completa y vuelve a pegarla.");
+    await env.R2.put("config/mapa.json", JSON.stringify({ esri, estilo }), { httpMetadata: { contentType: "application/json" } });
+    olvidarSat();
+    return json({ ok: true, hay: !!esri, estilo });
   }
   if (partes[2] === "cotizacion-tarifas" && partes.length === 3) {
     if (m === "GET") return json({ tarifas: await tarifasCot(env), predeterminadas: TARIFAS_DEF });
@@ -980,6 +991,8 @@ async function api(request, env, partes, yo) {
     return json({ ok: true, para: p.email });
   }
   // Tutoriales guiados: cada cuenta ve el de cada herramienta una sola vez (se anota en su perfil)
+  // Ubicación en satélite: el satélite para la vista previa del mapa dentro del estudio (solo a quien tiene la función)
+  if (partes[1] === "mapa" && partes.length === 2 && m === "GET") return json({ sat: (await labDe(env, yo)).includes("ubicacion") ? await satDe(env) : "" });
   if (partes[1] === "guias" && partes.length === 3 && m === "POST" && /^[a-z0-9-]{2,40}$/.test(partes[2])) {
     const clave = "cuentas/" + yo.uid + "/perfil.json", o = await env.R2.get(clave); if (!o) return error(404, "Sin cuenta");
     const p = await o.json(); p.guiasVistas = [...new Set((p.guiasVistas || []).concat([partes[2]]))].slice(-300); // los más nuevos se quedan (antes, pasando de 100 ya no se guardaba ninguno y el tutorial salía siempre)
@@ -1178,6 +1191,8 @@ async function api(request, env, partes, yo) {
     p.proyecto.descargaPdf = lab.includes("descarga-pdf");
     // Landing del desarrollo (Laboratorio): solo se publica si su dueño tiene la función
     if (!lab.includes("landing")) delete p.proyecto.landing;
+    // Ubicación en satélite (Laboratorio): el mapa /mapa solo se publica si su dueño tiene la función
+    if (!lab.includes("ubicacion")) delete p.proyecto.ubicacion;
     // Pantalla de bienvenida (Laboratorio): solo sale publicada si su dueño tiene la función
     if (!lab.includes("bienvenida")) delete p.proyecto.bienvenida;
     await env.R2.put("publicado/" + id + "/proyecto.json", JSON.stringify(p), { httpMetadata: { contentType: tipoDe("x.json"), cacheControl: "no-cache" } });

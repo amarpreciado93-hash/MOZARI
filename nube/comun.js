@@ -57,6 +57,41 @@ export function prefijoEdicion(j) {
   return n || a ? "e" + n + "-" + a : "";
 }
 
+// Mapa satelital de «Ubicación» (Laboratorio «ubicacion»). La llave del proveedor (Esri) la pega el dueño en su panel
+// y vive en config/mapa.json. Es una llave de página (viaja en el link de cada mosaico, como en cualquier mapa web):
+// en Esri va amarrada a los dominios de Mozari y la cuenta no tiene forma de pago, así que si un mes se acaba lo
+// gratis el satélite se apaga solo (el plano se sigue viendo sobre fondo oscuro) y nunca cobra.
+export const LLAVE_MAPA = /^[A-Za-z0-9._-]{20,700}$/;
+export const ESTILO_MAPA = /^[a-z0-9-]{2,30}(\/[a-z0-9-]{2,30}){1,2}$/;
+const satEsri = (llave, estilo) => "https://static-map-tiles-api.arcgis.com/arcgis/rest/services/static-basemap-tiles-service/v1/" + estilo + "/static/tile/{z}/{y}/{x}?token=" + llave;
+export async function confMapa(env) {
+  let c = null; try { const o = await env.R2.get("config/mapa.json"); c = o ? await o.json() : null; } catch (e) { c = null; }
+  return { esri: c && typeof c.esri === "string" && LLAVE_MAPA.test(c.esri) ? c.esri : "", estilo: c && typeof c.estilo === "string" && ESTILO_MAPA.test(c.estilo) ? c.estilo : "arcgis/imagery" };
+}
+let satMem = { t: 0, v: "" };
+export async function satDe(env) {
+  if (!env.DEV && Date.now() - satMem.t < 60000) return satMem.v; // se relee cada minuto (cada copia del programa guarda la suya)
+  const c = await confMapa(env), v = c.esri ? satEsri(c.esri, c.estilo) : "";
+  satMem = { t: Date.now(), v }; return v;
+}
+export const olvidarSat = () => { satMem = { t: 0, v: "" }; };
+// La página del mapa (mapa.html, la misma para el estudio y para el tour publicado) con su satélite puesto
+export const conSat = (rw, sat) => (sat ? rw.on('meta[name="mz-sat"]', { element: (el) => el.setAttribute("content", sat) }) : rw);
+// Se pide siempre entera («¿cambió?» daría una respuesta sin cuerpo y, ya con su llave y sus datos, la página saldría
+// en blanco o con la copia vieja que guardó el navegador) y se entrega sin la marca de versión del archivo.
+export async function paginaMapa(env, request) {
+  const h = new Headers(request.headers); ["if-none-match", "if-modified-since", "range"].forEach((k) => h.delete(k));
+  const base = new URL(request.url).origin;
+  let r = await env.ASSETS.fetch(new Request(base + "/mapa", { headers: h }));
+  if (r.status >= 300 && r.status < 400 && r.headers.get("location")) r = await env.ASSETS.fetch(new Request(new URL(r.headers.get("location"), base), { headers: h }));
+  return r;
+}
+export function entregarMapa(out, cache) {
+  const h = new Headers(out.headers); ["etag", "last-modified"].forEach((k) => h.delete(k));
+  h.set("cache-control", cache); h.set("content-type", "text/html; charset=utf-8");
+  return new Response(out.body, { status: 200, headers: h });
+}
+
 export function tipoDe(ruta) {
   const ext = ruta.split(".").pop().toLowerCase();
   return TIPOS[ext] || "application/octet-stream";

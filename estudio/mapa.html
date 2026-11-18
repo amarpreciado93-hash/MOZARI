@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ubicación</title>
+<meta name="description" content="Dónde está el desarrollo, sobre el mapa satelital.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Ubicación">
+<meta property="og:description" content="Dónde está el desarrollo, sobre el mapa satelital.">
+<meta property="og:image" content="">
+<meta property="og:url" content="">
+<meta name="theme-color" content="#0B0B0B">
+<meta name="mz-sat" content="">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+<!--
+  Mozari · UBICACIÓN EN SATÉLITE (Laboratorio «ubicacion»)
+  Pedido de Amar (18 nov 2026): subir el KMZ del desarrollo y verlo sobre el satélite, para ubicarlo y moverse por él.
+  En esta fase no lleva los datos de cada lote (eso vive en el tour 360 y en la lista de lotes).
+  Una sola página para todos: se arma con el proyecto publicado (proyecto.json de su carpeta) o, en el estudio, con lo
+  que le manda el editor (postMessage). El satélite lo da el servidor en <meta name="mz-sat"> (o el editor); si no hay,
+  o se acabó el mes gratis del proveedor, el plano se ve sobre fondo oscuro. Los lotes los pinta la tarjeta de video
+  (MapLibre) y los números van en un lienzo encima, solo al acercar.
+-->
+<style>
+  :root { color-scheme: dark; --negro: #0B0B0B; --lima: #D5FF40; --texto: #F2F2EE; --tenue: rgba(242, 242, 238, 0.66); --linea: rgba(255, 255, 255, 0.16); --acento: #D5FF40; --sobre: #0B0B0B; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: var(--negro); color: var(--texto); font: 400 14px/1.45 "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; overscroll-behavior: none; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  #mapa, #rotulos { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #rotulos { pointer-events: none; z-index: 2; }
+  .maplibregl-map{font:12px/20px "Poppins",Helvetica,Arial,sans-serif;overflow:hidden;position:relative;-webkit-tap-highlight-color:rgb(0 0 0/0)}.maplibregl-canvas{left:0;position:absolute;top:0;outline:0}.maplibregl-canvas-container.maplibregl-interactive{cursor:grab;-webkit-user-select:none;user-select:none}.maplibregl-canvas-container.maplibregl-interactive:active{cursor:grabbing}.maplibregl-canvas-container.maplibregl-touch-zoom-rotate,.maplibregl-canvas-container.maplibregl-touch-zoom-rotate .maplibregl-canvas{touch-action:pan-x pan-y}.maplibregl-canvas-container.maplibregl-touch-drag-pan,.maplibregl-canvas-container.maplibregl-touch-drag-pan .maplibregl-canvas{touch-action:pinch-zoom}.maplibregl-canvas-container.maplibregl-touch-zoom-rotate.maplibregl-touch-drag-pan,.maplibregl-canvas-container.maplibregl-touch-zoom-rotate.maplibregl-touch-drag-pan .maplibregl-canvas{touch-action:none}
+  body.amarrando .maplibregl-canvas-container.maplibregl-interactive { cursor: crosshair; }
+  .cab { position: fixed; z-index: 5; left: max(14px, env(safe-area-inset-left)); top: max(14px, env(safe-area-inset-top)); max-width: min(62vw, 420px); padding: 10px 16px 11px; border-radius: 16px; background: rgba(11, 11, 11, 0.78); border: 1px solid var(--linea); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .cab small { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: var(--acento); }
+  .cab b { display: block; font-size: 16px; font-weight: 600; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ctl { position: fixed; z-index: 5; right: max(14px, env(safe-area-inset-right)); top: max(14px, env(safe-area-inset-top)); display: grid; gap: 8px; }
+  .ctl button, .llegar { width: 44px; height: 44px; border-radius: 14px; border: 1px solid var(--linea); background: rgba(11, 11, 11, 0.78); color: var(--texto); display: grid; place-items: center; cursor: pointer; padding: 0; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: background 0.15s, transform 0.1s; }
+  .ctl button:hover { background: rgba(30, 30, 30, 0.9); } .ctl button:active { transform: scale(0.95); }
+  .ctl button svg, .llegar svg { width: 20px; height: 20px; }
+  .ctl button[aria-pressed="true"] { background: var(--acento); color: var(--sobre); border-color: transparent; }
+  .ctl button:focus-visible, .llegar:focus-visible, .am button:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+  .llegar { position: fixed; z-index: 5; left: max(14px, env(safe-area-inset-left)); bottom: max(16px, env(safe-area-inset-bottom)); width: auto; height: 46px; padding: 0 18px 0 14px; display: inline-flex; gap: 9px; align-items: center; text-decoration: none; font-weight: 600; font-size: 14px; background: var(--acento); color: var(--sobre); border-color: transparent; border-radius: 999px; }
+  .atrib { position: fixed; z-index: 4; right: 0; bottom: 0; max-width: 72vw; padding: 3px 8px 3px 10px; font-size: 10px; line-height: 1.3; color: rgba(255, 255, 255, 0.82); background: rgba(11, 11, 11, 0.55); border-top-left-radius: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .aviso { position: fixed; z-index: 6; left: 50%; bottom: max(76px, calc(env(safe-area-inset-bottom) + 76px)); transform: translateX(-50%); max-width: min(92vw, 460px); padding: 10px 16px; border-radius: 14px; background: rgba(11, 11, 11, 0.88); border: 1px solid var(--linea); font-size: 13px; text-align: center; }
+  .vacio { position: fixed; inset: 0; z-index: 8; display: grid; place-items: center; text-align: center; padding: 24px; background: var(--negro); }
+  .vacio b { display: block; font-size: 18px; margin-bottom: 6px; } .vacio span { color: var(--tenue); }
+  /* Amarrar el plano al satélite (solo en el estudio) */
+  .am { position: fixed; z-index: 7; left: 50%; top: max(14px, env(safe-area-inset-top)); transform: translateX(-50%); width: min(92vw, 520px); padding: 12px 14px; border-radius: 16px; background: rgba(11, 11, 11, 0.92); border: 1px solid var(--acento); display: grid; gap: 8px; }
+  .am small { font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--acento); }
+  .am p { margin: 0; font-size: 14px; }
+  .am div { display: flex; gap: 8px; flex-wrap: wrap; }
+  .am button { height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--linea); background: transparent; color: var(--texto); font: 500 13px "Poppins", sans-serif; cursor: pointer; }
+  .am button.si { background: var(--acento); color: var(--sobre); border-color: transparent; font-weight: 600; }
+  .am button:disabled { opacity: 0.4; cursor: default; }
+  body.amarrando .cab, body.amarrando .llegar { display: none; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div id="mapa" role="application" aria-label="Mapa satelital del desarrollo"></div>
+<canvas id="rotulos" aria-hidden="true"></canvas>
+<header class="cab" id="cab" hidden><small>Ubicación</small><b id="cab-nombre"></b></header>
+<div class="ctl" id="ctl" hidden>
+  <button type="button" data-c="mas" aria-label="Acercar" title="Acercar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+  <button type="button" data-c="menos" aria-label="Alejar" title="Alejar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+  <button type="button" data-c="centrar" aria-label="Ver todo el terreno" title="Ver todo el terreno"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"/><circle cx="12" cy="12" r="2.2"/></svg></button>
+  <button type="button" data-c="sat" aria-pressed="true" aria-label="Satélite" title="Satélite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5zM3 13l9 5 9-5M3 17.5l9 5 9-5" transform="translate(0 -1.2)"/></svg></button>
+</div>
+<a class="llegar" id="llegar" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.500C5 14.800 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg>Cómo llegar</a>
+<div class="atrib" id="atrib" hidden></div>
+<div class="aviso" id="aviso" role="status" hidden></div>
+<div class="am" id="am" hidden><small id="am-paso"></small><p id="am-txt"></p><div><button type="button" class="si" data-am="listo">Listo</button><button type="button" data-am="quitar">Quitar amarre</button><button type="button" data-am="cancelar">Cancelar</button></div></div>
+<script src="/lib/maplibre-gl.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const previa = /(^|[#&])previa\b/.test(location.hash) && window.parent !== window;
+  const RT = 6378137, RAD = Math.PI / 180;
+  const aMerc = (c) => [RT * c[0] * RAD, RT * Math.log(Math.tan(Math.PI / 4 + (c[1] * RAD) / 2))];
+  const deMerc = (p) => [p[0] / RT / RAD, (2 * Math.atan(Math.exp(p[1] / RT)) - Math.PI / 2) / RAD];
+  let map = null, base = "", SAT = (document.querySelector('meta[name="mz-sat"]') || {}).content || "", conSat = true, fallosSat = 0, satBien = false;
+  let crudo = null, pares = [], D = null, listo = false, rotulos = { lotes: [], mz: [] }, zLote = 99, zMz = 99, zLinea = 0, alfa = { lotes: 0, mz: 0 }, tPulso = 0, pulsoRaf = 0, pintaRaf = 0, avisoT = 0;
+  const estado = { rotulosLotes: 0, rotulosMz: 0, pulsos: 0, msPintar: 0 };
+  const vacio = (t, d) => { let v = document.querySelector(".vacio"); if (!v) { v = document.createElement("div"); v.className = "vacio"; document.body.appendChild(v); } v.innerHTML = "<div><b></b><span></span></div>"; v.querySelector("b").textContent = t; v.querySelector("span").textContent = d || ""; };
+  const aviso = (t, ms) => { const a = $("aviso"); clearTimeout(avisoT); a.textContent = t; a.hidden = !t; if (t && ms !== 0) avisoT = setTimeout(() => (a.hidden = true), ms || 5000); };
+  // ---- Amarre: el plano se mueve (1 punto) o se mueve, gira y cambia de tamaño (2 puntos) para caer sobre el satélite ----
+  // En metros de mapa, como números complejos: z' = α·z + β. Cada par: [lng, lat del plano, lng, lat del satélite].
+  function transformacion(ps) {
+    const ok = (ps || []).filter((p) => Array.isArray(p) && p.length === 4 && p.every((v) => typeof v === "number" && isFinite(v)));
+    if (!ok.length) return null;
+    const a1 = aMerc([ok[0][0], ok[0][1]]), b1 = aMerc([ok[0][2], ok[0][3]]);
+    let ar = 1, ai = 0, soloMover = false;
+    if (ok.length > 1) {
+      const a2 = aMerc([ok[1][0], ok[1][1]]), b2 = aMerc([ok[1][2], ok[1][3]]), dx = a2[0] - a1[0], dy = a2[1] - a1[1], ex = b2[0] - b1[0], ey = b2[1] - b1[1], n = dx * dx + dy * dy;
+      if (n > 1) { ar = (ex * dx + ey * dy) / n; ai = (ey * dx - ex * dy) / n; const esc = Math.hypot(ar, ai); if (esc < 0.5 || esc > 2) { ar = 1; ai = 0; soloMover = true; } } // un tamaño absurdo se ignora (puntos mal puestos)
+      else soloMover = true;
+    }
+    const T = (c) => { const p = aMerc(c), x = p[0] - a1[0], y = p[1] - a1[1]; return deMerc([b1[0] + ar * x - ai * y, b1[1] + ai * x + ar * y]); };
+    T.soloMover = soloMover; return T;
+  }
+  // ---- Los datos, ya en su lugar ----
+  function preparar() {
+    const T = transformacion(pares), mover = (c) => (T ? T(c) : c), anillo = (c) => c.map(mover);
+    const d = { contorno: (crudo.contorno || []).map(anillo), lotes: (crudo.lotes || []).map((l) => ({ c: anillo(l.c), n: l.n || "", mz: l.mz || "" })), otras: (crudo.otras || []).map((o) => ({ t: o.t, c: anillo(o.c) })) };
+    let x0 = 180, y0 = 90, x1 = -180, y1 = -90;
+    const ver = (c) => c.forEach((p) => { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; });
+    d.contorno.forEach(ver); d.lotes.forEach((l) => ver(l.c)); d.otras.forEach((o) => ver(o.c));
+    d.caja = [x0, y0, x1, y1]; d.centro = [(x0 + x1) / 2, (y0 + y1) / 2];
+    // Medidas en metros (para decidir desde qué acercamiento cabe cada número) y el punto de cada rótulo
+    const kx = RAD * RT * Math.cos(d.centro[1] * RAD), ky = RAD * RT;
+    const medir = (c) => { let a = 0, sx = 0, sy = 0, largo = 0; for (let i = 0, n = c.length; i < n; i++) { const p = c[i], q = c[(i + 1) % n], x1b = (p[0] - d.centro[0]) * kx, y1b = (p[1] - d.centro[1]) * ky, x2 = (q[0] - d.centro[0]) * kx, y2 = (q[1] - d.centro[1]) * ky, f = x1b * y2 - x2 * y1b, l = Math.hypot(x2 - x1b, y2 - y1b); a += f; sx += (x1b + x2) * f; sy += (y1b + y2) * f; if (l > largo) largo = l; } a /= 2; if (Math.abs(a) < 1e-9) return { m2: 0, angosto: 0, p: c[0] }; return { m2: Math.abs(a), angosto: Math.min(Math.sqrt(Math.abs(a)), Math.abs(a) / (largo || 1)), p: [d.centro[0] + sx / (6 * a) / kx, d.centro[1] + sy / (6 * a) / ky] }; };
+    const lot = [], grupos = new Map(), anchos = [];
+    d.lotes.forEach((l) => {
+      const m = medir(l.c); l.m2 = m.m2; if (m.angosto > 0) anchos.push(m.angosto);
+      if (l.n) lot.push({ p: m.p, t: l.n, tam: m.angosto });
+      if (l.mz) { let g = grupos.get(l.mz); if (!g) grupos.set(l.mz, (g = { x: 0, y: 0, n: 0, x0: 180, y0: 90, x1: -180, y1: -90 })); g.x += m.p[0]; g.y += m.p[1]; g.n++; l.c.forEach((p) => { if (p[0] < g.x0) g.x0 = p[0]; if (p[0] > g.x1) g.x1 = p[0]; if (p[1] < g.y0) g.y0 = p[1]; if (p[1] > g.y1) g.y1 = p[1]; }); }
+    });
+    const mz = []; grupos.forEach((g, k) => mz.push({ p: [g.x / g.n, g.y / g.n], t: k, tam: Math.min((g.x1 - g.x0) * kx, (g.y1 - g.y0) * ky) }));
+    rotulos = { lotes: lot, mz };
+    // Desde qué acercamiento se ven: cuando el lado angosto del lote típico mide unos 18 px en pantalla (y la manzana unos 30)
+    const tipico = (l, q) => { const s = l.map((r) => r.tam).filter((v) => v > 0).sort((a, b) => a - b); return s.length ? s[Math.floor(s.length * q)] : 0; };
+    const zDe = (metros, px) => (metros > 0 ? Math.log2((78271.517 * Math.cos(d.centro[1] * RAD) * px) / metros) : 99);
+    zLote = zDe(tipico(lot, 0.35), 18); zMz = zDe(tipico(mz, 0.35), 30);
+    if (zMz > zLote - 0.6) zMz = 99; // manzanas tan chicas como sus lotes: van directo los números de lote
+    anchos.sort((a, b) => a - b); zLinea = anchos.length > 300 ? Math.max(0, Math.min(18, zDe(anchos[Math.floor(anchos.length * 0.35)], 3))) : 0; // con pocos lotes, siempre
+    D = d;
+  }
+  const fc = (polis) => ({ type: "FeatureCollection", features: polis.map((c, i) => ({ type: "Feature", id: i, properties: {}, geometry: { type: "Polygon", coordinates: [c.concat([c[0]])] } })) });
+  function pintarDatos(encuadrar) {
+    preparar();
+    const orilla = D.contorno.length ? D.contorno : envolvente(D);
+    const fuentes = { contorno: fc(orilla), lotes: fc(D.lotes.map((l) => l.c)), calles: fc(D.otras.filter((o) => o.t === "calle").map((o) => o.c)), verdes: fc(D.otras.filter((o) => o.t === "verde").map((o) => o.c)), amen: fc(D.otras.filter((o) => o.t === "amenidad").map((o) => o.c)), mzs: fc(D.otras.filter((o) => o.t === "manzana").map((o) => o.c)) };
+    Object.keys(fuentes).forEach((k) => { const s = map.getSource(k); if (s) s.setData(fuentes[k]); else map.addSource(k, { type: "geojson", data: fuentes[k], tolerance: 0.3, buffer: 32, maxzoom: 17 }); });
+    if (!map.getLayer("lotes")) {
+      const acento = getComputedStyle(document.documentElement).getPropertyValue("--acento").trim() || "#D5FF40";
+      map.addLayer({ id: "calles", type: "fill", source: "calles", paint: { "fill-color": "#C9CCD1", "fill-opacity": 0.28 } });
+      map.addLayer({ id: "verdes", type: "fill", source: "verdes", paint: { "fill-color": "#4FD08A", "fill-opacity": 0.32 } });
+      map.addLayer({ id: "amen", type: "fill", source: "amen", paint: { "fill-color": "#FFB84D", "fill-opacity": 0.34 } });
+      map.addLayer({ id: "lotes", type: "fill", source: "lotes", paint: { "fill-color": acento, "fill-antialias": false, "fill-opacity": ["interpolate", ["linear"], ["zoom"], 13, 0.34, 17, 0.2, 20, 0.1] } });
+      map.addLayer({ id: "lotes-linea", type: "line", source: "lotes", paint: { "line-color": "#FFFFFF", "line-opacity": ["interpolate", ["linear"], ["zoom"], 13, 0.35, 16, 0.75, 20, 0.95], "line-width": ["interpolate", ["linear"], ["zoom"], 13, 0.3, 16, 0.8, 19, 1.6, 21, 2.4] } });
+      map.addLayer({ id: "mzs", type: "line", source: "mzs", layout: { "line-join": "round" }, paint: { "line-color": "#FFFFFF", "line-opacity": 0.6, "line-width": ["interpolate", ["linear"], ["zoom"], 13, 0.8, 18, 1.8] } });
+      map.addLayer({ id: "contorno-halo", type: "line", source: "contorno", layout: { "line-join": "round" }, paint: { "line-color": acento, "line-width": 3, "line-opacity": 0, "line-blur": 6 } });
+      map.addLayer({ id: "contorno", type: "line", source: "contorno", layout: { "line-join": "round" }, paint: { "line-color": acento, "line-width": ["interpolate", ["linear"], ["zoom"], 10, 2, 16, 2.8, 20, 3.6], "line-opacity": D.contorno.length ? 0.95 : 0 } });
+    } else map.setPaintProperty("contorno", "line-opacity", D.contorno.length ? 0.95 : 0);
+    map.setLayerZoomRange("lotes-linea", zLinea, 24);
+    if (encuadrar) encuadre(false);
+    $("llegar").href = "https://www.google.com/maps/dir/?api=1&destination=" + D.centro[1].toFixed(6) + "," + D.centro[0].toFixed(6);
+    pedirPintar();
+  }
+  // Sin contorno en el archivo: la orilla de los lotes (solo para el pulso y para encuadrar; no se dibuja)
+  function envolvente(d) {
+    const pts = []; d.lotes.forEach((l) => l.c.forEach((p) => pts.push(p))); d.otras.forEach((o) => o.c.forEach((p) => pts.push(p)));
+    if (pts.length < 3) return [];
+    pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const cruz = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), inf = [], sup = [];
+    for (const p of pts) { while (inf.length >= 2 && cruz(inf[inf.length - 2], inf[inf.length - 1], p) <= 0) inf.pop(); inf.push(p); }
+    for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (sup.length >= 2 && cruz(sup[sup.length - 2], sup[sup.length - 1], p) <= 0) sup.pop(); sup.push(p); }
+    const h = inf.slice(0, -1).concat(sup.slice(0, -1)); return h.length >= 3 ? [h] : [];
+  }
+  function encuadre(animado) {
+    const c = D.caja; if (!(c[2] >= c[0])) return;
+    const chico = Math.min(innerWidth, innerHeight) < 520, m = chico ? 34 : 70;
+    map.fitBounds([[c[0], c[1]], [c[2], c[3]]], { padding: { top: m + 54, bottom: m + 40, left: m, right: m }, maxZoom: 19.5, duration: animado ? 700 : 0 });
+  }
+  // ---- Satélite ----
+  function ponerSat() {
+    const quiere = conSat && !!SAT;
+    if (map.getLayer("sat")) map.setLayoutProperty("sat", "visibility", quiere ? "visible" : "none");
+    else if (quiere) {
+      map.addSource("sat", { type: "raster", tiles: [SAT], tileSize: /static-map-tiles-api|tileSize=512/.test(SAT) ? 512 : 256, maxzoom: 19 });
+      map.addLayer({ id: "sat", type: "raster", source: "sat", paint: { "raster-fade-duration": 180 } }, map.getLayer("calles") ? "calles" : undefined);
+      atribucion();
+    }
+    $("ctl").querySelector('[data-c="sat"]').setAttribute("aria-pressed", String(quiere));
+    $("ctl").querySelector('[data-c="sat"]').hidden = !SAT;
+    $("atrib").hidden = !quiere || !$("atrib").textContent;
+  }
+  function atribucion() {
+    const a = $("atrib"); if (a.textContent || !/arcgis\.com/.test(SAT)) return;
+    a.textContent = "Powered by Esri"; a.hidden = !conSat;
+    const u = SAT.replace(/\/tile\/\{z\}\/\{y\}\/\{x\}/, "");
+    fetch(u).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.copyrightText) a.textContent = "Powered by Esri · " + String(j.copyrightText).slice(0, 160); }).catch(() => {});
+  }
+  // ---- Rótulos: números de manzana a media distancia y de lote solo de cerca, en un lienzo encima del mapa ----
+  const cv = $("rotulos"), cx = cv.getContext("2d");
+  function pedirPintar() { if (!pintaRaf) pintaRaf = requestAnimationFrame(pintarRotulos); }
+  function pintarRotulos() {
+    pintaRaf = 0; if (!map || !D) return;
+    const t0 = performance.now(), dpr = Math.min(2, devicePixelRatio || 1), W = innerWidth, H = innerHeight;
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.clearRect(0, 0, W, H);
+    const z = map.getZoom(), quiere = { lotes: z >= zLote ? 1 : 0, mz: z >= zMz && z < zLote ? 1 : 0 };
+    // aparecen y se van suave
+    let sigue = false; for (const k of ["lotes", "mz"]) { const d = quiere[k] - alfa[k]; if (Math.abs(d) > 0.02) { alfa[k] += d * 0.22; sigue = true; } else alfa[k] = quiere[k]; }
+    const b = map.getBounds(), w0 = b.getWest(), e0 = b.getEast(), s0 = b.getSouth(), n0 = b.getNorth(), mpp = (78271.517 * Math.cos(D.centro[1] * RAD)) / Math.pow(2, z);
+    const celda = 4, cols = Math.ceil(W / celda) + 1, filas = Math.ceil(H / celda) + 1, ocupado = new Uint8Array(cols * filas);
+    const libre = (x, y, w, h) => { const c0 = Math.max(0, ((x - w / 2) / celda) | 0), c1 = Math.min(cols - 1, ((x + w / 2) / celda) | 0), r0 = Math.max(0, ((y - h / 2) / celda) | 0), r1 = Math.min(filas - 1, ((y + h / 2) / celda) | 0); for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) if (ocupado[r * cols + c]) return false; for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) ocupado[r * cols + c] = 1; return true; };
+    const pastilla = (x, y, t, fondo, tinta, px, a) => {
+      cx.font = "600 " + px + 'px "Poppins", system-ui, sans-serif'; const tw = cx.measureText(t).width, w = Math.max(px * 1.7, tw + px * 0.9), h = px * 1.6;
+      if (!libre(x, y, w + 1, h + 1)) return false;
+      cx.globalAlpha = a; cx.fillStyle = fondo; cx.beginPath(); const r = h / 2, l = x - w / 2, tp = y - h / 2;
+      cx.moveTo(l + r, tp); cx.arcTo(l + w, tp, l + w, tp + h, r); cx.arcTo(l + w, tp + h, l, tp + h, r); cx.arcTo(l, tp + h, l, tp, r); cx.arcTo(l, tp, l + w, tp, r); cx.closePath(); cx.fill();
+      cx.fillStyle = tinta; cx.textAlign = "center"; cx.textBaseline = "middle"; cx.fillText(t, x, y + px * 0.06); return true;
+    };
+    let nl = 0, nm = 0; const acento = getComputedStyle(document.documentElement).getPropertyValue("--acento").trim() || "#D5FF40", sobre = getComputedStyle(document.documentElement).getPropertyValue("--sobre").trim() || "#0B0B0B";
+    if (alfa.mz > 0.02) for (const r of rotulos.mz) { const p = r.p; if (p[0] < w0 || p[0] > e0 || p[1] < s0 || p[1] > n0) continue; const q = map.project(p); if (pastilla(q.x, q.y, "Mz " + r.t, acento, sobre, 12, alfa.mz)) nm++; }
+    if (alfa.lotes > 0.02) for (const r of rotulos.lotes) {
+      const p = r.p; if (p[0] < w0 || p[0] > e0 || p[1] < s0 || p[1] > n0) continue;
+      const lado = r.tam / mpp; if (lado < 15) continue; // este lote aún no da para su número
+      const q = map.project(p), px = Math.max(8.5, Math.min(13, lado / 2.5));
+      if (pastilla(q.x, q.y, r.t, "rgba(11,11,11,0.78)", "#FFFFFF", px, alfa.lotes)) nl++;
+    }
+    cx.globalAlpha = 1; estado.rotulosLotes = nl; estado.rotulosMz = nm; estado.msPintar = performance.now() - t0;
+    if (sigue) pedirPintar();
+  }
+  // ---- El pulso: al soltar el mapa, el contorno del terreno late una vez (para que el ojo lo encuentre) ----
+  function pulso() {
+    if (!map || !map.getLayer("contorno-halo") || document.body.classList.contains("amarrando")) return;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    estado.pulsos++; tPulso = performance.now(); cancelAnimationFrame(pulsoRaf);
+    const paso = () => {
+      const u = Math.min(1, (performance.now() - tPulso) / 1100), s = 1 - Math.pow(1 - u, 3);
+      if (!map.getLayer("contorno-halo")) return;
+      map.setPaintProperty("contorno-halo", "line-width", 3 + s * 26); map.setPaintProperty("contorno-halo", "line-blur", 4 + s * 16); map.setPaintProperty("contorno-halo", "line-opacity", 0.75 * (1 - u) * (u < 0.12 ? u / 0.12 : 1));
+      if (u < 1) pulsoRaf = requestAnimationFrame(paso);
+    };
+    pulsoRaf = requestAnimationFrame(paso);
+  }
+  // ---- Amarrar el plano al satélite (solo desde el estudio) ----
+  const AM = { activo: false, paso: 0, a: null, nuevos: [], marcas: [] };
+  const verticesPlano = () => { const l = []; const T = transformacion(pares); const mete = (c) => c.forEach((p) => l.push([p, T ? T(p) : p])); (crudo.contorno || []).forEach(mete); (crudo.lotes || []).forEach((x) => mete(x.c)); (crudo.otras || []).forEach((x) => mete(x.c)); return l; };
+  function marca(c, color) { const e = document.createElement("div"); e.style.cssText = "width:16px;height:16px;border-radius:50%;border:3px solid #0B0B0B;box-shadow:0 0 0 2px " + color + ";background:" + color; const m = new maplibregl.Marker({ element: e }).setLngLat(c).addTo(map); AM.marcas.push(m); }
+  function pintarAmarre() {
+    const am = $("am"); am.hidden = !AM.activo; document.body.classList.toggle("amarrando", AM.activo); if (!AM.activo) return;
+    const n = AM.nuevos.length;
+    $("am-paso").textContent = "Amarrar al satélite · punto " + Math.min(2, n + 1) + " de 2";
+    $("am-txt").textContent = AM.paso === 1 ? "Ahora toca dónde va esa esquina en el satélite." : n === 0 ? "Toca una esquina de tu plano que reconozcas en el satélite (una esquina del terreno, por ejemplo)." : n === 1 ? "Quedó movido. Si además está girado o de otro tamaño, toca otra esquina del plano, lejos de la primera." : "Listo: el plano quedó amarrado con 2 puntos.";
+    am.querySelector('[data-am="listo"]').disabled = !n;
+    am.querySelector('[data-am="quitar"]').hidden = !(pares.length || n);
+  }
+  function clicAmarre(ev) {
+    if (!AM.activo || AM.nuevos.length >= 2) return;
+    if (AM.paso === 0) {
+      // se pega a la esquina del plano más cercana (a menos de 16 px); si no hay, vale el punto tocado
+      let mejor = null, dm = 22 * 22; for (const [orig, ahora] of verticesPlano()) { const q = map.project(ahora), dx = q.x - ev.point.x, dy = q.y - ev.point.y, d2 = dx * dx + dy * dy; if (d2 < dm) { dm = d2; mejor = [orig, ahora]; } }
+      if (!mejor) { aviso("Toca más cerca de una esquina del plano", 2500); return; }
+      AM.a = mejor[0]; marca(mejor[1], "#D5FF40"); AM.paso = 1;
+    } else {
+      const b = [ev.lngLat.lng, ev.lngLat.lat]; AM.nuevos.push([AM.a[0], AM.a[1], b[0], b[1]]); AM.paso = 0; AM.a = null;
+      pares = AM.nuevos.slice(); AM.marcas.forEach((m) => m.remove()); AM.marcas = []; pintarDatos(false);
+      AM.nuevos.forEach((p) => marca([p[2], p[3]], "#FFFFFF"));
+      const T = transformacion(pares); if (AM.nuevos.length === 2 && T && T.soloMover) aviso("Esos 2 puntos dejarían el plano deformado. Quedó solo movido con el primero: prueba con otra esquina.", 7000);
+    }
+    pintarAmarre();
+  }
+  function cerrarAmarre(guardar, quitar) {
+    AM.marcas.forEach((m) => m.remove()); AM.marcas = [];
+    if (quitar) pares = []; else if (!guardar) pares = AM.previos || [];
+    AM.activo = false; AM.paso = 0; AM.a = null; AM.nuevos = []; pintarAmarre(); pintarDatos(false);
+    if (previa) parent.postMessage({ tipo: "mapa-amarre", guardar: !!(guardar || quitar), pares }, location.origin);
+  }
+  $("am").addEventListener("click", (ev) => { const b = ev.target.closest("[data-am]"); if (!b) return; const q = b.dataset.am; if (q === "listo") cerrarAmarre(true); else if (q === "quitar") cerrarAmarre(false, true); else if (q === "cancelar") cerrarAmarre(false); });
+  // ---- Arranque ----
+  function crear() {
+    if (!window.maplibregl) { vacio("No se pudo abrir el mapa", "Revisa tu internet y vuelve a cargar la página."); return false; }
+    map = new maplibregl.Map({ container: "mapa", style: { version: 8, sources: {}, layers: [{ id: "fondo", type: "background", paint: { "background-color": "#101210" } }] }, center: [-101.68, 21.12], zoom: 4, minZoom: 2, maxZoom: 21.5, attributionControl: false, pixelRatio: Math.min(2, window.devicePixelRatio || 1), dragRotate: false, pitchWithRotate: false, touchPitch: false, renderWorldCopies: false, fadeDuration: 0 });
+    map.touchZoomRotate.disableRotation(); if (map.keyboard && map.keyboard.disableRotation) map.keyboard.disableRotation();
+    map.on("move", pedirPintar); map.on("resize", pedirPintar);
+    map.on("moveend", (e) => { pedirPintar(); if (e.originalEvent || e.pulso) pulso(); });
+    map.on("click", clicAmarre);
+    map.on("error", (e) => { if (e && e.sourceId === "sat" && !satBien) { fallosSat++; if (fallosSat >= 6 && conSat) { conSat = false; ponerSat(); aviso("El mapa satelital no está disponible por ahora. Se muestra el plano solo.", 7000); } } });
+    map.on("data", (e) => { if (e.sourceId === "sat" && e.tile && e.tile.state === "loaded") satBien = true; });
+    $("ctl").addEventListener("click", (ev) => { const b = ev.target.closest("[data-c]"); if (!b) return; const c = b.dataset.c; if (c === "mas") map.zoomIn({ duration: 260 }, { pulso: true }); else if (c === "menos") map.zoomOut({ duration: 260 }, { pulso: true }); else if (c === "centrar") { encuadre(true); map.once("moveend", pulso); } else if (c === "sat") { conSat = !conSat; ponerSat(); } });
+    return true;
+  }
+  function mostrar(datos, opt) {
+    crudo = datos; pares = (opt && opt.pares) || [];
+    if (!crudo || (!(crudo.lotes || []).length && !(crudo.contorno || []).length && !(crudo.otras || []).length)) { vacio("Aún no hay plano", "Sube el KMZ del desarrollo para verlo aquí."); return; }
+    const v = document.querySelector(".vacio"); if (v) v.remove();
+    if (opt && opt.nombre) { $("cab-nombre").textContent = opt.nombre; if (!previa) document.title = opt.nombre + " · Ubicación"; }
+    if (opt && opt.acento && /^#[0-9a-f]{6}$/i.test(opt.acento)) { const h = opt.acento, c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)), l = (c[0] * 299 + c[1] * 587 + c[2] * 114) / 1000; if (l > 90 && Math.max(...c) - Math.min(...c) > 60) { document.documentElement.style.setProperty("--acento", h); document.documentElement.style.setProperty("--sobre", l > 150 ? "#0B0B0B" : "#FFFFFF"); } }
+    if (opt && typeof opt.sat === "string") SAT = opt.sat;
+    const hacer = () => { const primera = !listo; pintarDatos(primera || (opt && opt.encuadrar)); ponerSat(); $("cab").hidden = !$("cab-nombre").textContent; $("ctl").hidden = false; $("llegar").hidden = false; if (primera) { listo = true; setTimeout(pulso, 500); } };
+    if (!map && !crear()) return;
+    if (map.loaded() || map.isStyleLoaded()) hacer(); else map.once("load", hacer);
+  }
+  window.__mapa = { get map() { return map; }, estado: () => Object.assign({ zoom: map ? map.getZoom() : 0, zLote, zMz, zLinea, lotes: D ? D.lotes.length : 0, conSat: conSat && !!SAT, pares: pares.length, caja: D ? D.caja : null }, estado), pulso };
+  if (previa) {
+    addEventListener("message", (ev) => {
+      if (ev.origin !== location.origin || !ev.data) return;
+      if (ev.data.tipo === "mapa") { try { mostrar(ev.data.datos, ev.data); } catch (e) { vacio("No se pudo armar el mapa", ""); } }
+      else if (ev.data.tipo === "mapa-amarrar" && map && crudo) { AM.previos = pares.slice(); AM.activo = true; AM.paso = 0; AM.nuevos = []; pares = []; pintarDatos(false); pintarAmarre(); }
+    });
+    parent.postMessage({ tipo: "mapa-lista" }, location.origin);
+  } else {
+    base = location.pathname.replace(/[^/]*$/, "");
+    fetch(base + "proyecto.json", { cache: "no-cache" }).then((r) => { if (!r.ok) throw 0; return r.json(); }).then((p) => {
+      const u = p.proyecto && p.proyecto.ubicacion; if (!u || !u.archivo) throw 0;
+      return fetch(base + u.archivo).then((r) => { if (!r.ok) throw 0; return r.json(); }).then((datos) => mostrar(datos, { nombre: p.proyecto.nombre, pares: (u.ajuste && u.ajuste.pares) || [], acento: p.skin && p.skin.acento }));
+    }).catch(() => vacio("Mapa no disponible", "Este desarrollo no tiene su ubicación publicada."));
+  }
+})();
+</script>
+</body>
+</html>

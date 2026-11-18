@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-18T00:04:51.037Z",
+ "fecha": "2026-11-18T21:11:25.254Z",
  "bien": 114,
- "total": 114,
+ "total": 115,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -377,7 +377,8 @@
   },
   {
    "nombre": "Imagen en 3D: un PNG transparente pegado a la esfera, crece sin deformarse y se inclina sobre el terreno",
-   "ok": true
+   "ok": false,
+   "motivo": "page.screenshot: Protocol error (Page.captureScreenshot): Unable to capture screenshot"
   },
   {
    "nombre": "Tours hechos con Mozari: el dueño elige tours publicados y salen en el sitio con portada y link",
@@ -453,6 +454,10 @@
   },
   {
    "nombre": "Landing del desarrollo (Laboratorio, nace Solo yo): marca, plano maestro, lotes con precio y calculadora, WhatsApp con el lote y publicada en /landing",
+   "ok": true
+  },
+  {
+   "nombre": "Ubicación en satélite (Laboratorio, nace Solo yo): revisa el KMZ, lo pinta sobre el satélite, números solo al acercar, pulso, amarre con 2 puntos, 5,000 lotes y publicada en /mapa",
    "ok": true
   },
   {

@@ -55,6 +55,7 @@ async function paso(nombre, fn, pagina) {
     resultados.push({ nombre, ok: false, motivo: String(e.message || e).split("\n")[0].slice(0, 220) });
     if (pagina) await pagina.screenshot({ path: path.join(DATOS, "fallo-" + resultados.length + ".png") }).then(() => console.log("    captura: " + path.join(DATOS, "fallo-" + resultados.length + ".png")), () => {});
     console.log("  ✗ " + nombre + " — " + String(e.message || e).split("\n")[0].slice(0, 220));
+    if (process.env.DEPURA) console.log(String(e.message || e).split("\n").slice(0, 14).join("\n").slice(0, 1500)); // el detalle completo, para depurar
     const donde = String(e.message || e).split("\n").find((l) => /waiting for/.test(l)); // en qué botón se atoró
     if (donde) console.log("    " + donde.trim().slice(0, 200));
   }
@@ -2306,8 +2307,10 @@ async function capasPesadas(p) {
       const J = (m, b) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(b) });
       const lab = (modo) => a.evaluate(([r, o]) => fetch(r, o).then((x) => x.status), ["api/admin/laboratorio/foto360", J("PUT", { modo, probadores: [] })]);
       exige((await lab("todos")) === 200, "no se pudo dar la foto 360 a todos"); // así está en mozari.app
-      // La fecha del navegador se recorre (el tiempo sigue corriendo): durante el Buen Fin y después
-      const fecha = (p, iso) => p.evaluate((t) => { const real = window.__ahoraReal || (window.__ahoraReal = Date.now.bind(Date)); const dif = t - real(); Date.now = () => real() + dif; }, Date.parse(iso));
+      // La fecha del navegador se recorre (el tiempo sigue corriendo): durante el Buen Fin y después. También al recargar
+      // la página (desde el 18 de noviembre el día real ya es «después», y sin esto la primera parte dependía del día).
+      const recorrer = (t) => { const real = window.__ahoraReal || (window.__ahoraReal = Date.now.bind(Date)); const dif = t - real(); Date.now = () => real() + dif; };
+      const fecha = async (p, iso) => { await p.addInitScript(recorrer, Date.parse(iso)); await p.evaluate(recorrer, Date.parse(iso)); };
       const n = await pagina(correo);
       try {
         await fecha(n, "2026-11-14T18:00:00Z");
@@ -4461,6 +4464,17 @@ async function capasPesadas(p) {
         exige((await fr.locator("h1").textContent({ timeout: 8000 }).catch(() => "")) === "Tu lote junto a la laguna", "la vista previa no muestra el título nuevo");
         exige((await fr.locator("#sel-lote option").count()) === 3 && (await fr.locator("#sel-mz option").count()) === 2, "la vista previa no trae las 2 manzanas con sus lotes para elegir");
         exige((await fr.locator(".lt, .tablero").count()) === 0, "la landing sigue con el tablero de cuadritos");
+        // El WhatsApp con el país (reporte de Javier, Colombia): antes todo número salía con +52 de México
+        const waPrevia = () => fr.locator(".fija .btn-wa").getAttribute("href", { timeout: 5000 }).catch(() => "");
+        exige((await n.$eval("[data-ld-pais]", (s) => s.value)) === "52" && /wa\.me\/524771234567\?/.test(await waPrevia()), "el WhatsApp de México no arranca con +52: " + (await waPrevia()));
+        await n.selectOption("[data-ld-pais]", "57"); await n.waitForTimeout(600); await n.fill('[data-ld="contacto.whatsapp"]', "310 341 4259"); await n.waitForTimeout(1500);
+        exige(/wa\.me\/573103414259\?/.test(await waPrevia()), "con Colombia el WhatsApp no sale con +57: " + (await waPrevia()));
+        await n.selectOption("[data-ld-pais]", "504"); await n.waitForTimeout(600); await n.fill('[data-ld="contacto.whatsapp"]', "9876 5432"); await n.waitForTimeout(1500);
+        exige(/wa\.me\/50498765432\?/.test(await waPrevia()) && !(await n.isVisible("#ld-sin-wa")), "un número de Honduras (8 dígitos) no sale con +504 o pide WhatsApp: " + (await waPrevia()));
+        await n.selectOption("[data-ld-pais]", "0"); await n.waitForTimeout(600); await n.fill('[data-ld="contacto.whatsapp"]', "+57 310 341 4259"); await n.waitForTimeout(1500);
+        exige(/wa\.me\/573103414259\?/.test(await waPrevia()), "con «Otro país» el número no sale como se escribió: " + (await waPrevia()));
+        await n.selectOption("[data-ld-pais]", "52"); await n.waitForTimeout(600); await n.fill('[data-ld="contacto.whatsapp"]', "4771234567"); await n.waitForTimeout(1500);
+        exige(/wa\.me\/524771234567\?/.test(await waPrevia()), "al regresar a México el WhatsApp no quedó con +52");
         // el plano maestro se sube desde su tarjeta
         const { PNG } = require(LIB.pngjs), pl = new PNG({ width: 1400, height: 1000 });
         for (let i = 0; i < pl.data.length; i += 4) { const x = (i / 4) % 1400, y = Math.floor(i / 4 / 1400), l = x % 140 < 6 || y % 100 < 6; pl.data[i] = l ? 34 : 241; pl.data[i + 1] = l ? 56 : 236; pl.data[i + 2] = l ? 44 : 226; pl.data[i + 3] = 255; }
@@ -4526,6 +4540,260 @@ async function capasPesadas(p) {
         exige((await api(u, "api/tours/" + iu, J("PUT", du))).s === 200 && (await api(u, "api/tours/" + iu + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar el tour de la cuenta normal");
         exige((await fetch(TOURS + "/" + iu + "/landing")).status === 404, "una cuenta sin la función publicó landing");
       } finally {
+        await u.context().close(); await n.context().close();
+      }
+    });
+    // Ubicación en satélite (Amar, 18 nov 2026): «que el usuario suba un KMZ y Mozari lo muestre sobre un mapa satelital,
+    // para ver dónde está el desarrollo y moverse por él». Los KMZ llegan mal (solo el contorno, lotes sin nombre, líneas
+    // abiertas): Mozari revisa el archivo y lo dice en palabras simples, y nada de eso lo rompe. Los números de lote
+    // salen solo al acercar, el contorno late al mover el mapa y, si no coincide con el satélite, se amarra con 2 puntos.
+    await paso("Ubicación en satélite (Laboratorio, nace Solo yo): revisa el KMZ, lo pinta sobre el satélite, números solo al acercar, pulso, amarre con 2 puntos, 5,000 lotes y publicada en /mapa", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      // ---- archivos de prueba, como los de Google Earth: un desarrollo en León, en metros desde su esquina ----
+      const LON0 = -101.7, LAT0 = 21.15, KX = 111320 * Math.cos((LAT0 * Math.PI) / 180), KY = 110574;
+      const ll = (x, y) => (LON0 + x / KX).toFixed(7) + "," + (LAT0 + y / KY).toFixed(7) + ",0";
+      const rect = (x, y, w, h) => [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]].map(([a, b]) => ll(a, b)).join(" ");
+      const poli = (nombre, c) => "<Placemark>" + (nombre ? "<name>" + nombre + "</name>" : "") + "<Polygon><outerBoundaryIs><LinearRing><coordinates>" + c + "</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>";
+      const linea = (nombre, c) => "<Placemark><name>" + nombre + "</name><LineString><coordinates>" + c + "</coordinates></LineString></Placemark>";
+      const kml = (cuerpo) => '<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Desarrollo de prueba</name>' + cuerpo + "</Document></kml>";
+      // manzanas de 2 filas de lotes de 10 × 20 m, con calles de 12 m
+      const manzana = (m, x0, y0, porFila, nombre) => { let h = ""; for (let i = 0; i < porFila * 2; i++) h += poli(nombre(m, i + 1), rect(x0 + (i % porFila) * 10, y0 + Math.floor(i / porFila) * 20, 10, 20)); return h; };
+      const completo = kml(poli("Contorno", rect(-15, -15, 250, 100)) +
+        "<Folder><name>Lotes</name>" + [59, 60, 61].map((m, k) => manzana(m, k * 76, 0, 6, (mz, l) => "MZ-" + mz + "-" + l)).join("") + "</Folder>" +
+        "<Folder><name>Vialidades</name>" + poli("Calle 1", rect(-15, 44, 250, 12)) + "</Folder>" + poli("Área verde", rect(200, 60, 30, 20)) +
+        linea("Eje", ll(0, -5) + " " + ll(100, -5)) + linea("Cota", ll(0, -8) + " " + ll(40, -8) + " " + ll(40, -12)) + "<Placemark><name>Acceso</name><Point><coordinates>" + ll(-10, 50) + "</coordinates></Point></Placemark>");
+      const soloContorno = kml(poli("Poligonal", rect(0, 0, 300, 200)));
+      const sinNombre = kml(manzana(1, 0, 0, 10, () => ""));
+      // como sale de AutoCAD: cada lote es una línea que regresa a su inicio (no un polígono), y viene en KML suelto
+      const deCad = kml("<Folder><name>Manzana 7</name>" + [1, 2, 3, 4].map((l) => linea("Lote " + l, rect((l - 1) * 10, 0, 10, 20))).join("") + "</Folder>" + linea("Suelta", ll(0, 30) + " " + ll(50, 30)));
+      // un archivo «raro» pero válido: coordenadas con espacios, la orilla de la manzana con sus lotes adentro, un lote repetido,
+      // un área verde que solo se sabe por su carpeta y una amenidad en dos partes (MultiGeometry)
+      const conEspacios = (x, y, w, h) => [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]].map(([a, b]) => ll(a, b).replace(/,/g, ", ")).join("\n          ");
+      const anillo = (c) => "<Polygon><outerBoundaryIs><LinearRing><coordinates>" + c + "</coordinates></LinearRing></outerBoundaryIs></Polygon>";
+      const raro = kml(poli("", rect(-10, -10, 120, 80)) + "<Folder><name>Manzana 5</name>" + poli("Manzana 5", rect(0, 0, 40, 20)) + [1, 2, 3, 4].map((l) => poli(String(l), conEspacios((l - 1) * 10, 0, 10, 20))).join("") + poli("1", rect(0, 0, 10, 20)) + "</Folder>" +
+        "<Folder><name>Áreas verdes</name>" + poli("1", rect(60, 0, 20, 20)) + "</Folder><Placemark><name>Casa club</name><MultiGeometry>" + anillo(rect(0, 40, 15, 15)) + anillo(rect(20, 40, 15, 15)) + "</MultiGeometry></Placemark>");
+      const enUTM = kml(poli("Lote 1", "236500.5,2340100.2,0 236510.5,2340100.2,0 236510.5,2340120.2,0 236500.5,2340120.2,0 236500.5,2340100.2,0"));
+      const sinCoordenadas = kml("<Placemark><name>Nada</name></Placemark>");
+      let grande = poli("Contorno", rect(-20, -20, 1260, 1100)); // 100 manzanas de 50 lotes = 5,000 lotes
+      for (let m = 0; m < 100; m++) grande += "<Folder><name>Manzana " + (m + 1) + "</name>" + manzana(m + 1, (m % 5) * 250, Math.floor(m / 5) * 52, 25, (mz, l) => "Lote " + l) + "</Folder>";
+      grande = kml(grande);
+      const zlib = require("zlib"), crc32 = (b) => { let c = ~0; for (const x of b) { c ^= x; for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xEDB88320 & -(c & 1)); } return ~c >>> 0; };
+      const kmz = (texto) => { // KMZ = ZIP con doc.kml comprimido, como lo exporta Google Earth
+        const datos = Buffer.from(texto, "utf8"), comp = zlib.deflateRawSync(datos), nombre = Buffer.from("doc.kml"), crc = crc32(datos);
+        const loc = Buffer.alloc(30); loc.writeUInt32LE(0x04034b50, 0); loc.writeUInt16LE(20, 4); loc.writeUInt16LE(8, 8); loc.writeUInt32LE(crc, 14); loc.writeUInt32LE(comp.length, 18); loc.writeUInt32LE(datos.length, 22); loc.writeUInt16LE(nombre.length, 26);
+        const cen = Buffer.alloc(46); cen.writeUInt32LE(0x02014b50, 0); cen.writeUInt16LE(20, 4); cen.writeUInt16LE(20, 6); cen.writeUInt16LE(8, 10); cen.writeUInt32LE(crc, 16); cen.writeUInt32LE(comp.length, 20); cen.writeUInt32LE(datos.length, 24); cen.writeUInt16LE(nombre.length, 28); cen.writeUInt32LE(0, 42);
+        const fin = Buffer.alloc(22); fin.writeUInt32LE(0x06054b50, 0); fin.writeUInt16LE(1, 8); fin.writeUInt16LE(1, 10); fin.writeUInt32LE(46 + nombre.length, 12); fin.writeUInt32LE(30 + nombre.length + comp.length, 16);
+        return Buffer.concat([loc, nombre, comp, cen, nombre, fin]);
+      };
+      const n = await pagina(DUENO, { permissions: ["clipboard-read", "clipboard-write"] }), u = await pagina("sin-ubicacion@prueba.mx");
+      // El satélite de prueba: mosaicos de un solo color servidos aquí mismo (no se toca al proveedor)
+      const { PNG } = require(LIB.pngjs), mosaico = new PNG({ width: 64, height: 64 }); for (let i = 0; i < mosaico.data.length; i += 4) { mosaico.data[i] = 46; mosaico.data[i + 1] = 62; mosaico.data[i + 2] = 40; mosaico.data[i + 3] = 255; }
+      const pngMosaico = PNG.sync.write(mosaico); let mosaicos = 0, satFalla = false;
+      const satelite = (p) => p.route(/static-map-tiles-api\.arcgis\.com/, (r) => { if (satFalla) return r.fulfill({ status: 403, contentType: "application/json", body: '{"error":{"code":403}}' }); if (/\/tile\/\d+\/\d+\/\d+/.test(r.request().url())) { mosaicos++; return r.fulfill({ status: 200, contentType: "image/png", body: pngMosaico }); } return r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ copyrightText: "Esri, Maxar (prueba)" }) }); });
+      try {
+        await satelite(n);
+        await nuevoTour(n, "Lomas del Satélite"); const id = await idTour(n);
+        await n.click('#nav button:has-text("Media")'); await n.waitForTimeout(500);
+        exige(await n.isVisible('#subtabs button:has-text("Ubicación")'), "el dueño no ve Media → Ubicación");
+        await n.click('#subtabs button:has-text("Ubicación")'); await n.waitForTimeout(1500);
+        exige(await n.waitForSelector('.guia-tarjeta:has-text("satélite")', { timeout: 6000 }).then(() => true).catch(() => false), "la primera vez no salió el tutorial de Ubicación");
+        await pasarGuias(n);
+        exige(await n.isVisible("#ub-soltar") && /KMZ/.test(await n.textContent("#ub-subir h3")), "sin archivo no sale la tarjeta para subir el KMZ");
+        exige(await n.isVisible("#ub-sin-sat"), "sin la llave del mapa debe avisar que el satélite aún no está conectado");
+        // 1) La guía «Cómo debe venir tu KMZ», con el botón para copiarle las instrucciones al ingeniero
+        await n.click('#ub-form [data-ub="guia"]'); await n.waitForTimeout(400);
+        exige(await n.isVisible("#dlg-ub[open]") && (await n.locator("#dlg-ub .ub-pide li").count()) === 5, "la guía del KMZ no abre con sus 5 puntos");
+        const guia = await n.textContent("#dlg-ub");
+        exige(/Cómo debe venir tu KMZ/.test(guia) && /contorno/i.test(guia) && /polígono cerrado/.test(guia) && /MZ-59-13/.test(guia) && /Mz 59 Lote 13/.test(guia) && /áreas verdes/.test(guia) && /WGS84/.test(guia) && /Google Earth/.test(guia), "la guía no pide lo que debe (contorno, lotes cerrados, nombre, capas, WGS84): " + guia.slice(0, 200));
+        await n.click('#dlg-ub [data-ubg="copiar"]'); await n.waitForTimeout(400);
+        const copiado = await n.evaluate(() => navigator.clipboard.readText());
+        exige(/Lomas del Satélite/.test(copiado) && /1\. El contorno del terreno/.test(copiado) && /MZ-59-13/.test(copiado) && /5\. Coordenadas reales \(WGS84\)/.test(copiado), "«Copiar instrucciones para mi ingeniero» no dejó las instrucciones en el portapapeles: " + copiado.slice(0, 160));
+        exige(/copiadas/.test(await n.textContent('#dlg-ub [data-ubg="copiar"]')) && /^https:\/\/wa\.me\/\?text=/.test(await n.getAttribute('#dlg-ub [data-ubg="wa"]', "href")), "la guía no confirma la copia o no trae el botón de WhatsApp");
+        await n.click('#dlg-ub [data-ubg="cerrar"]'); await n.waitForTimeout(300);
+        exige(!(await n.isVisible("#dlg-ub[open]")), "la guía no se cierra");
+        // 2) Archivos malos: mensaje claro, sin errores raros y sin guardar nada
+        const subir = async (nombre, buffer, espera) => { await n.setInputFiles("#ub-archivo", { name: nombre, mimeType: "application/octet-stream", buffer }); await n.waitForTimeout(espera || 1500); };
+        const error = () => n.textContent("#ub-error", { timeout: 4000 }).catch(() => "");
+        await subir("vacio.kmz", Buffer.alloc(0));
+        exige(/vacío/.test(await error()), "un archivo vacío no da un mensaje claro: " + (await error()));
+        await subir("danado.kmz", Buffer.concat([Buffer.from([0x50, 0x4b, 3, 4]), Buffer.alloc(300, 7)]));
+        exige(/dañado|No se pudo leer/.test(await error()), "un KMZ dañado no da un mensaje claro: " + (await error()));
+        await subir("cortado.kmz", kmz(completo).subarray(0, 400));
+        exige(/dañado|No se pudo leer/.test(await error()), "un KMZ cortado no da un mensaje claro: " + (await error()));
+        await subir("foto.kmz", pngMosaico);
+        exige(/no es un KMZ ni un KML/.test(await error()), "un archivo que no es KMZ no da un mensaje claro: " + (await error()));
+        await subir("roto.kml", Buffer.from("<kml><Document><Placemark><name>a</name>"));
+        exige(/dañado o incompleto/.test(await error()), "un KML incompleto no da un mensaje claro: " + (await error()));
+        await subir("nada.kml", Buffer.from(sinCoordenadas));
+        exige(/no trae coordenadas/.test(await error()), "un archivo sin coordenadas no da un mensaje claro: " + (await error()));
+        await subir("utm.kml", Buffer.from(enUTM));
+        exige(/WGS84/.test(await error()) && /UTM/.test(await error()), "un archivo en UTM no explica que faltan las coordenadas de Google Earth: " + (await error()));
+        await subir("lineas.kml", Buffer.from(kml(linea("Eje", ll(0, 0) + " " + ll(50, 0)))));
+        exige(/líneas sueltas/.test(await error()), "un archivo de puras líneas abiertas no lo explica: " + (await error()));
+        exige(!(await api(n, "api/tours/" + id)).d.proyecto.ubicacion && await n.isVisible("#ub-soltar"), "un archivo malo dejó algo guardado");
+        exige(!n.errs.length, "un archivo malo tronó la página: " + n.errs.join(" | ").slice(0, 200));
+        // 3) Solo el contorno: se muestra y avisa que faltan los lotes
+        const fr = n.frameLocator("#ub-iframe"), marco = () => n.frames().find((f) => /\/mapa(#|$)/.test(f.url()));
+        const estado = () => marco().evaluate(() => window.__mapa.estado());
+        const revision = () => n.$$eval("#ub-revision .ub-rev li", (l) => l.map((x) => x.dataset.e + ":" + x.querySelector("b").textContent));
+        await subir("contorno.kmz", kmz(soloContorno), 2500);
+        let rev = await revision();
+        exige(rev.includes("ok:Ubicación encontrada") && rev.includes("ok:Contorno del terreno") && rev.includes("falta:No trae lotes (solo el contorno)") && rev.length === 3, "la revisión de un KMZ con solo el contorno no dice lo que trae y lo que falta: " + rev.join(" · "));
+        exige(/6 hectáreas/.test(await n.textContent("#ub-revision")) && /21\.15\d+, -101\.69\d+/.test(await n.textContent("#ub-revision")), "la revisión no da la superficie del contorno o dónde está: " + (await n.textContent("#ub-revision")).slice(0, 200));
+        await n.waitForFunction(() => { const f = document.getElementById("ub-iframe"); try { return f.contentWindow.__mapa.estado().caja; } catch (e) { return false; } }, null, { timeout: 15000 });
+        let e = await estado();
+        exige(e.lotes === 0 && Math.abs(e.caja[0] - LON0) < 1e-4 && Math.abs(e.caja[3] - (LAT0 + 200 / KY)) < 1e-4, "el contorno no quedó en su lugar en el mapa: " + JSON.stringify(e.caja));
+        exige((await fr.locator("#cab-nombre").textContent()) === "Lomas del Satélite" && /google\.com\/maps\/dir\/\?api=1&destination=21\.15\d+,-101\.69\d+/.test(await fr.locator("#llegar").getAttribute("href")), "el mapa no trae el nombre del desarrollo o el botón «Cómo llegar»");
+        // 4) Lotes sin nombre y sin contorno: se muestran igual y avisa
+        await subir("sin-nombre.kmz", kmz(sinNombre), 2500); rev = await revision();
+        exige(rev.includes("ojo:No trae el contorno del terreno") && rev.includes("ok:20 lotes") && rev.includes("ojo:Ningún lote trae nombre"), "la revisión de lotes sin nombre no avisa: " + rev.join(" · "));
+        await n.waitForTimeout(800); e = await estado();
+        exige(e.lotes === 20 && e.rotulosLotes === 0, "los lotes sin nombre no se muestran en el mapa (o salen con número): " + JSON.stringify(e));
+        // 5) KML suelto, hecho en AutoCAD: líneas cerradas que sí son lotes y una línea abierta que se ignora
+        await subir("de-cad.kml", Buffer.from(deCad), 2500); rev = await revision();
+        exige(rev.includes("ok:4 lotes") && rev.includes("ok:Todos los lotes traen nombre") && rev.includes("ojo:Se ignoró 1 línea suelta o polígono abierto"), "un KML con líneas cerradas no se leyó como lotes: " + rev.join(" · "));
+        exige(/en 1 manzana/.test(await n.textContent("#ub-revision")), "la manzana de la carpeta («Manzana 7») no se leyó");
+        await subir("raro.kml", Buffer.from(raro), 2500); rev = await revision();
+        exige(rev.join("|") === "ok:Ubicación encontrada|ok:Contorno del terreno|ok:4 lotes|ok:Todos los lotes traen nombre|ok:Trae 1 área verde y 2 amenidades|ojo:Se ignoró 1 polígono repetido", "un archivo con la orilla de la manzana, un lote repetido y capas no se leyó bien: " + rev.join(" | "));
+        await n.waitForTimeout(1200);
+        const dRaro = (await api(n, "t/" + id + "/" + (await api(n, "api/tours/" + id)).d.proyecto.ubicacion.archivo)).d;
+        exige(dRaro.otras.filter((o) => o.t === "manzana").length === 1 && dRaro.lotes.every((l) => l.mz === "5") && dRaro.lotes.map((l) => l.n).sort().join("") === "1234", "la orilla de la manzana se contó como lote o los lotes no traen su manzana: " + JSON.stringify(dRaro.lotes.map((l) => [l.mz, l.n])));
+        // 6) El archivo completo: contorno, 36 lotes con «MZ-59-13», una calle y un área verde en sus capas, 2 líneas y un punto
+        await subir("lomas.kmz", kmz(completo), 2500); rev = await revision();
+        exige(rev.join("|") === "ok:Ubicación encontrada|ok:Contorno del terreno|ok:36 lotes|ok:Todos los lotes traen nombre|ok:Trae 1 calle y 1 área verde|ojo:Se ignoraron 2 líneas sueltas o polígonos abiertos", "la revisión del KMZ completo no coincide: " + rev.join(" | "));
+        exige(/en 3 manzanas/.test(await n.textContent("#ub-revision")) && /lomas\.kmz/.test(await n.textContent("#ub-revision")), "la revisión no cuenta las 3 manzanas o no dice el archivo");
+        await n.waitForTimeout(1200);
+        const guardado = (await api(n, "api/tours/" + id)).d.proyecto.ubicacion;
+        exige(guardado && /^archivos\/ubicacion-[a-z0-9]+\.json$/.test(guardado.archivo) && guardado.resumen.lotes === 36 && guardado.activa === true, "la ubicación no se guardó en el proyecto: " + JSON.stringify(guardado).slice(0, 200));
+        const datos = (await api(n, "t/" + id + "/" + guardado.archivo)).d;
+        exige(datos.lotes.length === 36 && datos.contorno.length === 1 && datos.lotes.some((l) => l.n === "12" && l.mz === "59") && datos.lotes.some((l) => l.n === "7" && l.mz === "61") && datos.otras.filter((o) => o.t === "calle").length === 1 && datos.otras.filter((o) => o.t === "verde").length === 1, "el plano guardado no trae los lotes con su manzana y número, la calle y el área verde");
+        // el mapa: números de lote de cerca; al alejar se cambian por las manzanas y luego nada
+        e = await estado();
+        exige(e.lotes === 36 && e.zoom >= e.zLote && e.rotulosLotes >= 30, "de cerca no salen los números de lote: " + JSON.stringify(e));
+        await marco().evaluate((z) => window.__mapa.map.jumpTo({ zoom: z }), (e.zLote + e.zMz) / 2); await n.waitForTimeout(900); let e2 = await estado();
+        exige(e2.rotulosLotes === 0 && e2.rotulosMz === 3, "al alejar deben irse los números de lote y quedar las 3 manzanas: " + JSON.stringify(e2));
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "ubicacion-manzanas.png") });
+        await marco().evaluate((z) => window.__mapa.map.jumpTo({ zoom: z }), e.zMz - 1.5); await n.waitForTimeout(900); e2 = await estado();
+        exige(e2.rotulosLotes === 0 && e2.rotulosMz === 0, "de lejos no debe salir ningún número: " + JSON.stringify(e2));
+        // el pulso: al mover el mapa, el contorno late
+        const caja = await n.locator("#ub-iframe").boundingBox(), cx = caja.x + caja.width / 2, cy = caja.y + caja.height / 2, antes = e2.pulsos;
+        await n.mouse.move(cx, cy); await n.mouse.down(); await n.mouse.move(cx + 60, cy + 30, { steps: 6 }); await n.waitForTimeout(250); await n.mouse.up();
+        await n.waitForFunction((k) => { try { return document.getElementById("ub-iframe").contentWindow.__mapa.estado().pulsos > k; } catch (x) { return false; } }, antes, { timeout: 4000 }).catch(() => {}); await n.waitForTimeout(250);
+        const halo = await marco().evaluate(() => window.__mapa.map.getPaintProperty("contorno-halo", "line-opacity"));
+        exige((await estado()).pulsos === antes + 1 && halo > 0.05, "al mover el mapa el contorno no late (pulsos " + (await estado()).pulsos + ", halo " + halo + ")");
+        await n.waitForTimeout(1300);
+        exige((await marco().evaluate(() => window.__mapa.map.getPaintProperty("contorno-halo", "line-opacity"))) < 0.02, "el pulso no se apaga solo");
+        await fr.locator('[data-c="centrar"]').click(); await n.waitForTimeout(1300);
+        exige(Math.abs((await estado()).zoom - e.zoom) < 0.05, "«Ver todo el terreno» no regresa al encuadre del desarrollo");
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "ubicacion-editor.png") });
+        // 7) La llave del mapa: la pega el dueño en su panel; con ella sale el satélite (aquí, mosaicos de prueba)
+        exige(e.conSat === false && mosaicos === 0, "sin llave no debe pedirse el satélite");
+        exige((await api(u, "api/admin/mapa", J("PUT", { esri: "llave-de-prueba-0123456789-abcdef" }))).s !== 200, "una cuenta normal pudo cambiar la llave del mapa");
+        exige((await api(n, "api/admin/mapa", J("PUT", { esri: "corta" }))).s === 400, "una llave que no lo parece debe rechazarse");
+        // la pega en su Panel de dueño → Laboratorio, en el renglón de «Ubicación en satélite»
+        await n.click('#nav button:has-text("Mis Tours")'); await n.waitForTimeout(900); await n.click("#ver-cuentas"); await n.waitForTimeout(900);
+        await n.click('[data-dueno="laboratorio"]'); await n.waitForSelector('[data-lab="ubicacion"] [data-lab-llave]', { timeout: 8000 });
+        exige((await n.getAttribute('[data-lab="ubicacion"] [data-lab-llave]', "type")) === "password" && /Pega aquí/.test(await n.getAttribute('[data-lab="ubicacion"] [data-lab-llave]', "placeholder")), "el panel no trae dónde pegar la llave del mapa (escondida)");
+        await n.fill('[data-lab="ubicacion"] [data-lab-llave]', "llave-de-prueba-0123456789-abcdef"); await n.click('[data-lab="ubicacion"] [data-lab-llave-guardar]'); await n.waitForTimeout(1500);
+        exige(/termina en cdef/.test(await n.getAttribute('[data-lab="ubicacion"] [data-lab-llave]', "placeholder")) && (await n.inputValue('[data-lab="ubicacion"] [data-lab-llave]')) === "", "el panel no confirma que la llave quedó guardada");
+        await n.goto(ESTUDIO + "/#t=" + id);
+        const lab = (await api(n, "api/admin/laboratorio")).d;
+        exige(lab.mapa && lab.mapa.hay === true && /cdef$/.test(lab.mapa.fin) && !/llave-de-prueba/.test(JSON.stringify(lab)), "el panel no dice que la llave está guardada (o la enseña completa)");
+        exige((await fetch(ESTUDIO + "/api/mapa")).status === 401 && !/llave-de-prueba/.test(await (await fetch(ESTUDIO + "/mapa")).text()) && (await api(u, "api/mapa")).d.sat === "", "el satélite se le da a quien no tiene sesión o no tiene la función");
+        await n.reload(); await n.waitForTimeout(2500); await cerrarAnuncio(n);
+        await n.click('#nav button:has-text("Media")'); await n.waitForTimeout(400); await n.click('#subtabs button:has-text("Ubicación")');
+        await n.waitForFunction(() => { const f = document.getElementById("ub-iframe"); try { return f.contentWindow.__mapa.estado().lotes === 36; } catch (e) { return false; } }, null, { timeout: 15000 });
+        await n.waitForTimeout(1800); e = await estado();
+        exige(e.conSat === true && mosaicos > 0 && !(await n.isVisible("#ub-sin-sat")), "con la llave guardada no se pidió el satélite: " + JSON.stringify(e) + " · mosaicos " + mosaicos);
+        exige(/Powered by Esri/.test(await fr.locator("#atrib").textContent()) && await fr.locator("#atrib").isVisible(), "el mapa no da el crédito del satélite (Powered by Esri)");
+        await fr.locator('[data-c="sat"]').click(); await n.waitForTimeout(400);
+        exige((await estado()).conSat === false && (await marco().evaluate(() => window.__mapa.map.getLayoutProperty("sat", "visibility"))) === "none", "el botón Satélite no lo apaga");
+        await fr.locator('[data-c="sat"]').click(); await n.waitForTimeout(400);
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "ubicacion-satelite.png") });
+        // 8) Amarrar al satélite con 2 puntos: una esquina del plano y dónde va; aquí el plano se recorre 20 m al este y 12 m al norte
+        const aPantalla = async (lng, lat) => { const q = await marco().evaluate(([a, b]) => { const p = window.__mapa.map.project([a, b]); return [p.x, p.y]; }, [lng, lat]); const c = await n.locator("#ub-iframe").boundingBox(); return [c.x + q[0], c.y + q[1]]; };
+        const esquina = (x, y) => [LON0 + x / KX, LAT0 + y / KY], caja0 = (await estado()).caja;
+        await n.click('#ub-form [data-ub="amarrar"]'); await n.waitForTimeout(600);
+        exige(await fr.locator("#am").isVisible() && /esquina de tu plano/.test(await fr.locator("#am-txt").textContent()), "«Amarrar al satélite» no abre sus pasos en el mapa");
+        for (const [x, y, ya] of [[-15, -15, 0], [235, -15, 1]]) { // la segunda esquina ya se ve recorrida por el primer punto
+          const a = await aPantalla(...esquina(x + ya * 20, y + ya * 12)), b = await aPantalla(...esquina(x + 20, y + 12));
+          await n.mouse.click(a[0] + 3, a[1] - 2); await n.waitForTimeout(350);
+          exige(/dónde va esa esquina/.test(await fr.locator("#am-txt").textContent()), "al tocar una esquina del plano no pide su lugar en el satélite");
+          await n.mouse.click(b[0], b[1]); await n.waitForTimeout(500);
+        }
+        exige((await estado()).pares === 2 && /amarrado con 2 puntos/.test(await fr.locator("#am-txt").textContent()), "el amarre no tomó los 2 puntos");
+        await fr.locator('[data-am="listo"]').click(); await n.waitForTimeout(1500);
+        const caja1 = (await estado()).caja, dx = (caja1[0] - caja0[0]) * KX, dy = (caja1[1] - caja0[1]) * KY, ancho = ((caja1[2] - caja1[0]) / (caja0[2] - caja0[0]));
+        exige(Math.abs(dx - 20) < 1.5 && Math.abs(dy - 12) < 1.5 && Math.abs(ancho - 1) < 0.02, "el plano no quedó amarrado donde se le dijo: se movió " + dx.toFixed(1) + " m y " + dy.toFixed(1) + " m (tamaño × " + ancho.toFixed(3) + ")");
+        exige(/Amarrado con 2 puntos/.test(await n.textContent("#ub-amarrado")) && (await api(n, "api/tours/" + id)).d.proyecto.ubicacion.ajuste.pares.length === 2, "el amarre no se guardó en el proyecto");
+        // 9) Publicada: /<tour>/mapa, en un iPhone
+        exige((await n.textContent("#ub-link")).endsWith("/" + id + "/mapa"), "el link del mapa no es /<tour>/mapa");
+        exige((await fetch(TOURS + "/" + id + "/mapa")).status === 404, "el mapa ya existe sin haber publicado el tour");
+        exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        const r = await fetch(TOURS + "/" + id + "/mapa"), html = await r.text();
+        exige(r.status === 200 && /<title>Lomas del Satélite · Ubicación<\/title>/.test(html) && /name="mz-sat" content="https:\/\/static-map-tiles-api\.arcgis\.com\/[^"]+\/tile\/\{z\}\/\{y\}\/\{x\}\?token=llave-de-prueba/.test(html), "el servidor no da el mapa con el nombre del desarrollo y su satélite");
+        const ctx = await navegador.newContext(Object.assign({}, devices["iPhone 13"], { acceptDownloads: false })), c = await ctx.newPage(); const errs = []; c.on("pageerror", (x) => errs.push(x.message));
+        await c.route(/fonts\.(googleapis|gstatic)\.com/, (x) => x.abort()); await satelite(c);
+        const est = () => c.evaluate(() => window.__mapa.estado());
+        try {
+          await c.goto(TOURS + "/" + id + "/mapa"); await c.waitForFunction(() => window.__mapa && window.__mapa.estado().lotes === 36, null, { timeout: 20000 }); await c.waitForTimeout(1500);
+          let m = await est();
+          exige(m.conSat && m.pares === 2 && Math.abs((m.caja[0] - caja1[0]) * KX) < 0.5, "el mapa publicado no trae el satélite o el amarre: " + JSON.stringify(m));
+          exige((await c.textContent("#cab-nombre")) === "Lomas del Satélite" && await c.isVisible("#llegar") && await c.isVisible('[data-c="mas"]'), "en el celular faltan el nombre, «Cómo llegar» o los botones del mapa");
+          exige((await c.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)), "el mapa se sale de la pantalla del celular");
+          await c.tap('[data-c="menos"]'); await c.waitForTimeout(700); const z1 = (await est()).zoom;
+          exige(z1 < m.zoom - 0.5 && (await est()).pulsos >= 1, "los botones de acercar y alejar no mueven el mapa en el celular (o no late)");
+          if (process.env.CAPTURAS) await c.screenshot({ path: path.join(process.env.CAPTURAS, "ubicacion-cel.png") });
+          exige(!errs.length, "errores en el mapa publicado: " + errs.join(" | ").slice(0, 200));
+          // 10) 5,000 lotes: se lee en un momento, el mapa no carga miles de números y de cerca solo pinta los que caben
+          await n.click('#nav button:has-text("Media")'); await n.waitForTimeout(300); await n.click('#subtabs button:has-text("Ubicación")'); await n.waitForTimeout(600);
+          const t0 = Date.now(); await subir("grande.kmz", kmz(grande), 300);
+          await n.waitForFunction(() => /5,000 lotes/.test((document.querySelector("#ub-revision") || {}).textContent || ""), null, { timeout: 30000 });
+          const tLeer = Date.now() - t0; rev = await revision();
+          exige(rev.includes("ok:5,000 lotes") && rev.includes("ok:Todos los lotes traen nombre") && rev.includes("ok:Contorno del terreno") && /en 100 manzanas/.test(await n.textContent("#ub-revision")), "el KMZ de 5,000 lotes no se leyó completo: " + rev.join(" · "));
+          exige(tLeer < 20000, "leer 5,000 lotes tardó " + (tLeer / 1000).toFixed(1) + " s");
+          await n.waitForFunction(() => { const f = document.getElementById("ub-iframe"); try { return f.contentWindow.__mapa.estado().lotes === 5000; } catch (e) { return false; } }, null, { timeout: 20000 });
+          await n.waitForTimeout(1500); e = await estado();
+          exige(e.rotulosLotes === 0 && e.zoom < e.zLote - 1, "con 5,000 lotes, el mapa completo no debe pintar números de lote: " + JSON.stringify(e));
+          exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar el plano grande");
+          const t1 = Date.now(); await c.goto(TOURS + "/" + id + "/mapa"); await c.waitForFunction(() => window.__mapa && window.__mapa.estado().lotes === 5000 && window.__mapa.map.loaded(), null, { timeout: 30000 }); const tAbrir = Date.now() - t1;
+          await c.waitForTimeout(800); m = await est();
+          exige(m.rotulosLotes === 0 && m.rotulosMz === 0 && m.pares === 0, "en el celular, 5,000 lotes vistos completos no deben traer números (ni el amarre del plano anterior): " + JSON.stringify(m));
+          // se acerca a una manzana: salen sus números, pocos, y pintarlos no cuesta
+          await c.evaluate(() => { const E = window.__mapa.estado(), k = E.caja; window.__mapa.map.jumpTo({ center: [k[0] + (k[2] - k[0]) * 0.31, k[1] + (k[3] - k[1]) * 0.42], zoom: E.zLote + 0.4 }); }); await c.waitForTimeout(1500); m = await est();
+          exige(m.rotulosLotes >= 6 && m.rotulosLotes < 400 && m.msPintar < 60, "de cerca no salen los números de lote o pintarlos cuesta: " + JSON.stringify(m));
+          // se mueve el mapa 1.5 s y se cuentan los cuadros (en esta máquina la tarjeta de video es simulada: solo se cuida que no se congele)
+          const cuadros = await c.evaluate(() => new Promise((ok) => { let k = 0, t = performance.now(); const f = () => { k++; if (performance.now() - t < 1500) requestAnimationFrame(f); else ok(k); }; window.__mapa.map.easeTo({ center: [window.__mapa.estado().caja[0] + 0.004, window.__mapa.estado().caja[1] + 0.003], zoom: window.__mapa.estado().zLote - 1.2, duration: 1400 }); requestAnimationFrame(f); }));
+          console.log("    5,000 lotes: leer y subir " + (tLeer / 1000).toFixed(1) + " s · abrir en celular " + (tAbrir / 1000).toFixed(1) + " s · " + cuadros + " cuadros en 1.5 s moviéndose · números a la vista " + m.rotulosLotes + " (pintarlos " + m.msPintar.toFixed(1) + " ms)");
+          exige(cuadros >= 6 && tAbrir < 25000, "el mapa de 5,000 lotes se congela en el celular (" + cuadros + " cuadros en 1.5 s, abrir " + (tAbrir / 1000).toFixed(1) + " s)");
+          if (process.env.CAPTURAS) await c.screenshot({ path: path.join(process.env.CAPTURAS, "ubicacion-5000-cel.png") });
+          exige(!errs.length, "errores en el mapa de 5,000 lotes: " + errs.join(" | ").slice(0, 200));
+          // 11) Apagada no se publica; y si el proveedor del satélite falla, el plano se sigue viendo
+          await n.uncheck("[data-ub-activa]"); await n.waitForTimeout(1500);
+          exige(!(await n.isVisible("#ub-link")) && (await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200 && (await fetch(TOURS + "/" + id + "/mapa")).status === 404, "con «Publicar la ubicación» apagada el mapa sigue publicado");
+          await n.check("[data-ub-activa]"); await n.waitForTimeout(1500); await api(n, "api/tours/" + id + "/publicar", { method: "POST" });
+          satFalla = true;
+          await c.goto(TOURS + "/" + id + "/mapa"); await c.waitForFunction(() => window.__mapa && window.__mapa.estado().lotes === 5000, null, { timeout: 30000 });
+          await c.waitForFunction(() => window.__mapa.estado().conSat === false, null, { timeout: 15000 }).catch(() => {});
+          exige((await est()).conSat === false && /satelital no está disponible/.test(await c.textContent("#aviso")) && !errs.length, "si el satélite falla, el mapa no se queda con el plano solo y su aviso: " + JSON.stringify(await est()) + " " + errs.join(" | ").slice(0, 120));
+        } finally { satFalla = false; await ctx.close(); }
+        // 12) Quitar: pide confirmar y deja la sección como al inicio
+        await n.click('#ub-form [data-ub="quitar"]'); await n.waitForTimeout(300);
+        exige(/Toca otra vez/.test(await n.textContent('#ub-form [data-ub="quitar"]')) && await n.isVisible("#ub-revision"), "«Quitar» no pide confirmar");
+        await n.click('#ub-form [data-ub="quitar"]'); await n.waitForTimeout(1500);
+        exige(await n.isVisible("#ub-soltar") && !(await api(n, "api/tours/" + id)).d.proyecto.ubicacion, "«Quitar» no dejó la sección como al inicio");
+        exige(/Aún no hay plano/.test(await fr.locator(".vacio").textContent()), "al quitar el plano, el mapa no lo dice");
+        // Nace en el Laboratorio («Solo yo»): una cuenta normal no lo ve ni lo puede publicar
+        await nuevoTour(u, "Sin ubicación"); const iu = await idTour(u);
+        await u.click('#nav button:has-text("Media")'); await u.waitForTimeout(500);
+        exige(!(await u.isVisible('#subtabs button:has-text("Ubicación")')), "una cuenta normal ya ve Media → Ubicación (debe nacer Solo yo)");
+        const du = (await api(u, "api/tours/" + iu)).d; du.proyecto.ubicacion = { archivo: guardado.archivo, nombre: "x.kmz", activa: true, ajuste: { pares: [] } };
+        exige((await api(u, "api/tours/" + iu, J("PUT", du))).s === 200 && (await api(u, "api/tours/" + iu + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar el tour de la cuenta normal");
+        exige((await fetch(TOURS + "/" + iu + "/mapa")).status === 404, "una cuenta sin la función publicó su mapa");
+        exige(!n.errs.length && !u.errs.length, "errores en el estudio: " + n.errs.concat(u.errs).join(" | ").slice(0, 200));
+      } finally {
+        await api(n, "api/admin/mapa", J("PUT", { esri: "" })).catch(() => {});
         await u.context().close(); await n.context().close();
       }
     });

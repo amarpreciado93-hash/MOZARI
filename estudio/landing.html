@@ -316,14 +316,26 @@
     marcaPrueba(!!P.marcaMozari);
     const plantilla = L.plantilla === "propiedad" ? "propiedad" : "lotes";
     const S = Object.assign({ lotes: true, recorrido: true, proyecto: true, galeria: true, ubicacion: true, visita: true }, L.secciones || {});
+    // WhatsApp con la lada de su país (wa.me pide el número completo). Reporte de Javier (Colombia, 18 nov 2026): antes
+    // todo número de 10 dígitos se tomaba como de México (+52). Sin país elegido (landings de antes) sigue igual.
+    const numeroWA = (c) => {
+      const crudo = String(c.whatsapp || ""), p = String(c.pais || "").replace(/\D/g, "");
+      let d = crudo.replace(/\D/g, ""); if (!d) return "";
+      if (/^\s*\+/.test(crudo) || p === "0") return d; // lo escribió con su lada, o eligió «Otro país»
+      if (!p) return d.length === 10 ? "52" + d : d;
+      const base = p === "549" ? "54" : p; // Argentina: los celulares van con 9 después del 54
+      if (d.length > 10 && d.startsWith(base)) return p === "549" && !d.startsWith("549") ? "549" + d.slice(2) : d;
+      d = d.replace(/^0+/, ""); if (p === "549" && d.length === 11 && d[0] === "9") d = d.slice(1);
+      return p + d;
+    };
     const portada = L.portada || {}, proy = L.proyecto || {}, ubi = L.ubicacion || {}, con = L.contacto || {}, pagos = Object.assign({ mostrar: true }, L.pagos || {});
     const planes = (Array.isArray(pagos.planes) && pagos.planes.length ? pagos.planes : PLANES_DEF).map((x) => ({ t: String(x.t || (x.meses ? x.meses + " meses" : "Contado")), meses: Math.max(0, Math.round(num(x.meses))), ajuste: Number(x.ajuste) || 0 })).slice(0, 4);
     const engMin = Math.min(90, Math.max(0, Math.round(num(pagos.engMin) || 20))), engMax = Math.max(engMin, Math.min(95, Math.round(num(pagos.engMax) || 60)));
     const archivo = (a) => (!a ? "" : /^(https?:|data:|blob:)/.test(a) ? a : base + a);
     const fotos = (p.media && Array.isArray(p.media.fotos) ? p.media.fotos : []).filter((f) => f && f.archivo);
     const foto0 = archivo(portada.foto) || archivo(P.thumbnail) || (fotos[0] && archivo(fotos[0].archivo)) || (P.escenaInicial ? base + "escenas/" + P.escenaInicial + "/1/f/0/0.jpg" : "");
-    const telWA = String(con.whatsapp || "").replace(/\D/g, "");
-    const wa = (t) => (telWA ? "https://wa.me/" + (telWA.length === 10 ? "52" + telWA : telWA) + "?text=" + encodeURIComponent(t) : "#visita");
+    const telWA = numeroWA(con);
+    const wa = (t) => (telWA ? "https://wa.me/" + telWA + "?text=" + encodeURIComponent(t) : "#visita");
     const saludo = String(con.mensaje || "").trim() || "Hola, quiero información de " + nombre + ".";
     const lotes = plantilla === "lotes" && S.lotes ? lotesDe(p) : [];
     // Plantilla «Propiedad» con precio: una sola ficha (la casa) con la misma calculadora que los lotes
