@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -183,7 +183,7 @@ async function capasPesadas(p) {
   console.log("\nMozari · revisión completa\n");
   try {
     // Uno y luego el otro: comparten la misma copia de los datos y si arrancan juntos se estorban
-    arrancar("worker-estudio", ["--port", "8787", "--local-upstream", "localhost:8787"]); await listo(ESTUDIO + "/");
+    arrancar("worker-estudio", ["--port", "8787", "--local-upstream", "localhost:8787", "--local"]); await listo(ESTUDIO + "/"); // --local: sin la IA de Cloudflare (pediría sesión); el guion sale de prueba
     arrancar("worker-tours", ["--port", "8788", "--inspector-port", "9330"]); await listo(TOURS + "/");
     navegador = await chromium.launch();
 
@@ -4532,6 +4532,16 @@ async function capasPesadas(p) {
         await fr.locator('.plan-pago [data-plan="2"]').click(); await n.waitForTimeout(300);
         exige(decodeURIComponent(await fr.locator(".ficha .btn-wa").getAttribute("href")).includes("me interesa Laguna Landing, a 24 mensualidades"), "el WhatsApp de la casa no dice la forma de pago");
         exige(/Me interesa/.test(await fr.locator(".ficha .btn-wa").textContent()), "el botón de la casa no dice «Me interesa»");
+        // la moneda es la del tour (reporte de Jesús, Perú: salía «$» aunque su tour estaba en soles)
+        const monedaLd = async (m) => {
+          await n.click('#nav button:has-text("Panoramas")'); await n.waitForTimeout(400); await n.click('#subtabs button:has-text("Fichas técnicas")'); await n.waitForTimeout(1200); await pasarGuias(n);
+          await n.selectOption("#lx-moneda", m); await n.waitForTimeout(500);
+          await n.click('#nav button:has-text("Publicar")'); await n.waitForTimeout(400); await n.click('#subtabs button:has-text("Landing")'); await n.waitForTimeout(2200);
+          return fr.locator(".ficha .desglose").textContent().catch(() => "");
+        };
+        exige(/S\/ 4,850,000/.test(await monedaLd("PEN")), "con el tour en soles la landing no sale en soles (S/)");
+        exige(/US\$4,850,000/.test(await monedaLd("USD")), "con el tour en dólares la landing no lo distingue (US$)");
+        exige(/(^|[^S\/A-Z])\$4,850,000/.test(await monedaLd("MXN")), "al regresar a pesos la landing no sale con $");
         // una cuenta sin la función no ve la pestaña ni puede publicar landing aunque la meta a mano
         await nuevoTour(u, "Sin landing"); const iu = await idTour(u);
         await u.click('#nav button:has-text("Publicar")'); await u.waitForTimeout(500);
@@ -4794,6 +4804,161 @@ async function capasPesadas(p) {
         exige(!n.errs.length && !u.errs.length, "errores en el estudio: " + n.errs.concat(u.errs).join(" | ").slice(0, 200));
       } finally {
         await api(n, "api/admin/mapa", J("PUT", { esri: "" })).catch(() => {});
+        await u.context().close(); await n.context().close();
+      }
+    });
+    // Voz del tour, con guion (Amar, 18 nov 2026): «yo uso ChatGPT para crear el guion, ElevenLabs para generar la voz y todo lo
+    // edito en Premiere… ¿se podrá hacer algo así?». La primera versión hacía una voz por esfera en Media → Audios; Amar:
+    // «está súper escondida… debe de estar en Interfaz y que no se reproduzca en cada esfera, que se reproduzca en el tour
+    // general». Interfaz → «Voz del tour»: Mozari escribe el guion, una voz lo lee y suena cuando el tour empieza; sigue
+    // aunque se cambie de esfera, la música baja y los subtítulos pasan por frases. Aquí (DEV, sin llave) el guion y la voz
+    // son de prueba: no se llama a ningún proveedor. Cada plan tiene sus letras al mes y las notas de trabajo no se publican.
+    await paso("Voz del tour con guion (Laboratorio, nace Solo yo): en Interfaz Mozari escribe el guion y genera la voz; suena al empezar el tour, sigue al cambiar de esfera, baja la música y pasa sus subtítulos (también publicado)", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const { aVoz } = await import(path.join(RAIZ, "nube", "voces.js"));
+      exige(aVoz("Mz 5 Lt. 12 de 200 m2, a 5 min por Av. Roble") === "manzana 5 lote 12 de 200 metros cuadrados, a 5 minutos por avenida Roble", "las abreviaturas no se mandan a leer como se dicen: " + aVoz("Mz 5 Lt. 12 de 200 m2, a 5 min por Av. Roble"));
+      const medios = () => { window.__medios = []; const p = HTMLMediaElement.prototype.play; HTMLMediaElement.prototype.play = function () { if (!window.__medios.includes(this)) window.__medios.push(this); return p.apply(this, arguments); }; };
+      const tutoriales = async (p) => { const vistos = []; for (let i = 0, quieto = 0; i < 30 && quieto < 4; i++) { await p.waitForTimeout(700); if (await p.isVisible(".guia-tarjeta").catch(() => false)) { quieto = 0; vistos.push(await p.textContent(".guia-tarjeta")); await p.click('.guia-tarjeta [data-guia="seguir"]'); } else quieto++; } return vistos; };
+      const correoU = "sin-voz@prueba.mx", n = await pagina(DUENO), u = await pagina(correoU);
+      let t = null;
+      try {
+        await nuevoTour(n, "Lomas Encino"); await otraEsfera(n, "terraza", "#9bd", "#8a6"); const id = await idTour(n);
+        // música de fondo, para ver que baja mientras la voz habla
+        await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(500); await n.click('#subtabs button:has-text("Música")'); await n.waitForTimeout(500);
+        await n.setInputFiles("#m-archivo", { name: "fondo.wav", mimeType: "audio/wav", buffer: wavPrueba(40) }); await n.waitForTimeout(3000);
+        const usadas0 = (await api(n, "api/voz")).d.usadas;
+        // 1) Está a la vista, en Interfaz (ya no escondida en cada esfera de Media → Audios)
+        await n.click('#nav button:has-text("Interfaz")'); await n.waitForTimeout(2000); await tutoriales(n);
+        exige(await n.isVisible("#sk-voz-grupo #sk-voz-crear") && /Crear la voz del tour/.test(await n.textContent("#sk-voz-crear")) && /Voz del tour/.test(await n.textContent("#sk-voz-grupo > b")), "el dueño no ve «Voz del tour» en Interfaz");
+        exige((await n.$$eval("#sk-panel > .grupo", (l) => l.findIndex((g) => g.id === "sk-voz-grupo"))) === 1, "«Voz del tour» no está arriba en Interfaz (justo después de la plantilla)");
+        await n.click('#nav button:has-text("Media")'); await n.waitForTimeout(400); await n.click('#subtabs button:has-text("Audios")'); await n.waitForTimeout(1200); await tutoriales(n);
+        exige(!(await n.$("[data-au-crear]")), "sigue «Crear voz» en cada esfera de Media → Audios (la voz ahora es del tour)");
+        await n.click('#nav button:has-text("Interfaz")'); await n.waitForTimeout(1500);
+        await n.click("#sk-voz-crear"); await n.waitForSelector("#dlg-voz[open] .vz-voz", { timeout: 8000 });
+        exige((await n.locator("#dlg-voz .vz-voz").count()) === 2 && await n.isChecked('#dlg-voz input[name="vz-voz"][value="prueba-ana"]') && /Lomas Encino/.test(await n.textContent("#dlg-voz .etiq")), "la ventana no abre con las voces (la primera elegida) y el nombre del tour");
+        await n.click('#dlg-voz [data-vz="audio"]'); await n.waitForTimeout(300);
+        exige(/Primero escribe el guion/.test(await n.textContent("#vz-error").catch(() => "")), "sin guion debe pedirlo antes de generar la voz");
+        // 2) Mozari escribe el guion con lo que el usuario cuenta de su proyecto
+        const notas = "Desarrollo campestre a diez minutos de León";
+        await n.fill('#dlg-voz [data-vz-campo="notas"]', notas); await n.click('#dlg-voz [data-vz-largo="corta"]'); await n.waitForTimeout(200);
+        exige((await n.inputValue('#dlg-voz [data-vz-campo="notas"]')) === notas && (await n.getAttribute('#dlg-voz [data-vz-largo="corta"]', "aria-pressed")) === "true", "al elegir el largo se pierden las notas");
+        await n.click('#dlg-voz [data-vz="guion"]');
+        await n.waitForFunction(() => ((document.querySelector('#dlg-voz [data-vz-campo="texto"]') || {}).value || "").length > 20, null, { timeout: 10000 });
+        const guion = await n.inputValue('#dlg-voz [data-vz-campo="texto"]');
+        exige(guion.includes(notas) && guion.includes("Lomas Encino"), "el guion no sale de las notas y del nombre del tour: " + guion);
+        exige(/de 1,200 letras · unos \d+ segundos de voz/.test(await n.textContent("#vz-cuenta")) && /Escribir otro guion/.test(await n.textContent('#dlg-voz [data-vz="guion"]')), "no dice cuántas letras y segundos lleva el guion");
+        // 3) el guion se puede corregir a mano; se elige otra voz y se genera (un guion de varias frases, para los subtítulos)
+        const frases = ["Este es Lomas Encino, un lugar para vivir con calma.", "Está a diez minutos de la ciudad, rodeado de árboles.", "Aquí cada lote tiene vista abierta hacia la sierra.", "Recorre la casa club y quédate un rato en la terraza.", "Tómate tu tiempo y mira cada espacio a tu ritmo.", "Cuando quieras, escríbenos y te contamos lo demás."], mio = frases.join(" ");
+        await n.fill('#dlg-voz [data-vz-campo="texto"]', mio); await n.click('#dlg-voz .vz-voz:has-text("Luis")'); await n.waitForTimeout(200);
+        await n.click('#dlg-voz [data-vz="audio"]'); await n.waitForSelector("#vz-listo audio", { timeout: 15000 });
+        exige(/ya es la voz de tu tour/.test(await n.textContent("#vz-listo")) && /Generar otra vez/.test(await n.textContent('#dlg-voz [data-vz="audio"]')), "al terminar no avisa que la voz quedó en el tour");
+        exige((await n.$eval("#vz-listo audio", (a) => new Promise((ok) => { if (a.readyState >= 1) ok(a.duration); else { a.onloadedmetadata = () => ok(a.duration); a.onerror = () => ok(0); setTimeout(() => ok(0), 5000); } }))) > 5, "la voz generada no se puede oír en la ventana");
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "voz-ventana.png") });
+        await n.waitForTimeout(1500);
+        let d = (await api(n, "api/tours/" + id)).d, vt = d.proyecto.vozTour || {};
+        exige(/^archivos\/voz-[a-z0-9]+\.wav$/.test(vt.archivo || "") && vt.nombre === "Voz de Luis" && vt.texto === mio && vt.duracion > 5 && vt.peso > 8000, "el tour no quedó con su voz: " + JSON.stringify(vt).slice(0, 260));
+        exige(vt.ia && vt.ia.voz === "prueba-luis" && vt.ia.largo === "corta" && vt.ia.notas === notas && !d.escenas.some((e) => e.narracion), "no se guardó lo de trabajo (notas, voz y largo), o la voz se fue a una esfera");
+        const arch = await n.evaluate((r) => fetch(r).then(async (x) => [x.status, x.headers.get("content-type"), (await x.arrayBuffer()).byteLength]), "t/" + id + "/" + vt.archivo);
+        exige(arch[0] === 200 && /audio\/wav/.test(arch[1]) && arch[2] === vt.peso, "el archivo de la voz no quedó guardado en el tour: " + arch.join(" "));
+        exige((await api(n, "api/voz")).d.usadas === usadas0 + mio.length, "las letras usadas no se cuentan");
+        await n.click('#dlg-voz .ub-acc [data-vz="cerrar"]'); await n.waitForTimeout(500);
+        exige(!(await n.isVisible("#dlg-voz[open]")) && /Voz de Luis/.test(await n.textContent("#sk-voz-dato")) && /Editar/.test(await n.textContent("#sk-voz-crear")) && await n.isVisible("#sk-voz-oir") && await n.isVisible("#sk-voz-quitar"), "Interfaz no muestra la voz del tour ya creada");
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "voz-interfaz.png") });
+        await n.click("#sk-voz-crear"); await n.waitForSelector("#dlg-voz[open] .vz-voz", { timeout: 8000 }); await n.waitForTimeout(300);
+        exige((await n.inputValue('#dlg-voz [data-vz-campo="texto"]')) === mio && (await n.inputValue('#dlg-voz [data-vz-campo="notas"]')) === notas && await n.isChecked('#dlg-voz input[name="vz-voz"][value="prueba-luis"]'), "al reabrir no recuerda el guion, las notas y la voz");
+        await n.click("#dlg-voz .dp-cerrar"); await n.waitForTimeout(300);
+        // 4) límites: una voz no pasa de 1,200 letras y hace falta una voz de las que hay
+        let r = await api(n, "api/tours/" + id + "/voz/audio", J("POST", { texto: "a".repeat(1201), voz: "prueba-ana" }));
+        exige(r.s === 400 && /pasa de 1,200 letras/.test(r.d.error), "una voz de más de 1,200 letras debe rechazarse: " + r.s);
+        r = await api(n, "api/tours/" + id + "/voz/audio", J("POST", { texto: "Hola, este es el recorrido.", voz: "no-existe-123" }));
+        exige(r.s === 400 && /Elige una voz/.test(r.d.error), "una voz que no existe debe rechazarse");
+        // 5) En el tour: suena al empezar (o con el primer toque), baja la música, SIGUE al cambiar de esfera y pasa sus subtítulos
+        const probar = async (p, nombre) => {
+          await p.waitForSelector("#pv-ui .nr:not([hidden])", { timeout: 15000 });
+          await p.waitForSelector("#pv-carga", { state: "hidden", timeout: 15000 }); await p.waitForTimeout(400);
+          if (await p.$("#pv-ui .nr.espera")) await p.click("#pv-ui [data-voz]");
+          await p.waitForSelector('#pv-ui .nr.sonando[data-esfera="__tour"]', { timeout: 5000 });
+          exige((await p.textContent("#pv-ui .nr-sub")).trim() === frases[0], nombre + ": el subtítulo no empieza por la primera frase: " + (await p.textContent("#pv-ui .nr-sub")));
+          exige(!/·/.test(await p.textContent("#pv-ui .nr-tit")), nombre + ": la voz del tour no debe llevar el nombre de una esfera: " + (await p.textContent("#pv-ui .nr-tit")));
+          if (process.env.CAPTURAS) await p.screenshot({ path: path.join(process.env.CAPTURAS, "voz-" + nombre + ".png") });
+          const vol = () => p.evaluate(() => (window.__medios || []).filter((m) => /musica-/.test(m.src)).map((m) => [m.paused, +m.volume.toFixed(2)])[0] || null);
+          const voz = () => p.evaluate(() => (window.__medios || []).filter((m) => /voz-/.test(m.src)).map((m) => [m.paused, +m.currentTime.toFixed(1)])[0] || null);
+          const v = await vol();
+          exige(!v || v[0] || v[1] < 0.3, nombre + ": la música no bajó mientras habla: " + JSON.stringify(v));
+          await p.click('#pv-ui [data-sk="next"]'); await p.waitForTimeout(2000);
+          const z = await voz();
+          exige(await p.$('#pv-ui .nr.sonando[data-esfera="__tour"]') && z && !z[0] && z[1] > 1.5, nombre + ": al cambiar de esfera la voz del tour se cortó o volvió a empezar: " + JSON.stringify(z));
+          await p.evaluate(() => { const m = (window.__medios || []).find((x) => /voz-/.test(x.src)); m.currentTime = m.duration - 1.6; }); await p.waitForTimeout(500);
+          exige((await p.textContent("#pv-ui .nr-sub")).trim() === frases[frases.length - 1], nombre + ": casi al final el subtítulo no va en la última frase: " + (await p.textContent("#pv-ui .nr-sub")));
+          await p.waitForSelector('#pv-ui .nr.chica[data-esfera="__tour"]', { timeout: 6000 });
+          const v2 = await vol();
+          exige(!v || (v2 && v2[1] > 0.3), nombre + ": la música no regresó al terminar la voz: " + JSON.stringify(v2));
+          await p.click('#pv-ui [data-sk="prev"]'); await p.waitForTimeout(2000);
+          exige(await p.$('#pv-ui .nr.chica[data-esfera="__tour"]') && (await voz())[0], nombre + ": al cambiar de esfera, la voz ya oída se repitió sola o se fue su botón");
+          await p.click("#pv-ui [data-voz]"); await p.waitForSelector("#pv-ui .nr.sonando", { timeout: 4000 });
+          await p.click("#pv-ui [data-voz]"); await p.waitForSelector("#pv-ui .nr.pausa", { timeout: 4000 });
+        };
+        await n.addInitScript(medios);
+        await n.reload(); await n.waitForTimeout(3000); await cerrarAnuncio(n);
+        await n.click('button:has-text("Vista previa")'); await n.waitForTimeout(3500);
+        await probar(n, "previa");
+        await n.keyboard.press("Escape"); await n.waitForTimeout(500);
+        exige(!(await n.evaluate(() => (window.__medios || []).some((m) => !m.paused))), "al cerrar la vista previa la voz o la música siguieron sonando");
+        // publicado: la voz y lo que dice sí; las notas de trabajo no
+        exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        const pub = await (await fetch(TOURS + "/" + id + "/proyecto.json")).json(), vp = pub.proyecto.vozTour || {};
+        exige(vp.archivo === vt.archivo && vp.texto === mio && !("ia" in vp) && !JSON.stringify(pub).includes(notas), "el tour publicado lleva las notas de trabajo (o perdió la voz)");
+        t = await pagina(null); await t.addInitScript(medios);
+        await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(4500);
+        await probar(t, "publicado");
+        exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
+        // 6) Quitar pide confirmar; y quien ya tiene su audio hecho lo sube tal cual
+        await n.click('#nav button:has-text("Interfaz")'); await n.waitForTimeout(1500);
+        await n.click("#sk-voz-quitar"); await n.waitForTimeout(300);
+        exige(/Toca otra vez/.test(await n.textContent("#sk-voz-quitar")), "«Quitar» no pide confirmar");
+        await n.click("#sk-voz-quitar"); await n.waitForTimeout(1500);
+        exige(await n.isVisible('label[for="sk-voz-archivo"]') && !(await api(n, "api/tours/" + id)).d.proyecto.vozTour, "«Quitar» no dejó el tour sin voz");
+        await n.setInputFiles("#sk-voz-archivo", { name: "mi-voz.wav", mimeType: "audio/wav", buffer: wavPrueba(4) }); await n.waitForTimeout(3500);
+        const mia = (await api(n, "api/tours/" + id)).d.proyecto.vozTour || {};
+        exige(/^archivos\/voz-[a-z0-9]+\.wav$/.test(mia.archivo || "") && mia.nombre === "mi-voz.wav" && Math.abs(mia.duracion - 4) < 0.3 && !mia.ia && /mi-voz\.wav/.test(await n.textContent("#sk-voz-dato")) && /Crear con Mozari/.test(await n.textContent("#sk-voz-crear")), "no se pudo subir un audio propio como voz del tour: " + JSON.stringify(mia).slice(0, 200));
+        // 7) Panel de dueño: cómo van las voces; sin llave no se pueden elegir voces de ElevenLabs
+        await n.click('#nav button:has-text("Mis Tours")'); await n.waitForTimeout(900); await n.click("#ver-cuentas"); await n.waitForTimeout(900);
+        await n.click('[data-dueno="laboratorio"]'); await n.waitForSelector("#lab-voz", { timeout: 8000 });
+        const fila = await n.textContent("#lab-voz");
+        exige(/Modo de prueba/.test(fila) && /2 voces: Ana, Luis/.test(fila) && /este mes: [\d,]+ de 400,000 letras/.test(fila) && await n.isDisabled("#lab-voz [data-lab-voces]"), "el panel no dice cómo van las voces: " + fila);
+        exige((await api(n, "api/admin/voz/catalogo")).s === 503, "sin llave no debe intentar leer la cuenta de ElevenLabs");
+        exige((await api(n, "api/admin/voz", J("PUT", { modelo: "eleven_flash_v2_5", voces: [{ id: "abcDEF123456", nombre: "Renata", tono: "Cálida · mexicana", muestra: "https://ejemplo.mx/renata.mp3" }, { id: "<mala>", nombre: "x" }] }))).s === 200, "el dueño no pudo guardar las voces");
+        const cat = (await api(n, "api/voz")).d;
+        exige(cat.voces.length === 1 && cat.voces[0].nombre === "Renata" && cat.voces[0].muestra === "https://ejemplo.mx/renata.mp3" && cat.tope === null && cat.max === 1200, "las voces que eligió el dueño no son las que se ofrecen: " + JSON.stringify(cat).slice(0, 200));
+        exige((await api(n, "api/admin/voz", J("PUT", { modelo: "eleven_multilingual_v2", voces: [] }))).s === 200 && (await api(n, "api/voz")).d.voces.length === 2, "no se pudo regresar a las voces de prueba");
+        exige((await api(u, "api/admin/voz")).s === 403, "una cuenta normal puede ver el panel de voces");
+        // 8) Nace Solo yo: una cuenta normal no la ve, no puede usar el servicio y no publica voz
+        await nuevoTour(u, "Sin voz"); const iu = await idTour(u);
+        await u.click('#nav button:has-text("Interfaz")'); await u.waitForTimeout(2000); await tutoriales(u);
+        exige(!(await u.$("#sk-voz-grupo")), "una cuenta normal ya ve «Voz del tour» (debe nacer Solo yo)");
+        exige((await api(u, "api/voz")).s === 403 && (await api(u, "api/tours/" + iu + "/voz/audio", J("POST", { texto: "Hola, este es el recorrido.", voz: "prueba-ana" }))).s === 403 && (await api(u, "api/tours/" + iu + "/voz/guion", J("POST", { proyecto: "Sin voz" }))).s === 403, "una cuenta sin la función puede usar las voces");
+        const du = (await api(u, "api/tours/" + iu)).d; du.proyecto.vozTour = { archivo: mia.archivo, nombre: "x", duracion: 4, texto: "" };
+        exige((await api(u, "api/tours/" + iu, J("PUT", du))).s === 200 && (await api(u, "api/tours/" + iu + "/publicar", { method: "POST" })).s === 200 && !(await (await fetch(TOURS + "/" + iu + "/proyecto.json")).json()).proyecto.vozTour, "una cuenta sin la función publicó una voz del tour");
+        // … y con la función pero en cuenta de prueba: ve el tutorial, puede escribir el guion y subir su audio; la voz de Mozari viene con las licencias
+        exige((await api(n, "api/admin/laboratorio/voz-ia", J("PUT", { modo: "probadores", probadores: [correoU] }))).s === 200, "no se pudo dar la función a un probador");
+        const eu = (await api(u, "api/voz")).d;
+        exige(eu.activo === true && eu.tope === 0, "una cuenta de prueba no debe tener letras de voz: " + JSON.stringify(eu).slice(0, 160));
+        exige((await api(u, "api/tours/" + iu + "/voz/guion", J("POST", { proyecto: "Sin voz", notas: "Con vista al jardín" }))).d.texto.includes("Con vista al jardín"), "con la función, la cuenta de prueba no puede escribir el guion");
+        r = await api(u, "api/tours/" + iu + "/voz/audio", J("POST", { texto: "Hola, este es el recorrido.", voz: "prueba-ana" }));
+        exige(r.s === 403 && r.d.limite === "voz" && /licencias Pro y Desarrollos/.test(r.d.error), "la cuenta de prueba generó voz (o no explica que viene con las licencias): " + r.s);
+        await u.goto(ESTUDIO + "/#t=" + iu); await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u);
+        await u.click('#nav button:has-text("Interfaz")'); await u.waitForTimeout(1500);
+        const vistos = await tutoriales(u);
+        exige(vistos.some((x) => /Nuevo: la voz de tu tour/.test(x)), "la primera vez no salió el tutorial de la voz del tour: " + vistos.map((x) => x.slice(0, 40)).join(" | "));
+        exige(await u.isVisible("#sk-voz-grupo"), "con la función, la cuenta no ve «Voz del tour»");
+        await u.click("#sk-voz-crear"); await u.waitForSelector("#dlg-voz[open] .vz-voz", { timeout: 8000 });
+        exige(/vienen con las licencias Pro y Desarrollos/.test(await u.textContent("#vz-saldo")) && await u.isDisabled('#dlg-voz [data-vz="audio"]') && !(await u.isDisabled('#dlg-voz [data-vz="guion"]')), "en cuenta de prueba la ventana no explica que las voces vienen con las licencias");
+        exige(!n.errs.length && !u.errs.length, "errores en el estudio: " + n.errs.concat(u.errs).join(" | ").slice(0, 200));
+      } finally {
+        await api(n, "api/admin/laboratorio/voz-ia", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
+        await api(n, "api/admin/voz", J("PUT", { modelo: "eleven_multilingual_v2", voces: [] })).catch(() => {});
+        if (t) await t.context().close();
         await u.context().close(); await n.context().close();
       }
     });

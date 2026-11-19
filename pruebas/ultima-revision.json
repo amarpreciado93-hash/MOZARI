@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-18T21:11:25.254Z",
- "bien": 114,
- "total": 115,
+ "fecha": "2026-11-19T05:19:16.494Z",
+ "bien": 116,
+ "total": 116,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -377,8 +377,7 @@
   },
   {
    "nombre": "Imagen en 3D: un PNG transparente pegado a la esfera, crece sin deformarse y se inclina sobre el terreno",
-   "ok": false,
-   "motivo": "page.screenshot: Protocol error (Page.captureScreenshot): Unable to capture screenshot"
+   "ok": true
   },
   {
    "nombre": "Tours hechos con Mozari: el dueño elige tours publicados y salen en el sitio con portada y link",
@@ -458,6 +457,10 @@
   },
   {
    "nombre": "Ubicación en satélite (Laboratorio, nace Solo yo): revisa el KMZ, lo pinta sobre el satélite, números solo al acercar, pulso, amarre con 2 puntos, 5,000 lotes y publicada en /mapa",
+   "ok": true
+  },
+  {
+   "nombre": "Voz del tour con guion (Laboratorio, nace Solo yo): en Interfaz Mozari escribe el guion y genera la voz; suena al empezar el tour, sigue al cambiar de esfera, baja la música y pasa sus subtítulos (también publicado)",
    "ok": true
   },
   {

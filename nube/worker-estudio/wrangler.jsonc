@@ -2,6 +2,7 @@
   // Mozari · la plataforma: escaparate, cuentas con Google y estudio.
   // Secretos (Cloudflare → este Worker → Settings → Variables and Secrets):
   //   GOOGLE_CLIENT_SECRET
+  //   ELEVENLABS_KEY   (Voces con guion: la llave de ElevenLabs; sin ella esa función avisa que no está disponible)
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "mozari-estudio",
   "main": "../estudio.js",
@@ -21,6 +22,9 @@
   // Registro de errores: para ver qué falló y a quién (Workers Logs)
   "observability": { "enabled": true, "head_sampling_rate": 1 },
   "r2_buckets": [{ "binding": "R2", "bucket_name": "mozari" }],
+  // IA de Cloudflare (Workers AI): escribe los guiones de «Voces con guion». Las primeras 10,000 unidades del día no
+  // cuestan y un guion gasta unas 30. En tu compu (wrangler dev --local) no se usa: sale un guion de prueba.
+  "ai": { "binding": "AI" },
   // Correo de avisos (Email Routing de mozari.app): cada reporte de error le llega al dueño
   // ENVIOS (Email Service): correos a los usuarios desde hola@mozari.app (bienvenida y novedades).
   // El plan incluye 3,000 al mes; Mozari se detiene en 2,800 (ver nube/correos.js).
