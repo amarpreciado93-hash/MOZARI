@@ -28,7 +28,7 @@
 // tours de otra cuenta. Los tours publicados se ven en el Worker de tours (público, solo lectura).
 
 import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR, conCarga, cargaEnViejos, rutasEdicion, prefijoEdicion, LLAVE_MAPA, ESTILO_MAPA, confMapa, satDe, olvidarSat } from "./comun.js";
-import { vozEstado, vozGuion, vozAudio, adminVoz } from "./voces.js";
+import { vozEstado, vozAudio, adminVoz } from "./voces.js";
 import { rutasSesion, cuentaDe, perfil, leerCupo, contarCuentas, firmarLink, verificarLink } from "./sesion.js";
 import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoCompra, correoCotizacion, htmlCotizacion, textoCotizacion, TIPOS_COTIZACION, correoDeNovedad, correoCampana, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja, CAMPANA, iniciarCampana, correoCompu, mandarRecordatorios, sembrarRecordatorios } from "./correos.js";
 import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
@@ -260,7 +260,8 @@ export const LABORATORIO = {
   "ejemplo": { nombre: "Fotos de ejemplo", texto: "En un tour sin esferas: «Probar con fotos de ejemplo» sube 2 fotos 360 de muestra (una aérea y una a pie) para practicar sin traer fotos propias. Quedan como esferas normales y se borran igual." },
   "tours-link": { nombre: "Link a la mano en Mis Tours", texto: "En Mis Tours, cada tour publicado trae «Copiar link» y «Abrir» en su tarjeta, sin tener que entrar al tour e ir a Publicar." },
   "ubicacion": { nombre: "Ubicación en satélite", texto: "Media → Ubicación: sube el KMZ (o KML) de tu desarrollo y míralo sobre el mapa satelital, en su lugar real. Mozari revisa el archivo y dice en palabras simples qué trae y qué le falta (contorno, lotes, nombres), con la guía «Cómo debe venir tu KMZ» lista para mandársela al ingeniero. Los números de lote salen al acercar y el contorno late al mover el mapa. Si no cae en su lugar, se amarra al satélite con 2 puntos. Se publica con el tour en su link /mapa." },
-  "voz-ia": { nombre: "Voz del tour, con guion", texto: "Interfaz → «Voz del tour»: escribes de qué quieres hablar (o nada), Mozari escribe el guion y una voz lo lee. Es una sola voz para todo el recorrido: suena cuando el tour empieza y sigue aunque tu cliente cambie de esfera; la música baja mientras habla y los subtítulos van pasando por frases. También puedes subir tu propio audio. Cada licencia trae sus letras de voz al mes (Pro 15,000, Desarrollos 40,000; unas 900 letras son un minuto) y todo Mozari tiene un tope mensual." },
+  "voz-ia": { nombre: "Sonido del tour: música y voz", texto: "Interfaz → «Sonido del tour»: una sola ventana para la música y la voz. Subes tu canción, escribes lo que quieres que diga la voz y una voz lo lee tal cual (o subes tu propio audio). La voz suena cuando el tour empieza y sigue aunque tu cliente cambie de esfera; la música baja sola mientras habla y los subtítulos van pasando por frases. Cada tour puede crear 2 voces al mes y cada licencia trae sus letras de voz (Pro 5,000, Desarrollos 12,000; unas 900 letras son un minuto). Todo Mozari tiene un tope mensual." },
+  "previa-celular": { nombre: "Vista previa en celular", texto: "Junto al botón «Vista previa» hay uno con un teléfono: abre el tour dentro de un celular 9:16, con su música, su voz, sus lotes y todo funcionando (antes el 9:16 solo se veía en Interfaz, sin sonido). Arriba se cambia a la vista de compu. Pedido de Emanuel." },
   "cotas": { nombre: "Cotas en paredes", texto: "En Capas → «Cota»: tocas el inicio y el final de un muro (en el piso) y Mozari calcula su largo con la altura de la cámara; un punto en el piso y otro arriba da la altura. Si tienes la medida del plano, la escribes y manda esa. Salen en el tour como en un plano." },
 };
 // "pago": las cuentas Pro y Desarrollos (con su plan vigente); "todos" incluye también Gratis
@@ -995,8 +996,8 @@ async function api(request, env, partes, yo) {
     return json({ ok: true, para: p.email });
   }
   // Tutoriales guiados: cada cuenta ve el de cada herramienta una sola vez (se anota en su perfil)
-  // Voces con guion (Laboratorio «voz-ia»): las voces que hay y lo que le queda a la cuenta este mes
-  if (partes[1] === "voz" && partes.length === 2 && m === "GET") return (await labDe(env, yo)).includes("voz-ia") ? vozEstado(env, yo, plan) : error(403, "Esta función aún no está en tu cuenta");
+  // Sonido del tour (Laboratorio «voz-ia»): las voces que hay, lo que le queda a la cuenta este mes y a ese tour
+  if (partes[1] === "voz" && partes.length === 2 && m === "GET") return (await labDe(env, yo)).includes("voz-ia") ? vozEstado(env, yo, plan, new URL(request.url).searchParams.get("tour")) : error(403, "Esta función aún no está en tu cuenta");
   // Ubicación en satélite: el satélite para la vista previa del mapa dentro del estudio (solo a quien tiene la función)
   if (partes[1] === "mapa" && partes.length === 2 && m === "GET") return json({ sat: (await labDe(env, yo)).includes("ubicacion") ? await satDe(env) : "" });
   if (partes[1] === "guias" && partes.length === 3 && m === "POST" && /^[a-z0-9-]{2,40}$/.test(partes[2])) {
@@ -1209,10 +1210,10 @@ async function api(request, env, partes, yo) {
     return json({ ok: true });
   }
 
-  // Voces con guion (Laboratorio «voz-ia»): escribir el guion de una esfera y generar su voz
-  if (partes[3] === "voz" && partes.length === 5 && m === "POST" && (partes[4] === "guion" || partes[4] === "audio")) {
+  // Sonido del tour (Laboratorio «voz-ia»): la voz lee tal cual el texto del usuario (cada tour, 2 voces al mes)
+  if (partes[3] === "voz" && partes.length === 5 && m === "POST" && partes[4] === "audio") {
     if (!(await labDe(env, yo)).includes("voz-ia")) return error(403, "Esta función aún no está en tu cuenta");
-    return partes[4] === "guion" ? vozGuion(request, env, yo) : vozAudio(request, env, yo, plan, base, usoDe, limite);
+    return vozAudio(request, env, yo, plan, base, usoDe, limite, id);
   }
 
   if (partes[3] === "f" && partes.length > 4) {

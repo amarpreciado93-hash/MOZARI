@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -65,12 +65,14 @@ const exige = (cond, msg) => { if (!cond) throw new Error(msg); };
 // ---------- ayudantes ----------
 let navegador;
 async function pagina(correo, opciones = {}) {
-  const { limpio, carpetas, ...otras } = opciones;
+  const { limpio, carpetas, sonido, ...otras } = opciones;
   const ctx = await navegador.newContext(Object.assign({ viewport: { width: 1400, height: 900 }, acceptDownloads: true }, otras));
   // Edición limpia (Laboratorio «limpio»): las pruebas de siempre ven Propiedades sin renglones; la suya lo apaga con { limpio: true }
   if (!limpio) await ctx.addInitScript(() => { try { localStorage.setItem("mz-props-plano", "1"); } catch (e) { /* sin almacenamiento */ } });
   // Manzanas como carpeta (Laboratorio «carpetas»): las pruebas de siempre ven la lista de capas completa
   if (!carpetas) await ctx.addInitScript(() => { try { localStorage.setItem("mz-carpetas-plano", "1"); } catch (e) { /* sin almacenamiento */ } });
+  // Sonido del tour (Laboratorio «voz-ia»): las pruebas de siempre siguen con la música en Proyecto → Música; la suya pasa { sonido: true }
+  if (!sonido) await ctx.addInitScript(() => { try { localStorage.setItem("mz-musica-clasica", "1"); } catch (e) { /* sin almacenamiento */ } });
   const p = await ctx.newPage();
   p.errs = [];
   p.on("pageerror", (e) => p.errs.push(e.message));
@@ -4832,60 +4834,77 @@ async function capasPesadas(p) {
     // general». Interfaz → «Voz del tour»: Mozari escribe el guion, una voz lo lee y suena cuando el tour empieza; sigue
     // aunque se cambie de esfera, la música baja y los subtítulos pasan por frases. Aquí (DEV, sin llave) el guion y la voz
     // son de prueba: no se llama a ningún proveedor. Cada plan tiene sus letras al mes y las notas de trabajo no se publican.
-    await paso("Voz del tour con guion (Laboratorio, nace Solo yo): en Interfaz Mozari escribe el guion y genera la voz; suena al empezar el tour, sigue al cambiar de esfera, baja la música y pasa sus subtítulos (también publicado)", async () => {
+    // Sonido del tour (Amar, 19 nov 2026): «si vas a modificar música y voz, todo tiene que vivir en una misma ventana»; «que únicamente
+    // le des el texto literalmente de lo que quieres que diga, que no lo interprete»; «una o dos posibles intentos de voz por desarrollo».
+    await paso("Sonido del tour (Laboratorio, nace Solo yo): música y voz en una sola ventana; la voz lee tal cual lo escrito y cada tour crea 2 al mes; suena al empezar, sigue al cambiar de esfera, baja la música y pasa sus subtítulos (también publicado)", async () => {
       const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
       const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
       const { aVoz } = await import(path.join(RAIZ, "nube", "voces.js"));
       exige(aVoz("Mz 5 Lt. 12 de 200 m2, a 5 min por Av. Roble") === "manzana 5 lote 12 de 200 metros cuadrados, a 5 minutos por avenida Roble", "las abreviaturas no se mandan a leer como se dicen: " + aVoz("Mz 5 Lt. 12 de 200 m2, a 5 min por Av. Roble"));
       const medios = () => { window.__medios = []; const p = HTMLMediaElement.prototype.play; HTMLMediaElement.prototype.play = function () { if (!window.__medios.includes(this)) window.__medios.push(this); return p.apply(this, arguments); }; };
       const tutoriales = async (p) => { const vistos = []; for (let i = 0, quieto = 0; i < 30 && quieto < 4; i++) { await p.waitForTimeout(700); if (await p.isVisible(".guia-tarjeta").catch(() => false)) { quieto = 0; vistos.push(await p.textContent(".guia-tarjeta")); await p.click('.guia-tarjeta [data-guia="seguir"]'); } else quieto++; } return vistos; };
-      const correoU = "sin-voz@prueba.mx", n = await pagina(DUENO), u = await pagina(correoU);
+      const correoU = "sin-voz@prueba.mx", n = await pagina(DUENO, { sonido: true }), u = await pagina(correoU, { sonido: true });
       let t = null;
       try {
         await nuevoTour(n, "Lomas Encino"); await otraEsfera(n, "terraza", "#9bd", "#8a6"); const id = await idTour(n);
-        // música de fondo, para ver que baja mientras la voz habla
-        await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(500); await n.click('#subtabs button:has-text("Música")'); await n.waitForTimeout(500);
-        await n.setInputFiles("#m-archivo", { name: "fondo.wav", mimeType: "audio/wav", buffer: wavPrueba(40) }); await n.waitForTimeout(3000);
         const usadas0 = (await api(n, "api/voz")).d.usadas;
-        // 1) Está a la vista, en Interfaz (ya no escondida en cada esfera de Media → Audios)
+        // 1) Está a la vista, en Interfaz: un solo grupo «Sonido del tour» (música y voz) que abre UNA ventana
         await n.click('#nav button:has-text("Interfaz")'); await n.waitForTimeout(2000); await tutoriales(n);
-        exige(await n.isVisible("#sk-voz-grupo #sk-voz-crear") && /Crear la voz del tour/.test(await n.textContent("#sk-voz-crear")) && /Voz del tour/.test(await n.textContent("#sk-voz-grupo > b")), "el dueño no ve «Voz del tour» en Interfaz");
-        exige((await n.$$eval("#sk-panel > .grupo", (l) => l.findIndex((g) => g.id === "sk-voz-grupo"))) === 1, "«Voz del tour» no está arriba en Interfaz (justo después de la plantilla)");
+        exige(await n.isVisible("#sk-voz-grupo #sk-voz-crear") && /Abrir sonido del tour/.test(await n.textContent("#sk-voz-crear")) && /Sonido del tour/.test(await n.textContent("#sk-voz-grupo > b")) && /Música: sin música · Voz: sin voz/.test(await n.textContent("#sk-voz-dato")), "el dueño no ve «Sonido del tour» en Interfaz");
+        exige((await n.$$eval("#sk-panel > .grupo", (l) => l.findIndex((g) => g.id === "sk-voz-grupo"))) === 1, "«Sonido del tour» no está arriba en Interfaz (justo después de la plantilla)");
         await n.click('#nav button:has-text("Media")'); await n.waitForTimeout(400); await n.click('#subtabs button:has-text("Audios")'); await n.waitForTimeout(1200); await tutoriales(n);
         exige(!(await n.$("[data-au-crear]")), "sigue «Crear voz» en cada esfera de Media → Audios (la voz ahora es del tour)");
-        await n.click('#nav button:has-text("Interfaz")'); await n.waitForTimeout(1500);
-        await n.click("#sk-voz-crear"); await n.waitForSelector("#dlg-voz[open] .vz-voz", { timeout: 8000 });
-        exige((await n.locator("#dlg-voz .vz-voz").count()) === 2 && await n.isChecked('#dlg-voz input[name="vz-voz"][value="prueba-ana"]') && /Lomas Encino/.test(await n.textContent("#dlg-voz .etiq")), "la ventana no abre con las voces (la primera elegida) y el nombre del tour");
+        // Proyecto → Música ya no tiene sus controles aparte: lleva a la misma ventana
+        await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(500); await n.click('#subtabs button:has-text("Música")'); await n.waitForTimeout(600);
+        exige(await n.isVisible("#m-junto #m-abrir-sonido") && !(await n.isVisible("#m-clasico")), "Proyecto → Música sigue con sus controles aparte (la música y la voz van en una sola ventana)");
+        await n.click("#m-abrir-sonido"); await n.waitForSelector("#dlg-voz[open] .vz-voz", { timeout: 8000 });
+        exige((await n.locator("#dlg-voz .son-bloque").count()) === 3 && /Música/.test(await n.textContent("#son-musica .son-t")) && /Voz/.test(await n.textContent("#son-voz .son-t")) && /Lomas Encino/.test(await n.textContent("#dlg-voz .etiq")), "la ventana no trae música, voz y cómo suenan, con el nombre del tour");
+        exige((await n.locator("#dlg-voz .vz-voz").count()) === 2 && await n.isChecked('#dlg-voz input[name="vz-voz"][value="prueba-ana"]') && await n.isDisabled('#dlg-voz [data-son="mezcla"]'), "la ventana no abre con las voces (la primera elegida) o deja oír una mezcla que aún no existe");
+        // ya no hay guion automático: ni notas ni «Escribir el guion»; se escribe lo que la voz va a decir
+        exige(!(await n.$('#dlg-voz [data-vz-campo="notas"]')) && !(await n.$('#dlg-voz [data-vz="guion"]')) && /lo lee tal cual/.test(await n.textContent("#son-voz .fe-campo")), "la ventana sigue ofreciendo escribir el guion (la voz debe leer tal cual lo que se escribe)");
         await n.click('#dlg-voz [data-vz="audio"]'); await n.waitForTimeout(300);
-        exige(/Primero escribe el guion/.test(await n.textContent("#vz-error").catch(() => "")), "sin guion debe pedirlo antes de generar la voz");
-        // 2) Mozari escribe el guion con lo que el usuario cuenta de su proyecto
-        const notas = "Desarrollo campestre a diez minutos de León";
-        await n.fill('#dlg-voz [data-vz-campo="notas"]', notas); await n.click('#dlg-voz [data-vz-largo="corta"]'); await n.waitForTimeout(200);
-        exige((await n.inputValue('#dlg-voz [data-vz-campo="notas"]')) === notas && (await n.getAttribute('#dlg-voz [data-vz-largo="corta"]', "aria-pressed")) === "true", "al elegir el largo se pierden las notas");
-        await n.click('#dlg-voz [data-vz="guion"]');
-        await n.waitForFunction(() => ((document.querySelector('#dlg-voz [data-vz-campo="texto"]') || {}).value || "").length > 20, null, { timeout: 10000 });
-        const guion = await n.inputValue('#dlg-voz [data-vz-campo="texto"]');
-        exige(guion.includes(notas) && guion.includes("Lomas Encino"), "el guion no sale de las notas y del nombre del tour: " + guion);
-        exige(/de 1,200 letras · unos \d+ segundos de voz/.test(await n.textContent("#vz-cuenta")) && /Escribir otro guion/.test(await n.textContent('#dlg-voz [data-vz="guion"]')), "no dice cuántas letras y segundos lleva el guion");
-        // 3) el guion se puede corregir a mano; se elige otra voz y se genera (un guion de varias frases, para los subtítulos)
+        exige(/Primero escribe lo que quieres que diga/.test(await n.textContent("#vz-error").catch(() => "")), "sin texto debe pedirlo antes de crear la voz");
+        // 2) la música, en la misma ventana: se sube y su volumen es el del tour
+        await n.setInputFiles("#son-musica-archivo", { name: "fondo.wav", mimeType: "audio/wav", buffer: wavPrueba(40) });
+        await n.waitForFunction(() => /fondo\.wav/.test((document.querySelector("#son-musica-nombre") || {}).textContent || ""), null, { timeout: 15000 });
+        await n.$eval("#dlg-voz [data-son-vol]", (e) => { e.value = "0.5"; e.dispatchEvent(new Event("input", { bubbles: true })); }); await n.waitForTimeout(1500);
+        let d = (await api(n, "api/tours/" + id)).d;
+        exige(/^archivos\/musica-[a-z0-9]+\.wav$/.test(d.proyecto.musica.archivo || "") && d.proyecto.musica.volumen === 0.5 && /50%/.test(await n.textContent("#son-vol-v")), "la música subida en la ventana (o su volumen) no quedó en el tour: " + JSON.stringify(d.proyecto.musica));
+        // 3) la voz dice TAL CUAL lo que se escribe (varias frases, para los subtítulos); se elige otra voz y se crea
         const frases = ["Este es Lomas Encino, un lugar para vivir con calma.", "Está a diez minutos de la ciudad, rodeado de árboles.", "Aquí cada lote tiene vista abierta hacia la sierra.", "Recorre la casa club y quédate un rato en la terraza.", "Tómate tu tiempo y mira cada espacio a tu ritmo.", "Cuando quieras, escríbenos y te contamos lo demás."], mio = frases.join(" ");
-        await n.fill('#dlg-voz [data-vz-campo="texto"]', mio); await n.click('#dlg-voz .vz-voz:has-text("Luis")'); await n.waitForTimeout(200);
-        await n.click('#dlg-voz [data-vz="audio"]'); await n.waitForSelector("#vz-listo audio", { timeout: 15000 });
-        exige(/ya es la voz de tu tour/.test(await n.textContent("#vz-listo")) && /Generar otra vez/.test(await n.textContent('#dlg-voz [data-vz="audio"]')), "al terminar no avisa que la voz quedó en el tour");
-        exige((await n.$eval("#vz-listo audio", (a) => new Promise((ok) => { if (a.readyState >= 1) ok(a.duration); else { a.onloadedmetadata = () => ok(a.duration); a.onerror = () => ok(0); setTimeout(() => ok(0), 5000); } }))) > 5, "la voz generada no se puede oír en la ventana");
+        await n.fill('#dlg-voz [data-vz-campo="texto"]', mio); await n.waitForTimeout(200);
+        exige(/de 1,200 letras · unos \d+ segundos de voz/.test(await n.textContent("#vz-cuenta")), "no dice cuántas letras y segundos lleva el texto");
+        await n.click('#dlg-voz .vz-voz:has-text("Luis")'); await n.waitForTimeout(200);
+        exige((await n.inputValue('#dlg-voz [data-vz-campo="texto"]')) === mio, "al elegir la voz se pierde lo escrito");
+        await n.click('#dlg-voz [data-vz="audio"]'); await n.waitForSelector("#vz-listo", { timeout: 15000 });
+        exige(/ya es la voz de tu tour/.test(await n.textContent("#vz-listo")) && /Crear otra voz/.test(await n.textContent('#dlg-voz [data-vz="audio"]')) && /Voz de Luis/.test(await n.textContent("#son-voz-actual")), "al terminar no avisa que la voz quedó en el tour");
+        // «Escuchar cómo queda»: suenan las dos y la música va baja mientras la voz habla, como en el tour
+        await n.evaluate(medios);
+        await n.click('#dlg-voz [data-son="mezcla"]'); await n.waitForTimeout(900);
+        const mz = await n.evaluate(() => window.__medios.map((m) => [/musica-/.test(m.src) ? "musica" : /voz-/.test(m.src) ? "voz" : "otro", m.paused, +m.volume.toFixed(2)]));
+        exige(mz.some((m) => m[0] === "voz" && !m[1]) && mz.some((m) => m[0] === "musica" && !m[1] && Math.abs(m[2] - 0.1) < 0.02) && /Detener/.test(await n.textContent('#dlg-voz [data-son="mezcla"]')), "«Escuchar cómo queda» no suena con la voz y la música baja: " + JSON.stringify(mz));
+        await n.click('#dlg-voz [data-son="mezcla"]'); await n.waitForTimeout(400);
+        exige(await n.evaluate(() => window.__medios.every((m) => m.paused)), "«Detener» no calla la mezcla");
         if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "voz-ventana.png") });
         await n.waitForTimeout(1500);
-        let d = (await api(n, "api/tours/" + id)).d, vt = d.proyecto.vozTour || {};
-        exige(/^archivos\/voz-[a-z0-9]+\.wav$/.test(vt.archivo || "") && vt.nombre === "Voz de Luis" && vt.texto === mio && vt.duracion > 5 && vt.peso > 8000, "el tour no quedó con su voz: " + JSON.stringify(vt).slice(0, 260));
-        exige(vt.ia && vt.ia.voz === "prueba-luis" && vt.ia.largo === "corta" && vt.ia.notas === notas && !d.escenas.some((e) => e.narracion), "no se guardó lo de trabajo (notas, voz y largo), o la voz se fue a una esfera");
+        d = (await api(n, "api/tours/" + id)).d; const vt = d.proyecto.vozTour || {};
+        exige(/^archivos\/voz-[a-z0-9]+\.wav$/.test(vt.archivo || "") && vt.nombre === "Voz de Luis" && vt.texto === mio && vt.duracion > 5 && vt.peso > 8000, "el tour no quedó con su voz, diciendo tal cual lo escrito: " + JSON.stringify(vt).slice(0, 260));
+        exige(vt.ia && vt.ia.voz === "prueba-luis" && !("notas" in vt.ia) && !d.escenas.some((e) => e.narracion), "no se guardó la voz elegida, o la voz se fue a una esfera");
         const arch = await n.evaluate((r) => fetch(r).then(async (x) => [x.status, x.headers.get("content-type"), (await x.arrayBuffer()).byteLength]), "t/" + id + "/" + vt.archivo);
         exige(arch[0] === 200 && /audio\/wav/.test(arch[1]) && arch[2] === vt.peso, "el archivo de la voz no quedó guardado en el tour: " + arch.join(" "));
-        exige((await api(n, "api/voz")).d.usadas === usadas0 + mio.length, "las letras usadas no se cuentan");
-        await n.click('#dlg-voz .ub-acc [data-vz="cerrar"]'); await n.waitForTimeout(500);
-        exige(!(await n.isVisible("#dlg-voz[open]")) && /Voz de Luis/.test(await n.textContent("#sk-voz-dato")) && /Editar/.test(await n.textContent("#sk-voz-crear")) && await n.isVisible("#sk-voz-oir") && await n.isVisible("#sk-voz-quitar"), "Interfaz no muestra la voz del tour ya creada");
+        const ev = (await api(n, "api/voz?tour=" + id)).d;
+        exige(ev.usadas === usadas0 + mio.length && ev.creadas === 1 && ev.porTour === null, "las letras usadas y las voces del tour no se cuentan (el dueño no tiene límite por tour): " + JSON.stringify(ev).slice(-120));
+        // las opciones del sonido viven en la misma ventana
+        await n.click('#dlg-voz [data-son-op="preguntar"]'); await n.waitForTimeout(1500);
+        exige((await api(n, "api/tours/" + id)).d.proyecto.musica.preguntar === false, "«Preguntar al abrir» no se guarda desde la ventana");
+        await n.click('#dlg-voz [data-son-op="preguntar"]'); await n.waitForTimeout(1500);
+        await n.click("#dlg-voz .dp-cerrar"); await n.waitForTimeout(500);
+        exige(!(await n.isVisible("#dlg-voz[open]")) && /Música: fondo\.wav · Voz: Voz de Luis/.test(await n.textContent("#m-junto-dato")), "Proyecto → Música no dice qué música y qué voz tiene el tour");
+        await n.click('#nav button:has-text("Interfaz")'); await n.waitForTimeout(1500);
+        exige(/Música: fondo\.wav · Voz: Voz de Luis, 0:\d\d/.test(await n.textContent("#sk-voz-dato")), "Interfaz no muestra la música y la voz del tour: " + (await n.textContent("#sk-voz-dato")));
         if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "voz-interfaz.png") });
         await n.click("#sk-voz-crear"); await n.waitForSelector("#dlg-voz[open] .vz-voz", { timeout: 8000 }); await n.waitForTimeout(300);
-        exige((await n.inputValue('#dlg-voz [data-vz-campo="texto"]')) === mio && (await n.inputValue('#dlg-voz [data-vz-campo="notas"]')) === notas && await n.isChecked('#dlg-voz input[name="vz-voz"][value="prueba-luis"]'), "al reabrir no recuerda el guion, las notas y la voz");
+        exige((await n.inputValue('#dlg-voz [data-vz-campo="texto"]')) === mio && await n.isChecked('#dlg-voz input[name="vz-voz"][value="prueba-luis"]'), "al reabrir no recuerda lo escrito y la voz");
         await n.click("#dlg-voz .dp-cerrar"); await n.waitForTimeout(300);
         // 4) límites: una voz no pasa de 1,200 letras y hace falta una voz de las que hay
         let r = await api(n, "api/tours/" + id + "/voz/audio", J("POST", { texto: "a".repeat(1201), voz: "prueba-ana" }));
@@ -4924,23 +4943,26 @@ async function capasPesadas(p) {
         await probar(n, "previa");
         await n.keyboard.press("Escape"); await n.waitForTimeout(500);
         exige(!(await n.evaluate(() => (window.__medios || []).some((m) => !m.paused))), "al cerrar la vista previa la voz o la música siguieron sonando");
-        // publicado: la voz y lo que dice sí; las notas de trabajo no
+        // publicado: la voz y lo que dice sí; lo de trabajo no
         exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
         const pub = await (await fetch(TOURS + "/" + id + "/proyecto.json")).json(), vp = pub.proyecto.vozTour || {};
-        exige(vp.archivo === vt.archivo && vp.texto === mio && !("ia" in vp) && !JSON.stringify(pub).includes(notas), "el tour publicado lleva las notas de trabajo (o perdió la voz)");
+        exige(vp.archivo === vt.archivo && vp.texto === mio && !("ia" in vp), "el tour publicado lleva lo de trabajo (o perdió la voz)");
         t = await pagina(null); await t.addInitScript(medios);
         await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(4500);
         await probar(t, "publicado");
         exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
-        // 6) Quitar pide confirmar; y quien ya tiene su audio hecho lo sube tal cual
+        // 6) Quitar pide confirmar; y quien ya tiene su audio hecho lo sube tal cual, en la misma ventana
         await n.click('#nav button:has-text("Interfaz")'); await n.waitForTimeout(1500);
-        await n.click("#sk-voz-quitar"); await n.waitForTimeout(300);
-        exige(/Toca otra vez/.test(await n.textContent("#sk-voz-quitar")), "«Quitar» no pide confirmar");
-        await n.click("#sk-voz-quitar"); await n.waitForTimeout(1500);
-        exige(await n.isVisible('label[for="sk-voz-archivo"]') && !(await api(n, "api/tours/" + id)).d.proyecto.vozTour, "«Quitar» no dejó el tour sin voz");
-        await n.setInputFiles("#sk-voz-archivo", { name: "mi-voz.wav", mimeType: "audio/wav", buffer: wavPrueba(4) }); await n.waitForTimeout(3500);
+        await n.click("#sk-voz-crear"); await n.waitForSelector("#dlg-voz[open] .vz-voz", { timeout: 8000 });
+        await n.click('#dlg-voz [data-son="voz-quitar"]'); await n.waitForTimeout(300);
+        exige(/Toca otra vez/.test(await n.textContent('#dlg-voz [data-son="voz-quitar"]')), "«Quitar» no pide confirmar");
+        await n.click('#dlg-voz [data-son="voz-quitar"]'); await n.waitForTimeout(1500);
+        exige(!(await n.$("#son-voz-actual")) && !(await api(n, "api/tours/" + id)).d.proyecto.vozTour, "«Quitar» no dejó el tour sin voz");
+        await n.setInputFiles("#son-voz-archivo", { name: "mi-voz.wav", mimeType: "audio/wav", buffer: wavPrueba(4) });
+        await n.waitForSelector("#son-voz-actual", { timeout: 15000 }); await n.waitForTimeout(1500);
         const mia = (await api(n, "api/tours/" + id)).d.proyecto.vozTour || {};
-        exige(/^archivos\/voz-[a-z0-9]+\.wav$/.test(mia.archivo || "") && mia.nombre === "mi-voz.wav" && Math.abs(mia.duracion - 4) < 0.3 && !mia.ia && /mi-voz\.wav/.test(await n.textContent("#sk-voz-dato")) && /Crear con Mozari/.test(await n.textContent("#sk-voz-crear")), "no se pudo subir un audio propio como voz del tour: " + JSON.stringify(mia).slice(0, 200));
+        exige(/^archivos\/voz-[a-z0-9]+\.wav$/.test(mia.archivo || "") && mia.nombre === "mi-voz.wav" && Math.abs(mia.duracion - 4) < 0.3 && !mia.ia && /mi-voz\.wav/.test(await n.textContent("#son-voz-actual")) && (await n.inputValue('#dlg-voz [data-vz-campo="texto"]')) === "", "no se pudo subir un audio propio como voz del tour: " + JSON.stringify(mia).slice(0, 200));
+        await n.click("#dlg-voz .dp-cerrar"); await n.waitForTimeout(400);
         // 7) Panel de dueño: cómo van las voces; sin llave no se pueden elegir voces de ElevenLabs
         await n.click('#nav button:has-text("Mis Tours")'); await n.waitForTimeout(900); await n.click("#ver-cuentas"); await n.waitForTimeout(900);
         await n.click('[data-dueno="laboratorio"]'); await n.waitForSelector("#lab-voz", { timeout: 8000 });
@@ -4955,29 +4977,88 @@ async function capasPesadas(p) {
         // 8) Nace Solo yo: una cuenta normal no la ve, no puede usar el servicio y no publica voz
         await nuevoTour(u, "Sin voz"); const iu = await idTour(u);
         await u.click('#nav button:has-text("Interfaz")'); await u.waitForTimeout(2000); await tutoriales(u);
-        exige(!(await u.$("#sk-voz-grupo")), "una cuenta normal ya ve «Voz del tour» (debe nacer Solo yo)");
-        exige((await api(u, "api/voz")).s === 403 && (await api(u, "api/tours/" + iu + "/voz/audio", J("POST", { texto: "Hola, este es el recorrido.", voz: "prueba-ana" }))).s === 403 && (await api(u, "api/tours/" + iu + "/voz/guion", J("POST", { proyecto: "Sin voz" }))).s === 403, "una cuenta sin la función puede usar las voces");
+        exige(!(await u.$("#sk-voz-grupo")), "una cuenta normal ya ve «Sonido del tour» (debe nacer Solo yo)");
+        exige((await api(u, "api/voz")).s === 403 && (await api(u, "api/tours/" + iu + "/voz/audio", J("POST", { texto: "Hola, este es el recorrido.", voz: "prueba-ana" }))).s === 403, "una cuenta sin la función puede usar las voces");
+        exige((await api(n, "api/tours/" + id + "/voz/guion", J("POST", { proyecto: "Lomas Encino", notas: "Con vista al jardín" }))).s !== 200, "sigue existiendo el guion automático");
         const du = (await api(u, "api/tours/" + iu)).d; du.proyecto.vozTour = { archivo: mia.archivo, nombre: "x", duracion: 4, texto: "" };
         exige((await api(u, "api/tours/" + iu, J("PUT", du))).s === 200 && (await api(u, "api/tours/" + iu + "/publicar", { method: "POST" })).s === 200 && !(await (await fetch(TOURS + "/" + iu + "/proyecto.json")).json()).proyecto.vozTour, "una cuenta sin la función publicó una voz del tour");
-        // … y con la función pero en cuenta de prueba: ve el tutorial, puede escribir el guion y subir su audio; la voz de Mozari viene con las licencias
+        // … y con la función pero en cuenta de prueba: ve el tutorial y puede subir su audio; la voz de Mozari viene con las licencias
         exige((await api(n, "api/admin/laboratorio/voz-ia", J("PUT", { modo: "probadores", probadores: [correoU] }))).s === 200, "no se pudo dar la función a un probador");
         const eu = (await api(u, "api/voz")).d;
         exige(eu.activo === true && eu.tope === 0, "una cuenta de prueba no debe tener letras de voz: " + JSON.stringify(eu).slice(0, 160));
-        exige((await api(u, "api/tours/" + iu + "/voz/guion", J("POST", { proyecto: "Sin voz", notas: "Con vista al jardín" }))).d.texto.includes("Con vista al jardín"), "con la función, la cuenta de prueba no puede escribir el guion");
         r = await api(u, "api/tours/" + iu + "/voz/audio", J("POST", { texto: "Hola, este es el recorrido.", voz: "prueba-ana" }));
         exige(r.s === 403 && r.d.limite === "voz" && /licencias Pro y Desarrollos/.test(r.d.error), "la cuenta de prueba generó voz (o no explica que viene con las licencias): " + r.s);
         await u.goto(ESTUDIO + "/#t=" + iu); await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u);
         await u.click('#nav button:has-text("Interfaz")'); await u.waitForTimeout(1500);
         const vistos = await tutoriales(u);
-        exige(vistos.some((x) => /Nuevo: la voz de tu tour/.test(x)), "la primera vez no salió el tutorial de la voz del tour: " + vistos.map((x) => x.slice(0, 40)).join(" | "));
-        exige(await u.isVisible("#sk-voz-grupo"), "con la función, la cuenta no ve «Voz del tour»");
+        exige(vistos.some((x) => /Nuevo: el sonido de tu tour/.test(x)), "la primera vez no salió el tutorial del sonido del tour: " + vistos.map((x) => x.slice(0, 40)).join(" | "));
+        exige(await u.isVisible("#sk-voz-grupo"), "con la función, la cuenta no ve «Sonido del tour»");
         await u.click("#sk-voz-crear"); await u.waitForSelector("#dlg-voz[open] .vz-voz", { timeout: 8000 });
-        exige(/vienen con las licencias Pro y Desarrollos/.test(await u.textContent("#vz-saldo")) && await u.isDisabled('#dlg-voz [data-vz="audio"]') && !(await u.isDisabled('#dlg-voz [data-vz="guion"]')), "en cuenta de prueba la ventana no explica que las voces vienen con las licencias");
+        exige(/vienen con las licencias Pro y Desarrollos/.test(await u.textContent("#vz-saldo")) && await u.isDisabled('#dlg-voz [data-vz="audio"]') && await u.isVisible('#dlg-voz label[for="son-voz-archivo"]') && await u.isVisible('#dlg-voz label[for="son-musica-archivo"]'), "en cuenta de prueba la ventana no explica que las voces vienen con las licencias (o no deja subir su audio y su canción)");
+        await u.click("#dlg-voz .dp-cerrar"); await u.waitForTimeout(300);
+        // 9) Con licencia: cada tour crea 2 voces al mes (las muestras se oyen sin gastar); la tercera se rechaza y la ventana lo dice
+        const cta = ((await api(n, "api/admin/cuentas")).d.cuentas || []).find((x) => x.email === correoU);
+        exige(cta && (await api(n, "api/admin/cuentas/" + cta.uid, J("PUT", { plan: "pro" }))).s === 200, "no se pudo poner la cuenta en Pro");
+        let ep = (await api(u, "api/voz?tour=" + iu)).d;
+        exige(ep.tope === 5000 && ep.porTour === 2 && ep.creadas === 0, "una cuenta Pro debe traer 5,000 letras al mes y 2 voces por tour: " + JSON.stringify(ep).slice(-120));
+        for (const k of [1, 2]) { r = await api(u, "api/tours/" + iu + "/voz/audio", J("POST", { texto: "Hola, este es el recorrido número " + k + ".", voz: "prueba-ana" })); exige(r.s === 200 && r.d.creadas === k && r.d.porTour === 2, "la voz " + k + " del tour no se creó o no se contó: " + r.s + " " + JSON.stringify(r.d).slice(0, 120)); }
+        r = await api(u, "api/tours/" + iu + "/voz/audio", J("POST", { texto: "Hola, este es el tercer intento.", voz: "prueba-ana" }));
+        exige(r.s === 429 && /ya creó sus 2 voces de este mes/.test(r.d.error), "la tercera voz del mismo tour debe rechazarse: " + r.s + " " + JSON.stringify(r.d).slice(0, 120));
+        ep = (await api(u, "api/voz?tour=" + iu)).d;
+        exige(ep.creadas === 2 && ep.usadas > 60 && (await api(u, "api/voz?tour=otro-tour")).d.creadas === 0, "las voces creadas se cuentan por tour: " + JSON.stringify(ep).slice(-120));
+        await u.click("#sk-voz-crear"); await u.waitForSelector("#dlg-voz[open] .vz-voz", { timeout: 8000 }); await u.waitForTimeout(300);
+        exige(/ya creó sus 2 voces de este mes/.test(await u.textContent("#vz-saldo")) && await u.isDisabled('#dlg-voz [data-vz="audio"]'), "la ventana no dice que el tour ya usó sus 2 voces del mes: " + (await u.textContent("#vz-saldo")));
+        await u.click("#dlg-voz .dp-cerrar"); await u.waitForTimeout(300);
         exige(!n.errs.length && !u.errs.length, "errores en el estudio: " + n.errs.concat(u.errs).join(" | ").slice(0, 200));
       } finally {
         await api(n, "api/admin/laboratorio/voz-ia", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
         await api(n, "api/admin/voz", J("PUT", { modelo: "eleven_multilingual_v2", voces: [] })).catch(() => {});
         if (t) await t.context().close();
+        await u.context().close(); await n.context().close();
+      }
+    });
+    // Vista previa en celular (pedido de Emanuel, 19 nov 2026: «en el botón de vista previa, que se pueda seleccionar la vista 16:9 y la
+    // 9:16, para que uno pueda visualizar y revisar con el audio y todo completo»).
+    await paso("Vista previa en celular (Laboratorio, nace Solo yo): el botón del teléfono abre el tour en 9:16 con su interfaz vertical y de ahí se cambia a compu", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const tutoriales = async (p) => { const vistos = []; for (let i = 0, quieto = 0; i < 30 && quieto < 4; i++) { await p.waitForTimeout(700); if (await p.isVisible(".guia-tarjeta").catch(() => false)) { quieto = 0; vistos.push(await p.textContent(".guia-tarjeta")); await p.click('.guia-tarjeta [data-guia="seguir"]'); } else quieto++; } return vistos; };
+      const mide = (p) => p.evaluate(() => { const pv = document.querySelector("#previa"), r = pv.getBoundingClientRect(), c = document.querySelector("#pv-stage canvas").getBoundingClientRect(), f = document.querySelector("#previa-fondo"); return { w: r.width, h: r.height, x: r.x, cw: c.width, ch: c.height, v: document.querySelector("#pv-ui").classList.contains("sk--v"), cel: pv.classList.contains("cel"), fondo: !!f && !f.hidden, alto: innerHeight, ancho: innerWidth }; });
+      const correoU = "sin-previa-cel@prueba.mx", n = await pagina(DUENO), u = await pagina(correoU);
+      try {
+        await nuevoTour(n, "Previa celular");
+        exige(await n.isVisible("#abrir-previa-cel"), "el dueño no ve el botón de vista previa en celular");
+        await n.click("#abrir-previa-cel"); await n.waitForSelector("#pv-stage canvas", { timeout: 30000 }); await n.waitForSelector("#pv-carga", { state: "hidden", timeout: 20000 }); await n.waitForTimeout(800);
+        let m = await mide(n);
+        exige(m.cel && m.fondo && m.v, "la vista previa no abrió en celular con la interfaz vertical: " + JSON.stringify(m));
+        exige(Math.abs(m.w / m.h - 390 / 844) < 0.01 && m.h <= m.alto - 60 && m.h > m.alto * 0.7 && Math.abs(m.x + m.w / 2 - m.ancho / 2) < 3, "el teléfono no queda centrado y completo en la pantalla, en 9:16: " + JSON.stringify(m));
+        exige(Math.abs(m.cw / m.ch - 390 / 844) < 0.02 && Math.abs(m.cw - m.w) < 3, "la esfera no llena el teléfono: " + JSON.stringify(m));
+        exige((await n.getAttribute('#previa-fondo [data-pv-forma="v"]', "aria-pressed")) === "true" && /Compu 16:9/.test(await n.textContent('#previa-fondo [data-pv-forma="h"]')), "arriba no está el cambio entre compu y celular");
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "previa-celular.png") });
+        // de ahí mismo se cambia a compu: la vista previa de siempre, a pantalla completa
+        await n.click('#previa-fondo [data-pv-forma="h"]'); await n.waitForSelector("#pv-stage canvas", { timeout: 30000 }); await n.waitForTimeout(1500);
+        m = await mide(n);
+        exige(!m.cel && !m.fondo && !m.v && Math.abs(m.w - m.ancho) < 2 && Math.abs(m.h - m.alto) < 2, "«Compu 16:9» no regresó a la vista previa completa: " + JSON.stringify(m));
+        await n.keyboard.press("Escape"); await n.waitForTimeout(500);
+        exige(await n.isHidden("#previa"), "no se cerró la vista previa");
+        // el botón de siempre sigue abriendo en compu; y en celular la X de afuera también cierra
+        await n.click("#abrir-previa"); await n.waitForSelector("#pv-stage canvas", { timeout: 30000 }); await n.waitForTimeout(800);
+        exige(!(await mide(n)).cel, "«Vista previa» ya no abre en compu");
+        await n.keyboard.press("Escape"); await n.waitForTimeout(400);
+        await n.click("#abrir-previa-cel"); await n.waitForSelector("#pv-stage canvas", { timeout: 30000 }); await n.waitForTimeout(800);
+        await n.click("#previa-fondo .pv-salir"); await n.waitForTimeout(500);
+        exige(await n.isHidden("#previa") && await n.isHidden("#previa-fondo"), "la X de afuera no cierra la vista previa en celular");
+        // nace Solo yo; a quien se le da, le sale su tutorial en Interfaz
+        await nuevoTour(u, "Sin previa cel"); const iu = await idTour(u);
+        exige(!(await u.isVisible("#abrir-previa-cel")), "una cuenta normal ya ve la vista previa en celular (debe nacer Solo yo)");
+        exige((await api(n, "api/admin/laboratorio/previa-celular", J("PUT", { modo: "probadores", probadores: [correoU] }))).s === 200, "no se pudo dar la función a un probador");
+        await u.goto(ESTUDIO + "/#t=" + iu); await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u);
+        await u.click('#nav button:has-text("Interfaz")'); await u.waitForTimeout(1500);
+        const vistos = await tutoriales(u);
+        exige(vistos.some((x) => /Nuevo: vista previa en celular/.test(x)) && await u.isVisible("#abrir-previa-cel"), "con la función no salió su botón o su tutorial: " + vistos.map((x) => x.slice(0, 40)).join(" | "));
+        exige(!n.errs.length && !u.errs.length, "errores en el estudio: " + n.errs.concat(u.errs).join(" | ").slice(0, 200));
+      } finally {
+        await api(n, "api/admin/laboratorio/previa-celular", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
         await u.context().close(); await n.context().close();
       }
     });

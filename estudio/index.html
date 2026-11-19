@@ -1399,6 +1399,26 @@
   .vza-voz { display: grid; grid-template-columns: auto minmax(0, 150px) minmax(0, 1fr) auto; gap: 10px; align-items: center; }
   .vza-voz small { font-size: 11px; color: var(--mz-tenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .lab-voz { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  /* «Sonido del tour»: música, voz y cómo suenan juntas, en una sola ventana */
+  .son .son-bloque { display: grid; gap: 10px; padding: 14px; border-radius: 14px; border: 1px solid var(--mz-linea-neutra); }
+  .son-t { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--mz-texto); }
+  .son-t i { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 11px; font-weight: 700; background: var(--mz-lima); color: var(--mz-tinta); }
+  .son .fila-campo { grid-template-columns: 84px minmax(0, 1fr); }
+  .son .ub-acc label.btn-sec, .son .musica label.btn-sec { display: inline-flex; align-items: center; cursor: pointer; }
+  .son button.btn-sec:disabled, .son button.btn-prim:disabled { opacity: 0.45; cursor: default; }
+  .son-ops { display: grid; gap: 8px; }
+  .son-ops label { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--mz-texto); cursor: pointer; }
+  #m-junto { display: grid; gap: 8px; } #m-junto[hidden] { display: none; }
+  /* Vista previa en celular (Laboratorio «previa-celular»): el tour dentro de un teléfono 9:16, con todo funcionando */
+  .previa-fondo { position: fixed; inset: 0; z-index: 49; background: #060606; }
+  .previa-fondo[hidden] { display: none; }
+  .pv-formas { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: #151515; border: 1px solid var(--mz-linea-neutra); }
+  .pv-formas button { border: 0; background: transparent; color: var(--mz-tenue); font: 500 12px var(--mz-texto-ui); padding: 7px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+  .pv-formas button[aria-pressed="true"] { background: var(--mz-lima); color: var(--mz-tinta); }
+  .pv-salir { position: absolute; top: 12px; right: 16px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--mz-linea-neutra); background: #151515; color: #fff; font-size: 20px; line-height: 1; cursor: pointer; }
+  .previa.cel { inset: auto; left: 50%; top: calc(50% + 26px); width: 390px; height: 844px; margin: -422px 0 0 -195px; transform: scale(var(--pv-k, 1)); border-radius: 42px; overflow: hidden; box-shadow: 0 0 0 9px #000, 0 0 0 10px #2b2e27, 0 30px 80px rgba(0, 0, 0, 0.6); }
+  #abrir-previa-cel svg { width: 17px; height: 17px; }
+  @media (max-width: 900px) { #abrir-previa-cel { display: none; } }
   .voz-fila { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .voz-dato { font-size: 12.5px; color: var(--mz-texto); flex: 1 1 100%; }
   .voz-fila label.mini { display: inline-flex; align-items: center; }
@@ -2130,6 +2150,7 @@
     <div class="barra-der">
       <span class="estado"><i></i><span id="b-estado">Guardado</span></span>
       <button class="btn-prim" id="abrir-previa"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>Vista previa</button>
+      <button class="btn-reporte" id="abrir-previa-cel" hidden title="Vista previa en celular (9:16)" aria-label="Vista previa en celular (9:16)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></button>
       <button class="btn-reporte" id="abrir-manual" hidden title="Manual de Mozari" aria-label="Manual de Mozari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5M9 8h7M9 11.5h5"/></svg></button>
       <button class="btn-reporte" id="abrir-reporte" hidden title="Reportar un error" aria-label="Reportar un error"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/><path d="M12 8v5M12 16.5v.01"/></svg></button>
       <div class="cuenta" id="cuenta" hidden><button class="cuenta-btn" id="cuenta-btn" aria-label="Tu cuenta"></button>
@@ -2235,7 +2256,12 @@
       <div class="contenido" style="max-width:760px">
         <h1>Música</h1>
         <p class="sub">Música de fondo para todo el tour. Empieza al abrir la vista previa.</p>
-        <section class="tarjeta">
+        <section class="tarjeta" id="m-junto" hidden>
+          <b>La música y la voz se arreglan juntas</b>
+          <p class="nota">Todo el sonido de tu tour vive en una sola ventana: tu canción, la voz y cómo suenan juntas.</p>
+          <div class="voz-fila"><span class="voz-dato" id="m-junto-dato"></span><button class="btn-prim" type="button" id="m-abrir-sonido">Abrir sonido del tour</button></div>
+        </section>
+        <section class="tarjeta" id="m-clasico">
           <div class="musica">
             <button class="play" id="m-play" aria-label="Escuchar" disabled><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg></button>
             <div class="info"><b id="m-nombre">Sin música</b><small id="m-detalle">Sube un MP3, WAV o M4A</small></div>
@@ -3419,6 +3445,7 @@
   function ir(sec, sub) {
     // En la nube, sin tour abierto solo existe Mis Tours
     if (MODO === "nube" && !TOUR && sec !== "tours") { avisar("Abre o crea un tour primero"); sec = "tours"; sub = "todos"; }
+    $("abrir-previa-cel").hidden = !(MODO === "nube" && enLab("previa-celular")); // Laboratorio «previa-celular»
     const S = SECCIONES.find((s) => s.id === sec);
     if (!S) { if (sec === "mejora") avisar("La edición de esferas (Mejora) se usa en la compu"); return; } // una sección que aquí no existe (Mejora en el celular)
     sub = sub || nav.ultimoSub[sec] || S.subs[0][0];
@@ -4368,6 +4395,18 @@
     svg.innerHTML = h.replace('y="194"', 'y="194"');
   }
   // Brújula: la barra gira la aguja hasta que apunta al norte de verdad, y ahí se queda
+  // Vista previa en celular: tocas el botón del teléfono y el tour se ve (y se oye) en 9:16
+  function animPreviaCel(svg, t) {
+    const abre = sv((t - 1.2) / 0.7), onda = t > 2.3, y = 42 + (1 - abre) * 14;
+    let h = '<rect width="360" height="200" fill="#161a12"/><rect width="360" height="34" fill="#0d0f0b"/>' + BTN_G(196, 7, 88, "▶ Vista previa", "#D5FF40", "#0B0B0B");
+    h += '<circle cx="306" cy="17" r="11" fill="' + (t > 0.7 && t < 1.4 ? "#2a3320" : "transparent") + '" stroke="#D5FF40" stroke-width="1.4"/><rect x="302" y="10" width="8" height="14" rx="2" fill="none" stroke="#fff" stroke-width="1.3"/>';
+    h += '<g opacity="' + abre.toFixed(2) + '"><rect x="146" y="' + y.toFixed(1) + '" width="68" height="128" rx="11" fill="#000" stroke="#2b2e27" stroke-width="2"/><rect x="150" y="' + (y + 4).toFixed(1) + '" width="60" height="120" rx="8" fill="#6a9fb0"/>' +
+      '<path d="M150 ' + (y + 74).toFixed(1) + ' l18 -14 l14 9 l16 -15 l12 12 v50 q0 8 -8 8 h-44 q-8 0 -8 -8z" fill="#5f8a4a"/><rect x="156" y="' + (y + 104).toFixed(1) + '" width="30" height="5" rx="2.5" fill="#fff"/><rect x="156" y="' + (y + 112).toFixed(1) + '" width="18" height="4" rx="2" fill="rgba(255,255,255,.6)"/></g>';
+    if (onda) for (let i = 0; i < 7; i++) { const a = 3 + 9 * Math.abs(Math.sin(t * 7 + i * 0.9)); h += '<rect x="' + (232 + i * 7) + '" y="' + (104 - a).toFixed(1) + '" width="3.4" height="' + (a * 2).toFixed(1) + '" rx="1.7" fill="#D5FF40"/>'; }
+    const [cx, cy] = camino([[0, 330, 190], [0.7, 306, 18], [1.4, 306, 18], [2.6, 262, 150], [4.2, 330, 190]], t);
+    h += TOQUE_G(306, 17, t, 0.7) + CURSOR_G(cx, cy) + pieG(onda ? "Lo ves y lo oyes como en un celular" : "Toca el botón del celular", onda);
+    svg.innerHTML = h;
+  }
   function animNorte(svg, t) {
     const u = sv((t - 0.8) / 1.8), deg = Math.round(338 + 22 * u) % 360;
     let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="20" y="16" width="200" height="150" rx="10" fill="#7FA9C9"/><path d="M20 120 L70 74 L104 98 L150 58 L220 112 V166 H20Z" fill="#5d7f45"/>' +
@@ -4584,8 +4623,8 @@
       texto: "Los navegadores no dejan sonar un tour hasta que el visitante toca la pantalla. Ahora, al abrirlo le preguntamos <b>Activar sonido</b> o <b>Sin sonido</b>, con los colores de tu tour, y la música y las voces arrancan con su respuesta." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "musica");
     if (clave === "publicar/landing" && enLab("landing")) guiaNueva("nuevo-landing", () => [esVisible("#ld-form .comp-tarjeta") && { el: "#ld-form .comp-tarjeta", titulo: "Nuevo: la landing de tu desarrollo", anim: animLanding, dur: 5.8,
       texto: "Una página para mandar por WhatsApp o poner en tus anuncios. Sube tu <b>logo</b> y tu <b>plano maestro</b>, pon los <b>colores y letras</b> de tu marca y tu <b>WhatsApp</b>. Los lotes, sus precios, las fotos y los lugares cercanos salen solos del tour. A la derecha la ves como en el celular." }].filter(Boolean), () => nav.sub === "landing" && esVisible("#ld-form .comp-tarjeta"));
-    if (clave.startsWith("skin/") && vozIA()) guiaNueva("nuevo-voz-ia", () => [esVisible("#sk-voz-grupo") && { el: "#sk-voz-grupo", titulo: "Nuevo: la voz de tu tour", anim: animVozIA, dur: 4.8,
-      texto: "Tu recorrido puede empezar <b>hablando</b>. Dices de qué quieres hablar (o nada), Mozari <b>escribe el guion</b>, eliges la <b>voz</b> y listo: suena cuando el tour empieza y sigue aunque tu cliente cambie de esfera. La música baja sola mientras habla." }].filter(Boolean), () => nav.sec === "skin" && esVisible("#sk-voz-grupo"));
+    if (clave.startsWith("skin/") && vozIA()) guiaNueva("nuevo-voz-ia", () => [esVisible("#sk-voz-grupo") && { el: "#sk-voz-grupo", titulo: "Nuevo: el sonido de tu tour", anim: animVozIA, dur: 4.8,
+      texto: "La <b>música</b> y la <b>voz</b> de tu recorrido se arreglan en <b>una sola ventana</b>: subes tu canción, escribes lo que quieres que diga la voz (la lee tal cual) y oyes cómo queda. La música baja sola mientras la voz habla." }].filter(Boolean), () => nav.sec === "skin" && esVisible("#sk-voz-grupo"));
     if (clave === "media/ubicacion" && enLab("ubicacion")) guiaNueva("nuevo-ubicacion", () => [esVisible("#ub-form .comp-tarjeta") && { el: "#ub-form .comp-tarjeta", titulo: "Nuevo: tu desarrollo en el satélite", anim: animUbicacion, dur: 5.6,
       texto: "Sube el <b>KMZ</b> de tu desarrollo y míralo sobre el mapa satelital, en su lugar real. Al <b>acercar</b> salen los números de lote. Mozari revisa el archivo y te dice <b>qué trae y qué le falta</b>." },
       esVisible('#ub-form [data-ub="guia"]') && { el: '#ub-form [data-ub="guia"]', titulo: "¿Tu ingeniero no sabe cómo mandarlo?",
@@ -4618,6 +4657,8 @@
     if (/^skin\//.test(clave) && enLab("carga-logo")) guiaNueva("nuevo-carga-logo", [{ el: () => document.querySelector(".logo-fila") && document.querySelector(".logo-fila").closest(".grupo"),
       titulo: "Nuevo: tu logo al cargar el tour", anim: animCarga, dur: 4.5,
       texto: "Elige <b>Del cliente</b> y sube su logo: el tour publicado carga con ese logo, el nombre y los colores de la Interfaz, sin Mozari. Se ve al <b>volver a publicar</b>." + (conMarcaPrueba() ? " En tu plan actual se queda la de Mozari." : "") }], () => nav.sec === "skin" && esVisible(".logo-fila"));
+    if (/^skin\//.test(clave) && previaCel()) guiaNueva("nuevo-previa-celular", () => [esVisible("#abrir-previa-cel") && { el: "#abrir-previa-cel", titulo: "Nuevo: vista previa en celular", anim: animPreviaCel, dur: 4.4,
+      texto: "Con este botón ves tu tour <b>como en un celular (9:16)</b>, con su música, su voz y todo funcionando. Desde ahí mismo cambias a la vista de compu." }].filter(Boolean), () => esVisible("#abrir-previa-cel"));
     if (/^skin\//.test(clave)) guiaNueva("nuevo-norte", () => [esVisible("#sk-norte") && { el: "#sk-norte", titulo: "Nuevo: el norte de tu brújula", anim: animNorte, dur: 4.6,
       texto: "Si tu brújula no marcaba el norte, ya puedes girarla: mira hacia el norte y toca <b>Aquí es el norte</b>, o mueve la barra hasta que la aguja apunte bien. Se guarda en cada esfera (o en todas) y se ve al <b>volver a publicar</b>." }].filter(Boolean), () => nav.sec === "skin" && esVisible("#sk-norte"));
     if (/^skin\//.test(clave) && !conMarcaPrueba()) guiaNueva("nuevo-icono", () => [esVisible("#sk-icono-grupo") && { el: "#sk-icono-grupo", titulo: "Nuevo: tu ícono en la pestaña", anim: animIcono, dur: 4,
@@ -6045,7 +6086,14 @@
   const ICO_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>';
   const ICO_PAUSA = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
   const ICO_STOP = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
+  // «Sonido del tour» (Laboratorio «voz-ia»): quien lo tiene arregla música y voz en una sola ventana y aquí solo
+  // ve la puerta. Las pruebas de siempre (mz-musica-clasica) siguen viendo los controles de música aquí.
+  let musicaClasica = false; try { musicaClasica = !!localStorage.getItem("mz-musica-clasica"); } catch (e) { /* sin almacenamiento */ }
+  const sonidoJunto = () => MODO === "nube" && enLab("voz-ia") && !musicaClasica;
   function pintarMusica() {
+    const junto = sonidoJunto(), vt = P().vozTour;
+    $("m-junto").hidden = !junto; $("m-clasico").hidden = junto;
+    if (junto) $("m-junto-dato").textContent = "Música: " + (musica ? musica.nombre : "sin música") + " · Voz: " + (vt && vt.archivo ? vt.nombre || "lista" : "sin voz");
     $("m-nombre").textContent = musica ? musica.nombre : "Sin música";
     $("m-detalle").textContent = musica ? ((musica.peso || (musica.blob && musica.blob.size) || 0) / 1048576).toFixed(1) + " MB · suena al abrir el tour" : "Sube un MP3, WAV o M4A";
     $("m-play").disabled = !musica;
@@ -6057,16 +6105,16 @@
     else { audioPrueba.pause(); $("m-play").innerHTML = ICO_PLAY; }
   });
   audioPrueba.addEventListener("ended", () => ($("m-play").innerHTML = ICO_PLAY));
-  $("m-archivo").addEventListener("change", async (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
+  // Pone la canción del tour. La usan Proyecto → Música y la ventana «Sonido del tour» (ahí «callado»: el aviso va
+  // dentro de la ventana). Devuelve "" si quedó o el motivo si no.
+  async function ponerMusica(f, callado) {
+    const di = (m) => { if (!callado) avisar(m); };
     if (MODO === "nube") {
       // Se sube con el tour para que suene también en el link publicado
-      e.target.value = "";
       const ext = (f.name.split(".").pop() || "").toLowerCase(), tipo = { mp3: "mp3", m4a: "m4a", wav: "wav" }[ext] || { "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/wav": "wav", "audio/x-wav": "wav" }[f.type];
-      if (!tipo) { avisar("Usa un archivo MP3, M4A o WAV"); return; }
-      if (f.size > 25 * 1048576) { avisar("La música pesa más de 25 MB. Usa un MP3 más ligero."); return; }
-      avisar("Subiendo música…");
+      if (!tipo) { di("Usa un archivo MP3, M4A o WAV"); return "Usa un archivo MP3, M4A o WAV"; }
+      if (f.size > 25 * 1048576) { di("La música pesa más de 25 MB. Usa un MP3 más ligero."); return "La música pesa más de 25 MB. Usa un MP3 más ligero."; }
+      di("Subiendo música…");
       try {
         const ruta = "archivos/musica-" + Date.now().toString(36) + "." + tipo;
         await subirArchivo(ruta, f);
@@ -6074,26 +6122,28 @@
         musica = { nombre: f.name, peso: f.size };
         if (musicaUrl && musicaUrl.startsWith("blob:")) URL.revokeObjectURL(musicaUrl);
         musicaUrl = urlArchivo(ruta);
-        guardar(); pintarMusica(); avisar("Música agregada al tour");
-      } catch (err) { avisar(err.message); }
-      return;
+        guardar(); pintarMusica(); di("Música agregada al tour");
+        return "";
+      } catch (err) { di(err.message); return err.message || "No se pudo subir la música"; }
     }
     musica = { blob: f, nombre: f.name };
     if (musicaUrl) URL.revokeObjectURL(musicaUrl);
     musicaUrl = URL.createObjectURL(f);
     const ok = await dbPut("musica", musica);
     pintarMusica();
-    avisar(ok ? "Música agregada" : "Música agregada solo para esta sesión");
-    e.target.value = "";
-  });
-  $("m-quitar").addEventListener("click", async () => {
+    di(ok ? "Música agregada" : "Música agregada solo para esta sesión");
+    return "";
+  }
+  async function quitarMusica(callado) {
     audioPrueba.pause(); $("m-play").innerHTML = ICO_PLAY;
     if (musicaUrl && musicaUrl.startsWith("blob:")) URL.revokeObjectURL(musicaUrl);
     musica = null; musicaUrl = null;
     if (MODO === "nube") { delete P().musica.archivo; delete P().musica.nombre; delete P().musica.peso; guardar(); }
     else await dbDel("musica");
-    pintarMusica(); avisar("Música quitada");
-  });
+    pintarMusica(); if (!callado) avisar("Música quitada");
+  }
+  $("m-archivo").addEventListener("change", async (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) await ponerMusica(f); });
+  $("m-quitar").addEventListener("click", () => quitarMusica());
   $("m-vol").addEventListener("input", (e) => { P().musica.volumen = +e.target.value; $("m-vol-v").textContent = Math.round(e.target.value * 100) + "%"; audioPrueba.volume = +e.target.value; guardar(); });
   $("m-loop").addEventListener("change", (e) => { P().musica.repetir = e.target.checked; guardar(); });
   $("m-preguntar").addEventListener("change", (e) => { P().musica.preguntar = e.target.checked; guardar(); });
@@ -14537,7 +14587,25 @@ void main(){
     } else if (musicaPausadaPorSalir) { musicaPausadaPorSalir = false; if (!$("previa").hidden) audioTour.play().catch(() => {}); }
   });
   window.addEventListener("pagehide", () => { try { audioTour.pause(); vozTour.pause(); } catch (e) { /* nada */ } });
-  const orientacionPantalla = () => (window.innerWidth < window.innerHeight ? "v" : "h");
+  // Vista previa en celular (Laboratorio «previa-celular», pedido de Emanuel, 19 nov 2026: «en el botón de vista
+  // previa, que se pueda seleccionar la vista 16:9 y la 9:16, para revisar con el audio y todo completo»). Antes el
+  // 9:16 solo se veía en Interfaz, sin sonido. Ahora la vista previa también abre dentro de un teléfono.
+  let pvForma = "h", pvFondo = null;
+  const previaCel = () => MODO === "nube" && enLab("previa-celular");
+  const orientacionPantalla = () => (pvForma === "v" || window.innerWidth < window.innerHeight ? "v" : "h");
+  function escalaPreviaCel() { const pv = $("previa"); if (pvForma === "v") pv.style.setProperty("--pv-k", Math.max(0.3, Math.min(1, (window.innerHeight - 96) / 864)).toFixed(4)); else pv.style.removeProperty("--pv-k"); }
+  function formaPrevia(f) {
+    const cel = f === "v", pv = $("previa"); pvForma = cel ? "v" : "h";
+    pv.classList.toggle("cel", cel);
+    if (cel && !pvFondo) {
+      pvFondo = document.createElement("div"); pvFondo.className = "previa-fondo"; pvFondo.id = "previa-fondo";
+      pvFondo.innerHTML = '<div class="pv-formas" role="group" aria-label="Forma de la vista previa"><button type="button" data-pv-forma="h" aria-pressed="false">Compu 16:9</button><button type="button" data-pv-forma="v" aria-pressed="true">Celular 9:16</button></div><button type="button" class="pv-salir" data-pv-forma="cerrar" aria-label="Cerrar vista previa">×</button>';
+      pv.parentNode.insertBefore(pvFondo, pv);
+      pvFondo.addEventListener("click", (ev) => { const b = ev.target.closest("[data-pv-forma]"); if (!b || b.dataset.pvForma === "v") return; const k = b.dataset.pvForma; cerrarPrevia(); if (k === "h") abrirPrevia("h"); });
+    }
+    if (pvFondo) pvFondo.hidden = !cel;
+    escalaPreviaCel();
+  }
   // =================== MEDIA: FOTOS ===================
   // Biblioteca del tour: se suben una vez (reducidas a 2400 px) y se usan en cualquier capa.
   // =================== MEDIA: NARRACIÓN POR ESPACIO (Laboratorio «narracion», pedido de Amar 11 nov 2026) ===================
@@ -14598,150 +14666,192 @@ void main(){
       guardar(); pintarAudios(); avisar("Voz lista en " + e.nombre + ". Pruébala en Vista previa.");
     } catch (err) { avisar(err.message || "No se pudo subir la voz"); }
   });
-  // =================== VOZ DEL TOUR, CON GUION (Laboratorio «voz-ia», pedido de Amar 18 nov 2026) ===================
-  // Amar hacía la narración en tres programas (el guion en un chat, la voz en ElevenLabs y la mezcla en un editor).
-  // La primera versión hacía una voz por esfera, en Media → Audios. Amar, el mismo día: «está súper escondida… debe de
-  // estar en Interfaz y que no se reproduzca en cada esfera, que se reproduzca en el tour general». Así quedó:
-  // Interfaz → «Voz del tour». Una sola voz para todo el recorrido: suena cuando el tour empieza y sigue aunque se
-  // cambie de esfera; la música baja mientras habla y los subtítulos van pasando por frases (ver VOZ_TOUR en el visor).
-  // P().vozTour: { archivo, nombre, peso, duracion, texto (lo que dice), ia: { notas, voz, largo } }. «ia» es de
-  // trabajo y no se publica. La mezcla con la música ya la hace el tour.
+  // =================== SONIDO DEL TOUR: MÚSICA Y VOZ EN UNA SOLA VENTANA (Laboratorio «voz-ia») ===================
+  // Amar hacía sus audios en tres programas (el guion en un chat, la voz en ElevenLabs y la mezcla con música en un
+  // editor). Historia de esta función, toda de noviembre de 2026:
+  //   1) una voz por esfera, en Media → Audios. Amar: «está súper escondida… debe de estar en Interfaz y que no se
+  //      reproduzca en cada esfera, que se reproduzca en el tour general».
+  //   2) Interfaz → «Voz del tour», con un guion escrito por IA a partir de unas notas. Amar, 19 nov: «la IA
+  //      interpreta lo que queremos decir y ya te genera otro guion. Eso está de más… que únicamente le des el texto
+  //      literalmente de lo que quieres que diga». Y: «si vas a modificar música y voz, todo tiene que vivir en una
+  //      misma ventana… yo los audios que hago son con música y voz, y quisiera que no tengamos lío con eso».
+  // Así queda: Interfaz → «Sonido del tour» abre UNA ventana con 1) la música (tu canción), 2) la voz (escribes lo
+  // que dice y se lee tal cual, o subes tu audio) y 3) «Escuchar cómo queda» (la música baja sola mientras la voz
+  // habla, igual que en el tour). Para quien tiene la función, Proyecto → Música lleva a esta misma ventana.
+  // Cada tour puede crear 2 voces al mes (Amar: «una o dos posibles intentos de voz por desarrollo, porque van a probar
+  // las voces a ver cuál les gusta más»): las muestras de cada voz se oyen sin gastar.
+  // P().vozTour: { archivo, nombre, peso, duracion, texto (lo que dice), ia: { voz } }. «ia» es de trabajo y no se publica.
   const vozIA = () => MODO === "nube" && enLab("voz-ia");
-  const VZ_LARGOS = [["corta", "Corta · 15 s"], ["media", "Media · 30 s"], ["larga", "Larga · 1 min"]];
   const vozDelTour = () => (P().vozTour && P().vozTour.archivo ? P().vozTour : null);
-  let VZ = null, VZA = null, vzEstado = null, vzSonando = "", vzQuitar = 0;
+  let VZ = null, VZA = null, vzEstado = null, vzSonando = "", vzQuitar = 0, sonReloj = 0;
   const vzMuestra = new Audio();
-  const vzRepintar = () => { if (VZ) pintarCrearVoz(); else if (VZA && VZA.pinta) VZA.pinta(); else if (nav.sec === "skin" && $("sk-voz-grupo")) pintarPanelSkin(); };
-  vzMuestra.addEventListener("ended", () => { vzSonando = ""; vzRepintar(); });
+  const vzRepintar = () => { if (VZ) pintarCrearVoz(); else if (VZA && VZA.pinta) VZA.pinta(); };
   const vzCallar = () => { vzMuestra.pause(); vzSonando = ""; };
+  // Todo lo que suena en la ventana se calla junto: muestras, voz, música y la mezcla
+  const sonCallar = () => { clearTimeout(sonReloj); vzCallar(); audioPrueba.pause(); audioPrueba.loop = false; $("m-play").innerHTML = ICO_PLAY; };
+  vzMuestra.addEventListener("ended", () => {
+    // en la mezcla, al terminar la voz la música vuelve a su volumen y se deja oír unos segundos
+    if (vzSonando === "mezcla" && !audioPrueba.paused) { audioPrueba.volume = P().musica.volumen; sonReloj = setTimeout(() => { sonCallar(); vzRepintar(); }, 5000); return; }
+    vzSonando = ""; vzRepintar();
+  });
+  audioPrueba.addEventListener("ended", () => { if ((vzSonando === "musica" || vzSonando === "mezcla") && vzMuestra.paused) { vzSonando = ""; vzRepintar(); } });
   const vzSeg = (t) => { const p = String(t).trim().split(/\s+/).filter(Boolean).length; return p ? Math.max(1, Math.round(p / 2.5)) : 0; };
   const vzDuracion = (src) => new Promise((ok) => { const a = new Audio(); a.preload = "metadata"; a.onloadedmetadata = () => ok(isFinite(a.duration) ? +a.duration.toFixed(1) : 0); a.onerror = () => ok(0); setTimeout(() => ok(0), 6000); a.src = src; });
-  // El grupo de Interfaz: a la vista, con su botón principal
+  const vzError = async (r, porDefecto) => { const d = r ? await r.json().catch(() => ({})) : {}; return d.error || porDefecto; };
+  const sonResumen = () => { const g = vozDelTour(); return "Música: " + (musica ? musica.nombre : "sin música") + " · Voz: " + (g ? [g.nombre || "Voz", durTxt(g.duracion)].filter(Boolean).join(", ") : "sin voz"); };
+  // El grupo de Interfaz: un resumen y la puerta a la única ventana donde se arregla el sonido
   function vozGrupoHtml() {
-    const g = vozDelTour();
-    return '<div class="grupo" id="sk-voz-grupo"><b>Voz del tour ' + CHIP_LAB + "</b>" +
-      (g ? '<div class="voz-fila"><span class="voz-dato" id="sk-voz-dato">🔊 ' + esc([durTxt(g.duracion), g.nombre || "Voz"].filter(Boolean).join(" · ")) + '</span><button class="mini" type="button" id="sk-voz-oir">' + (vzSonando === "tour" ? "❚❚ Pausar" : "▶ Escuchar") + "</button>" +
-          '<button class="mini primario" type="button" id="sk-voz-crear">' + (g.ia ? "✦ Editar" : "✦ Crear con Mozari") + '</button><button class="mini" type="button" id="sk-voz-quitar">Quitar</button></div>' +
-          '<p class="nota">Suena cuando el tour empieza y sigue aunque tu cliente cambie de esfera; la música baja mientras habla. Óyela en el recorrido con <b>Vista previa</b> y vuelve a publicar.</p>'
-        : '<p class="nota">Una voz que presenta tu recorrido: suena cuando el tour empieza y sigue aunque tu cliente cambie de esfera. Mozari escribe el guion y lo lee.</p>' +
-          '<div class="voz-fila"><button class="btn-prim" type="button" id="sk-voz-crear">✦ Crear la voz del tour</button><label class="mini" for="sk-voz-archivo">Subir mi audio</label><input type="file" id="sk-voz-archivo" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,.mp3,.m4a,.wav" hidden></div>') + "</div>";
+    return '<div class="grupo" id="sk-voz-grupo"><b>Sonido del tour ' + CHIP_LAB + "</b>" +
+      '<p class="nota">La música y la voz de tu recorrido se arreglan juntas, en una sola ventana. La música baja sola mientras la voz habla.</p>' +
+      '<div class="voz-fila"><span class="voz-dato" id="sk-voz-dato">' + esc(sonResumen()) + '</span><button class="btn-prim" type="button" id="sk-voz-crear">Abrir sonido del tour</button></div></div>';
   }
-  document.addEventListener("click", (ev) => {
-    const b = ev.target.closest && ev.target.closest("#sk-voz-crear, #sk-voz-oir, #sk-voz-quitar"); if (!b || !vozIA()) return;
-    if (b.id === "sk-voz-crear") { vzCallar(); abrirVoz(); }
-    else if (b.id === "sk-voz-oir") {
-      const g = vozDelTour(); if (!g) return;
-      if (vzSonando === "tour") vzCallar(); else { vzMuestra.src = urlArchivo(g.archivo); vzSonando = "tour"; vzMuestra.play().catch(() => { vzSonando = ""; avisar("No se pudo reproducir la voz"); pintarPanelSkin(); }); }
-      pintarPanelSkin();
-    } else if (b.id === "sk-voz-quitar") {
-      if (Date.now() - vzQuitar > 4000) { vzQuitar = Date.now(); b.textContent = "¿Quitar? Toca otra vez"; return; }
-      vzQuitar = 0; vzCallar(); delete P().vozTour; guardar(); pintarPanelSkin(); avisar("Voz del tour quitada");
-    }
-  });
+  document.addEventListener("click", (ev) => { const b = ev.target.closest && ev.target.closest("#sk-voz-crear, #m-abrir-sonido"); if (b && vozIA()) abrirVoz(); });
+  async function abrirVoz() {
+    const g = P().vozTour || {};
+    audioPrueba.pause(); $("m-play").innerHTML = ICO_PLAY;
+    VZA = null; vzEstado = null; VZ = { texto: g.texto || "", voz: (g.ia || {}).voz || "", ocupado: "", error: "", listo: "" };
+    pintarCrearVoz(); if (!$("dlg-voz").open) $("dlg-voz").showModal();
+    const turno = VZ, r = await fetch("api/voz?tour=" + encodeURIComponent(TOUR || ""), { cache: "no-store" }).catch(() => null), S = r && r.ok ? await r.json().catch(() => null) : null;
+    if (VZ !== turno) return;
+    vzEstado = S || { activo: false, voces: [], usadas: 0, tope: 0, max: 1200, fallo: true };
+    if (!vzEstado.voces.some((v) => v.id === VZ.voz)) VZ.voz = (vzEstado.voces[0] || {}).id || "";
+    pintarCrearVoz();
+  }
+  const vzCuenta = () => { const n = VZ.texto.trim().length, max = (vzEstado && vzEstado.max) || 1200; return n.toLocaleString("es-MX") + " de " + max.toLocaleString("es-MX") + " letras" + (n ? " · unos " + vzSeg(VZ.texto) + " segundos de voz" : ""); };
+  // Cuántas voces puede crear todavía este tour este mes (null: sin límite, el dueño)
+  const vzQuedan = () => { const S = vzEstado; return !S || S.porTour === null || S.porTour === undefined ? null : Math.max(0, S.porTour - (S.creadas || 0)); };
+  const vzSinPlan = () => { const S = vzEstado; return !!S && !S.tope && S.tope !== null && S.tope !== undefined; };
+  function vzSaldo() {
+    const S = vzEstado; if (!S) return "";
+    if (S.fallo) return "No se pudieron cargar las voces. Cierra y vuelve a abrir.";
+    if (!S.activo) return "Las voces aún no están conectadas." + (NUBE.admin ? " Pega la llave de ElevenLabs y elige las voces en Panel de dueño → Laboratorio." : " Mientras, puedes subir tu propio audio.");
+    if (vzSinPlan()) return "Las voces de Mozari vienen con las licencias Pro y Desarrollos. Mientras, puedes subir tu propio audio.";
+    const q = vzQuedan();
+    if (q === 0) return "Este tour ya creó sus " + S.porTour + " voces de este mes. Puedes subir tu propio audio; el día 1 puedes crear otra.";
+    if (S.tope !== null && S.tope !== undefined && S.tope - S.usadas < VZ.texto.trim().length) return "No te alcanzan las letras de voz de este mes (te quedan " + Math.max(0, S.tope - S.usadas).toLocaleString("es-MX") + "). Acorta el texto o sube tu propio audio.";
+    return q === null ? "Oye las muestras con ▶ antes de crearla." : "Te " + (q === 1 ? "queda 1 voz" : "quedan " + q + " voces") + " para este tour este mes. Oye las muestras con ▶ antes de crearla: no gastan.";
+  }
+  // La ventana: 1) música, 2) voz, 3) cómo suena en el tour
+  function pintarCrearVoz() {
+    const d = $("dlg-voz"); if (!VZ) return;
+    const S = vzEstado, max = (S && S.max) || 1200, g = vozDelTour(), vol = P().musica.volumen, sinVoz = !S || !S.activo || vzSinPlan() || vzQuedan() === 0;
+    const play = (que, hay) => '<button type="button" class="play" data-son="' + que + '"' + (hay ? "" : " disabled") + ' aria-label="' + (vzSonando === que ? "Pausar" : "Escuchar") + '">' + (vzSonando === que ? ICO_PAUSA : ICO_PLAY) + "</button>";
+    const audios = "audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,.mp3,.m4a,.wav";
+    d.innerHTML = '<div class="dp-cuerpo vz son"><button type="button" class="dp-cerrar" data-vz="cerrar" aria-label="Cerrar">×</button><span class="etiq">Sonido del tour · ' + esc(P().nombre || "Tu tour") + '</span><h2 id="vz-titulo">La música y la voz de tu tour</h2>' +
+      '<section class="son-bloque" id="son-musica"><b class="son-t"><i>1</i>Música</b>' +
+      '<div class="musica">' + play("musica", !!musica) + '<div class="info"><b id="son-musica-nombre">' + esc(musica ? musica.nombre : "Sin música") + "</b><small>" + (VZ.ocupado === "musica" ? "Subiendo tu canción…" : musica ? "Suena de fondo en todo el recorrido" : "Sube tu canción: MP3, WAV o M4A") + "</small></div>" +
+      '<label class="btn-sec" for="son-musica-archivo">' + (musica ? "Cambiar" : "Subir mi canción") + '</label><input type="file" id="son-musica-archivo" accept="' + audios + '" hidden>' + (musica ? '<button type="button" class="btn-sec" data-son="musica-quitar">Quitar</button>' : "") + "</div>" +
+      (musica ? '<div class="fila-campo"><span>Volumen</span><div class="rango"><input type="range" data-son-vol min="0" max="1" step="0.05" value="' + vol + '" aria-label="Volumen de la música"><span class="valor" id="son-vol-v">' + Math.round(vol * 100) + "%</span></div></div>" : "") + "</section>" +
+      '<section class="son-bloque" id="son-voz"><b class="son-t"><i>2</i>Voz</b>' +
+      (g ? '<div class="musica" id="son-voz-actual">' + play("voz", true) + '<div class="info"><b>' + esc(g.nombre || "Voz") + "</b><small>" + esc([durTxt(g.duracion), "suena cuando el tour empieza"].filter(Boolean).join(" · ")) + '</small></div><button type="button" class="btn-sec" data-son="voz-quitar">' + (Date.now() - vzQuitar < 4000 ? "¿Quitar? Toca otra vez" : "Quitar") + "</button></div>" : "") +
+      '<label class="fe-campo">' + (g ? "Para cambiarla, escribe" : "Escribe") + ' lo que quieres que diga. La voz lo lee tal cual.<textarea rows="5" maxlength="' + max + '" data-vz-campo="texto" placeholder="Ej. Lomas del Encino está a diez minutos de León. Tiene casa club, lago y lotes desde doscientos metros cuadrados.">' + esc(VZ.texto) + '</textarea></label><p class="nota" id="vz-cuenta">' + vzCuenta() + "</p>" +
+      (S && S.voces.length ? '<div class="vz-voces" role="radiogroup" aria-label="Voz">' + S.voces.map((v) => '<label class="vz-voz"><input type="radio" name="vz-voz" value="' + esc(v.id) + '"' + (VZ.voz === v.id ? " checked" : "") + "><b>" + esc(v.nombre) + "</b><small>" + esc(v.tono || "Voz") + "</small>" +
+        (v.muestra ? '<button type="button" class="mini" data-vz-muestra="' + esc(v.id) + '" aria-label="Escuchar a ' + esc(v.nombre) + '">' + (vzSonando === v.id ? "❚❚" : "▶") + "</button>" : "") + "</label>").join("") + "</div>" : S ? "" : '<p class="nota">Cargando las voces…</p>') +
+      (VZ.error ? '<p class="ub-error" id="vz-error" role="alert">' + esc(VZ.error) + "</p>" : "") +
+      (VZ.listo ? '<div class="vz-listo" id="vz-listo"><b>Listo: ya es la voz de tu tour.</b><span class="nota">Tócale a «Escuchar cómo queda», aquí abajo.</span></div>' : "") +
+      '<div class="ub-acc"><button type="button" class="btn-prim" data-vz="audio"' + (VZ.ocupado || sinVoz ? " disabled" : "") + ">" + (VZ.ocupado === "audio" ? "Creando la voz…" : g ? "Crear otra voz" : "Crear la voz") + '</button><label class="btn-sec" for="son-voz-archivo">Subir mi audio</label><input type="file" id="son-voz-archivo" accept="' + audios + '" hidden><span class="nota" id="vz-saldo">' + esc(vzSaldo()) + "</span></div></section>" +
+      '<section class="son-bloque" id="son-mezcla"><b class="son-t"><i>3</i>Así suena en tu tour</b>' +
+      '<div class="voz-fila"><button type="button" class="btn-sec" data-son="mezcla"' + (musica || g ? "" : " disabled") + ">" + (vzSonando === "mezcla" ? "❚❚ Detener" : "▶ Escuchar cómo queda") + '</button><span class="nota">La música baja sola mientras la voz habla.</span></div>' +
+      '<div class="son-ops"><label><input type="checkbox" class="toggle" data-son-op="repetir"' + (P().musica.repetir ? " checked" : "") + '>Repetir la música al terminar</label>' +
+      '<label><input type="checkbox" class="toggle" data-son-op="preguntar"' + (P().musica.preguntar !== false ? " checked" : "") + ">Preguntar «Activar sonido» al abrir el tour</label></div>" +
+      '<p class="nota">Óyelo en el recorrido con <b>Vista previa</b> y vuelve a publicar.</p></section></div>';
+  }
+  // Escuchar la música, la voz o las dos juntas (la música al 20 % mientras la voz habla, como en el tour)
+  function sonOir(que) {
+    const ya = vzSonando === que; sonCallar(); if (ya) return;
+    const g = vozDelTour(), vol = P().musica.volumen, falla = () => { sonCallar(); if (VZ) { VZ.error = "No se pudo reproducir. Inténtalo otra vez."; pintarCrearVoz(); } };
+    if ((que === "musica" || que === "mezcla") && musicaUrl) { audioPrueba.src = musicaUrl; audioPrueba.loop = que === "mezcla" && !!g && !!P().musica.repetir; audioPrueba.volume = que === "mezcla" && g ? vol * 0.2 : vol; audioPrueba.play().catch(falla); }
+    if ((que === "voz" || que === "mezcla") && g) { vzMuestra.src = urlArchivo(g.archivo); vzMuestra.play().catch(falla); }
+    vzSonando = que;
+  }
   // Quien ya tiene su audio hecho (voz y mezcla), lo sube tal cual
-  document.addEventListener("change", async (ev) => {
-    const t = ev.target; if (t.id !== "sk-voz-archivo" || !vozIA()) return;
-    const f = t.files && t.files[0]; t.value = ""; if (!f) return;
+  async function vozPropia(f) {
     const ext = (f.name.split(".").pop() || "").toLowerCase(), tipo = { mp3: "mp3", m4a: "m4a", wav: "wav" }[ext] || { "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/wav": "wav", "audio/x-wav": "wav" }[f.type];
-    if (!tipo) { avisar("Usa un archivo MP3, M4A o WAV"); return; }
-    if (f.size > 15 * 1048576) { avisar("El audio pesa más de 15 MB. Usa un MP3 más ligero."); return; }
-    avisar("Subiendo tu audio…");
+    if (!tipo) return "Usa un archivo MP3, M4A o WAV";
+    if (f.size > 15 * 1048576) return "El audio pesa más de 15 MB. Usa un MP3 más ligero.";
     try {
       const u = URL.createObjectURL(f), duracion = await vzDuracion(u); URL.revokeObjectURL(u);
       const ruta = "archivos/voz-" + Date.now().toString(36) + "." + tipo;
       await subirArchivo(ruta, f);
       P().vozTour = { archivo: ruta, nombre: f.name.slice(0, 80), peso: f.size, duracion, texto: "" };
-      guardar(); if (nav.sec === "skin") pintarPanelSkin(); avisar("Listo: tu audio ya es la voz del tour. Óyelo en Vista previa.");
-    } catch (err) { avisar(err.message || "No se pudo subir el audio"); }
-  });
-  async function abrirVoz() {
-    const g = P().vozTour || {}, ia = g.ia || {};
-    VZA = null; VZ = { notas: ia.notas || "", largo: VZ_LARGOS.some((x) => x[0] === ia.largo) ? ia.largo : "media", texto: ia.voz ? g.texto || "" : "", voz: ia.voz || "", ocupado: "", error: "", listo: "" };
-    pintarCrearVoz(); if (!$("dlg-voz").open) $("dlg-voz").showModal();
-    if (!vzEstado) { const r = await fetch("api/voz", { cache: "no-store" }).catch(() => null); vzEstado = r && r.ok ? await r.json().catch(() => null) : null; if (!vzEstado) vzEstado = { activo: false, voces: [], usadas: 0, tope: 0, max: 1200, fallo: true }; }
-    if (VZ) { if (!vzEstado.voces.some((v) => v.id === VZ.voz)) VZ.voz = (vzEstado.voces[0] || {}).id || ""; pintarCrearVoz(); }
-  }
-  const vzCuenta = () => { const n = VZ.texto.trim().length, max = (vzEstado && vzEstado.max) || 1200; return n.toLocaleString("es-MX") + " de " + max.toLocaleString("es-MX") + " letras" + (n ? " · unos " + vzSeg(VZ.texto) + " segundos de voz" : ""); };
-  function vzSaldo() {
-    const S = vzEstado; if (!S) return "";
-    if (S.fallo) return "No se pudieron cargar las voces. Cierra y vuelve a abrir.";
-    if (!S.activo) return "Las voces aún no están conectadas." + (NUBE.admin ? " Pega la llave de ElevenLabs y elige las voces en Panel de dueño → Laboratorio." : "");
-    if (S.tope === null || S.tope === undefined) return "";
-    if (!S.tope) return "Las voces de Mozari vienen con las licencias Pro y Desarrollos. Mientras, puedes subir tu propio audio.";
-    const q = Math.max(0, S.tope - S.usadas); return "Te quedan " + q.toLocaleString("es-MX") + " letras de voz este mes (unos " + Math.floor(q / 900) + " minutos).";
-  }
-  function pintarCrearVoz() {
-    const d = $("dlg-voz"); if (!VZ) return;
-    const S = vzEstado, max = (S && S.max) || 1200, sinVoz = !S || !S.activo || (!S.tope && S.tope !== null && S.tope !== undefined);
-    d.innerHTML = '<div class="dp-cuerpo vz"><button type="button" class="dp-cerrar" data-vz="cerrar" aria-label="Cerrar">×</button><span class="etiq">Voz del tour · ' + esc(P().nombre || "Tu tour") + '</span><h2 id="vz-titulo">Crea la voz de tu tour</h2>' +
-      '<label class="fe-campo">¿Qué quieres decir de tu proyecto? (opcional)<textarea rows="3" maxlength="800" data-vz-campo="notas" placeholder="Ej. Desarrollo campestre a 10 minutos de León, con casa club, lago y lotes desde 200 m²">' + esc(VZ.notas) + "</textarea></label>" +
-      '<div class="vz-fila"><div class="estados" role="group" aria-label="Largo del guion">' + VZ_LARGOS.map(([k, n]) => '<button type="button" data-vz-largo="' + k + '" aria-pressed="' + (VZ.largo === k) + '" style="--c:var(--mz-lima)">' + n + "</button>").join("") + "</div>" +
-      '<button type="button" class="btn-sec" data-vz="guion"' + (VZ.ocupado ? " disabled" : "") + ">" + (VZ.ocupado === "guion" ? "Escribiendo…" : VZ.texto.trim() ? "✦ Escribir otro guion" : "✦ Escribir el guion") + "</button></div>" +
-      '<label class="fe-campo">Guion: lo que va a decir la voz<textarea rows="6" maxlength="' + max + '" data-vz-campo="texto" placeholder="Deja que Mozari lo escriba, o escríbelo tú">' + esc(VZ.texto) + '</textarea></label><p class="nota" id="vz-cuenta">' + vzCuenta() + "</p>" +
-      (S && S.voces.length ? '<div class="vz-voces" role="radiogroup" aria-label="Voz">' + S.voces.map((v) => '<label class="vz-voz"><input type="radio" name="vz-voz" value="' + esc(v.id) + '"' + (VZ.voz === v.id ? " checked" : "") + "><b>" + esc(v.nombre) + "</b><small>" + esc(v.tono || "Voz") + "</small>" +
-        (v.muestra ? '<button type="button" class="mini" data-vz-muestra="' + esc(v.id) + '" aria-label="Escuchar a ' + esc(v.nombre) + '">' + (vzSonando === v.id ? "❚❚" : "▶") + "</button>" : "") + "</label>").join("") + "</div>" : S ? "" : '<p class="nota">Cargando las voces…</p>') +
-      (VZ.error ? '<p class="ub-error" id="vz-error" role="alert">' + esc(VZ.error) + "</p>" : "") +
-      (VZ.listo ? '<div class="vz-listo" id="vz-listo"><b>Listo: ya es la voz de tu tour.</b><audio controls preload="metadata" src="' + esc(urlArchivo(VZ.listo)) + '"></audio><span class="nota">Suena cuando el tour empieza. Óyela en el recorrido con Vista previa y vuelve a publicar.</span></div>' : "") +
-      '<div class="ub-acc"><button type="button" class="btn-prim" data-vz="audio"' + (VZ.ocupado || sinVoz ? " disabled" : "") + ">" + (VZ.ocupado === "audio" ? "Generando la voz…" : VZ.listo ? "Generar otra vez" : "Generar voz") + "</button>" +
-      (VZ.listo ? '<button type="button" class="btn-sec" data-vz="cerrar">Cerrar</button>' : "") + '<span class="nota" id="vz-saldo">' + esc(vzSaldo()) + "</span></div></div>";
-  }
-  const vzError = async (r, porDefecto) => { const d = r ? await r.json().catch(() => ({})) : {}; return d.error || porDefecto; };
-  async function vzGuion() {
-    const turno = VZ; VZ.ocupado = "guion"; VZ.error = ""; pintarCrearVoz();
-    const r = await fetch("api/tours/" + TOUR + "/voz/guion", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ proyecto: P().nombre || "", espacios: est.escenas.map((x) => x.nombre).slice(0, 20), notas: VZ.notas, largo: VZ.largo, tono: "cercano" }) }).catch(() => null);
-    if (VZ !== turno) return;
-    if (r && r.ok) { const d = await r.json().catch(() => ({})); if (d.texto) { VZ.texto = d.texto; VZ.listo = ""; } else VZ.error = "No se pudo escribir el guion. Inténtalo otra vez o escríbelo tú."; }
-    else VZ.error = await vzError(r, "No se pudo escribir el guion. Revisa tu internet o escríbelo tú.");
-    VZ.ocupado = ""; pintarCrearVoz();
+      guardar(); return "";
+    } catch (err) { return err.message || "No se pudo subir el audio"; }
   }
   async function vzAudio() {
     const turno = VZ, texto = VZ.texto.replace(/\s+/g, " ").trim();
-    if (texto.length < 5) { VZ.error = "Primero escribe el guion: tócale a «Escribir el guion» o escríbelo tú."; pintarCrearVoz(); return; }
-    VZ.ocupado = "audio"; VZ.error = ""; vzCallar(); pintarCrearVoz();
+    if (texto.length < 5) { VZ.error = "Primero escribe lo que quieres que diga la voz."; pintarCrearVoz(); return; }
+    VZ.ocupado = "audio"; VZ.error = ""; VZ.listo = ""; sonCallar(); pintarCrearVoz();
     const r = await fetch("api/tours/" + TOUR + "/voz/audio", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ texto, voz: VZ.voz }) }).catch(() => null);
     if (VZ !== turno) return;
-    if (!r || !r.ok) { VZ.error = await vzError(r, "No se pudo generar la voz. Revisa tu internet e inténtalo otra vez."); VZ.ocupado = ""; pintarCrearVoz(); return; }
+    if (!r || !r.ok) { VZ.error = await vzError(r, "No se pudo crear la voz. Revisa tu internet e inténtalo otra vez."); VZ.ocupado = ""; pintarCrearVoz(); return; }
     const d = await r.json().catch(() => ({})), duracion = await vzDuracion(urlArchivo(d.ruta));
     if (VZ !== turno) return;
-    P().vozTour = { archivo: d.ruta, nombre: "Voz de " + (d.voz || "Mozari"), peso: d.peso || 0, duracion: duracion || vzSeg(texto), texto, ia: { notas: VZ.notas.trim().slice(0, 800), voz: VZ.voz, largo: VZ.largo } };
-    guardar(); if (nav.sec === "skin") pintarPanelSkin();
-    if (vzEstado) vzEstado.usadas = d.usadas || vzEstado.usadas;
+    P().vozTour = { archivo: d.ruta, nombre: "Voz de " + (d.voz || "Mozari"), peso: d.peso || 0, duracion: duracion || vzSeg(texto), texto, ia: { voz: VZ.voz } };
+    guardar();
+    if (vzEstado) { vzEstado.usadas = d.usadas || vzEstado.usadas; if (typeof d.creadas === "number") vzEstado.creadas = d.creadas; }
     VZ.ocupado = ""; VZ.listo = d.ruta; pintarCrearVoz();
     const l = $("vz-listo"); if (l) l.scrollIntoView({ block: "nearest" });
   }
   $("dlg-voz").addEventListener("click", (ev) => {
     if (!VZ) return;
     if (ev.target === $("dlg-voz") || ev.target.closest('[data-vz="cerrar"]')) { $("dlg-voz").close(); return; }
-    const lg = ev.target.closest("[data-vz-largo]"); if (lg) { VZ.largo = lg.dataset.vzLargo; pintarCrearVoz(); return; }
     const mu = ev.target.closest("[data-vz-muestra]");
     if (mu) {
       ev.preventDefault(); const v = vzEstado.voces.find((x) => x.id === mu.dataset.vzMuestra); if (!v) return;
-      if (vzSonando === v.id) vzCallar(); else { vzMuestra.src = v.muestra; vzSonando = v.id; vzMuestra.play().catch(() => { vzSonando = ""; pintarCrearVoz(); }); }
+      const ya = vzSonando === v.id; sonCallar();
+      if (!ya) { vzMuestra.src = v.muestra; vzSonando = v.id; vzMuestra.play().catch(() => { vzSonando = ""; pintarCrearVoz(); }); }
       VZ.voz = v.id; pintarCrearVoz(); return;
     }
+    const s = ev.target.closest("[data-son]");
+    if (s) {
+      if (s.disabled || VZ.ocupado) return;
+      const k = s.dataset.son;
+      if (k === "musica" || k === "voz" || k === "mezcla") sonOir(k);
+      else if (k === "musica-quitar") { sonCallar(); quitarMusica(true).then(() => { if (VZ) pintarCrearVoz(); }); return; }
+      else if (k === "voz-quitar") { if (Date.now() - vzQuitar > 4000) vzQuitar = Date.now(); else { vzQuitar = 0; sonCallar(); delete P().vozTour; guardar(); VZ.listo = ""; } }
+      pintarCrearVoz(); return;
+    }
     const a = ev.target.closest("[data-vz]"); if (!a || a.disabled || VZ.ocupado) return;
-    if (a.dataset.vz === "guion") vzGuion(); else if (a.dataset.vz === "audio") vzAudio();
+    if (a.dataset.vz === "audio") vzAudio();
   });
-  $("dlg-voz").addEventListener("input", (ev) => { const k = ev.target.dataset.vzCampo; if (!VZ || !k) return; VZ[k] = ev.target.value; if (k === "texto") { const c = $("vz-cuenta"); if (c) c.textContent = vzCuenta(); } });
-  $("dlg-voz").addEventListener("change", (ev) => { if (VZ && ev.target.name === "vz-voz") VZ.voz = ev.target.value; });
-  $("dlg-voz").addEventListener("close", () => { vzCallar(); VZ = null; VZA = null; $("dlg-voz").innerHTML = ""; if (nav.sec === "skin" && $("sk-voz-grupo")) pintarPanelSkin(); });
-  // Mini tutorial: el guion se escribe solo, se elige la voz y el tour arranca hablando
+  $("dlg-voz").addEventListener("input", (ev) => {
+    if (!VZ) return; const t = ev.target;
+    if (t.dataset.vzCampo === "texto") { VZ.texto = t.value; const c = $("vz-cuenta"); if (c) c.textContent = vzCuenta(); const s = $("vz-saldo"); if (s) s.textContent = vzSaldo(); }
+    else if ("sonVol" in t.dataset) { // el volumen de la música: es el mismo del tour
+      const v = +t.value; P().musica.volumen = v; $("son-vol-v").textContent = Math.round(v * 100) + "%"; $("m-vol").value = v; $("m-vol-v").textContent = Math.round(v * 100) + "%";
+      audioPrueba.volume = vzSonando === "mezcla" && !vzMuestra.paused ? v * 0.2 : v; guardar();
+    }
+  });
+  $("dlg-voz").addEventListener("change", async (ev) => {
+    if (!VZ) return; const t = ev.target;
+    if (t.name === "vz-voz") { VZ.voz = t.value; return; }
+    if (t.dataset.sonOp) { P().musica[t.dataset.sonOp] = t.checked; $("m-loop").checked = !!P().musica.repetir; $("m-preguntar").checked = P().musica.preguntar !== false; guardar(); return; }
+    if (t.id !== "son-musica-archivo" && t.id !== "son-voz-archivo") return;
+    const f = t.files && t.files[0], turno = VZ, deMusica = t.id === "son-musica-archivo"; t.value = ""; if (!f || VZ.ocupado) return;
+    sonCallar(); VZ.ocupado = deMusica ? "musica" : "audio"; VZ.error = ""; VZ.listo = ""; pintarCrearVoz();
+    const fallo = deMusica ? await ponerMusica(f, true) : await vozPropia(f);
+    if (VZ !== turno) return;
+    VZ.ocupado = ""; VZ.error = fallo || ""; if (!fallo && !deMusica) { VZ.texto = ""; VZ.listo = P().vozTour.archivo; }
+    pintarCrearVoz();
+  });
+  $("dlg-voz").addEventListener("close", () => { const era = !!VZ; sonCallar(); VZ = null; VZA = null; $("dlg-voz").innerHTML = ""; if (!era) return; if (nav.sec === "skin" && $("sk-voz-grupo")) pintarPanelSkin(); pintarMusica(); });
+  // Mini tutorial: subes tu canción, escribes lo que dice la voz y el tour suena con las dos
   function animVozIA(svg, t) {
-    const escribe = Math.max(0, Math.min(1, (t - 0.7) / 1.4)), genera = t > 3.0, onda = t > 3.2;
-    let h = '<rect width="360" height="200" fill="#161a12"/><rect x="26" y="16" width="200" height="150" rx="12" fill="#101210" stroke="rgba(255,255,255,.18)"/>';
-    h += '<text x="40" y="38" fill="rgba(255,255,255,.6)" font-size="8.5" font-weight="700" letter-spacing="1.2">GUION</text>';
-    [150, 164, 138, 110].forEach((w, i) => { const u = Math.max(0, Math.min(1, escribe * 4 - i)); if (u > 0) h += '<rect x="40" y="' + (48 + i * 13) + '" width="' + (w * u).toFixed(1) + '" height="6" rx="3" fill="rgba(255,255,255,' + (0.75 - i * 0.08).toFixed(2) + ')"/>'; });
-    if (t < 0.9) h += BTN_G(40, 48, 104, "✦ Escribir el guion", t > 0.45 ? "#2a3320" : "transparent", "#fff", "rgba(255,255,255,.4)");
-    const sel = t > 2.2;
-    h += '<rect x="40" y="108" width="82" height="24" rx="8" fill="' + (sel ? "rgba(213,255,64,.16)" : "transparent") + '" stroke="' + (sel ? "#D5FF40" : "rgba(255,255,255,.25)") + '"/><text x="50" y="123" fill="#fff" font-size="9" font-weight="700">Ana</text><text x="74" y="123" fill="rgba(255,255,255,.6)" font-size="7.5">Cálida</text>' +
-      '<rect x="130" y="108" width="82" height="24" rx="8" fill="transparent" stroke="rgba(255,255,255,.25)"/><text x="140" y="123" fill="#fff" font-size="9" font-weight="700">Luis</text><text x="165" y="123" fill="rgba(255,255,255,.6)" font-size="7.5">Seria</text>';
-    h += BTN_G(40, 138, 86, genera ? "Generando…" : "Generar voz", "#D5FF40", "#0B0B0B");
-    h += '<rect x="246" y="30" width="92" height="62" rx="9" fill="#6a9fb0"/><rect x="246" y="64" width="92" height="28" fill="#5f8a4a"/><rect x="246" y="30" width="92" height="62" rx="9" fill="none" stroke="' + (onda ? "#D5FF40" : "rgba(255,255,255,.3)") + '" stroke-width="1.6"/><text x="292" y="106" fill="#fff" font-size="9" font-weight="600" text-anchor="middle">Tu tour</text>';
-    if (onda) for (let i = 0; i < 12; i++) { const a = 4 + 12 * Math.abs(Math.sin(t * 7 + i * 0.9)) * (0.5 + 0.5 * Math.sin(i * 1.7 + 1)); h += '<rect x="' + (252 + i * 7) + '" y="' + (136 - a).toFixed(1) + '" width="3.4" height="' + (a * 2).toFixed(1) + '" rx="1.7" fill="#D5FF40"/>'; }
-    else h += '<text x="292" y="140" fill="rgba(255,255,255,.4)" font-size="8.5" text-anchor="middle">Sin voz</text>';
-    const [cx, cy] = camino([[0, 330, 190], [0.45, 92, 60], [0.9, 92, 60], [2.2, 80, 122], [2.5, 80, 122], [3.0, 84, 150], [3.4, 84, 150], [4.6, 330, 190]], t);
-    h += TOQUE_G(92, 59, t, 0.45) + TOQUE_G(80, 121, t, 2.2) + TOQUE_G(84, 149, t, 3.0) + CURSOR_G(cx, cy);
-    h += pieG(onda ? "Tu tour empieza con su voz" : sel ? "Elige la voz y genérala" : "Mozari escribe el guion", onda);
+    const cancion = t > 0.8, escribe = Math.max(0, Math.min(1, (t - 1.3) / 1.2)), crea = t > 3.0, onda = t > 3.3;
+    let h = '<rect width="360" height="200" fill="#161a12"/><rect x="22" y="12" width="208" height="158" rx="12" fill="#101210" stroke="rgba(255,255,255,.18)"/>';
+    h += '<text x="36" y="30" fill="rgba(255,255,255,.6)" font-size="8" font-weight="700" letter-spacing="1.2">SONIDO DEL TOUR</text>';
+    h += '<circle cx="42" cy="48" r="7" fill="#D5FF40"/><text x="42" y="51" fill="#0B0B0B" font-size="8" font-weight="700" text-anchor="middle">1</text><text x="54" y="51" fill="#fff" font-size="9" font-weight="700">Música</text>';
+    h += cancion ? '<rect x="36" y="58" width="180" height="20" rx="7" fill="rgba(213,255,64,.14)" stroke="#D5FF40"/><text x="46" y="71" fill="#fff" font-size="8.5">♪ mi-cancion.mp3</text>' : BTN_G(36, 58, 92, "Subir mi canción", t > 0.5 ? "#2a3320" : "transparent", "#fff", "rgba(255,255,255,.4)");
+    h += '<circle cx="42" cy="94" r="7" fill="#D5FF40"/><text x="42" y="97" fill="#0B0B0B" font-size="8" font-weight="700" text-anchor="middle">2</text><text x="54" y="97" fill="#fff" font-size="9" font-weight="700">Voz</text>';
+    h += '<rect x="36" y="104" width="180" height="34" rx="7" fill="#0b0c0a" stroke="rgba(255,255,255,.2)"/>';
+    [160, 132].forEach((w, i) => { const u = Math.max(0, Math.min(1, escribe * 2 - i)); if (u > 0) h += '<rect x="44" y="' + (112 + i * 11) + '" width="' + (w * u).toFixed(1) + '" height="5" rx="2.5" fill="rgba(255,255,255,' + (0.75 - i * 0.12).toFixed(2) + ')"/>'; });
+    h += BTN_G(36, 144, 78, crea ? "Creando…" : "Crear la voz", "#D5FF40", "#0B0B0B");
+    h += '<rect x="246" y="26" width="92" height="62" rx="9" fill="#6a9fb0"/><rect x="246" y="60" width="92" height="28" fill="#5f8a4a"/><rect x="246" y="26" width="92" height="62" rx="9" fill="none" stroke="' + (onda ? "#D5FF40" : "rgba(255,255,255,.3)") + '" stroke-width="1.6"/><text x="292" y="102" fill="#fff" font-size="9" font-weight="600" text-anchor="middle">Tu tour</text>';
+    if (cancion) for (let i = 0; i < 12; i++) { const a = (onda ? 2 : 5) + (onda ? 3 : 7) * Math.abs(Math.sin(t * 5 + i * 1.3)); h += '<rect x="' + (252 + i * 7) + '" y="' + (150 - a).toFixed(1) + '" width="3.4" height="' + (a * 2).toFixed(1) + '" rx="1.7" fill="rgba(255,255,255,.45)"/>'; }
+    if (onda) for (let i = 0; i < 12; i++) { const a = 4 + 11 * Math.abs(Math.sin(t * 7 + i * 0.9)) * (0.5 + 0.5 * Math.sin(i * 1.7 + 1)); h += '<rect x="' + (252 + i * 7) + '" y="' + (124 - a).toFixed(1) + '" width="3.4" height="' + (a * 2).toFixed(1) + '" rx="1.7" fill="#D5FF40"/>'; }
+    const [cx, cy] = camino([[0, 330, 190], [0.5, 84, 70], [0.9, 84, 70], [1.3, 120, 122], [2.6, 120, 122], [3.0, 76, 156], [3.4, 76, 156], [4.6, 330, 190]], t);
+    h += TOQUE_G(84, 69, t, 0.5) + TOQUE_G(76, 155, t, 3.0) + CURSOR_G(cx, cy);
+    h += pieG(onda ? "La música baja sola mientras la voz habla" : escribe > 0 ? "Escribes lo que dice la voz: se lee tal cual" : "Subes tu canción", onda);
     svg.innerHTML = h;
   }
   // Panel de dueño → Laboratorio → «Voz del tour»: qué voces de su cuenta de ElevenLabs se ofrecen y con qué modelo
@@ -15265,8 +15375,10 @@ void main(){
     return el;
   }
   const quitarPrecargaFoto = () => { const p = precargaFoto; precargaFoto = null; if (!p) return; p.style.setProperty("--avance", "100%"); setTimeout(() => { p.classList.add("fuera"); setTimeout(() => p.remove(), 800); }, 250); };
-  async function abrirPrevia() {
+  async function abrirPrevia(forma) {
     if (!est.escenas.length) { quitarCargaMarca(); avisar("Primero sube una esfera"); return; }
+    if (tourPv) cerrarPrevia();
+    formaPrevia(forma === "v" && previaCel() ? "v" : "h");
     // Vista previa: igual que se verá publicado (con marca si es versión de prueba)
     $("previa").querySelectorAll(".agua-mozari, .marca-mozari").forEach((x) => x.remove());
     if (conMarcaPrueba()) { const agua = document.createElement("div"); agua.className = "agua-mozari"; agua.setAttribute("aria-hidden", "true"); $("previa").appendChild(agua); marcaGratis($("previa"), false, false); }
@@ -15365,6 +15477,7 @@ void main(){
     if (pr && pr.activa) bvReloj = setTimeout(() => entrar(true), 12000);
   }
   window.addEventListener("resize", () => {
+    escalaPreviaCel();
     if (!tourPv) return;
     const o = orientacionPantalla();
     if (o !== orientPv) { orientPv = o; tourPv.repintar(o); }
@@ -15435,7 +15548,9 @@ void main(){
     if (cargaMarca && MODO !== "tour") { cargaMarca.remove(); cargaMarca = null; }
     if (tourPv) { tourPv.destruir(); tourPv = null; }
     $("previa").hidden = true;
+    formaPrevia("h");
   }
+  $("abrir-previa-cel").addEventListener("click", () => abrirPrevia("v"));
   ["abrir-previa", "r-previa", "mv-previa", "p-bv-ver"].forEach((id) => $(id).addEventListener("click", abrirPrevia));
 
   // =================== ARRANQUE ===================

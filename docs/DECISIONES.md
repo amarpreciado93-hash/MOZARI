@@ -321,3 +321,27 @@
   antes de fallarle al usuario. Su cuenta ya trae modelos nuevos (v4, v4 turbo, v3) que no se han probado aquí.
 - **Guion más apegado a las notas**: en la prueba real el modelo inventó una frase y enumeró los espacios. Ahora los
   espacios van «solo como contexto» (máximo 8), no se enumeran, y cada dato tiene que estar en las notas.
+
+## 19 nov 2026 · «Sonido del tour» (música y voz en una ventana), voz literal, 2 voces por tour y vista previa en celular
+
+- **Una sola ventana para el sonido** (Laboratorio «voz-ia», solo yo). Amar: «si vas a modificar música y voz, todo
+  tiene que vivir en una misma ventana… yo los audios que hago son con música y voz, y quisiera que no tengamos lío
+  con eso». Interfaz → «Sonido del tour» abre la ventana con 1) Música (tu canción y su volumen), 2) Voz y
+  3) «Escuchar cómo queda» (la música al 20 % mientras la voz habla, igual que en el tour), más «Repetir» y
+  «Preguntar al abrir». Para quien tiene la función, Proyecto → Música solo es la puerta a esa misma ventana
+  (las cuentas sin la función siguen viendo Música como siempre).
+- **La voz lee tal cual.** Amar: «la IA interpreta lo que queremos decir y ya te genera otro guion. Eso está de más…
+  que únicamente le des el texto literalmente». Se quitó el guion automático: la ruta `voz/guion`, la prueba del
+  panel y la IA de Cloudflare (`ai` en wrangler.jsonc). Solo se conserva decir las abreviaturas («Mz 5» → «manzana 5»).
+- **2 voces por tour al mes** (`VOZ_POR_TOUR`), contadas en `cuentas/<uid>/voz.json → tours`. Amar: «una o dos
+  posibles intentos de voz por desarrollo, porque van a probar las voces». Las muestras (▶) no gastan. El dueño no
+  tiene límite. La tercera responde 429 y la ventana ofrece subir audio propio.
+- **Letras por plan**: Pro 5,000 y Desarrollos 12,000 al mes (antes 15,000 y 40,000). Motivo: el plan Creator de
+  ElevenLabs de Amar da 100,000 créditos al mes (los 300,000 que se veían eran lo acumulado) y Mozari se detiene en 90,000.
+- **Vista previa en celular** (Laboratorio «previa-celular», solo yo; reporte de Emanuel: «en el botón de vista
+  previa, que se pueda seleccionar 16:9 y 9:16, para revisar con el audio y todo completo»). Botón con un teléfono
+  junto a «Vista previa»: el tour abre dentro de un celular de 390×844 (escalado a la pantalla), con la interfaz
+  vertical y todo sonando. Arriba se cambia a «Compu 16:9». Con su mini tutorial.
+- **Pendiente conocido**: en iPhone la música no puede bajar de volumen (iOS no deja), así que se pausa mientras
+  la voz habla. Se puede resolver con Web Audio; hay que probarlo en un iPhone real antes de subirlo.
+- Las pruebas de siempre usan `mz-musica-clasica` para seguir viendo Música en Proyecto.
