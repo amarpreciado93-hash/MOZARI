@@ -119,12 +119,14 @@ async function activar(env, orden, pagoId) {
   else {
     const vigente = p.plan === orden.plan && p.vence && new Date(p.vence) > ahora;
     const desde = vigente ? new Date(p.vence) : ahora;
-    p.plan = orden.plan;
+    // Si ya tenía otra licencia para siempre (por ejemplo Pro), se le guarda: al vencer esta, regresa a ella
+    if (!p.vence && p.plan && p.plan !== "gratis" && p.plan !== orden.plan) p.planAntes = p.plan;
+    p.plan = orden.plan; delete p.cortesia;
     p.vence = sumarMeses(desde, PERIODOS[orden.periodo].meses).toISOString();
   }
   p.ultimoPago = { ref: orden.ref, fecha: ahora.toISOString(), monto: orden.monto };
   // Historial para el panel de dueño: cuánto pagó y por dónde
-  p.pagos = (Array.isArray(p.pagos) ? p.pagos : []).concat([{ ref: orden.ref, fecha: ahora.toISOString(), monto: orden.monto, moneda: orden.moneda || "MXN", metodo: orden.metodo || "mercadopago", plan: orden.plan, cupon: orden.cupon || undefined }]).slice(-50);
+  p.pagos = (Array.isArray(p.pagos) ? p.pagos : []).concat([{ ref: orden.ref, fecha: ahora.toISOString(), monto: orden.monto, moneda: orden.moneda || "MXN", metodo: orden.metodo || "mercadopago", plan: orden.plan, cupon: orden.cupon || undefined, nota: orden.nota || undefined }]).slice(-50);
   await guardar(env, "cuentas/" + p.uid + "/perfil.json", p);
   Object.assign(orden, { estado: "aprobado", aplicado: ahora.toISOString(), pago: String(pagoId), vence: p.vence || null });
   await guardar(env, ordenClave(orden.ref), orden);
@@ -224,7 +226,8 @@ export async function apiPagos(request, env, partes, yo) {
     if (cupon.pct < 100) return error(400, "Este cupón es de descuento: se aplica al pagar");
     if (!montoLicencia(yo, plan, "MXN")) return error(400, "Ya tienes esa licencia");
     const ref = "mz-" + Date.now().toString(36) + crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
-    const orden = { ref, uid: yo.uid, email: yo.email, plan, periodo: "unico", monto: 0, moneda: "MXN", metodo: "cupon", cupon: cupon.codigo, descuento: 100, estado: "creado", creado: new Date().toISOString() };
+    // El regalo puede ser para siempre o por un año (los alumnos de un curso); su nota dice de quién es («Alumnos nov 2026»)
+    const orden = { ref, uid: yo.uid, email: yo.email, plan, periodo: cupon.meses === 12 ? "anio" : "unico", monto: 0, moneda: "MXN", metodo: "cupon", cupon: cupon.codigo, nota: String(cupon.nota || "").slice(0, 60), descuento: 100, estado: "creado", creado: new Date().toISOString() };
     await guardar(env, ordenClave(ref), orden);
     return json(resumen(await activar(env, orden, "cupon")));
   }

@@ -5062,6 +5062,75 @@ async function capasPesadas(p) {
         await u.context().close(); await n.context().close();
       }
     });
+    // Licencias de alumnos (Amar, 19 nov 2026: «le voy a regalar la licencia durante un año a los alumnos y necesito identificar esas
+    // licencias gratuitas, para que no se sumen en el Excel y no tenga un error de matemática»). Y el panel, que con 531 cuentas tardaba 20 s.
+    await paso("Panel de dueño → Cuentas: links de regalo por 1 año con su nota; cada licencia dice si es pagada, de regalo, cortesía o de prueba; filtro y Excel sin sumar regalos; las cuentas se leen por partes y se recuerdan", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const cAl = "alumna-regalo@prueba.mx", cCo = "cortesia-lic@prueba.mx", cPr = "prueba-lic@prueba.mx";
+      const n = await pagina(DUENO), al = await pagina(cAl), co = await pagina(cCo), pr = await pagina(cPr);
+      try {
+        // 1) El dueño crea, en su panel, 2 links de regalo de Desarrollos por 1 año para una generación de alumnos
+        await n.click("#ver-cuentas"); await n.waitForSelector('#cuentas [data-dueno="links"]', { timeout: 30000 }); await n.click('#cuentas [data-dueno="links"]'); await n.waitForSelector("#ln-dura", { timeout: 8000 });
+        exige(/Para siempre/.test(await n.textContent("#ln-dura")) && /1 año/.test(await n.textContent("#ln-dura")) && (await n.inputValue("#ln-dura")) === "0", "al crear links no se puede elegir cuánto dura la licencia (para siempre o 1 año)");
+        await n.fill("#ln-n", "2"); await n.selectOption("#ln-tipo", "des-100"); await n.selectOption("#ln-dura", "12"); await n.fill("#ln-nota", "Alumnos nov 2026"); await n.click("#ln-crear");
+        await n.waitForSelector('.links-lote:has-text("Alumnos nov 2026")', { timeout: 10000 });
+        exige(/Regalo: Desarrollos por 1 año/.test(await n.textContent('.links-lote:has-text("Alumnos nov 2026")')), "el lote de links no dice que la licencia dura 1 año");
+        const cs = ((await api(n, "api/admin/cupones")).d.cupones || []).filter((c) => c.nota === "Alumnos nov 2026");
+        exige(cs.length === 2 && cs.every((c) => c.meses === 12 && c.pct === 100), "los links no quedaron por 1 año: " + JSON.stringify(cs).slice(0, 200));
+        // 2) La alumna lo canjea: Desarrollos que vence en un año (no para siempre)
+        let r = await api(al, "api/pagos/canjear", J("POST", { cupon: cs[0].codigo, plan: "desarrollos" }));
+        const yo = (await api(al, "api/yo")).d, dias = (new Date(yo.plan.vence) - Date.now()) / 864e5;
+        exige(r.s === 200 && yo.plan.id === "desarrollos" && dias > 360 && dias < 370, "el regalo de 1 año no dejó la licencia con su vencimiento: " + r.s + " " + JSON.stringify(yo.plan).slice(0, 160));
+        // … otra cuenta recibe la licencia a mano (cortesía) y otra se queda de prueba
+        const lista = async (tope) => (await api(n, "api/admin/cuentas" + (tope ? "?tope=" + tope : ""))).d;
+        let d = await lista();
+        for (let i = 0; i < 12 && d.faltan; i++) d = await lista();
+        const uidDe = (correo) => (d.cuentas.find((x) => x.email === correo) || {}).uid;
+        exige(uidDe(cAl) && uidDe(cCo) && uidDe(cPr), "el panel no trae las cuentas nuevas");
+        exige((await api(n, "api/admin/cuentas/" + uidDe(cCo), J("PUT", { plan: "pro" }))).s === 200, "no se pudo poner la cortesía");
+        // 3) El servidor recuerda las cuentas: lo que cambió se vuelve a leer (y por partes, si son muchas)
+        d = await lista(1);
+        exige(d.faltan >= 0 && d.cuentas.length >= 4, "al leer por partes el panel se quedó sin cuentas: " + d.cuentas.length);
+        for (let i = 0; i < 40 && d.faltan; i++) d = await lista(1);
+        const de = (correo) => d.cuentas.find((x) => x.email === correo) || {};
+        exige(d.faltan === 0 && de(cCo).plan === "pro" && de(cCo).cortesia === true && de(cAl).plan === "desarrollos" && !!de(cAl).vence, "después de leer por partes, el panel no trae los cambios: " + JSON.stringify([de(cCo).plan, de(cAl).plan, de(cAl).vence]));
+        const pagoAl = (de(cAl).pagos || [])[0] || {};
+        exige(pagoAl.metodo === "cupon" && pagoAl.nota === "Alumnos nov 2026" && pagoAl.monto === 0, "el regalo no guardó de quién es: " + JSON.stringify(pagoAl));
+        const memo = await lista();
+        exige(memo.faltan === 0 && memo.cuentas.length === d.cuentas.length, "la segunda lectura (de memoria) no trae lo mismo");
+        // 4) En el panel: cada clase de licencia con su cuenta; los regalos dicen de quién son y cuándo vencen
+        await n.click('#cuentas [data-dueno="cuentas"]'); await n.waitForSelector("#lic-fila", { timeout: 30000 });
+        const num = async (k) => +(await n.textContent('#lic-fila [data-lic="' + k + '"] b'));
+        const antes = { regalo: await num("regalo"), cortesia: await num("cortesia"), prueba: await num("prueba"), pagada: await num("pagada"), todas: await num("") };
+        exige(antes.regalo >= 1 && antes.cortesia >= 1 && antes.prueba >= 1 && antes.regalo + antes.cortesia + antes.prueba + antes.pagada === antes.todas, "las clases de licencia no suman todas las cuentas: " + JSON.stringify(antes));
+        exige(/De regalo: .*Alumnos nov 2026.*No cuentan como venta/.test(await n.textContent("#lic-grupos")), "no dice de qué grupo son los regalos: " + (await n.textContent("#lic-grupos").catch(() => "")));
+        await n.click('#lic-fila [data-lic="regalo"]'); await n.waitForTimeout(600);
+        const filas = await n.$$eval("#cuentas table tbody tr", (l) => l.map((t) => t.innerText));
+        exige(filas.length === antes.regalo && filas.some((t) => t.includes("alumna-regalo@prueba.mx") && /Regalo/.test(t) && /Alumnos nov 2026/.test(t) && /vence el/.test(t)) && !filas.some((t) => t.includes(cCo) || t.includes(cPr)), "el filtro «De regalo» no deja solo los regalos con su nota y su vencimiento: " + filas.join(" | ").slice(0, 300));
+        if (process.env.CAPTURAS) { await n.evaluate(() => document.querySelector("#lic-fila").scrollIntoView({ block: "center" })); await n.screenshot({ path: path.join(process.env.CAPTURAS, "panel-licencias.png") }); }
+        await n.click('#lic-fila [data-lic="cortesia"]'); await n.waitForTimeout(600);
+        exige((await n.$$eval("#cuentas table tbody tr", (l) => l.map((t) => t.innerText))).some((t) => t.includes(cCo) && /Cortesía/.test(t)), "el filtro «Cortesía» no trae la licencia puesta a mano");
+        await n.click('#lic-fila [data-lic=""]'); await n.waitForTimeout(600);
+        exige((await n.$$("#cuentas table tbody tr")).length > antes.todas - 1, "«Todas» no regresa la lista completa");
+        // 5) El Excel: una hoja de resumen y otra con cada cuenta; los regalos y la cortesía van aparte y en cero
+        const [bajada] = await Promise.all([n.waitForEvent("download", { timeout: 20000 }), n.click("#cuentas-excel")]);
+        exige(/^mozari-cuentas-\d{4}-\d{2}-\d{2}\.xlsx$/.test(bajada.suggestedFilename()), "el Excel no se llama como debe: " + bajada.suggestedFilename());
+        const XLSX = require(path.join(RAIZ, "estudio", "lib", "xlsx.full.min.js")), wb = XLSX.read(fs.readFileSync(await bajada.path()));
+        exige(wb.SheetNames.join(",") === "Resumen,Cuentas", "el Excel no trae sus dos hojas: " + wb.SheetNames.join(","));
+        const hc = XLSX.utils.sheet_to_json(wb.Sheets.Cuentas), hr = XLSX.utils.sheet_to_json(wb.Sheets.Resumen), fila = (correo) => hc.find((x) => x.Correo === correo) || {};
+        exige(fila(cAl).Licencia === "De regalo" && fila(cAl)["De quién es el regalo"] === "Alumnos nov 2026" && fila(cAl).Plan === "Desarrollos" && !fila(cAl)["Pagó MXN"] && /\d{2}\/\d{2}\/\d{4}/.test(fila(cAl).Vence || ""), "el Excel no identifica la licencia de la alumna: " + JSON.stringify(fila(cAl)));
+        exige(fila(cCo).Licencia === "Cortesía" && fila(cPr).Licencia === "De prueba" && !hc.some((x) => x.Correo === DUENO), "el Excel no separa cortesía y prueba (o incluye al dueño)");
+        const tot = hr.find((x) => x.Licencia === "TOTAL"), reg = hr.find((x) => x.Licencia === "De regalo" && x.Plan === "Desarrollos");
+        exige(tot && tot.Cuentas === hc.length && reg && reg.Cuentas >= 1 && reg["Cobrado MXN"] === 0 && tot["Cobrado MXN"] === hc.reduce((t, x) => t + (+x["Pagó MXN"] || 0), 0), "el resumen del Excel no cuadra o suma los regalos: " + JSON.stringify(hr).slice(0, 300));
+        // 6) Quien ya tenía Pro para siempre y recibe Desarrollos por un año, al vencer regresa a su Pro (no a prueba)
+        const { planDe } = await import(path.join(RAIZ, "nube", "planes.js"));
+        exige(planDe({ plan: "desarrollos", vence: "2020-01-01T00:00:00Z", planAntes: "pro" }).id === "pro" && planDe({ plan: "desarrollos", vence: "2020-01-01T00:00:00Z" }).id === "gratis" && planDe({ plan: "desarrollos", vence: "2099-01-01T00:00:00Z", planAntes: "pro" }).id === "desarrollos", "al vencer un regalo, quien ya tenía licencia la pierde");
+        exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      } finally {
+        await pr.context().close(); await co.context().close(); await al.context().close(); await n.context().close();
+      }
+    });
     await paso("Sin errores de JavaScript en el estudio", async () => { exige(!a.errs.length && !g.errs.length, (a.errs.concat(g.errs)).join(" | ").slice(0, 200)); });
     await navegador.close();
   } catch (e) {

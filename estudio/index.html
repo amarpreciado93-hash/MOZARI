@@ -1399,6 +1399,15 @@
   .vza-voz { display: grid; grid-template-columns: auto minmax(0, 150px) minmax(0, 1fr) auto; gap: 10px; align-items: center; }
   .vza-voz small { font-size: 11px; color: var(--mz-tenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .lab-voz { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  /* Panel de dueño → Cuentas: clase de licencia (pagada, de regalo, cortesía, de prueba) */
+  .lic-fila { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 16px 4px; }
+  .lic-t { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mz-tenue); margin-right: 4px; }
+  .lic-chip { border: 1px solid var(--mz-linea-neutra); background: transparent; color: var(--mz-texto); font: 500 12px var(--mz-texto-ui); padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+  .lic-chip b { color: var(--c); margin-right: 3px; }
+  .lic-chip[aria-pressed="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
+  .lic-fila #cuentas-excel { margin-left: auto; }
+  .lic-grupos { margin: 0; padding: 2px 16px 10px; font-size: 12px; color: var(--mz-tenue); } .lic-grupos b { color: #B48CFF; }
+  .pago-via.regalo { color: #B48CFF; border-color: color-mix(in srgb, #B48CFF 50%, transparent); }
   /* «Sonido del tour»: música, voz y cómo suenan juntas, en una sola ventana */
   .son .son-bloque { display: grid; gap: 10px; padding: 14px; border-radius: 14px; border: 1px solid var(--mz-linea-neutra); }
   .son-t { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--mz-texto); }
@@ -4985,11 +4994,12 @@
     const caja = $("cuentas");
     const en30 = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
     const lotes = []; cupones.forEach((c) => { const k = c.lote || c.codigo; let l = lotes.find((x) => x.k === k); if (!l) lotes.push((l = { k, c: [] })); l.c.push(c); });
-    const queEs = (c) => (c.pct >= 100 ? "Regalo: " : c.pct + "% en ") + c.planes.map((p) => (p === "espacio" ? "+10 GB" : PLANES_TXT[p])).join(" y ");
+    const queEs = (c) => (c.pct >= 100 ? "Regalo: " : c.pct + "% en ") + c.planes.map((p) => (p === "espacio" ? "+10 GB" : PLANES_TXT[p])).join(" y ") + (c.pct >= 100 ? (c.meses === 12 ? " por 1 año" : " para siempre") : "");
     caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) +
       '<div class="links-form"><label>Cuántos<input type="number" id="ln-n" min="1" max="100" value="10" style="width:70px"></label>' +
       '<label>Qué incluyen<select id="ln-tipo">' + Object.entries(TIPOS_LINK).map(([k, [n]]) => '<option value="' + k + '">' + n + "</option>").join("") + "</select></label>" +
-      '<label>Válidos hasta<input type="date" id="ln-vence" value="' + en30 + '"></label>' +
+      '<label>La licencia dura<select id="ln-dura"><option value="0">Para siempre</option><option value="12">1 año</option></select></label>' +
+      '<label>El link sirve hasta<input type="date" id="ln-vence" value="' + en30 + '"></label>' +
       '<label>Para quién (nota)<input type="text" id="ln-nota" maxlength="60" placeholder="Alumnos octubre"></label>' +
       '<button class="btn-prim" id="ln-crear">Crear links</button></div>' +
       (lotes.length ? lotes.map((l) => {
@@ -4999,14 +5009,14 @@
             (c.usos ? "<span></span>" : '<button class="mini" data-ln-copiar="' + esc(c.codigo) + '">Copiar link</button>') +
             (c.usos ? "<span></span>" : '<button class="mini" data-ln-activo="' + esc(c.codigo) + '" data-v="' + (c.activo ? "0" : "1") + '">' + (c.activo ? "Desactivar" : "Activar") + "</button>") + "</div>").join("") +
           (l.c.some((c) => !c.usos && c.activo) ? '<div><button class="mini" data-ln-copiar-todos="' + esc(l.k) + '">Copiar todos los libres</button></div>' : "") + "</div>";
-      }).join("") : '<p class="nota" style="padding:16px">Aún no has creado links. Cada link sirve una sola vez: mándale uno a cada alumno.</p>');
+      }).join("") : '<p class="nota" style="padding:16px">Aún no has creado links. Cada link sirve una sola vez: mándale uno a cada alumno. Lo que escribas en «Para quién» sale después en Cuentas, para saber de quién es cada licencia de regalo.</p>');
     caja._cupones = cupones;
   }
   document.addEventListener("click", async (ev) => {
     if (ev.target.id === "ln-crear") {
       const [, pct, planes] = TIPOS_LINK[$("ln-tipo").value], b = ev.target;
       b.disabled = true; b.textContent = "Creando…";
-      const r = await fetch("api/admin/cupones", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cantidad: +$("ln-n").value, pct, planes, vence: $("ln-vence").value, nota: $("ln-nota").value }) }).catch(() => null);
+      const r = await fetch("api/admin/cupones", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cantidad: +$("ln-n").value, pct, planes, vence: $("ln-vence").value, nota: $("ln-nota").value, meses: +$("ln-dura").value }) }).catch(() => null);
       const d = r ? await r.json().catch(() => ({})) : {};
       if (!r || !r.ok) { avisar(d.error || "No se pudieron crear"); b.disabled = false; b.textContent = "Crear links"; return; }
       avisar(d.cupones.length + " links listos"); pintarLinks(); return;
@@ -5474,9 +5484,65 @@
   const METODO_TXT = { mercadopago: "Mercado Pago", paypal: "PayPal", stripe: "Stripe", cupon: "Link de regalo" };
   const dinero = (n, mon) => "$" + Number(n || 0).toLocaleString("es-MX", { maximumFractionDigits: 2 }) + " " + (mon || "MXN");
   const sumaPorMoneda = (pagos) => pagos.reduce((t, x) => { const m = x.moneda || "MXN"; t[m] = (t[m] || 0) + (+x.monto || 0); return t; }, {});
+  // Qué clase de licencia tiene cada cuenta. Amar, 19 nov 2026: «le voy a regalar la licencia durante un año a los
+  // alumnos y necesito identificar esas licencias gratuitas, para que no se sumen en el Excel y no tenga un error de
+  // matemática». Pagada: pagó una licencia. De regalo: entró con un link de regalo (su nota dice de quién es:
+  // «Alumnos nov 2026»). Cortesía: se la puso el dueño a mano. De prueba: sin licencia (o ya vencida).
+  const LIC = { pagada: ["Pagadas", "#3DDC84"], regalo: ["De regalo", "#B48CFF"], cortesia: ["Cortesía", "#F5BE4E"], prueba: ["De prueba", "#B8BEAE"] };
+  const LIC_TXT = { pagada: "Pagada", regalo: "De regalo", cortesia: "Cortesía", prueba: "De prueba", dueno: "Dueño" };
+  let licFiltro = "", cuentasMemo = null;
+  function licenciaDe(c) {
+    if (c.admin) return { tipo: "dueno" };
+    const ps = c.pagos || [], reg = ps.filter((x) => x.metodo === "cupon" && !(+x.monto > 0)), r = reg[reg.length - 1];
+    if (!c.plan || c.plan === "gratis" || (c.vence && new Date(c.vence) < new Date())) return { tipo: "prueba", vencida: !!(r && c.vence), nota: r ? r.nota || "" : "" };
+    if (ps.some((x) => +x.monto > 0 && x.plan !== "espacio")) return { tipo: "pagada" };
+    if (r) return { tipo: "regalo", nota: r.nota || "", codigo: r.cupon || "" };
+    return { tipo: "cortesia" };
+  }
+  const venceTxt = (c) => (c.vence && new Date(c.vence) > new Date() ? "vence el " + new Date(c.vence).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" }) : "");
+  function licenciasHtml(usuarios) {
+    const n = { pagada: 0, regalo: 0, cortesia: 0, prueba: 0 }, grupos = {};
+    usuarios.forEach((c) => { const l = licenciaDe(c); n[l.tipo]++; if (l.tipo === "regalo") { const k = l.nota || "Sin nota"; grupos[k] = (grupos[k] || 0) + 1; } });
+    const chip = (k, txt, color, num) => '<button type="button" class="lic-chip" data-lic="' + k + '" aria-pressed="' + (licFiltro === k) + '" style="--c:' + color + '"><b>' + num + "</b> " + txt + "</button>";
+    return '<div class="lic-fila" id="lic-fila"><span class="lic-t">Licencias</span>' + chip("", "Todas", "#F2F5EC", usuarios.length) + Object.entries(LIC).map(([k, [txt, color]]) => chip(k, txt, color, n[k])).join("") +
+      '<button type="button" class="mini" id="cuentas-excel">Descargar Excel</button></div>' +
+      (n.regalo ? '<p class="lic-grupos" id="lic-grupos">De regalo: ' + Object.entries(grupos).sort((a, b) => b[1] - a[1]).map(([k, v]) => "<b>" + v + "</b> " + esc(k)).join(" · ") + ". No cuentan como venta.</p>" : "");
+  }
+  // Excel de las cuentas: cada licencia con su clase, para sumar solo lo que sí se cobró
+  async function excelCuentas() {
+    if (!cuentasMemo) return;
+    const X = await cargarXlsx().catch(() => null); if (!X) { avisar("No se pudo preparar el Excel"); return; }
+    const f = (iso) => (iso ? new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }) : "");
+    const filas = cuentasMemo.dc.cuentas.filter((c) => !c.admin).slice().sort((a, b) => String(a.creado || "").localeCompare(String(b.creado || ""))).map((c, i) => {
+      const l = licenciaDe(c), ps = (c.pagos || []).filter((x) => +x.monto > 0), suma = (mon) => ps.filter((x) => (x.moneda || "MXN") === mon).reduce((t, x) => t + (+x.monto || 0), 0), ult = ps[ps.length - 1];
+      return { "#": i + 1, Nombre: c.nombre || "", Correo: c.email || "", "País": c.pais ? nombrePais(c.pais) : "", Ciudad: c.ciudad || "", Alta: f(c.creado), "Última entrada": f(c.ultimaEntrada),
+        Plan: PLANES_TXT[c.plan || "gratis"] || c.plan, Licencia: LIC_TXT[l.tipo] + (l.vencida ? " (regalo vencido)" : ""), "De quién es el regalo": l.tipo === "regalo" || l.vencida ? l.nota || "" : "", "Link de regalo": l.codigo || "",
+        "Pagó MXN": suma("MXN") || "", "Pagó USD": suma("USD") || "", "Cobrado por": [...new Set(ps.map((x) => METODO_TXT[x.metodo || "mercadopago"] || x.metodo))].join(", "), "Último pago": ult ? f(ult.fecha) : "", Vence: c.vence ? f(c.vence) : "", Tours: c.nTours || 0, Pausada: c.pausada ? "Sí" : "" };
+    });
+    const res = [];
+    ["pagada", "regalo", "cortesia", "prueba"].forEach((t) => ["pro", "desarrollos", "gratis"].forEach((pl) => {
+      const g = filas.filter((x) => x.Licencia.startsWith(LIC_TXT[t]) && x.Plan === PLANES_TXT[pl]); if (!g.length) return;
+      res.push({ Licencia: LIC_TXT[t], Plan: PLANES_TXT[pl], Cuentas: g.length, "Cobrado MXN": g.reduce((s, x) => s + (+x["Pagó MXN"] || 0), 0), "Cobrado USD": g.reduce((s, x) => s + (+x["Pagó USD"] || 0), 0) });
+    }));
+    res.push({ Licencia: "TOTAL", Plan: "", Cuentas: filas.length, "Cobrado MXN": filas.reduce((s, x) => s + (+x["Pagó MXN"] || 0), 0), "Cobrado USD": filas.reduce((s, x) => s + (+x["Pagó USD"] || 0), 0) });
+    const wb = X.utils.book_new(), h1 = X.utils.json_to_sheet(res), h2 = X.utils.json_to_sheet(filas);
+    h1["!cols"] = [{ wch: 14 }, { wch: 18 }, { wch: 10 }, { wch: 14 }, { wch: 14 }]; h2["!cols"] = [{ wch: 5 }, { wch: 26 }, { wch: 30 }, { wch: 14 }, { wch: 18 }, { wch: 11 }, { wch: 13 }, { wch: 16 }, { wch: 20 }, { wch: 24 }, { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 16 }, { wch: 11 }, { wch: 11 }, { wch: 6 }, { wch: 8 }];
+    X.utils.book_append_sheet(wb, h1, "Resumen"); X.utils.book_append_sheet(wb, h2, "Cuentas");
+    X.writeFile(wb, "mozari-cuentas-" + new Date().toISOString().slice(0, 10) + ".xlsx");
+    avisar("Excel listo: las licencias de regalo y de cortesía van aparte y en cero");
+  }
+  document.addEventListener("click", (ev) => {
+    const ch = ev.target.closest && ev.target.closest("[data-lic]"); if (ch && ch.closest("#lic-fila")) { licFiltro = ch.dataset.lic; pintarCuentas(true); return; }
+    if (ev.target.id === "cuentas-excel") excelCuentas();
+  });
   function pagoDe(c) {
     const ps = (c.pagos || []).filter((x) => +x.monto > 0), regalos = (c.pagos || []).filter((x) => x.metodo === "cupon");
-    if (!ps.length) return regalos.length ? '<span class="pago-monto"><i class="pago-via">Link de regalo</i><small>' + esc(regalos[0].cupon || "") + "</small></span>" : c.plan && c.plan !== "gratis" ? '<span class="pago-monto"><i class="pago-via">Cortesía</i></span>' : '<span class="pago-nada">—</span>';
+    if (!ps.length) {
+      const l = licenciaDe(c), v = venceTxt(c) ? "<small>" + venceTxt(c) + "</small>" : "";
+      return l.tipo === "regalo" ? '<span class="pago-monto"><i class="pago-via regalo">Regalo</i><small>' + esc(l.nota || l.codigo) + "</small>" + v + "</span>"
+        : l.tipo === "cortesia" ? '<span class="pago-monto"><i class="pago-via">Cortesía</i>' + v + "</span>"
+        : regalos.length ? '<span class="pago-monto"><i class="pago-via">Regalo vencido</i><small>' + esc(l.nota || regalos[0].cupon || "") + "</small></span>" : '<span class="pago-nada">—</span>';
+    }
     const t = sumaPorMoneda(ps), metodos = [...new Set(ps.map((x) => x.metodo || "mercadopago"))];
     const detalle = ps.map((x) => (x.fecha ? new Date(x.fecha).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" }) + ": " : "") + dinero(x.monto, x.moneda) + " por " + (METODO_TXT[x.metodo] || "Mercado Pago") + (x.plan ? " (" + (x.plan === "espacio" ? "+10 GB" : PLANES_TXT[x.plan] || x.plan) + ")" : "")).join("\n");
     return '<span class="pago-monto" title="' + esc(detalle) + '"><b>' + Object.entries(t).map(([m, n]) => dinero(n, m)).join(" + ") + "</b>" +
@@ -5509,7 +5575,7 @@
       '<span style="--c:#6DB4FF"><b>' + compu.length + "</b> desde la compu · " + hizo(compu) + " hicieron tour (" + pct(hizo(compu), compu.length) + ")</span>" +
       (otros ? '<span style="--c:#B8BEAE"><b>' + otros + "</b> sin dato</span>" : "") + "</div>";
   }
-  async function pintarCuentas() {
+  async function pintarCuentas(deMemoria) {
     if (vistaDueno === "reportes") return pintarReportes();
     if (vistaDueno === "solicitudes") return pintarSolicitudes();
     if (vistaDueno === "links") return pintarLinks();
@@ -5518,10 +5584,23 @@
     if (vistaDueno === "respaldos") return pintarRespaldos();
     if (vistaDueno === "galeria") return pintarGaleria();
     if (vistaDueno === "estadisticas") return pintarEstadisticasAdmin();
-    const [r, rc] = await Promise.all([fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null), fetch("api/admin/cupo", { cache: "no-store" }).catch(() => null)]);
-    if (!r || !r.ok) { avisar("No se pudieron leer las cuentas"); return; }
-    const { cuentas: todas, tours: tt } = await r.json();
-    const cupo = rc && rc.ok ? await rc.json().catch(() => null) : null;
+    // El servidor recuerda las cuentas y solo vuelve a leer las que cambiaron. Si son muchas (la primera vez), las
+    // lee por partes y dice cuántas faltan: se pide otra vez hasta tenerlas todas.
+    let dc = null, cupo = null;
+    if (deMemoria === true && cuentasMemo) ({ dc, cupo } = cuentasMemo);
+    else {
+      const pc = fetch("api/admin/cupo", { cache: "no-store" }).catch(() => null);
+      for (let i = 0; i < 12; i++) {
+        const r = await fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null);
+        if (!r || !r.ok) { avisar("No se pudieron leer las cuentas"); return; }
+        dc = await r.json();
+        if (!dc.faltan) break;
+        avisar("Leyendo las cuentas… faltan " + dc.faltan);
+      }
+      const rc = await pc; cupo = rc && rc.ok ? await rc.json().catch(() => null) : null;
+      cuentasMemo = { dc, cupo };
+    }
+    const { cuentas: todas, tours: tt } = dc;
     // Número de usuario = orden en que se registraron (el primero es #1). Se muestran del más nuevo al más viejo.
     const porAlta = todas.slice().sort((a, b) => String(a.creado || "").localeCompare(String(b.creado || "")));
     porAlta.forEach((c, i) => (c.n = i + 1));
@@ -5553,7 +5632,7 @@
         '<button class="mini" id="cupo-copiar">Copiar correos</button></div>' : "");
     let caja = $("cuentas");
     if (!caja) { caja = document.createElement("div"); caja.id = "cuentas"; caja.className = "cuentas"; $("mi-plan").after(caja); }
-    caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p>' + TABS_DUENO(0) + resumen + '<p class="cuentas-total">' + totalPagos(cuentas) + '</p><table class="lotes-tabla"><thead><tr><th>#</th><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Pagó</th><th>Última entrada</th><th></th></tr></thead><tbody>' + cuentas.map((c) =>
+    caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p>' + TABS_DUENO(0) + resumen + '<p class="cuentas-total">' + totalPagos(cuentas) + "</p>" + licenciasHtml(usuarios) + '<table class="lotes-tabla"><thead><tr><th>#</th><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Pagó</th><th>Última entrada</th><th></th></tr></thead><tbody>' + cuentas.filter((c) => !licFiltro || licenciaDe(c).tipo === licFiltro).map((c) =>
       '<tr class="' + (c.admin ? "dueno" : "plan-" + (c.plan || "gratis")) + (c.pausada ? " pausada" : "") + (c.creado && new Date(c.creado).toDateString() === hoy ? " nueva" : "") + '"><td class="cuenta-n">' + c.n + "</td><td><b>" + esc(c.nombre || "") + "</b>" + (c.creado ? '<small class="cuenta-alta">desde ' + new Date(c.creado).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) + "</small>" : "") +
         (c.pais || c.ciudad ? '<small class="cuenta-pais" title="' + esc(nombrePais(c.pais)) + '">' + (c.pais ? '<span class="bandera">' + bandera(c.pais) + "</span>" : "") + esc([c.ciudad, c.pais ? nombrePais(c.pais) : ""].filter(Boolean).join(", ")) + "</small>" : "") + "</td><td>" + esc(c.email) + "</td><td>" + (c.admin ? '<span class="plan-dueno">Dueño</span>' : '<select class="plan-' + esc(c.plan || "gratis") + '" data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
       "</td><td data-l=\"Pagó\">" + (c.admin ? "" : pagoDe(c)) + "</td><td data-l=\"Entró\">" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td><td>" + (c.admin ? "" : '<button class="mini' + (c.pausada ? " primario" : "") + '" data-pausar="' + esc(c.uid) + '" data-v="' + (c.pausada ? "0" : "1") + '">' + (c.pausada ? "Reactivar" : "Pausar") + "</button>") + "</td></tr>").join("") + "</tbody></table>";

@@ -345,3 +345,22 @@
 - **Pendiente conocido**: en iPhone la música no puede bajar de volumen (iOS no deja), así que se pausa mientras
   la voz habla. Se puede resolver con Web Audio; hay que probarlo en un iPhone real antes de subirlo.
 - Las pruebas de siempre usan `mz-musica-clasica` para seguir viendo Música en Proyecto.
+
+## 19 nov 2026 · Licencias de alumnos (regalo por 1 año), clases de licencia en el panel, Excel y panel rápido
+
+- **Regalo por 1 año.** Amar: «tengo una generación del curso que le voy a regalar la licencia durante un año».
+  En Panel de dueño → Links de regalo hay «La licencia dura: Para siempre | 1 año» (`meses: 12` en el cupón).
+  Al canjearlo, la orden va con periodo «anio» y la cuenta queda con `vence` a 12 meses; al vencer vuelve a prueba
+  (sus tours no se borran). Si ya tenía otra licencia para siempre (Pro), se guarda en `planAntes` y regresa a ella.
+- **De quién es cada regalo.** La nota del link («Alumnos nov 2026») viaja a la orden y al historial de pagos de la
+  cuenta (`pagos[].nota`). Los regalos de antes toman la nota de su link la primera vez que el panel los lee.
+- **Clases de licencia en Cuentas** (`licenciaDe`): Pagada (pagó una licencia), De regalo (entró con link de regalo),
+  Cortesía (el dueño le puso el plan a mano) y De prueba (sin licencia o vencida). Fila de filtros con su número y
+  la línea «De regalo: N grupo… No cuentan como venta». Amar: «necesito identificar esas licencias gratuitas para
+  que no se sumen en el Excel y no tenga un error de matemática».
+- **Descargar Excel** (`excelCuentas`): hoja «Resumen» (cuentas y cobrado por clase de licencia y plan; total) y hoja
+  «Cuentas» (una fila por cuenta con su clase, de quién es el regalo, lo pagado en MXN y USD, vence, tours).
+- **Panel de dueño rápido.** Con 531 cuentas tardaba 20 s y a veces fallaba («No se pudieron leer las cuentas»):
+  leía perfil y sesiones de todas en cada visita, más de 1,000 lecturas (el tope de una petición). Ahora guarda un
+  resumen por cuenta en `config/cuentas-panel.json` y solo relee las que cambiaron (por su etag). Si faltan muchas,
+  lee 350 por petición y responde `faltan`; el panel vuelve a pedir hasta tenerlas todas.

@@ -266,6 +266,7 @@ export const LABORATORIO = {
 };
 // "pago": las cuentas Pro y Desarrollos (con su plan vigente); "todos" incluye también Gratis
 const MODOS_LAB = ["yo", "probadores", "pago", "todos"];
+const LEER_CUENTAS = 350; // Panel de dueño: cuentas que se vuelven a leer por petición (el tope de una petición son 1,000 lecturas)
 // Noviembre 2026: todo lo que estaba en el Laboratorio salió a Pro y Desarrollos (versión 2 de la configuración).
 // Lo que se agregue después nace "Solo yo". Desde el panel cada función se puede regresar a "Solo yo".
 const LANZADAS_V2 = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
@@ -899,11 +900,13 @@ async function admin(request, env, partes, yo) {
       if (!planes.length) return error(400, "Elige al menos un plan");
       const vence = c.vence && /^\d{4}-\d{2}-\d{2}$/.test(c.vence) ? new Date(c.vence + "T23:59:59-06:00").toISOString() : null;
       const nota = String(c.nota || "").slice(0, 60), lote = Date.now().toString(36), creado = new Date().toISOString();
+      const meses = pct >= 100 && +c.meses === 12 ? 12 : 0; // cuánto dura la licencia regalada: 12 meses o para siempre
       const LETRAS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", cupones = [];
       while (cupones.length < cantidad) {
         const r = crypto.getRandomValues(new Uint8Array(6)), codigo = (pct >= 100 ? "MZ-" : "AL-") + [...r].map((x) => LETRAS[x % LETRAS.length]).join("");
         if (await env.R2.head(cuponClave(codigo))) continue;
         const cupon = { codigo, pct, planes, max: 1, vence, usos: 0, usadoPor: [], activo: true, nota, lote, creado };
+        if (meses) cupon.meses = meses;
         await env.R2.put(cuponClave(codigo), JSON.stringify(cupon), { httpMetadata: { contentType: "application/json" } });
         cupones.push(cupon);
       }
@@ -921,16 +924,17 @@ async function admin(request, env, partes, yo) {
   }
   if (partes[2] !== "cuentas") return error(404, "Ruta desconocida");
   if (partes.length === 3 && m === "GET") {
-    const cuentas = [], tours = [], lecturas = [], sesiones = {}, nTours = {};
-    // Los perfiles y las sesiones se leen todos a la vez (uno por uno tardaba 7 s con 75 cuentas)
+    // Con 531 cuentas el panel tardaba 20 s y a veces fallaba: leía el perfil y las sesiones de TODAS las cuentas en
+    // cada visita (más de 1,000 lecturas, el tope de una sola petición). Ahora guarda un resumen de cada cuenta
+    // (config/cuentas-panel.json) y solo vuelve a leer las que cambiaron desde la última vez (se sabe por su etag).
+    // Si son muchas (la primera vez), lee LEER_CUENTAS por petición y avisa cuántas faltan: el panel vuelve a pedir.
+    const tours = [], nTours = {}, claves = [];
     const leerJson = (k) => env.R2.get(k).then((r) => (r ? r.json() : null)).catch(() => null);
     let cur;
     do {
       const l = await env.R2.list({ prefix: "cuentas/", cursor: cur, limit: 1000, include: ["customMetadata"] });
       for (const o of l.objects) {
-        if (o.key.endsWith("/perfil.json")) { lecturas.push(leerJson(o.key).then((p) => p && cuentas.push(p))); continue; }
-        // Sesiones abiertas: de ahí sale la ciudad (y el país de quien entró antes de que se guardara en su perfil)
-        if (o.key.endsWith("/sesiones.json")) { const uid = o.key.split("/")[1]; lecturas.push(leerJson(o.key).then((l) => { if (Array.isArray(l)) sesiones[uid] = l; })); continue; }
+        if (o.key.endsWith("/perfil.json") || o.key.endsWith("/sesiones.json")) { claves.push([o.key, o.etag || String(o.uploaded || "")]); continue; }
         // Índice de tours de cada cuenta: cuentas/<uid>/tours/<id> (su "publicado" dice si ya se publicó)
         const t = o.key.match(/^cuentas\/([^/]+)\/tours\/([^/]+)$/);
         if (t) tours.push({ uid: t[1], publicado: !!(o.customMetadata && o.customMetadata.publicado) });
@@ -938,8 +942,31 @@ async function admin(request, env, partes, yo) {
       }
       cur = l.truncated ? l.cursor : undefined;
     } while (cur);
-    await Promise.all(lecturas);
-    const ultimaSesion = (uid) => (sesiones[uid] || []).filter((x) => x && (x.ciudad || x.pais)).sort((a, b) => String(b.ultima || b.creada).localeCompare(String(a.ultima || a.creada)))[0] || {};
+    const MEMO = "config/cuentas-panel.json", memo = await leerJson(MEMO), datos = memo && memo.v === 1 && memo.datos ? memo.datos : {};
+    const vivas = new Set(claves.map((c) => c[0]));
+    let cambio = false;
+    for (const k of Object.keys(datos)) if (!vivas.has(k)) { delete datos[k]; cambio = true; }
+    const pendientes = claves.filter(([k, e]) => !datos[k] || datos[k].e !== e);
+    const pedido = +new URL(request.url).searchParams.get("tope"), tope = env.DEV && pedido > 0 ? pedido : LEER_CUENTAS;
+    // De cada perfil, lo que usa el panel; de las sesiones, de dónde entra (ciudad y país) y con qué se registró
+    const dePerfil = async (p) => {
+      if (!p || !p.uid) return null;
+      const pagos = Array.isArray(p.pagos) ? p.pagos : p.ultimoPago ? [Object.assign({ moneda: "MXN", metodo: "mercadopago" }, p.ultimoPago)] : [];
+      // Los regalos de antes no guardaban para quién eran: se toma la nota de su link
+      for (const x of pagos) if (x && x.metodo === "cupon" && x.cupon && x.nota === undefined) { const c = await leerJson(cuponClave(x.cupon)); x.nota = (c && c.nota) || ""; }
+      return { uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada, registro: p.registro || "", bloqueado: !!p.bloqueado, cortesia: !!p.cortesia, pais: p.pais || "", pagos };
+    };
+    const deSesiones = (l) => {
+      if (!Array.isArray(l)) return null;
+      const u = l.filter((x) => x && (x.ciudad || x.pais)).sort((a, b) => String(b.ultima || b.creada).localeCompare(String(a.ultima || a.creada)))[0] || {};
+      return { pais: u.pais || "", ciudad: u.ciudad || "", tipo: (l.filter(Boolean).sort((a, b) => String(a.creada).localeCompare(String(b.creada)))[0] || {}).tipo || "" };
+    };
+    await Promise.all(pendientes.slice(0, tope).map(async ([k, e]) => { const j = await leerJson(k); datos[k] = { e, d: k.endsWith("/perfil.json") ? await dePerfil(j) : deSesiones(j) }; }));
+    const faltan = Math.max(0, pendientes.length - tope);
+    if (pendientes.length || cambio) await env.R2.put(MEMO, JSON.stringify({ v: 1, datos }), { httpMetadata: { contentType: "application/json" } });
+    const cuentas = [], sesiones = {};
+    for (const k of Object.keys(datos)) { const d = datos[k].d; if (!d) continue; if (k.endsWith("/perfil.json")) cuentas.push(d); else sesiones[k.split("/")[1]] = d; }
+    const ultimaSesion = (uid) => sesiones[uid] || {};
     const dueno = new Set(cuentas.filter((p) => p.admin).map((p) => p.uid)), pub = tours.filter((t) => t.publicado);
     const resumenTours = { creados: tours.length, publicados: pub.length, publicadosClientes: pub.filter((t) => !dueno.has(t.uid)).length };
     // Publicados según el plan de la cuenta (el dueño aparte, en «tuyos»)
@@ -948,12 +975,12 @@ async function admin(request, env, partes, yo) {
     pub.forEach((t) => { if (!dueno.has(t.uid)) resumenTours.porPlan[planCuenta.get(t.uid) || "gratis"]++; });
     cuentas.sort((a, b) => String(b.ultimaEntrada).localeCompare(String(a.ultimaEntrada)));
     // Desde dónde se registró: lo anota la cuenta nueva; las de antes, su primer dispositivo con sesión
-    const registroDe = (p) => p.registro || ((sesiones[p.uid] || []).slice().sort((a, b) => String(a.creada).localeCompare(String(b.creada)))[0] || {}).tipo || "";
-    return json({ tours: resumenTours, cuentas: cuentas.map((p) => ({ uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada,
+    const registroDe = (p) => p.registro || (sesiones[p.uid] || {}).tipo || "";
+    return json({ tours: resumenTours, faltan, cuentas: cuentas.map((p) => ({ uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada,
       registro: registroDe(p), nTours: nTours[p.uid] || 0,
       // Lo que pagó y por dónde (los pagos de antes del historial salen de su último pago, que fue por Mercado Pago)
       pausada: !!p.bloqueado, cortesia: !!p.cortesia, pais: p.pais || ultimaSesion(p.uid).pais || "", ciudad: ultimaSesion(p.uid).ciudad || "",
-      pagos: Array.isArray(p.pagos) ? p.pagos : p.ultimoPago ? [Object.assign({ moneda: "MXN", metodo: "mercadopago" }, p.ultimoPago)] : [] })) });
+      pagos: p.pagos || [] })) });
   }
   if (partes.length === 4 && m === "PUT") {
     const uid = partes[3], cuerpo = await request.json().catch(() => ({}));

@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-19T18:03:01.572Z",
- "bien": 117,
- "total": 117,
+ "fecha": "2026-11-19T20:50:51.420Z",
+ "bien": 118,
+ "total": 118,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -465,6 +465,10 @@
   },
   {
    "nombre": "Vista previa en celular (Laboratorio, nace Solo yo): el botón del teléfono abre el tour en 9:16 con su interfaz vertical y de ahí se cambia a compu",
+   "ok": true
+  },
+  {
+   "nombre": "Panel de dueño → Cuentas: links de regalo por 1 año con su nota; cada licencia dice si es pagada, de regalo, cortesía o de prueba; filtro y Excel sin sumar regalos; las cuentas se leen por partes y se recuerdan",
    "ok": true
   },
   {

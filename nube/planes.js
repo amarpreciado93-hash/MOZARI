@@ -52,7 +52,7 @@ export function planDe(cuenta) {
   let id = PLANES[cuenta.plan] ? cuenta.plan : "gratis";
   const vence = cuenta.vence || null, vencido = !!vence && new Date(vence) < new Date();
   const anterior = vencido && id !== "gratis" ? id : null;
-  if (vencido) id = "gratis";
+  if (vencido) id = PLANES[cuenta.planAntes] && cuenta.planAntes !== anterior ? cuenta.planAntes : "gratis"; // lo que ya tenía comprado no se pierde
   const extra = +cuenta.extraBytes || 0; // paquetes de espacio comprados (se quedan aunque cambie el plan)
   const base = Object.assign({ id }, PLANES[id], { vence: vencido ? null : vence, vencido: anterior });
   if (extra && base.bytes !== null) base.bytes += extra;
