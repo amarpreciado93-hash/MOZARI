@@ -31,7 +31,7 @@ import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR, conC
 import { vozEstado, vozAudio, adminVoz } from "./voces.js";
 import { rutasSesion, cuentaDe, perfil, leerCupo, contarCuentas, firmarLink, verificarLink } from "./sesion.js";
 import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoCompra, correoCotizacion, htmlCotizacion, textoCotizacion, TIPOS_COTIZACION, correoDeNovedad, correoCampana, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja, CAMPANA, iniciarCampana, correoCompu, mandarRecordatorios, sembrarRecordatorios } from "./correos.js";
-import { PLANES, planDe, pasa, usaLotificacion } from "./planes.js";
+import { PLANES, planDe, pasa, usaLotificacion, sumarMeses } from "./planes.js";
 import { apiPagos, webhookMercadoPago, webhookStripe, CODIGO, cuponClave } from "./pagos.js";
 import { EmailMessage } from "cloudflare:email";
 import { vigilarRespaldos, apiRespaldos } from "./respaldos.js";
@@ -954,7 +954,7 @@ async function admin(request, env, partes, yo) {
       const pagos = Array.isArray(p.pagos) ? p.pagos : p.ultimoPago ? [Object.assign({ moneda: "MXN", metodo: "mercadopago" }, p.ultimoPago)] : [];
       // Los regalos de antes no guardaban para quién eran: se toma la nota de su link
       for (const x of pagos) if (x && x.metodo === "cupon" && x.cupon && x.nota === undefined) { const c = await leerJson(cuponClave(x.cupon)); x.nota = (c && c.nota) || ""; }
-      return { uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada, registro: p.registro || "", bloqueado: !!p.bloqueado, cortesia: !!p.cortesia, pais: p.pais || "", pagos };
+      return { uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada, registro: p.registro || "", bloqueado: !!p.bloqueado, cortesia: !!p.cortesia, planAntes: p.planAntes || "", pais: p.pais || "", pagos };
     };
     const deSesiones = (l) => {
       if (!Array.isArray(l)) return null;
@@ -979,12 +979,12 @@ async function admin(request, env, partes, yo) {
     return json({ tours: resumenTours, faltan, cuentas: cuentas.map((p) => ({ uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada,
       registro: registroDe(p), nTours: nTours[p.uid] || 0,
       // Lo que pagó y por dónde (los pagos de antes del historial salen de su último pago, que fue por Mercado Pago)
-      pausada: !!p.bloqueado, cortesia: !!p.cortesia, pais: p.pais || ultimaSesion(p.uid).pais || "", ciudad: ultimaSesion(p.uid).ciudad || "",
+      pausada: !!p.bloqueado, cortesia: !!p.cortesia, planAntes: p.planAntes || "", pais: p.pais || ultimaSesion(p.uid).pais || "", ciudad: ultimaSesion(p.uid).ciudad || "",
       pagos: p.pagos || [] })) });
   }
   if (partes.length === 4 && m === "PUT") {
     const uid = partes[3], cuerpo = await request.json().catch(() => ({}));
-    if (!/^[A-Za-z0-9_-]{2,80}$/.test(uid) || !(PLANES[cuerpo.plan] || typeof cuerpo.pausada === "boolean")) return error(400, "Datos inválidos");
+    if (!/^[A-Za-z0-9_-]{2,80}$/.test(uid) || !(PLANES[cuerpo.plan] || typeof cuerpo.pausada === "boolean" || (cuerpo.regalo && typeof cuerpo.regalo === "object"))) return error(400, "Datos inválidos");
     const p = await perfil(env, uid);
     if (!p) return error(404, "No existe esa cuenta");
     if (p.admin) return error(400, "La cuenta del dueño no se cambia aquí");
@@ -992,6 +992,19 @@ async function admin(request, env, partes, yo) {
       p.plan = cuerpo.plan;
       delete p.vence;   // lo que asigna el dueño a mano no caduca
       p.cortesia = cuerpo.plan !== "gratis"; // dado por el dueño sin pago
+    }
+    // Licencia de regalo puesta a mano (un alumno que ya tenía su cuenta): con su grupo y, si se quiere, por un año.
+    // Queda en su historial como regalo en cero, para que el panel y el Excel no la cuenten como venta.
+    if (cuerpo.regalo && typeof cuerpo.regalo === "object") {
+      const g = cuerpo.regalo, nota = String(g.nota || "").replace(/\s+/g, " ").trim().slice(0, 60), meses = +g.meses === 12 ? 12 : 0, ahora = new Date();
+      if (g.plan !== "pro" && g.plan !== "desarrollos") return error(400, "Elige Pro o Desarrollos");
+      if (!nota) return error(400, "Escribe de quién es el regalo (por ejemplo, el curso)");
+      // Si ya tenía otra licencia para siempre, se le guarda: al vencer el regalo regresa a ella
+      if (meses && !p.vence && p.plan && p.plan !== "gratis" && p.plan !== g.plan) p.planAntes = p.plan;
+      p.plan = g.plan; delete p.cortesia;
+      if (meses) p.vence = sumarMeses(ahora, meses).toISOString(); else delete p.vence;
+      const antes = Array.isArray(p.pagos) ? p.pagos : p.ultimoPago ? [Object.assign({ moneda: "MXN", metodo: "mercadopago" }, p.ultimoPago)] : [];
+      p.pagos = antes.concat([{ ref: "regalo-" + Date.now().toString(36), fecha: ahora.toISOString(), monto: 0, moneda: "MXN", metodo: "cupon", plan: g.plan, nota }]).slice(-50);
     }
     // Pausar: no entra al estudio y sus tours publicados dejan de mostrarse (no se borra nada)
     if (typeof cuerpo.pausada === "boolean") {

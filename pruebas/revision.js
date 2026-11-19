@@ -5068,6 +5068,7 @@ async function capasPesadas(p) {
       const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
       const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
       const cAl = "alumna-regalo@prueba.mx", cCo = "cortesia-lic@prueba.mx", cPr = "prueba-lic@prueba.mx";
+      const { planDe } = await import(path.join(RAIZ, "nube", "planes.js")), planDeLic = planDe;
       const n = await pagina(DUENO), al = await pagina(cAl), co = await pagina(cCo), pr = await pagina(cPr);
       try {
         // 1) El dueño crea, en su panel, 2 links de regalo de Desarrollos por 1 año para una generación de alumnos
@@ -5123,8 +5124,27 @@ async function capasPesadas(p) {
         exige(fila(cCo).Licencia === "Cortesía" && fila(cPr).Licencia === "De prueba" && !hc.some((x) => x.Correo === DUENO), "el Excel no separa cortesía y prueba (o incluye al dueño)");
         const tot = hr.find((x) => x.Licencia === "TOTAL"), reg = hr.find((x) => x.Licencia === "De regalo" && x.Plan === "Desarrollos");
         exige(tot && tot.Cuentas === hc.length && reg && reg.Cuentas >= 1 && reg["Cobrado MXN"] === 0 && tot["Cobrado MXN"] === hc.reduce((t, x) => t + (+x["Pagó MXN"] || 0), 0), "el resumen del Excel no cuadra o suma los regalos: " + JSON.stringify(hr).slice(0, 300));
+        // 5b) «Regalar» en la fila: la cuenta que tenía el plan puesto a mano (cortesía, para siempre) pasa a regalo con su grupo y por 1 año
+        await n.click('#lic-fila [data-lic="cortesia"]'); await n.waitForTimeout(600);
+        await n.click('#cuentas table tbody tr:has-text("' + cCo + '") [data-regalar]'); await n.waitForSelector("#dlg-regalo[open] #rg-nota", { timeout: 5000 });
+        exige((await n.inputValue("#rg-plan")) === "pro" && (await n.inputValue("#rg-dura")) === "12" && /cortesia-lic/.test(await n.textContent("#dlg-regalo")), "la ventana de regalo no abre con la cuenta, su plan y 1 año");
+        await n.click('#dlg-regalo [data-rg="guardar"]'); await n.waitForTimeout(300);
+        exige(/de quién es el regalo/.test(await n.textContent("#rg-error")) && await n.isVisible("#dlg-regalo[open]"), "sin grupo no debe guardar el regalo");
+        await n.selectOption("#rg-plan", "desarrollos"); await n.fill("#rg-nota", "Curso nov 2026");
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "panel-regalar.png") });
+        await n.click('#dlg-regalo [data-rg="guardar"]');
+        await n.waitForFunction(() => !document.querySelector("#dlg-regalo[open]"), null, { timeout: 8000 }); await n.waitForSelector("#lic-fila", { timeout: 30000 }); await n.waitForTimeout(800);
+        const yoCo = (await api(co, "api/yo")).d, diasCo = (new Date(yoCo.plan.vence) - Date.now()) / 864e5;
+        exige(yoCo.plan.id === "desarrollos" && diasCo > 360 && diasCo < 370, "el regalo puesto a mano no dejó Desarrollos por un año: " + JSON.stringify(yoCo.plan).slice(0, 160));
+        exige((await num("cortesia")) === antes.cortesia - 1 && (await num("regalo")) === antes.regalo + 1 && /Curso nov 2026/.test(await n.textContent("#lic-grupos")), "al regalar a mano, la cuenta no pasó de cortesía a regalo con su grupo");
+        await n.click('#lic-fila [data-lic="regalo"]'); await n.waitForTimeout(600);
+        exige((await n.$$eval("#cuentas table tbody tr", (l) => l.map((t) => t.innerText))).some((t) => t.includes("cortesia-lic@prueba.mx") && /Regalo/.test(t) && /Curso nov 2026/.test(t) && /vence el/.test(t)), "la fila no dice el grupo del regalo y cuándo vence");
+        d = await lista(); const pCo = d.cuentas.find((x) => x.email === cCo) || {};
+        exige(pCo.cortesia === false && pCo.plan === "desarrollos" && (pCo.pagos || []).some((x) => x.metodo === "cupon" && x.monto === 0 && x.nota === "Curso nov 2026"), "el regalo a mano no quedó en el historial de la cuenta: " + JSON.stringify(pCo.pagos));
+        // … y si el dueño le vuelve a poner el plan a mano, regresa a cortesía (sin vencimiento)
+        exige((await api(n, "api/admin/cuentas/" + pCo.uid, J("PUT", { regalo: { plan: "empresa", meses: 12, nota: "x" } }))).s === 400 && (await api(co, "api/admin/cuentas/" + pCo.uid, J("PUT", { regalo: { plan: "pro", meses: 12, nota: "x" } }))).s === 403, "el regalo acepta un plan que no existe, o lo puede poner cualquiera");
         // 6) Quien ya tenía Pro para siempre y recibe Desarrollos por un año, al vencer regresa a su Pro (no a prueba)
-        const { planDe } = await import(path.join(RAIZ, "nube", "planes.js"));
+        exige(pCo.planAntes === "pro" && planDeLic({ plan: "desarrollos", vence: "2020-01-01T00:00:00Z", planAntes: pCo.planAntes }).id === "pro" && /regresa a Pro/.test(await n.textContent('#cuentas table tbody tr:has-text("' + cCo + '")')), "quien tenía Pro y recibió Desarrollos por un año no regresa a Pro al vencer (o el panel no lo dice)");
         exige(planDe({ plan: "desarrollos", vence: "2020-01-01T00:00:00Z", planAntes: "pro" }).id === "pro" && planDe({ plan: "desarrollos", vence: "2020-01-01T00:00:00Z" }).id === "gratis" && planDe({ plan: "desarrollos", vence: "2099-01-01T00:00:00Z", planAntes: "pro" }).id === "desarrollos", "al vencer un regalo, quien ya tenía licencia la pierde");
         exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
       } finally {

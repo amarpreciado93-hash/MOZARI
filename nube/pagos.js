@@ -115,7 +115,7 @@ async function activar(env, orden, pagoId) {
   if (!p) return orden;
   const ahora = new Date();
   if (orden.plan === "espacio") p.extraBytes = (+p.extraBytes || 0) + ESPACIO_PAQUETE * (orden.cantidad || 1);
-  else if (orden.periodo === "unico") { p.plan = orden.plan; delete p.vence; } // licencia para siempre
+  else if (orden.periodo === "unico") { p.plan = orden.plan; delete p.vence; delete p.cortesia; delete p.planAntes; } // licencia para siempre
   else {
     const vigente = p.plan === orden.plan && p.vence && new Date(p.vence) > ahora;
     const desde = vigente ? new Date(p.vence) : ahora;

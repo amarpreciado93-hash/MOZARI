@@ -364,3 +364,14 @@
   leía perfil y sesiones de todas en cada visita, más de 1,000 lecturas (el tope de una petición). Ahora guarda un
   resumen por cuenta en `config/cuentas-panel.json` y solo relee las que cambiaron (por su etag). Si faltan muchas,
   lee 350 por petición y responde `faltan`; el panel vuelve a pedir hasta tenerlas todas.
+
+## 19 nov 2026 · Botón «Regalar» en Cuentas (licencia de regalo a mano, con grupo y vigencia)
+
+- Ya en producción se vio que 5 de las 6 «Cortesía» eran cuentas creadas ese día: alumnos a los que Amar les puso el
+  plan a mano. Quedaban para siempre y sin saber de qué curso eran.
+- En cada fila de Cuentas hay «Regalar»: abre «Licencia de regalo» con Plan (Desarrollos | Pro), «La licencia dura»
+  (1 año desde hoy | Para siempre) y «De quién es» (el curso o grupo; recuerda el último y sugiere los que ya hay).
+  `PUT api/admin/cuentas/<uid> { regalo: { plan, meses, nota } }`: pone el plan y su `vence`, quita `cortesia` y deja
+  en `pagos` un regalo en cero con su nota, para que el panel y el Excel lo cuenten como «De regalo» y no como venta.
+- Si la cuenta ya tenía otra licencia para siempre, se guarda en `planAntes` y la fila dice «vence el… y regresa a Pro».
+- Si después el dueño le cambia el plan a mano, vuelve a ser «Cortesía» (la marca `cortesia` manda sobre un regalo anterior).

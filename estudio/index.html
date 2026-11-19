@@ -1400,6 +1400,7 @@
   .vza-voz small { font-size: 11px; color: var(--mz-tenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .lab-voz { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   /* Panel de dueño → Cuentas: clase de licencia (pagada, de regalo, cortesía, de prueba) */
+  .dlg-regalo { width: min(460px, calc(100vw - 32px)); } #rg-error[hidden] { display: none; }
   .lic-fila { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 16px 4px; }
   .lic-t { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mz-tenue); margin-right: 4px; }
   .lic-chip { border: 1px solid var(--mz-linea-neutra); background: transparent; color: var(--mz-texto); font: 500 12px var(--mz-texto-ui); padding: 6px 12px; border-radius: 999px; cursor: pointer; }
@@ -2143,6 +2144,7 @@
 <dialog class="dlg-pago" id="dlg-pago" aria-labelledby="dp-titulo"><div class="dp-cuerpo" id="dp-cuerpo"></div></dialog>
 <dialog class="dlg-pago" id="dlg-ub" aria-labelledby="ub-guia-titulo"></dialog>
 <dialog class="dlg-pago dlg-voz" id="dlg-voz" aria-labelledby="vz-titulo"></dialog>
+<dialog class="dlg-pago dlg-regalo" id="dlg-regalo" aria-labelledby="rg-titulo"></dialog>
 <aside class="manual" id="manual" hidden aria-label="Manual de Mozari"><div class="mn-cab"><b>Manual de Mozari</b><button class="dp-cerrar" id="mn-cerrar" aria-label="Cerrar el manual">×</button></div><input class="mn-buscar" id="mn-buscar" type="search" placeholder="Busca: lote, PDF, publicar…" aria-label="Buscar en el manual"><div class="mn-cuerpo" id="mn-cuerpo"></div><div class="mn-pie"><span>¿No se resolvió?</span><button class="btn-sec" data-reportar>Reportar un error</button></div></aside>
 
 <!-- ======================= ARRANQUE ======================= -->
@@ -5496,10 +5498,41 @@
     const ps = c.pagos || [], reg = ps.filter((x) => x.metodo === "cupon" && !(+x.monto > 0)), r = reg[reg.length - 1];
     if (!c.plan || c.plan === "gratis" || (c.vence && new Date(c.vence) < new Date())) return { tipo: "prueba", vencida: !!(r && c.vence), nota: r ? r.nota || "" : "" };
     if (ps.some((x) => +x.monto > 0 && x.plan !== "espacio")) return { tipo: "pagada" };
-    if (r) return { tipo: "regalo", nota: r.nota || "", codigo: r.cupon || "" };
+    if (r && !c.cortesia) return { tipo: "regalo", nota: r.nota || "", codigo: r.cupon || "" };
     return { tipo: "cortesia" };
   }
-  const venceTxt = (c) => (c.vence && new Date(c.vence) > new Date() ? "vence el " + new Date(c.vence).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" }) : "");
+  // Regalar una licencia a mano, con su grupo y su vigencia. Amar tenía alumnos con el plan puesto a mano: quedaban
+  // como «Cortesía», para siempre y sin saber de qué curso eran. Con esto quedan como regalo («Curso nov 2026 · vence…»).
+  let regaloDe = null, regaloNota = "";
+  function abrirRegalo(uid) {
+    const c = cuentasMemo && cuentasMemo.dc.cuentas.find((x) => x.uid === uid); if (!c || c.admin) return;
+    const d = $("dlg-regalo"), grupos = [...new Set(cuentasMemo.dc.cuentas.flatMap((x) => (x.pagos || []).filter((g) => g.metodo === "cupon" && g.nota).map((g) => g.nota)))];
+    regaloDe = c;
+    d.innerHTML = '<div class="dp-cuerpo vz"><button type="button" class="dp-cerrar" data-rg="cerrar" aria-label="Cerrar">×</button><span class="etiq">Panel de dueño</span><h2 id="rg-titulo">Licencia de regalo</h2>' +
+      "<p>Para <b>" + esc(c.nombre || c.email) + "</b> · " + esc(c.email) + ". No cuenta como venta.</p>" +
+      '<label class="fe-campo">Plan<select class="entrada" id="rg-plan"><option value="desarrollos"' + (c.plan === "pro" ? "" : " selected") + ">Desarrollos</option><option value=\"pro\"" + (c.plan === "pro" ? " selected" : "") + ">Pro</option></select></label>" +
+      '<label class="fe-campo">La licencia dura<select class="entrada" id="rg-dura"><option value="12" selected>1 año, desde hoy</option><option value="0">Para siempre</option></select></label>' +
+      '<label class="fe-campo">De quién es (tu curso o grupo)<input class="entrada" id="rg-nota" maxlength="60" list="rg-grupos" placeholder="Curso nov 2026" value="' + esc(regaloNota) + '"><datalist id="rg-grupos">' + grupos.map((g) => '<option value="' + esc(g) + '">').join("") + "</datalist></label>" +
+      '<p class="ub-error" id="rg-error" role="alert" hidden></p>' +
+      '<div class="ub-acc"><button type="button" class="btn-prim" data-rg="guardar">Guardar regalo</button><button type="button" class="btn-sec" data-rg="cerrar">Cancelar</button></div></div>';
+    if (!d.open) d.showModal();
+  }
+  document.addEventListener("click", async (ev) => {
+    const b = ev.target.closest && ev.target.closest("[data-regalar]"); if (b) { abrirRegalo(b.dataset.regalar); return; }
+    const a = ev.target.closest && ev.target.closest("[data-rg]"), d = $("dlg-regalo");
+    if (ev.target === d) { d.close(); return; }
+    if (!a || !regaloDe) return;
+    if (a.dataset.rg === "cerrar") { d.close(); return; }
+    const nota = $("rg-nota").value.replace(/\s+/g, " ").trim(), er = $("rg-error"), falla = (t) => { er.textContent = t; er.hidden = false; a.disabled = false; };
+    if (!nota) { falla("Escribe de quién es el regalo (por ejemplo, el curso)."); return; }
+    a.disabled = true;
+    const r = await fetch("api/admin/cuentas/" + regaloDe.uid, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ regalo: { plan: $("rg-plan").value, meses: +$("rg-dura").value, nota } }) }).catch(() => null);
+    if (!r || !r.ok) { const j = r ? await r.json().catch(() => ({})) : {}; falla(j.error || "No se pudo guardar. Inténtalo otra vez."); return; }
+    regaloNota = nota; d.close(); avisar("Licencia de regalo puesta: " + nota); pintarCuentas();
+  });
+  $("dlg-regalo").addEventListener("close", () => { regaloDe = null; $("dlg-regalo").innerHTML = ""; });
+  $("dlg-regalo").addEventListener("input", () => { const e = $("rg-error"); if (e) e.hidden = true; });
+  const venceTxt = (c) => (c.vence && new Date(c.vence) > new Date() ? "vence el " + new Date(c.vence).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" }) + (c.planAntes && c.planAntes !== c.plan ? " y regresa a " + (c.planAntes === "pro" ? "Pro" : "Desarrollos") : "") : "");
   function licenciasHtml(usuarios) {
     const n = { pagada: 0, regalo: 0, cortesia: 0, prueba: 0 }, grupos = {};
     usuarios.forEach((c) => { const l = licenciaDe(c); n[l.tipo]++; if (l.tipo === "regalo") { const k = l.nota || "Sin nota"; grupos[k] = (grupos[k] || 0) + 1; } });
@@ -5635,7 +5668,7 @@
     caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto. Aquí están todas las cuentas de Mozari y puedes cambiar su plan.</p>' + TABS_DUENO(0) + resumen + '<p class="cuentas-total">' + totalPagos(cuentas) + "</p>" + licenciasHtml(usuarios) + '<table class="lotes-tabla"><thead><tr><th>#</th><th>Cuenta</th><th>Correo</th><th>Plan</th><th>Pagó</th><th>Última entrada</th><th></th></tr></thead><tbody>' + cuentas.filter((c) => !licFiltro || licenciaDe(c).tipo === licFiltro).map((c) =>
       '<tr class="' + (c.admin ? "dueno" : "plan-" + (c.plan || "gratis")) + (c.pausada ? " pausada" : "") + (c.creado && new Date(c.creado).toDateString() === hoy ? " nueva" : "") + '"><td class="cuenta-n">' + c.n + "</td><td><b>" + esc(c.nombre || "") + "</b>" + (c.creado ? '<small class="cuenta-alta">desde ' + new Date(c.creado).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) + "</small>" : "") +
         (c.pais || c.ciudad ? '<small class="cuenta-pais" title="' + esc(nombrePais(c.pais)) + '">' + (c.pais ? '<span class="bandera">' + bandera(c.pais) + "</span>" : "") + esc([c.ciudad, c.pais ? nombrePais(c.pais) : ""].filter(Boolean).join(", ")) + "</small>" : "") + "</td><td>" + esc(c.email) + "</td><td>" + (c.admin ? '<span class="plan-dueno">Dueño</span>' : '<select class="plan-' + esc(c.plan || "gratis") + '" data-plan-de="' + esc(c.uid) + '">' + [["gratis", "Gratis"], ["pro", "Pro"], ["desarrollos", "Desarrollos"]].map(([v, nm]) => '<option value="' + v + '"' + ((c.plan || "gratis") === v ? " selected" : "") + ">" + nm + "</option>").join("") + "</select>") +
-      "</td><td data-l=\"Pagó\">" + (c.admin ? "" : pagoDe(c)) + "</td><td data-l=\"Entró\">" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td><td>" + (c.admin ? "" : '<button class="mini' + (c.pausada ? " primario" : "") + '" data-pausar="' + esc(c.uid) + '" data-v="' + (c.pausada ? "0" : "1") + '">' + (c.pausada ? "Reactivar" : "Pausar") + "</button>") + "</td></tr>").join("") + "</tbody></table>";
+      "</td><td data-l=\"Pagó\">" + (c.admin ? "" : pagoDe(c)) + "</td><td data-l=\"Entró\">" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td><td>" + (c.admin ? "" : '<button class="mini" data-regalar="' + esc(c.uid) + '" title="Ponerle una licencia de regalo, con su grupo y su vigencia">Regalar</button> <button class="mini' + (c.pausada ? " primario" : "") + '" data-pausar="' + esc(c.uid) + '" data-v="' + (c.pausada ? "0" : "1") + '">' + (c.pausada ? "Reactivar" : "Pausar") + "</button>") + "</td></tr>").join("") + "</tbody></table>";
   }
   document.addEventListener("click", async (ev) => {
     if (ev.target.id === "cupo-espera") { const l = $("cupo-lista"); if (l) l.hidden = !l.hidden; return; }
