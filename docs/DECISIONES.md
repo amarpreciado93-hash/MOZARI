@@ -296,3 +296,28 @@
 - **Pruebas:** en desarrollo (`wrangler dev --local`, DEV sin llave) no se llama a ningún proveedor: sale un guion y un tono de prueba. Falta validar con la llave real la lista de voces y modelos de la cuenta y la primera voz generada.
 - **18 nov 2026 · Landing en la moneda del tour.** Reporte de Jesús (Perú, Desarrollos): su landing salía con «$» aunque su tour estaba en soles. La landing usa la moneda de Fichas técnicas (S/ soles, US$ dólares, € euros, Q, ₡, Bs; los pesos siguen con $).
 - **Revisión del 18 nov (116 pruebas):** 116 de 116.
+
+## 18 nov 2026 · Transición «avance» (como el video de referencia de Amar) y llave de ElevenLabs
+
+- **Transición entre esferas, nueva** (Laboratorio «transiciones», solo yo). Amar mandó un video de otro tour suyo:
+  «analiza cuadro por cuadro estas transiciones… se siente súper fluida e inmersiva». Medido en el video (30 cuadros
+  por segundo, 5 transiciones): es UN solo movimiento de ~0.8 s; la esfera de salida se acerca acelerando (1× → ~1.5×
+  en 0.33 s) hacia el punto tocado, a la altura del horizonte; el fundido dura ~0.17 s y cae cuando más rápido se va;
+  la esfera nueva entra más abierta (~0.73×) y llega frenando en ~0.47 s. Antes Mozari giraba primero (470 ms),
+  se detenía y fundía despacio (860 ms): 1.33 s y se sentía en dos tiempos.
+  Ahora `viajarInmersivo` hace eso mismo en vivo, en compu y celular. Para no esperar al cambio, la esfera siguiente
+  entra con su nivel ligero (`precarga.ligera`) y la nitidez llega después.
+- **Sin ajustes en Interfaz.** Se había puesto un grupo «Transición entre esferas» (Avance/Fundido y velocidad).
+  Amar: «no se necesita que se modifique en la interfaz, solo emular algo similar». Se quitó.
+- `window.__transLog` y `window.__transLento` existen solo para la revisión y para grabarla en cámara lenta.
+- **Llave de ElevenLabs puesta** (secreto `ELEVENLABS_KEY` del Worker mozari-estudio; la creó y la pegó Amar).
+  La llave solo puede: texto a voz, leer voces, modelos y usuario. Tope de la llave: 100,000 créditos por periodo,
+  de los 300,000 de su plan Creator (para que Mozari no se coma los créditos de sus videos). Por eso
+  `VOZ_TOPE_MES` baja de 400,000 a 90,000: Mozari avisa antes de que la llave se quede sin créditos.
+- **Voces en español primero** en «Voces que ofrece Mozari» (primero las de su cuenta, luego las de catálogo, al final
+  las de otros idiomas). El nombre sale corto («Eduardo», no «[Suspense] Eduardo - Mexican Spanish») y la descripción
+  en español y hablando de la voz («Voz de hombre · mexicana · adulta · casual»); `tonoEs` en nube/voces.js.
+- **Respaldo de modelo**: si el modelo elegido no acepta el pedido (400/422), la voz sale con `eleven_multilingual_v2`
+  antes de fallarle al usuario. Su cuenta ya trae modelos nuevos (v4, v4 turbo, v3) que no se han probado aquí.
+- **Guion más apegado a las notas**: en la prueba real el modelo inventó una frase y enumeró los espacios. Ahora los
+  espacios van «solo como contexto» (máximo 8), no se enumeran, y cada dato tiene que estar en las notas.

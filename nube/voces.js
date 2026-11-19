@@ -10,7 +10,8 @@
 // Sin sorpresas de cobro:
 //   · cada cuenta tiene sus letras de voz al mes según su plan (VOZ_LETRAS); la cuenta de prueba no genera voz
 //   · hay un tope para todo Mozari al mes (VOZ_TOPE_MES)
-//   · la cuenta de ElevenLabs va sin recarga automática: si se acaba su saldo, se pausa y aquí se avisa
+//   · la llave de ElevenLabs solo puede hacer voz y lleva su propio tope: 100,000 créditos por mes de los 300,000
+//     del plan de Amar (así Mozari no se come los créditos de sus videos); si se acaba, se pausa y aquí se avisa
 //
 // Qué voces se ofrecen y con qué modelo lo decide el dueño en su panel (config/voz.json), de las voces de su cuenta
 // de ElevenLabs. En desarrollo (DEV sin llave) no se llama a nadie: guion y voz de prueba (un tono).
@@ -22,7 +23,7 @@
 import { json, error } from "./comun.js";
 
 export const VOZ_LETRAS = { gratis: 0, pro: 15000, desarrollos: 40000 }; // letras de voz al mes (unas 900 por minuto)
-export const VOZ_TOPE_MES = 400000;                                      // todo Mozari, al mes (unas 7 horas de voz)
+export const VOZ_TOPE_MES = 90000;                                       // todo Mozari, al mes (hora y media de voz); va por debajo del tope de la llave
 export const VOZ_MAX = 1200;                                             // letras por voz (poco más de un minuto)
 const GUIONES_MES = 400;                                                 // guiones escritos por cuenta al mes
 const MODELOS_GUION = ["@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast"]; // el segundo, si el primero falla
@@ -34,10 +35,24 @@ const aJson = (env, k, v) => env.R2.put(k, JSON.stringify(v), { httpMetadata: { 
 const dePrueba = (env) => !!env.DEV && !env.ELEVENLABS_KEY;
 const corto = (t, n) => String(t == null ? "" : t).replace(/\s+/g, " ").trim().slice(0, n);
 
+// Cómo describe ElevenLabs cada voz («male · mexican · middle_aged · casual · es»), dicho en español y de la voz
+// («Voz de hombre · mexicana · adulta · casual»). Lo que no se sabe traducir no se muestra; el idioma va aparte.
+const TONO_ES = { male: "Voz de hombre", female: "Voz de mujer", neutral: "Voz neutra", "non-binary": "Voz neutra",
+  mexican: "mexicana", "latin american": "latina", latin: "latina", spanish: "española", peninsular: "española", castilian: "española", colombian: "colombiana", argentinian: "argentina", argentine: "argentina",
+  chilean: "chilena", peruvian: "peruana", venezuelan: "venezolana", american: "estadounidense", british: "británica", australian: "australiana",
+  young: "joven", middle_aged: "adulta", "middle aged": "adulta", "middle-aged": "adulta", old: "madura",
+  casual: "casual", gentle: "suave", soft: "suave", professional: "profesional", pleasant: "agradable", classy: "elegante", chill: "relajada", relaxed: "relajada", deep: "grave", calm: "tranquila", mature: "madura",
+  confident: "segura", warm: "cálida", hyped: "enérgica", energetic: "enérgica", sassy: "atrevida", crisp: "clara", clear: "clara", serious: "seria", upbeat: "alegre", raspy: "rasposa", husky: "ronca",
+  formal: "formal", meditative: "serena", excited: "entusiasta", intense: "intensa", resonant: "resonante", authoritative: "firme", "well-rounded": "equilibrada", friendly: "amable", natural: "natural", smooth: "tersa" };
+const TONOS_YA = new Set(Object.values(TONO_ES));
+export const tonoEs = (t) => [...new Set(String(t || "").split(/\s*·\s*/).map((x) => x.trim()).filter(Boolean).map((x) => TONO_ES[x.toLowerCase()] || (TONOS_YA.has(x) ? x : "")).filter(Boolean))].join(" · ");
+// El nombre con el que viene («[Suspense] Eduardo - Mexican Spanish») → el que se ofrece («Eduardo»); el dueño lo puede cambiar
+const nombreCorto = (n) => corto(String(n || "").replace(/^\s*\[[^\]]*\]\s*/, "").split(/\s+[-–—]\s+/)[0] || n, 40) || "Voz";
+
 export async function confVoz(env) {
   const c = (await deJson(env, "config/voz.json")) || {};
   const voces = (Array.isArray(c.voces) ? c.voces : []).filter((v) => v && /^[A-Za-z0-9_-]{6,60}$/.test(v.id || "")).slice(0, 12)
-    .map((v) => ({ id: v.id, nombre: corto(v.nombre || "Voz", 40), tono: corto(v.tono, 60), muestra: /^https:\/\/[^\s"<>]+$/.test(v.muestra || "") ? String(v.muestra).slice(0, 400) : "" }));
+    .map((v) => ({ id: v.id, nombre: corto(v.nombre || "Voz", 40), tono: /\b(male|female|middle_aged)\b|·\s*(en|es)\s*$/.test(v.tono || "") ? tonoEs(v.tono) : corto(v.tono, 60), muestra: /^https:\/\/[^\s"<>]+$/.test(v.muestra || "") ? String(v.muestra).slice(0, 400) : "" }));
   return { modelo: /^[a-z0-9_.-]{3,60}$/.test(c.modelo || "") ? c.modelo : "eleven_multilingual_v2", voces: voces.length ? voces : dePrueba(env) ? VOCES_PRUEBA : [] };
 }
 async function usoVoz(env, uid) {
@@ -66,14 +81,15 @@ function mensajesGuion(d) {
   const sistema = "Escribes el guion de la voz que presenta un recorrido virtual 360 de una casa, un departamento, un local o un desarrollo en México. " +
     "La voz suena una sola vez, cuando el recorrido empieza, y acompaña a quien lo va viendo mientras pasa de un espacio a otro.\n\nReglas:\n" +
     "- Español de México, natural, como lo diría una persona al mostrar el lugar. Frases cortas, fáciles de decir en voz alta.\n" +
-    "- Habla SOLO de lo que te dan: el nombre del proyecto, los espacios del recorrido y las notas. No inventes medidas, precios, amenidades, materiales ni ubicaciones.\n" +
-    "- Si no hay notas, presenta el lugar en general e invita a recorrerlo a su ritmo, sin inventar detalles. No enumeres todos los espacios.\n" +
-    "- Sin frases de anuncio ni clichés: nada de «no es solo», «más que un», «imagina», «el lugar de tus sueños», «bienvenido a», «descubre», «déjate llevar».\n" +
+    "- Habla SOLO de lo que te dan: el nombre del proyecto y las notas. Cada dato que digas tiene que estar ahí, casi con las mismas palabras. No inventes medidas, precios, amenidades, materiales, ubicaciones, vistas, sensaciones ni promesas. Si dudas de un dato, no lo digas.\n" +
+    "- Los espacios del recorrido son solo contexto para que sepas qué se va a ver. No los enumeres: menciona uno o dos como mucho, y solo si ayudan.\n" +
+    "- Si no hay notas, presenta el lugar en dos o tres frases e invita a recorrerlo a su ritmo, sin inventar detalles.\n" +
+    "- Sin frases de anuncio ni clichés: nada de «no es solo», «más que un», «imagina», «el lugar de tus sueños», «bienvenido», «bienvenida», «te damos la bienvenida», «descubre», «déjate llevar», «un espacio pensado para ti».\n" +
     "- Los números y las abreviaturas van escritos como se dicen: «manzana cinco», «doscientos metros cuadrados».\n" +
     "- Sin emojis, sin comillas, sin títulos, sin listas, sin acotaciones. Un solo párrafo.\n" +
     "- Tono: " + TONOS[d.tono] + ".\n" +
     "- Largo: unas " + n + " palabras (entre " + (n - 8) + " y " + (n + 8) + ").\n\nResponde únicamente con el guion.";
-  const pedido = ["Proyecto: " + (d.proyecto || "(sin nombre)"), d.espacios.length && "Espacios del recorrido: " + d.espacios.join(", "), "Notas de quien lo vende: " + (d.notas || "(ninguna)")].filter(Boolean).join("\n");
+  const pedido = ["Proyecto: " + (d.proyecto || "(sin nombre)"), d.espacios.length && "Espacios del recorrido (solo contexto): " + d.espacios.slice(0, 8).join(", "), "Notas de quien lo vende: " + (d.notas || "(ninguna)")].filter(Boolean).join("\n");
   return [{ role: "system", content: sistema }, { role: "user", content: pedido }];
 }
 // La respuesta de la IA cambia de forma según el modelo: se busca el texto donde venga
@@ -129,12 +145,16 @@ function wavPrueba(seg) {
 }
 const NO_HAY = "Las voces de Mozari no están disponibles por ahora. Mientras, puedes subir tu propio audio.";
 async function leerEleven(env, conf, vozId, texto) {
-  const pedir = (conIdioma) => fetch("https://api.elevenlabs.io/v1/text-to-speech/" + encodeURIComponent(vozId) + "?output_format=mp3_44100_128", { method: "POST",
+  const RESPALDO = "eleven_multilingual_v2";
+  const pedir = (modelo, conIdioma) => fetch("https://api.elevenlabs.io/v1/text-to-speech/" + encodeURIComponent(vozId) + "?output_format=mp3_44100_128", { method: "POST",
     headers: { "xi-api-key": env.ELEVENLABS_KEY, "content-type": "application/json", accept: "audio/mpeg" },
-    body: JSON.stringify(Object.assign({ text: texto, model_id: conf.modelo, apply_text_normalization: "auto" }, conIdioma ? { language_code: "es" } : {})) }).catch(() => null);
+    body: JSON.stringify(Object.assign({ text: texto, model_id: modelo, apply_text_normalization: "auto" }, conIdioma ? { language_code: "es" } : {})) }).catch(() => null);
   const conIdioma = /v2_5|v3|v4/.test(conf.modelo); // los modelos nuevos aceptan que se les fije el idioma; el multilingüe v2 no
-  let r = await pedir(conIdioma);
-  if (r && (r.status === 400 || r.status === 422) && conIdioma) r = await pedir(false);
+  const noLoAcepta = (x) => x && (x.status === 400 || x.status === 422);
+  let r = await pedir(conf.modelo, conIdioma);
+  if (noLoAcepta(r) && conIdioma) r = await pedir(conf.modelo, false);
+  // Un modelo nuevo puede pedir las cosas de otra forma: antes de fallarle al usuario, sale con el de siempre
+  if (noLoAcepta(r) && conf.modelo !== RESPALDO) { console.error("voz: " + conf.modelo + " no aceptó el pedido; sale con " + RESPALDO); r = await pedir(RESPALDO, false); }
   if (!r) return { status: 502, error: "No se pudo conectar con el servicio de voz. Inténtalo otra vez." };
   if (r.ok) { const audio = await r.arrayBuffer(); return audio.byteLength > 500 ? { audio } : { status: 502, error: "La voz salió vacía. Inténtalo otra vez." }; }
   const d = await r.json().catch(() => ({})), det = d && d.detail, est = String((det && det.status) || ""), msg = String((det && (det.message || det)) || "").slice(0, 300);
@@ -192,7 +212,7 @@ export async function adminVoz(request, env, partes) {
     const h = { "xi-api-key": env.ELEVENLABS_KEY }, pedir = (u) => fetch("https://api.elevenlabs.io" + u, { headers: h }).then(async (r) => ({ s: r.status, d: await r.json().catch(() => null) })).catch(() => ({ s: 0, d: null }));
     const [v, mo, sub] = await Promise.all([pedir("/v1/voices"), pedir("/v1/models"), pedir("/v1/user/subscription")]);
     if (v.s !== 200) return error(502, "ElevenLabs no dio las voces (respuesta " + v.s + "). Revisa que la llave tenga permiso de voces y de texto a voz.");
-    const voces = ((v.d && v.d.voices) || []).map((x) => { const l = x.labels || {}; return { id: x.voice_id, nombre: corto(x.name, 60), tono: [l.gender, l.accent, l.age, l.descriptive || l.description, l.language].filter(Boolean).map((t) => corto(t, 20)).join(" · "), muestra: x.preview_url || "", tipo: x.category || "" }; }).filter((x) => x.id);
+    const voces = ((v.d && v.d.voices) || []).map((x) => { const l = x.labels || {}; return { id: x.voice_id, nombre: nombreCorto(x.name), completo: corto(x.name, 80), tono: tonoEs([l.gender, l.accent, l.age, l.descriptive || l.description].filter(Boolean).join(" · ")), idioma: corto(l.language, 8), muestra: x.preview_url || "", tipo: x.category || "" }; }).filter((x) => x.id);
     const modelos = (Array.isArray(mo.d) ? mo.d : []).filter((x) => x && x.can_do_text_to_speech).map((x) => ({ id: x.model_id, nombre: corto(x.name, 60) }));
     const s = sub.d || {}, saldo = sub.s === 200 ? { plan: corto(s.tier, 30), usadas: +s.character_count || 0, incluidas: +s.character_limit || 0, renueva: s.next_character_count_reset_unix ? new Date(s.next_character_count_reset_unix * 1000).toISOString().slice(0, 10) : "" } : null;
     return json({ voces, modelos, saldo });

@@ -7230,38 +7230,72 @@
 
     // Laboratorio «transiciones» (Amar, nov 2026: «se ve como que se dobla la página»). Antes, en celular, se tomaba
     // una foto plana de la vista y se agrandaba encima de la esfera nueva: dos perspectivas distintas a la vez.
-    // Ahora es un solo movimiento y todo en vivo (también en celular): la vista gira hacia el punto y avanza, y
-    // las dos esferas se funden mientras la anterior sigue acercándose y la nueva termina de llegar.
+    // Primera versión en vivo: la vista giraba hacia el punto (470 ms, frenando al final) y luego las dos esferas se
+    // fundían despacio (860 ms). Amar, 18 nov 2026, con un video de referencia: «analiza cuadro por cuadro estas
+    // transiciones… se siente súper fluida e inmersiva». Medido en ese video (30 cuadros por segundo, 5 transiciones):
+    //   · es UN solo movimiento de unos 0.8 s: no gira primero ni se detiene a medio camino
+    //   · la esfera de salida se acerca acelerando, de 1× a ~1.5× en 0.33 s (ln del acercamiento ≈ 0.5·t + 2.6·t²)
+    //   · el acercamiento no es al centro: es hacia el punto tocado, a la altura del horizonte (como caminar hacia allá);
+    //     ese punto se queda quieto en la pantalla y lo demás se abre alrededor
+    //   · el fundido es corto (unos 0.17 s) y cae justo cuando más rápido se va
+    //   · la esfera nueva entra «desde atrás», a ~0.73× (más abierta), y llega a su vista frenando en ~0.47 s
+    // Así queda aquí, todo en vivo (también en celular). Sin ajustes en Interfaz (Amar: «no se necesita que se
+    // modifique en la interfaz, solo emular algo similar»).
     // El tour ya trae precargado el nivel ligero de todas sus esferas, así que no hay que esperar.
     function viajarInmersivo(id, vista, hacia, prep) {
-      const v = actual.view, f0 = v.fov(), turno = ++turnoCambio;
+      const v = actual.view, turno = ++turnoCambio, t0 = performance.now(), st = viewer.stage(), ancho = st.width() || 1, alto = st.height() || 1;
       if (cortina) { cortina.remove(); cortina = null; }
-      const IR = MOVIL ? 420 : 470, FUNDIR = MOVIL ? 780 : 860;
-      const fIr = Math.max(f0 * 0.8, (38 * Math.PI) / 180);
-      const pIr = Math.max(-0.3, Math.min(0.3, v.pitch() * 0.5 + hacia.pitch * 0.3));
-      let llego = false, cargo = false, hecho = false;
-      const fundir = () => {
-        if (hecho || !llego || !cargo || turno !== turnoCambio) return; hecho = true;
-        const fa = actual.view.fov();
-        actual = escenaM(id); fondoParejo(actual);
-        const vf = Object.assign({}, vista || vistaDe(id)), fN0 = Math.min(vf.fov * 1.16, 2.0);
-        actual.view.setParameters(Object.assign({}, vf, { fov: fN0 }));
-        capasEl.classList.add("entrando");
-        const suave = (x) => x * x * (3 - 2 * x), frena = (x) => 1 - Math.pow(1 - x, 3), acelera = (x) => x * x;
-        actual.scene.switchTo({ transitionDuration: FUNDIR, transitionUpdate: (val, nueva, vieja) => {
-          const o = suave(val); nueva.listLayers().forEach((l) => l.mergeEffects({ opacity: o }));
-          try { nueva.hotspotContainer().domElement().style.opacity = o; } catch (e) { /* sin hotspots de Marzipano */ }
-          if (vieja) try { vieja.view().setFov(fa * (1 - 0.22 * acelera(val))); } catch (e) { /* ya no está */ }
-          nueva.view().setFov(fN0 + (vf.fov - fN0) * frena(val));
-        } });
-        construir();
-        setTimeout(() => capasEl.classList.remove("entrando"), Math.round(FUNDIR * 0.45));
-        if (opciones.alMostrar) opciones.alMostrar(id);
+      const K = (MOVIL ? 0.94 : 1) * (window.__transLento || 1); // __transLento: solo para grabarla en cámara lenta en las pruebas
+      const IR = 330 * K, LLEGAR = 470 * K, FUNDE = 170 / 470; // el fundido, como parte de la llegada
+      const nota = (quien, vw) => { if (window.__transLog) window.__transLog.push([Math.round(performance.now() - t0), quien, +vw.fov().toFixed(4)]); }; // solo para la revisión
+      const marca = (que) => { if (window.__transLog) window.__transLog.push([Math.round(performance.now() - t0), que, 0]); };
+      // Hacia dónde se avanza: la dirección del punto tocado, a la altura del horizonte; sin salirse de la parte central de la pantalla
+      const acota = (p) => ({ x: Math.max(ancho * 0.14, Math.min(ancho * 0.86, p.x)), y: Math.max(alto * 0.16, Math.min(alto * 0.84, p.y)) });
+      const px = acota(v.coordinatesToScreen({ yaw: hacia.yaw, pitch: 0 }) || v.coordinatesToScreen({ yaw: hacia.yaw, pitch: hacia.pitch }) || { x: ancho / 2, y: alto / 2 });
+      let foco = v.screenToCoordinates(px); if (!foco || !isFinite(foco.yaw) || !isFinite(foco.pitch)) foco = { yaw: v.yaw(), pitch: v.pitch() };
+      // El campo cambia y la vista se acomoda para que la dirección `dir` siga en el mismo punto de la pantalla
+      const acercar = (vw, dir, fov) => {
+        vw.setFov(fov);
+        for (let k = 0; k < 3; k++) { const w = vw.screenToCoordinates(px); if (!w || !isFinite(w.yaw) || !isFinite(w.pitch)) break; vw.setYaw(vw.yaw() + Math.atan2(Math.sin(dir.yaw - w.yaw), Math.cos(dir.yaw - w.yaw))); vw.setPitch(vw.pitch() + (dir.pitch - w.pitch)); }
       };
-      actual.scene.lookTo({ yaw: hacia.yaw, pitch: pIr, fov: fIr }, { transitionDuration: IR, ease: (x) => x * x * (3 - 2 * x) }, () => { llego = true; fundir(); });
-      setTimeout(() => { llego = true; fundir(); }, IR + 120);
-      Promise.resolve(prep).catch(() => null).then(() => { cargo = true; fundir(); });
-      setTimeout(() => { cargo = true; fundir(); }, IR + 900); // si aún no está todo, se funde con lo que ya llegó
+      const tan0 = Math.tan(v.fov() / 2);
+      const mSale = (ms) => { const s = ms / 1000 / K, c = Math.min(s, 0.56); return Math.exp(0.5 * c + 2.6 * c * c + 0.3 * Math.max(0, Math.min(1, s - 0.56))); }; // si la nueva tarda en llegar, sigue muy despacio
+      const mLlega = (u) => 1 - 0.27 * Math.pow(1 - u, 1.6), suave = (x) => x * x * (3 - 2 * x);
+      let cargo = false, hecho = false;
+      const fundir = () => {
+        if (hecho || turno !== turnoCambio) return; hecho = true;
+        marca("funde");
+        actual = escenaM(id); fondoParejo(actual);
+        const vf = Object.assign({}, vista || vistaDe(id)), nv = actual.view;
+        try { nv.setSize({ width: ancho, height: alto }); } catch (e) { /* ya lo trae */ } // la vista nueva aún no está en pantalla: sin su tamaño no sabe dónde cae cada punto
+        nv.setParameters(vf);
+        let foco2 = nv.screenToCoordinates(px); if (!foco2 || !isFinite(foco2.yaw) || !isFinite(foco2.pitch)) foco2 = { yaw: vf.yaw, pitch: vf.pitch };
+        const tanN = Math.tan(vf.fov / 2);
+        acercar(nv, foco2, 2 * Math.atan(tanN / mLlega(0)));
+        capasEl.classList.add("entrando");
+        actual.scene.switchTo({ transitionDuration: LLEGAR, transitionUpdate: (val, nueva, vieja) => {
+          const o = suave(Math.min(1, val / FUNDE)); nueva.listLayers().forEach((l) => l.mergeEffects({ opacity: o }));
+          try { nueva.hotspotContainer().domElement().style.opacity = o; } catch (e) { /* sin hotspots de Marzipano */ }
+          if (vieja && o < 1) try { acercar(v, foco, 2 * Math.atan(tan0 / mSale(performance.now() - t0))); nota("sale", v); } catch (e) { /* ya no está */ }
+          if (val >= 1) nv.setParameters(vf); else acercar(nv, foco2, 2 * Math.atan(tanN / mLlega(val)));
+          nota("llega", nv);
+        } });
+        marca("cambio");
+        construir();
+        marca("capas");
+        setTimeout(() => capasEl.classList.remove("entrando"), Math.round(LLEGAR * 0.5));
+        if (opciones.alMostrar) opciones.alMostrar(id);
+        marca("listo");
+      };
+      const paso = () => {
+        if (hecho || turno !== turnoCambio) return;
+        const ms = performance.now() - t0;
+        try { acercar(v, foco, 2 * Math.atan(tan0 / mSale(ms))); nota("sale", v); } catch (e) { /* la vista ya no está */ }
+        if (ms >= IR && (cargo || ms >= IR + 900)) { fundir(); return; } // si aún no está todo, se funde con lo que ya llegó
+        requestAnimationFrame(paso);
+      };
+      Promise.resolve(prep).catch(() => null).then(() => { cargo = true; marca("cargo"); });
+      requestAnimationFrame(paso);
     }
 
     const motor = {
@@ -14235,7 +14269,7 @@ void main(){
     motor = crearMotor(stage, {
       editable: false,
       alMostrar: (id) => { actualId = id; statsEsfera(id); vigiaEsfera(id); tQuieto = Date.now(); api.escena(id); api.vista(motor.view()); arrancarPiloto(id); if (!o.sinPrecarga) precarga.alrededor(id); if (o.alEscena) o.alEscena(id); },
-      alPreparar: (id) => (o.sinPrecarga ? Promise.resolve() : precarga.ya(id)),
+      alPreparar: (id) => (o.sinPrecarga ? Promise.resolve() : transInmersiva() ? precarga.ligera(id) : precarga.ya(id)),
       inmersiva: transInmersiva(),
       alInteractuar: () => { if (piloto) piloto.interrumpir(true); },
       alMoverVista: () => api && motor && api.vista(motor.view()),
@@ -14722,7 +14756,7 @@ void main(){
         const s = VZA.saldo;
         h += (s ? "<p>Tu cuenta de ElevenLabs (" + esc(s.plan || "plan") + "): " + (s.incluidas - s.usadas).toLocaleString("es-MX") + " letras disponibles" + (s.renueva ? "; se renuevan el " + esc(s.renueva) : "") + ".</p>" : "") +
           '<label class="fe-campo">Modelo de voz<select class="entrada" data-vza-modelo>' + VZA.modelos.map((x) => '<option value="' + esc(x.id) + '"' + (x.id === VZA.modelo ? " selected" : "") + ">" + esc(x.nombre) + "</option>").join("") + "</select></label>" +
-          '<p class="nota">Marca hasta 12 voces. El nombre es el que verán tus usuarios; puedes cambiarlo.</p><div class="vza-lista">' + VZA.voces.map((v, i) => '<div class="vza-voz"><input type="checkbox" class="toggle" data-vza-si="' + i + '"' + (v.si ? " checked" : "") + ' aria-label="Ofrecer ' + esc(v.nombre) + '"><input class="entrada" data-vza-nombre="' + i + '" value="' + esc(v.nombre) + '" maxlength="40"><small>' + esc(v.tono || v.tipo || "") + "</small>" +
+          '<p class="nota">Marca hasta 12 voces. El nombre es el que verán tus usuarios; puedes cambiarlo.</p><div class="vza-lista">' + VZA.voces.map((v, i) => '<div class="vza-voz"><input type="checkbox" class="toggle" data-vza-si="' + i + '"' + (v.si ? " checked" : "") + ' aria-label="Ofrecer ' + esc(v.nombre) + '"><input class="entrada" data-vza-nombre="' + i + '" value="' + esc(v.nombre) + '" maxlength="40" title="' + esc(v.completo || v.nombre) + '"><small>' + esc(v.tono || v.tipo || "") + (v.idioma && v.idioma !== "es" ? " · " + esc(v.idioma) : "") + "</small>" +
             (v.muestra ? '<button type="button" class="mini" data-vza-muestra="' + i + '">' + (vzSonando === v.id ? "❚❚" : "▶") + "</button>" : "<span></span>") + "</div>").join("") + "</div>" +
           '<div class="ub-acc"><button type="button" class="btn-prim" data-vza="guardar">Guardar voces</button><span class="nota" id="vza-nota"></span></div>';
       }
@@ -14734,7 +14768,9 @@ void main(){
     if (!r || !r.ok) { VZA = { error: await vzError(r, "No se pudo leer tu cuenta de ElevenLabs.") }; pinta(); return; }
     const c = await r.json(), act = a && a.ok ? await a.json() : { voces: [], modelo: "" }, elegidas = new Map(act.voces.map((v) => [v.id, v]));
     VZA = { saldo: c.saldo, modelos: c.modelos.length ? c.modelos : [{ id: act.modelo, nombre: act.modelo }], modelo: act.modelo, pinta,
-      voces: c.voces.map((v) => Object.assign({}, v, elegidas.has(v.id) ? { si: true, nombre: elegidas.get(v.id).nombre, tono: elegidas.get(v.id).tono || v.tono } : { si: false })).sort((x, y) => (y.si ? 1 : 0) - (x.si ? 1 : 0)) };
+      // Arriba las ya elegidas, luego las que hablan español (primero las tuyas, luego las de catálogo) y al final las demás
+      voces: c.voces.map((v) => Object.assign({}, v, elegidas.has(v.id) ? { si: true, nombre: elegidas.get(v.id).nombre } : { si: false }))
+        .map((v, i) => [v, (v.si ? 0 : 4) + (v.idioma === "es" ? 0 : 2) + (v.tipo !== "premade" ? 0 : 1), i]).sort((x, y) => x[1] - y[1] || x[2] - y[2]).map((x) => x[0]) };
     pinta();
   }
   $("dlg-voz").addEventListener("click", async (ev) => {
@@ -15142,6 +15178,14 @@ void main(){
         const urls = [R(id) + "preview.jpg"].concat(piezas(id, Math.min(1, meta[id].niveles.length - 1)), piezas(id, nivelPara(id))).filter((u) => !hechas.has(u));
         cola = cola.filter((u) => !urls.includes(u));
         return Promise.all(urls.map(bajar));
+      },
+      // Lo mínimo para entrar sin esperar (transición «Avance»): la vista previa y el nivel ligero, que el tour ya precargó.
+      // La resolución final se pide al mismo tiempo y se ve llegar encima, ya dentro de la esfera.
+      ligera(id) {
+        if (!meta[id]) return Promise.resolve();
+        const ligeras = [R(id) + "preview.jpg"].concat(piezas(id, Math.min(1, meta[id].niveles.length - 1))).filter((u) => !hechas.has(u));
+        this.ya(id);
+        return Promise.all(ligeras.map(bajar));
       },
     };
   })();

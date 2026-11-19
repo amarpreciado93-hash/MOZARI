@@ -4400,7 +4400,7 @@ async function capasPesadas(p) {
       const abrir = async (t) => {
         const c = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
         if (process.env.DEPURAR) { await c.addInitScript(() => { window.__DEPURAR = true; }); c.on("console", (m) => console.log("      [consola] " + m.text().slice(0, 400))); }
-        await c.addInitScript(() => { window.__foto = false; window.__cortinas = 0; new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((x) => { if (!x.classList) return; if (x.classList.contains("pf-img") || (x.querySelector && x.querySelector(".pf-img"))) window.__foto = true; if (x.classList.contains("cortina-esfera")) window.__cortinas++; }))).observe(document, { childList: true, subtree: true }); });
+        await c.addInitScript(() => { window.__transLog = []; window.__foto = false; window.__cortinas = 0; new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((x) => { if (!x.classList) return; if (x.classList.contains("pf-img") || (x.querySelector && x.querySelector(".pf-img"))) window.__foto = true; if (x.classList.contains("cortina-esfera")) window.__cortinas++; }))).observe(document, { childList: true, subtree: true }); });
         const pedidas = new Set(); let abierto = false; c.on("request", (r) => { if (process.env.DEPURAR && /escenas\//.test(r.url())) console.log("      " + (abierto ? "después " : "antes ") + r.url().split("/escenas/")[1]); const m = r.url().match(/escenas\/([^/]+)\/1\//); if (m && !abierto) pedidas.add(m[1]); });
         await c.goto(TOURS + "/" + t.id + "/"); await c.waitForSelector("#pv-stage canvas", { timeout: 30000 }); abierto = true; await c.waitForTimeout(2500);
         return { c, pedidas };
@@ -4416,7 +4416,26 @@ async function capasPesadas(p) {
         await c.evaluate(() => document.querySelector('#pv-stage button.hs-boton[aria-label="Ir a Cocina"]').click()); await c.waitForTimeout(3000);
         exige(/Cocina/.test(await c.textContent("#pv-ui")), "el punto no llevó a la otra esfera");
         exige((await c.evaluate(() => window.__cortinas)) === 0, "en celular sigue usando la foto plana que se ve como página doblada");
+        // El movimiento, como en el video de referencia de Amar (18 nov 2026): uno solo, de menos de 1 s; la esfera de salida
+        // se acerca acelerando hacia el punto, el fundido es corto y la nueva entra más abierta y llega frenando a su vista.
+        const medir = async (pg) => { const L = await pg.evaluate(() => window.__transLog.splice(0)), sale = L.filter((x) => x[1] === "sale"), llega = L.filter((x) => x[1] === "llega"); return { L, sale, llega, dur: L.length ? L[L.length - 1][0] : 0 }; };
+        let m = await medir(c);
+        if (process.env.DEPURA) console.log("    " + m.L.map((x) => x[0] + x[1][0] + (x[2] ? x[2].toFixed(2) : ":" + x[1])).join(" "));
+        exige(m.sale.length >= 4 && m.llega.length >= 4, "la transición no se movió en vivo (cuadros: " + m.sale.length + " de salida, " + m.llega.length + " de llegada)");
+        exige(m.dur > 550 && m.dur < 1150, "la transición debe ser un solo movimiento de unos 0.8 s y tardó " + m.dur + " ms");
+        const tanM = (f) => Math.tan(f / 2), f0 = m.sale[0][2], fFin = m.sale[m.sale.length - 1][2], aMedio = m.sale.filter((x) => x[0] <= m.sale[m.sale.length - 1][0] / 2).pop();
+        exige(tanM(f0) / tanM(fFin) > 1.35, "la esfera de salida casi no se acerca (" + (tanM(f0) / tanM(fFin)).toFixed(2) + "×)");
+        exige(aMedio && tanM(f0) / tanM(aMedio[2]) < Math.sqrt(tanM(f0) / tanM(fFin)), "la esfera de salida no acelera (a la mitad ya iba en " + (aMedio ? (tanM(f0) / tanM(aMedio[2])).toFixed(2) : "?") + "×)");
+        const n0 = m.llega[0][2], nFin = m.llega[m.llega.length - 1][2], nMedio = m.llega[Math.floor(m.llega.length / 2)][2];
+        exige(tanM(nFin) / tanM(n0) < 0.82 && Math.abs(nFin - 1.4) > -1, "la esfera nueva no entra más abierta para llegar acercándose (" + (tanM(nFin) / tanM(n0)).toFixed(2) + "×)");
+        exige(tanM(nFin) / tanM(nMedio) > 0.9, "la esfera nueva no llega frenando (a la mitad iba en " + (tanM(nFin) / tanM(nMedio)).toFixed(2) + "×)");
+        exige(m.llega[0][0] >= 250 && m.llega[0][0] <= 520, "el fundido no empieza a media transición (" + m.llega[0][0] + " ms)");
+        console.log("    transición: " + m.dur + " ms · salida " + (tanM(f0) / tanM(fFin)).toFixed(2) + "× en " + m.sale.length + " cuadros · llegada desde " + (tanM(nFin) / tanM(n0)).toFixed(2) + "× · fundido a los " + m.llega[0][0] + " ms");
         await c.context().close();
+        // Sin ajustes en Interfaz (Amar, 18 nov 2026: «no se necesita que se modifique en la interfaz, solo emular algo similar»)
+        await n.goto(ESTUDIO + "/#t=" + tn.id); await n.reload(); await n.waitForTimeout(2500); await cerrarAnuncio(n);
+        await n.click('#nav button:has-text("Interfaz")'); await n.waitForTimeout(2000); await pasarGuias(n);
+        exige(!(await n.$("#sk-trans-grupo")) && !/Transición entre esferas/.test(await n.textContent("#sk-panel")), "la transición no debe tener ajustes en Interfaz");
         ({ c, pedidas } = await abrir(tu));
         exige(!(await c.evaluate(() => window.__foto)), "una cuenta sin la función ya ve la pantalla de precarga con foto");
         await c.evaluate(() => document.querySelector('#pv-stage button.hs-boton[aria-label="Ir a Cocina"]').click()); await c.waitForTimeout(3000);
@@ -4926,7 +4945,7 @@ async function capasPesadas(p) {
         await n.click('#nav button:has-text("Mis Tours")'); await n.waitForTimeout(900); await n.click("#ver-cuentas"); await n.waitForTimeout(900);
         await n.click('[data-dueno="laboratorio"]'); await n.waitForSelector("#lab-voz", { timeout: 8000 });
         const fila = await n.textContent("#lab-voz");
-        exige(/Modo de prueba/.test(fila) && /2 voces: Ana, Luis/.test(fila) && /este mes: [\d,]+ de 400,000 letras/.test(fila) && await n.isDisabled("#lab-voz [data-lab-voces]"), "el panel no dice cómo van las voces: " + fila);
+        exige(/Modo de prueba/.test(fila) && /2 voces: Ana, Luis/.test(fila) && /este mes: [\d,]+ de 90,000 letras/.test(fila) && await n.isDisabled("#lab-voz [data-lab-voces]"), "el panel no dice cómo van las voces: " + fila);
         exige((await api(n, "api/admin/voz/catalogo")).s === 503, "sin llave no debe intentar leer la cuenta de ElevenLabs");
         exige((await api(n, "api/admin/voz", J("PUT", { modelo: "eleven_flash_v2_5", voces: [{ id: "abcDEF123456", nombre: "Renata", tono: "Cálida · mexicana", muestra: "https://ejemplo.mx/renata.mp3" }, { id: "<mala>", nombre: "x" }] }))).s === 200, "el dueño no pudo guardar las voces");
         const cat = (await api(n, "api/voz")).d;
