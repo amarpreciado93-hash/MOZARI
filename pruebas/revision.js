@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -4423,7 +4423,8 @@ async function capasPesadas(p) {
         const medir = async (pg) => { const L = await pg.evaluate(() => window.__transLog.splice(0)), sale = L.filter((x) => x[1] === "sale"), llega = L.filter((x) => x[1] === "llega"); return { L, sale, llega, dur: L.length ? L[L.length - 1][0] : 0 }; };
         let m = await medir(c);
         if (process.env.DEPURA) console.log("    " + m.L.map((x) => x[0] + x[1][0] + (x[2] ? x[2].toFixed(2) : ":" + x[1])).join(" "));
-        exige(m.sale.length >= 4 && m.llega.length >= 4, "la transición no se movió en vivo (cuadros: " + m.sale.length + " de salida, " + m.llega.length + " de llegada)");
+        // (3 cuadros bastan: con la máquina de pruebas cargada, la llegada de 0.47 s a veces alcanza a pintar solo 3)
+        exige(m.sale.length >= 3 && m.llega.length >= 3, "la transición no se movió en vivo (cuadros: " + m.sale.length + " de salida, " + m.llega.length + " de llegada)");
         exige(m.dur > 550 && m.dur < 1150, "la transición debe ser un solo movimiento de unos 0.8 s y tardó " + m.dur + " ms");
         const tanM = (f) => Math.tan(f / 2), f0 = m.sale[0][2], fFin = m.sale[m.sale.length - 1][2], aMedio = m.sale.filter((x) => x[0] <= m.sale[m.sale.length - 1][0] / 2).pop();
         exige(tanM(f0) / tanM(fFin) > 1.35, "la esfera de salida casi no se acerca (" + (tanM(f0) / tanM(fFin)).toFixed(2) + "×)");
@@ -5149,6 +5150,79 @@ async function capasPesadas(p) {
         exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
       } finally {
         await pr.context().close(); await co.context().close(); await al.context().close(); await n.context().close();
+      }
+    });
+    // Rótulo corto y grande (Amar, 19 nov 2026, con una foto de referencia: «reducir el que diga Lote a nada más que diga L y el número…
+    // aumentar el tamaño y el centrado del número, que se lea mejor»).
+    await paso("Rótulo corto y grande (Laboratorio, nace Solo yo): cada lote dice «L09» y su manzana, centrado y con letra mucho más grande; en el estudio, publicado y en celular", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const tutoriales = async (p) => { const vistos = []; for (let i = 0, quieto = 0; i < 30 && quieto < 4; i++) { await p.waitForTimeout(700); if (await p.isVisible(".guia-tarjeta").catch(() => false)) { quieto = 0; vistos.push(await p.textContent(".guia-tarjeta")); await p.click('.guia-tarjeta [data-guia="seguir"]'); } else quieto++; } return vistos; };
+      const rot = (pg) => pg.evaluate(() => [...document.querySelectorAll(".lt-p.nom")].filter((e) => e.style.display !== "none" && e.style.visibility !== "hidden" && e.getClientRects().length).map((e) => { const r = e.getBoundingClientRect(); const t = e.innerText.trim().replace(/\s*\n\s*/g, "|"); return { t, h: r.height, w: r.width, letra: r.width / Math.max(...t.split("|").map((x) => x.length)), x: r.x + r.width / 2, y: r.y + r.height / 2, corto: e.classList.contains("corto") }; }));
+      // Dónde se ve cada lote en la pantalla (el centro de su figura), para saber si el rótulo cae a la mitad
+      const centros = (pg) => pg.evaluate(() => [...document.querySelectorAll(".cp-lote svg path")].filter((x) => !x.classList.contains("cp-camino-toque")).map((x) => { const r = x.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width, h: r.height }; }).filter((r) => r.w > 4));
+      const de = (l, re) => l.find((x) => re.test(x.t));
+      const fichas = async (p) => { await p.click('#nav button:has-text("Panoramas")'); await p.waitForTimeout(300); await p.click('#subtabs button:has-text("Fichas técnicas")'); await p.waitForTimeout(1200); };
+      const correoU = "sin-rotulo@prueba.mx", n = await pagina(DUENO), u = await pagina(correoU);
+      let t = null, m = null;
+      try {
+        await nuevoTour(n, "Rótulo corto"); const id = await idTour(n);
+        const d = (await api(n, "api/tours/" + id)).d, esc = d.proyecto.escenaInicial || d.escenas[0].id, v = d.escenas.find((e) => e.id === esc).vista || {}, y = v.yaw || 0, p = (v.pitch || 0) + 0.25;
+        // lotes como los de una manzana: frente angosto y mucho fondo (ahí el rótulo completo sale con letra chica)
+        const lote = (num, dy) => ({ id: "lote-" + num, tipo: "poligono", nombre: "Lote", visible: true, puntos: [[y - 0.1 + dy, p], [y + dy, p], [y + dy, p + 0.3], [y - 0.1 + dy, p + 0.3]],
+          relleno: { color: "#D5FF40", opacidad: 0.35 }, trazo: { color: "#D5FF40", grosor: 1.5, opacidad: 1 }, lote: { numero: num, manzana: "3", area: "200", precio: "", lados: [], frente: 0, estado: "disponible" } });
+        d.capas[esc] = (d.capas[esc] || []).concat([lote("9", 0), lote("10", 0.12)]);
+        exige((await api(n, "api/tours/" + id, J("PUT", d))).s === 200, "no se pudieron poner los lotes de prueba");
+        await n.goto(ESTUDIO + "/#t=" + id); await n.reload(); await n.waitForTimeout(2500); await cerrarAnuncio(n); await cerrarGuia(n);
+        await irCapas(n); await n.waitForTimeout(1500);
+        // 1) De inicio, el rótulo de siempre: «Lote 9 · M3» y su superficie
+        const r0 = await rot(n), a0 = de(r0, /^Lote 9 · M3\|200 m²$/);
+        exige(a0 && de(r0, /^Lote 10 · M3/) && !r0.some((x) => x.corto), "de inicio el rótulo no es el completo: " + JSON.stringify(r0));
+        // 2) La opción vive en Fichas técnicas, junto a «Cómo se dice»
+        await fichas(n); await tutoriales(n);
+        exige(await n.isVisible("#lt-rotulo-fila") && (await n.getAttribute('[data-lt-rotulo="0"]', "aria-pressed")) === "true" && /Lote 9 · M3/.test(await n.textContent("#lt-rotulo-ejemplo")), "en Fichas técnicas no está «Rótulo en la esfera» (Completo)");
+        await n.click('[data-lt-rotulo="1"]'); await n.waitForTimeout(1500);
+        exige((await n.getAttribute('[data-lt-rotulo="1"]', "aria-pressed")) === "true" && /L09 \/ M3/.test(await n.textContent("#lt-rotulo-ejemplo")) && (await api(n, "api/tours/" + id)).d.proyecto.rotuloCorto === true, "«Corto y grande» no se guardó o no enseña su ejemplo");
+        // 3) En la esfera: «L09» y «M3» en dos renglones, en el mismo centro y con letra mucho más grande
+        await irCapas(n); await n.waitForTimeout(1800);
+        const r1 = await rot(n), a1 = de(r1, /^L09\|M3$/);
+        exige(a1 && a1.corto && de(r1, /^L10\|M3$/) && !r1.some((x) => /m²|Lote/.test(x.t)), "el rótulo no quedó corto («L09» y «M3»): " + JSON.stringify(r1));
+        exige(a1.letra > a0.letra * 2.2, "el rótulo corto no se lee mucho más grande: de " + a0.letra.toFixed(1) + " a " + a1.letra.toFixed(1) + " px por letra");
+        // centrado en lo que se ve del lote: más cerca de la mitad de su figura que el rótulo completo (que queda cargado al fondo)
+        const cs = await centros(n), cl = cs.slice().sort((p, q) => Math.hypot(p.x - a1.x, p.y - a1.y) - Math.hypot(q.x - a1.x, q.y - a1.y))[0];
+        exige(cl && Math.abs(a1.x - cl.x) < cl.w * 0.12 && Math.abs(a1.y - cl.y) < cl.h * 0.12 && Math.abs(a1.y - cl.y) < Math.abs(a0.y - cl.y), "el rótulo corto no quedó centrado en su lote: está a " + (cl ? (a1.y - cl.y).toFixed(1) : "?") + " px de la mitad (el completo, a " + (cl ? (a0.y - cl.y).toFixed(1) : "?") + "; el lote mide " + (cl ? cl.h.toFixed(0) : "?") + " px de alto)");
+        console.log("    rótulo: de " + a0.letra.toFixed(1) + " px por letra («" + a0.t + "») a " + a1.letra.toFixed(1) + " («" + a1.t + "») · a " + Math.abs(a1.y - cl.y).toFixed(1) + " px del centro del lote (antes " + Math.abs(a0.y - cl.y).toFixed(1) + ")");
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "rotulo-corto.png") });
+        // 4) Publicado: en compu y en celular
+        exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200 && (await (await fetch(TOURS + "/" + id + "/proyecto.json")).json()).proyecto.rotuloCorto === true, "el rótulo corto no se publicó");
+        t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForSelector("#pv-stage canvas", { timeout: 30000 }); await t.waitForTimeout(4500);
+        const rt = await rot(t);
+        exige(de(rt, /^L09\|M3$/) && de(rt, /^L10\|M3$/), "el tour publicado no trae el rótulo corto: " + JSON.stringify(rt));
+        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "rotulo-corto-tour.png") });
+        m = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false })); await m.goto(TOURS + "/" + id + "/"); await m.waitForSelector("#pv-stage canvas", { timeout: 30000 }); await m.waitForTimeout(4500);
+        const rm = await m.evaluate(() => [...document.querySelectorAll(".lt-ps-p.nom")].filter((g) => g.style.display !== "none").map((g) => [...g.querySelectorAll("tspan")].map((x) => x.textContent).join("|")));
+        exige(rm.includes("L09|M3") && rm.includes("L10|M3"), "en celular el rótulo no es el corto: " + JSON.stringify(rm));
+        exige(!t.errs.length && !m.errs.length, "errores en el tour: " + t.errs.concat(m.errs).join(" | ").slice(0, 160));
+        // 5) «Completo» lo regresa
+        await fichas(n); await n.click('[data-lt-rotulo="0"]'); await n.waitForTimeout(1500);
+        exige(!(await api(n, "api/tours/" + id)).d.proyecto.rotuloCorto, "«Completo» no quitó el rótulo corto");
+        await irCapas(n); await n.waitForTimeout(1500);
+        exige(de(await rot(n), /^Lote 9 · M3\|200 m²$/), "al regresar a «Completo» el rótulo no volvió");
+        // 6) Nace Solo yo: una cuenta normal no ve la opción ni la publica; a quien se le da, le sale su tutorial
+        await nuevoTour(u, "Sin rótulo corto"); const iu = await idTour(u);
+        await fichas(u); await tutoriales(u);
+        exige(!(await u.isVisible("#lt-rotulo-fila")), "una cuenta normal ya ve «Rótulo en la esfera» (debe nacer Solo yo)");
+        const du = (await api(u, "api/tours/" + iu)).d; du.proyecto.rotuloCorto = true;
+        exige((await api(u, "api/tours/" + iu, J("PUT", du))).s === 200 && (await api(u, "api/tours/" + iu + "/publicar", { method: "POST" })).s === 200 && !(await (await fetch(TOURS + "/" + iu + "/proyecto.json")).json()).proyecto.rotuloCorto, "una cuenta sin la función publicó el rótulo corto");
+        exige((await api(n, "api/admin/laboratorio/rotulo-corto", J("PUT", { modo: "probadores", probadores: [correoU] }))).s === 200, "no se pudo dar la función a un probador");
+        await u.goto(ESTUDIO + "/#t=" + iu); await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u);
+        await fichas(u); const vistos = await tutoriales(u);
+        exige(vistos.some((x) => /Nuevo: rótulo corto y grande/.test(x)) && await u.isVisible("#lt-rotulo-fila"), "con la función no salió la opción o su tutorial: " + vistos.map((x) => x.slice(0, 40)).join(" | "));
+        exige(!n.errs.length && !u.errs.length, "errores en el estudio: " + n.errs.concat(u.errs).join(" | ").slice(0, 200));
+      } finally {
+        await api(n, "api/admin/laboratorio/rotulo-corto", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
+        if (t) await t.context().close(); if (m) await m.context().close();
+        await u.context().close(); await n.context().close();
       }
     });
     await paso("Sin errores de JavaScript en el estudio", async () => { exige(!a.errs.length && !g.errs.length, (a.errs.concat(g.errs)).join(" | ").slice(0, 200)); });

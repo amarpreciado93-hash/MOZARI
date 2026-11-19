@@ -262,6 +262,7 @@ export const LABORATORIO = {
   "ubicacion": { nombre: "Ubicación en satélite", texto: "Media → Ubicación: sube el KMZ (o KML) de tu desarrollo y míralo sobre el mapa satelital, en su lugar real. Mozari revisa el archivo y dice en palabras simples qué trae y qué le falta (contorno, lotes, nombres), con la guía «Cómo debe venir tu KMZ» lista para mandársela al ingeniero. Los números de lote salen al acercar y el contorno late al mover el mapa. Si no cae en su lugar, se amarra al satélite con 2 puntos. Se publica con el tour en su link /mapa." },
   "voz-ia": { nombre: "Sonido del tour: música y voz", texto: "Interfaz → «Sonido del tour»: una sola ventana para la música y la voz. Subes tu canción, escribes lo que quieres que diga la voz y una voz lo lee tal cual (o subes tu propio audio). La voz suena cuando el tour empieza y sigue aunque tu cliente cambie de esfera; la música baja sola mientras habla y los subtítulos van pasando por frases. Cada tour puede crear 2 voces al mes y cada licencia trae sus letras de voz (Pro 5,000, Desarrollos 12,000; unas 900 letras son un minuto). Todo Mozari tiene un tope mensual." },
   "previa-celular": { nombre: "Vista previa en celular", texto: "Junto al botón «Vista previa» hay uno con un teléfono: abre el tour dentro de un celular 9:16, con su música, su voz, sus lotes y todo funcionando (antes el 9:16 solo se veía en Interfaz, sin sonido). Arriba se cambia a la vista de compu. Pedido de Emanuel." },
+  "rotulo-corto": { nombre: "Rótulo corto y grande en los lotes", texto: "Panoramas → Fichas técnicas → «Rótulo en la esfera: Corto y grande»: cada lote dice solo «L09» y su manzana («M5»), en dos renglones y con letra mucho más grande y centrada; se lee de un vistazo, también desde lejos. La superficie sigue en la ficha del lote. Vale para todo el tour y se ve al volver a publicar." },
   "cotas": { nombre: "Cotas en paredes", texto: "En Capas → «Cota»: tocas el inicio y el final de un muro (en el piso) y Mozari calcula su largo con la altura de la cámara; un punto en el piso y otro arriba da la altura. Si tienes la medida del plano, la escribes y manda esa. Salen en el tour como en un plano." },
 };
 // "pago": las cuentas Pro y Desarrollos (con su plan vigente); "todos" incluye también Gratis
@@ -1238,6 +1239,8 @@ async function api(request, env, partes, yo) {
     p.proyecto.descargaPdf = lab.includes("descarga-pdf");
     // Landing del desarrollo (Laboratorio): solo se publica si su dueño tiene la función
     if (!lab.includes("landing")) delete p.proyecto.landing;
+    // Rótulo corto y grande (Laboratorio): solo se publica si su dueño tiene la función
+    if (!lab.includes("rotulo-corto")) delete p.proyecto.rotuloCorto;
     // Ubicación en satélite (Laboratorio): el mapa /mapa solo se publica si su dueño tiene la función
     if (!lab.includes("ubicacion")) delete p.proyecto.ubicacion;
     // Voz del tour (Laboratorio): solo se publica si su dueño tiene la función; sus notas de trabajo se quedan en el borrador

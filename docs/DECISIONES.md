@@ -375,3 +375,18 @@
   en `pagos` un regalo en cero con su nota, para que el panel y el Excel lo cuenten como «De regalo» y no como venta.
 - Si la cuenta ya tenía otra licencia para siempre, se guarda en `planAntes` y la fila dice «vence el… y regresa a Pro».
 - Si después el dueño le cambia el plan a mano, vuelve a ser «Cortesía» (la marca `cortesia` manda sobre un regalo anterior).
+
+## 19 nov 2026 · Rótulo corto y grande en los lotes («L09 / M5»)
+
+- Amar, con una foto de referencia de otro tour: «reducir el que diga Lote a nada más que diga L y el número… se ve
+  muy tedioso de leer todo porque son letras muy pequeñas. Y así aumentar el tamaño y el centrado del número».
+- Laboratorio «rotulo-corto» (solo yo). Panoramas → Fichas técnicas → «Rótulo en la esfera: Completo | Corto y
+  grande» (`proyecto.rotuloCorto`, vale para todo el tour; solo se publica si el dueño tiene la función).
+- Corto: dos renglones del mismo tamaño, «L09» (inicial de «Lote» + número, con cero adelante del 1 al 9) y «M5»
+  (la abreviatura de la manzana). Sin superficie: esa sigue en la ficha. Los deptos de un edificio no cambian.
+- Más grande sin tocar la regla de ajuste: el rótulo sigue ocupando el mismo ancho del lote (tamaño 0.6), pero con
+  3 letras en vez de 11 la letra sale 2 a 3 veces más grande. Medido en la prueba: de 7.1 a 16.5 px por letra.
+- Centrado: el rótulo completo va en el centro del terreno, que por la perspectiva se ve cargado hacia el fondo del
+  lote. El corto va en el centro de lo que se VE del lote desde la esfera (el promedio de las direcciones de sus
+  esquinas). Medido: de 43.8 px a 4.9 px del centro de la figura.
+- Aplica al rótulo planchado (compu), al de celular (SVG), al «siempre de frente» («L09 · M5») y a la foto 360 con lotes.

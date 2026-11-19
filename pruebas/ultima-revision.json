@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-19T22:36:01.080Z",
+ "fecha": "2026-11-19T23:55:07.613Z",
  "bien": 118,
- "total": 118,
+ "total": 119,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -449,7 +449,8 @@
   },
   {
    "nombre": "Transiciones inmersivas (Laboratorio, nace Solo yo): precarga todas las esferas con foto y en celular cambia de esfera en vivo, sin la foto plana",
-   "ok": true
+   "ok": false,
+   "motivo": "la transición no se movió en vivo (cuadros: 4 de salida, 3 de llegada)"
   },
   {
    "nombre": "Landing del desarrollo (Laboratorio, nace Solo yo): marca, plano maestro, lotes con precio y calculadora, WhatsApp con el lote y publicada en /landing",
@@ -469,6 +470,10 @@
   },
   {
    "nombre": "Panel de dueño → Cuentas: links de regalo por 1 año con su nota; cada licencia dice si es pagada, de regalo, cortesía o de prueba; filtro y Excel sin sumar regalos; las cuentas se leen por partes y se recuerdan",
+   "ok": true
+  },
+  {
+   "nombre": "Rótulo corto y grande (Laboratorio, nace Solo yo): cada lote dice «L09» y su manzana, centrado y con letra mucho más grande; en el estudio, publicado y en celular",
    "ok": true
   },
   {

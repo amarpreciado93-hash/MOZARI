@@ -1067,6 +1067,7 @@
   .lt-p { position: absolute; left: 0; top: 0; transform-origin: 0 0; white-space: nowrap; font-family: var(--lt-fuente, var(--mz-texto-ui)); color: var(--lt-color, #fff); line-height: 1.08; text-align: center; text-shadow: var(--lt-sombra, 0 0 2px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.45)); }
   .lt-p.nom { font-size: 40px; font-weight: var(--lt-peso, 600); }
   .lt-p.nom small { display: block; font-size: 0.74em; font-weight: 400; }
+  .lt-p.nom.corto { line-height: 1; font-weight: var(--lt-peso, 700); letter-spacing: 0.01em; }
   .lt-p.lt-medida { font-size: 40px; font-weight: 600; }
   .estado-colores { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 11px; color: var(--mz-tenue); }
   .estado-colores label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
@@ -2450,6 +2451,11 @@
           <label>Abreviatura<input class="entrada" id="lt-corto" maxlength="4" placeholder="M"></label>
           <span class="nota" id="lt-ejemplo"></span>
         </div>
+        <div class="lotes-terminos" id="lt-rotulo-fila" hidden>
+          <span>Rótulo en la esfera:</span>
+          <div class="estados" role="group" aria-label="Rótulo de los lotes en la esfera"><button type="button" data-lt-rotulo="0" style="--c:var(--mz-lima)">Completo</button><button type="button" data-lt-rotulo="1" style="--c:var(--mz-lima)">Corto y grande</button></div>
+          <span class="nota" id="lt-rotulo-ejemplo"></span>
+        </div>
         <div class="lotes-terminos" id="lt-estados-fila">
           <span>Estados:</span>
           <span class="lt-estados" id="lt-estados"></span>
@@ -2827,6 +2833,19 @@
     const l = loteDe(c), T = terminos(), base = l.unidad || T.lote; // en un edificio cada uno dice Depto, Loft, Penthouse…
     if (!l.numero && !l.manzana) return base + " sin número";
     return base + " " + (l.numero || "—") + (l.manzana ? " · " + (l.unidad ? "Torre " + l.manzana : mzCorta(l.manzana)) : "");
+  }
+  // Rótulo corto y grande (Laboratorio «rotulo-corto», pedido de Amar 19 nov 2026 con una foto de referencia: «reducir
+  // el que diga Lote a nada más que diga L y el número… se ve muy tedioso de leer todo porque son letras muy
+  // pequeñas. Y así aumentar el tamaño y el centrado del número, que se lea mejor»). En vez de «Lote 9 · M5» y su
+  // superficie en chico, dos renglones del mismo tamaño: «L09» y «M5». Al ser más corto, la misma regla de
+  // ajuste al lote lo deja unas tres veces más grande. La superficie sigue en la ficha del lote.
+  const rotuloCorto = () => { try { return P().rotuloCorto === true && (MODO === "tour" || enLab("rotulo-corto")); } catch (e) { return false; } };
+  function rotuloCortoDe(c) {
+    const l = loteDe(c); if (l.unidad || !rotuloCorto()) return null; // los deptos de un edificio conservan su nombre
+    const T = terminos(), n = String(l.numero || "").trim(), mz = String(l.manzana || "").trim();
+    if (!n && !mz) return null;
+    const km = T.corto || (T.manzana || "M").charAt(0).toUpperCase();
+    return [(T.lote || "L").charAt(0).toUpperCase() + (/^\d$/.test(n) ? "0" + n : n || "—")].concat(mz ? [km.length === 1 && /^\d/.test(mz) ? km + mz : km + " " + mz] : []);
   }
   // Un lote sin número ni manzana no es un lote a la venta (reserva ecológica, área verde…): en la esfera
   // no lleva rótulo, al tocarlo no abre ficha y no cuenta en la tabla de Lotes ni en el masterplan
@@ -4406,6 +4425,22 @@
     svg.innerHTML = h.replace('y="194"', 'y="194"');
   }
   // Brújula: la barra gira la aguja hasta que apunta al norte de verdad, y ahí se queda
+  // Rótulo corto y grande: el mismo lote, de «Lote 9 · M3» en chico a «L09 / M3» en grande
+  function animRotuloCorto(svg, t) {
+    const u = sv((t - 1.3) / 0.6), corto = t > 1.3;
+    let h = '<rect width="360" height="200" fill="#161a12"/>' + BTN_G(84, 12, 78, "Completo", corto ? "transparent" : "#D5FF40", corto ? "#fff" : "#0B0B0B", corto ? "rgba(255,255,255,.35)" : undefined) + BTN_G(170, 12, 106, "Corto y grande", corto ? "#D5FF40" : "transparent", corto ? "#0B0B0B" : "#fff", corto ? undefined : "rgba(255,255,255,.35)");
+    h += '<g transform="translate(180 108) rotate(-14)">';
+    [-112, -38, 36].forEach((x, i) => {
+      h += '<rect x="' + x + '" y="-46" width="68" height="92" fill="' + (i === 1 ? "rgba(213,255,64,.22)" : "rgba(150,110,80,.55)") + '" stroke="#fff" stroke-width="2"/>';
+      const n = 8 + i;
+      if (corto) h += '<g opacity="' + u.toFixed(2) + '"><text x="' + (x + 34) + '" y="-2" fill="#fff" font-size="' + (14 + 8 * u).toFixed(1) + '" font-weight="700" text-anchor="middle">L' + String(n).padStart(2, "0") + '</text><text x="' + (x + 34) + '" y="' + (16 + 6 * u).toFixed(1) + '" fill="#fff" font-size="' + (14 + 8 * u).toFixed(1) + '" font-weight="700" text-anchor="middle">M3</text></g>';
+      else h += '<text x="' + (x + 34) + '" y="-2" fill="#fff" font-size="8" font-weight="600" text-anchor="middle">Lote ' + n + ' · M3</text><text x="' + (x + 34) + '" y="9" fill="rgba(255,255,255,.85)" font-size="6.5" text-anchor="middle">200 m²</text>';
+    });
+    h += "</g>";
+    const [cx, cy] = camino([[0, 330, 190], [1.0, 224, 24], [1.5, 224, 24], [3.9, 330, 190]], t);
+    h += TOQUE_G(224, 23, t, 1.0) + CURSOR_G(cx, cy) + pieG(corto ? "Se lee de un vistazo" : "Antes: letra chica y mucho texto", corto);
+    svg.innerHTML = h;
+  }
   // Vista previa en celular: tocas el botón del teléfono y el tour se ve (y se oye) en 9:16
   function animPreviaCel(svg, t) {
     const abre = sv((t - 1.2) / 0.7), onda = t > 2.3, y = 42 + (1 - abre) * 14;
@@ -4658,6 +4693,8 @@
       texto: "En el tour, el aviso <b>Piloto automático</b> ahora es un botón: al tocarlo, la cámara regresa al inicio y el recorrido vuelve a empezar <b>con su audio</b>. Y mientras el piloto corre, el celular <b>no se bloquea</b>." }].filter(Boolean), () => nav.sub === "piloto" && esVisible("#pl-repetir-info"));
     if (clave === "media/planos" && enLab("planos")) guiaPlanos();
     if (clave === "media/audios" && enLab("narracion")) guiaVoz();
+    if (clave === "panoramas/lotes" && enLab("rotulo-corto")) guiaNueva("nuevo-rotulo-corto", () => [esVisible("#lt-rotulo-fila") && { el: "#lt-rotulo-fila", titulo: "Nuevo: rótulo corto y grande", anim: animRotuloCorto, dur: 4.2,
+      texto: "Elige <b>Corto y grande</b> y cada lote dice solo <b>L09</b> y su manzana, en letra mucho más grande y centrada. Se lee de un vistazo, también desde lejos. La superficie sigue en la ficha del lote." }].filter(Boolean), () => esVisible("#lt-rotulo-fila"));
     if (clave === "panoramas/lotes" && enLab("fichas")) guiaNueva("nuevo-fichas", [{ el: "#ficha-editor", titulo: "Nuevo: la ficha del lote con tu marca",
       texto: "Diseña lo que ve tu cliente al tocar un lote: <b>logo</b>, colores, tipografía, el plano del lote y su ubicación. Elige una plantilla y prende <b>Usar esta ficha en el tour</b>." }], () => nav.sub === "lotes" && esVisible("#ficha-editor"));
     if (/^publicar\//.test(clave) && enLab("estadisticas")) guiaNueva("nuevo-estadisticas", [{ el: () => [...document.querySelectorAll("#subtabs button")].find((b) => /Estad/.test(b.textContent)),
@@ -6641,9 +6678,10 @@
         g.appendChild(t); cont.appendChild(g); return g;
       };
       const area = l.verArea ? fmtArea(l.area) : "";
-      const nom = l.etiqueta && !loteVacio(c) ? pieza([[nombreLote(c)]].concat(area ? [[area, true]] : []), "nom") : null;
+      const cz = rotuloCortoDe(c);
+      const nom = l.etiqueta && !loteVacio(c) ? pieza(cz ? cz.map((x) => [x]) : [[nombreLote(c)]].concat(area ? [[area, true]] : []), "nom" + (cz ? " corto" : "")) : null;
       const lados = c.puntos.map((_, i) => { const v = l.medidas ? fmtLado((l.lados || [])[i]) : ""; return v ? pieza([[v]], "lt-medida") : null; });
-      return { cont, nom, cortos: [], lados, med: null, svg: true };
+      return { cont, nom, cortos: [], lados, med: null, svg: true, corto: !!cz };
     }
     // Mide una pieza SVG y la recorre para que ocupe (0,0)-(w,h), como los rótulos de compu
     function medirSVG(g) {
@@ -6657,10 +6695,12 @@
       const nom = document.createElement("div");
       nom.className = "lt-p nom";
       const area = l.verArea ? fmtArea(l.area) : "";
-      nom.innerHTML = esc(nombreLote(c)) + (area ? "<small>" + esc(area) + "</small>" : "");
+      const cz = rotuloCortoDe(c);
+      if (cz) { nom.classList.add("corto"); nom.innerHTML = cz.map(esc).join("<br>"); }
+      else nom.innerHTML = esc(nombreLote(c)) + (area ? "<small>" + esc(area) + "</small>" : "");
       const et = l.etiqueta && !loteVacio(c); // un lote sin número ni manzana (reserva ecológica) no lleva rótulo
       // Versiones cortas para cuando el lote se ve chico al alejarse: "3 · B" y luego solo "3". El número nunca se borra.
-      const cortos = [nombreCorto(l), l.numero || "—"].map((tx) => { const e = document.createElement("div"); e.className = "lt-p nom"; e.textContent = tx; return e; });
+      const cortos = [cz ? cz[0] : nombreCorto(l), l.numero || "—"].map((tx) => { const e = document.createElement("div"); e.className = "lt-p nom"; e.textContent = tx; return e; });
       if (et) { cont.appendChild(nom); cortos.forEach((e) => cont.appendChild(e)); }
       const lados = c.puntos.map((_, i) => {
         const v = l.medidas ? fmtLado((l.lados || [])[i]) : "";
@@ -6669,7 +6709,7 @@
         e.className = "lt-p lt-medida"; e.textContent = v; cont.appendChild(e);
         return e;
       });
-      return { cont, nom: et ? nom : null, cortos: et ? cortos : [], lados, med: null };
+      return { cont, nom: et ? nom : null, cortos: et ? cortos : [], lados, med: null, corto: !!cz };
     }
     const nombreCorto = (l) => (l.numero || "—") + (l.manzana ? " · " + l.manzana : "");
     const LETRA_MIN = 9, LETRA_CORTA = 11; // px en pantalla: nombre completo desde 9; versiones cortas siempre a 11
@@ -6782,7 +6822,11 @@
       // Centroide y tamaño del lote en el suelo
       let A2 = 0, cx = 0, cz = 0;
       G.forEach((p, i) => { const q = G[(i + 1) % G.length], k = p[0] * q[1] - q[0] * p[1]; A2 += k; cx += (p[0] + q[0]) * k; cz += (p[1] + q[1]) * k; });
-      const C = Math.abs(A2) > 1e-12 ? [cx / (3 * A2), cz / (3 * A2)] : [G.reduce((s, g) => s + g[0], 0) / G.length, G.reduce((s, g) => s + g[1], 0) / G.length];
+      const C0 = Math.abs(A2) > 1e-12 ? [cx / (3 * A2), cz / (3 * A2)] : [G.reduce((s, g) => s + g[0], 0) / G.length, G.reduce((s, g) => s + g[1], 0) / G.length];
+      // Rótulo corto: se centra en lo que se VE del lote desde la esfera. El centro del terreno, por la perspectiva,
+      // queda cargado hacia el fondo del lote; el centro de sus esquinas vistas desde la cámara sí cae a la mitad.
+      let C = C0;
+      if (R.corto) { const sd = c.puntos.reduce((a, [y, p]) => { const d = dir3(y, p); return [a[0] + d[0], a[1] + d[1], a[2] + d[2]]; }, [0, 0, 0]), gv = aSuelo(Math.atan2(sd[0], sd[2]), Math.asin(-sd[1] / (Math.hypot(sd[0], sd[1], sd[2]) || 1))); if (gv) C = gv; }
       const S = Math.sqrt(Math.abs(A2) / 2), t = +l.tamRotulo || 0.6, ref = refLote(c.deManzana ? centroManzana(c.deManzana) || C : C), marco = c.deManzana ? marcoManzana(c.deManzana) : null; // misma orientación para todos los rótulos del lote (y de toda su manzana)
       if (R.nom && R.med.nom) {
         // Lote de manzana con varios puntos al frente (la calle quiebra o curva dentro del lote): se orienta con todo su
@@ -6808,8 +6852,10 @@
         const ajuste0 = ([w, h], tt) => { const r = h / w; let Hg = tt * extU0 * r; if (Hg > 0.55 * tt / 0.6 * extV0) Hg = 0.55 * tt / 0.6 * extV0; return Hg; };
         n.esc06 = ajuste0(R.med.nom, 0.6) / R.med.nom[1];
         const tope = (h) => (escalaComun ? escalaComun * (t / 0.6) * h : Infinity);
+        // corto: como ya no va en el centro del terreno, no pasa de lo que hay hasta la orilla más cercana
+        const margenV = R.corto ? 1.7 * Math.max(0, Math.min(Math.max(...pv), -Math.min(...pv))) : Infinity;
         const poner = (el, [w, h], k) => {
-          const r = h / w, Hg = Math.min(ajuste([w, h], t), tope(h)), Wg = Hg / r;
+          const r = h / w, Hg = Math.min(ajuste([w, h], t), tope(h), margenV), Wg = Hg / r;
           el._suelo = { C, u, v, a: Wg / 2, b: Hg / 2, w, h }; // dónde queda en el suelo (para la foto 360, sin el mínimo de 5 px)
           return (colocarPlano(cam, el, w, h, C, u, v, (Wg * k) / 2, (Hg * k) / 2) * 40) / h;
         };
@@ -6868,11 +6914,12 @@
         const C = pc.z > CERCA ? aPantalla(cam, pc) : null;
         if (C && l.etiqueta && !loteVacio(c)) {
           // Del más completo al más corto ("Lote 3 · Mz B" → "3 · B" → "3"): el número nunca se borra al alejarse
-          const opciones = [nombreLote(c), nombreCorto(l), l.numero || "—"], cabe = (s) => (ancho * 0.92) / Math.max(1, s.length * 0.6);
+          const cz = rotuloCortoDe(c), kz = cz ? 1.5 : 1; // corto: «L09 · M5», y la letra puede crecer más
+          const opciones = [cz ? cz.join(" · ") : nombreLote(c), nombreCorto(l), l.numero || "—"], cabe = (s) => (ancho * 0.92) / Math.max(1, s.length * 0.6);
           // Siempre el rótulo completo, del tamaño que le toca al lote (sin versiones cortas)
           // Al alejarte nunca se borra: a lo mucho baja a 5 px (pedido de Amar, 10 nov 2026)
-          const nivel = 0, tx = opciones[0], fs = Math.max(5, Math.min(20 * t, lado * 0.17 * t, cabe(tx)));
-          const area = l.verArea ? fmtArea(l.area) : "";
+          const nivel = 0, tx = opciones[0], fs = Math.max(5, Math.min(20 * t * kz, lado * 0.17 * t * kz, cabe(tx)));
+          const area = !cz && l.verArea ? fmtArea(l.area) : "";
           {
             h += '<text class="lt-nom" x="' + C.x.toFixed(1) + '" y="' + (C.y - (area ? fs * 0.45 : 0)).toFixed(1) + '" font-size="' + fs.toFixed(1) + '">' + esc(tx) + "</text>";
             if (area && fs * 0.78 >= 7) h += '<text class="lt-area" x="' + C.x.toFixed(1) + '" y="' + (C.y + fs * 0.75).toFixed(1) + '" font-size="' + (fs * 0.78).toFixed(1) + '">' + esc(area) + "</text>";
@@ -9367,11 +9414,12 @@ void main(){
       let v = [-e0[1], e0[0]]; if (v[0] * C[0] + v[1] * C[1] < 0) v = [-v[0], -v[1]]; // la parte de arriba del texto, lejos de la cámara
       const u = [v[1], -v[0]]; // así se lee derecho (no en espejo) desde la cámara
       const pu = G.map((g) => (g[0] - C[0]) * u[0] + (g[1] - C[1]) * u[1]), pv = G.map((g) => (g[0] - C[0]) * v[0] + (g[1] - C[1]) * v[1]);
-      const tx = document.createElement("canvas"), t2 = tx.getContext("2d"), txt = nombreLote(c), area = c.lote.verArea !== false ? fmtArea(c.lote.area) : "";
-      t2.font = "600 64px Poppins, sans-serif"; const w1 = t2.measureText(txt).width; t2.font = "400 46px Poppins, sans-serif"; const w2 = area ? t2.measureText(area).width : 0;
-      tx.width = Math.ceil(Math.max(w1, w2) + 24); tx.height = area ? 132 : 84;
+      const tx = document.createElement("canvas"), t2 = tx.getContext("2d"), rc = rotuloCortoDe(c), txt = rc ? rc[0] : nombreLote(c), area = rc ? rc[1] || "" : c.lote.verArea !== false ? fmtArea(c.lote.area) : "";
+      const f2 = rc ? "600 64px Poppins, sans-serif" : "400 46px Poppins, sans-serif"; // corto: el segundo renglón («M5») va del mismo tamaño
+      t2.font = "600 64px Poppins, sans-serif"; const w1 = t2.measureText(txt).width; t2.font = f2; const w2 = area ? t2.measureText(area).width : 0;
+      tx.width = Math.ceil(Math.max(w1, w2) + 24); tx.height = area ? (rc ? 150 : 132) : 84;
       t2.textAlign = "center"; t2.fillStyle = "#fff"; t2.shadowColor = "rgba(0,0,0,.8)"; t2.shadowBlur = 8;
-      t2.font = "600 64px Poppins, sans-serif"; t2.fillText(txt, tx.width / 2, 64); if (area) { t2.font = "400 46px Poppins, sans-serif"; t2.fillText(area, tx.width / 2, 120); }
+      t2.font = "600 64px Poppins, sans-serif"; t2.fillText(txt, tx.width / 2, 64); if (area) { t2.font = f2; t2.fillText(area, tx.width / 2, rc ? 132 : 120); }
       const r = tx.height / tx.width, extU = Math.max(...pu) - Math.min(...pu), extV = Math.max(...pv) - Math.min(...pv), t = (+c.lote.tamRotulo || 0.6) / 0.6;
       const ajuste = Math.min(0.6 * t * extU * r, 0.55 * t * extV) / tx.height;
       return { C, u, v, tx, ajuste, t };
@@ -12939,6 +12987,12 @@ void main(){
     if (document.activeElement !== $("lt-mz")) $("lt-mz").value = T.manzana;
     if (document.activeElement !== $("lt-corto")) $("lt-corto").value = T.corto;
     $("lt-ejemplo").innerHTML = "Así se ve: <b>" + esc(T.lote + " 12 · " + mzCorta("3")) + "</b>";
+    { // Rótulo corto y grande (Laboratorio «rotulo-corto»)
+      const hay = MODO === "nube" && enLab("rotulo-corto"), corto = P().rotuloCorto === true; $("lt-rotulo-fila").hidden = !hay;
+      $("lt-rotulo-fila").querySelectorAll("[data-lt-rotulo]").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.ltRotulo === "1") === corto)));
+      const ej = hay && corto ? rotuloCortoDe({ lote: { numero: "9", manzana: "3" } }) : null;
+      $("lt-rotulo-ejemplo").innerHTML = ej ? "En cada lote: <b>" + esc(ej.join(" / ")) + "</b>, en grande. La superficie queda en su ficha." : "En cada lote: <b>" + esc(T.lote + " 9 · " + mzCorta("3")) + "</b> y su superficie.";
+    }
     pintarNombresEstados(false);
     pintarFichaEditor();
     $("lx-moneda").innerHTML = MONEDAS.map(([v, n]) => '<option value="' + v + '"' + (monedaTour() === v ? " selected" : "") + ">" + n + "</option>").join("");
@@ -12994,6 +13048,12 @@ void main(){
     Object.keys(est.capas).forEach((id) => (est.capas[id] || []).forEach((c) => { if (c.manzana) c.nombre = P().terminos.manzana + " " + c.manzana.mz; }));
     guardar(); pintarLotes(); if (motorEd) motorEd.construir(); pintarCapas();
   }
+  $("lt-rotulo-fila").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-lt-rotulo]"); if (!b) return;
+    if (b.dataset.ltRotulo === "1") P().rotuloCorto = true; else delete P().rotuloCorto;
+    guardar(); pintarLotes(); if (motorEd) motorEd.construir();
+    avisar(P().rotuloCorto ? "Rótulo corto y grande. Míralo en Capas y vuelve a publicar." : "Rótulo completo. Vuelve a publicar para verlo en el tour.");
+  });
   $("lt-preset").addEventListener("change", (ev) => { const p = presetsTerminos()[+ev.target.value]; if (!p) return; ponerTerminos({ lote: p[0], manzana: p[1], corto: p[2] }); avisar("Ahora dice: " + nombreLote({ lote: { numero: "12", manzana: "3" } }) + ". Vuelve a Publicar para verlo en el tour."); });
   ["lt-lote", "lt-mz", "lt-corto"].forEach((id) => $(id).addEventListener("input", (ev) => ponerTerminos({ [{ "lt-lote": "lote", "lt-mz": "manzana", "lt-corto": "corto" }[id]]: ev.target.value })));
   $("lx-moneda").addEventListener("change", (ev) => { P().moneda = ev.target.value; guardar(); pintarLotes(); if (motorEd) motorEd.construir(); avisar("Precios en " + ev.target.value + ". Vuelve a Publicar para que se vea en el tour."); });
