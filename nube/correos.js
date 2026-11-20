@@ -265,20 +265,25 @@ export async function mandarBienvenida(env, p, base) {
 // Muchos entran desde el celular, ven «se usa en compu» y no regresan. Dos correos con el link para la compu:
 // - pedido: el usuario lo pide desde el celular («Mándame el link a mi correo»), al momento.
 // - recordatorio: a las ~24 h, a quien aún no hace su primer tour (si el dueño lo prendió en su panel). Una sola vez.
-export function correoCompu({ nombre, base, pedido, baja }) {
-  const n = primerNombre(nombre), ir = base + "/";
+// - prospecto: quien deja su correo en la portada desde el celular (todavía sin cuenta). Su link (?p=) anota de qué
+//   anuncio venía, para que su cuenta lo herede al crearla en la compu.
+export function correoCompu({ nombre, base, pedido, prospecto, link, baja }) {
+  const n = primerNombre(nombre), ir = link || base + "/";
+  pedido = pedido || prospecto;
   const titulo = pedido ? "Tu link para abrir Mozari en la compu" : (n ? n + ", tu" : "Tu") + " primer tour te espera";
   const pasos = PASOS.map(([t, d], i) =>
     '<tr><td valign="top" width="44" style="padding:0 14px 18px 0"><div style="width:30px;height:30px;border-radius:50%;background:' + TINTA + ";color:" + LIMA + ";text-align:center;font:700 14px/30px " + FUENTE + '">' + (i + 1) + "</div></td>" +
     '<td valign="top" style="padding:2px 0 18px;font:400 15px/1.5 ' + FUENTE + ";color:" + TEXTO + '"><b style="font-weight:600">' + esc(t) + '</b><br><span style="color:' + TENUE + '">' + esc(d) + "</span></td></tr>").join("");
-  const intro = pedido
+  const intro = prospecto
+    ? "Aquí tienes tu link. Ábrelo en tu computadora, entra con tu cuenta de Google y haz tu primer tour 360. La cuenta de prueba no cuesta nada y no pide tarjeta."
+    : pedido
     ? "Aquí tienes tu link. Ábrelo en tu computadora, entra con la misma cuenta de Google y empieza tu primer tour."
     : "Tu cuenta de prueba ya está lista, pero aún no haces tu primer tour. Mozari se usa en la computadora: ahí subes tus fotos 360, dibujas tus lotes y publicas.";
   const cuerpo =
     '<h1 style="margin:0 0 14px;font:700 26px/1.25 ' + FUENTE + ";color:" + TINTA + '">' + esc(titulo) + "</h1>" +
     '<p style="margin:0 0 24px">' + esc(intro) + "</p>" +
     '<div style="padding:0 0 26px">' + boton("Abrir Mozari en mi compu", ir) + "</div>" +
-    '<p style="margin:0 0 14px;padding:12px 16px;border-radius:12px;background:' + FONDO + ';font:600 15px ' + FUENTE + ";color:" + TINTA + '">' + esc(ir.replace(/^https?:\/\//, "")) + "</p>" +
+    '<p style="margin:0 0 14px;padding:12px 16px;border-radius:12px;background:' + FONDO + ';font:600 15px ' + FUENTE + ";color:" + TINTA + '">' + esc((base + "/").replace(/^https?:\/\//, "")) + "</p>" +
     '<p style="margin:10px 0 14px;font-weight:600;color:' + TINTA + '">En 3 pasos:</p>' +
     '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">' + pasos + "</table>" +
     '<p style="margin:8px 0 0">Nos vemos dentro,<br><b>El equipo de Mozari</b></p>';

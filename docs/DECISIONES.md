@@ -390,3 +390,32 @@
   lote. El corto va en el centro de lo que se VE del lote desde la esfera (el promedio de las direcciones de sus
   esquinas). Medido: de 43.8 px a 4.9 px del centro de la figura.
 - Aplica al rótulo planchado (compu), al de celular (SVG), al «siempre de frente» («L09 · M5») y a la foto 360 con lotes.
+
+## 20 nov 2026 · Los anuncios mandan a mozari.app (no a WhatsApp) y se mide qué anuncio deja cuentas y ventas
+
+- Amar: «Siento que las campañas están inútiles… es inútil que te lleve a un WhatsApp si ya pueden ir directo a la
+  plataforma. Yo qué les voy a decir en el WhatsApp». «Que directo vayan a la landing page y ahí vean la plataforma».
+- Lo que había: campaña «Mozari - Video Jales» de clic a WhatsApp, $1,890 MXN, 610 conversaciones ($3.10 c/u) y
+  ninguna forma de saber si alguna terminó en cuenta. Se apagó el 20 nov.
+- De 552 cuentas: 232 se crearon en el celular (19 % hizo un tour, 6 pagaron) y 270 en la compu (67 % hizo un tour,
+  19 pagaron). El anuncio llega casi siempre al celular, dentro de Instagram o Facebook, donde Google no deja entrar.
+- Portada en el celular: en vez de «Entrar con Google» pide solo el correo («Se usa en la compu. ¿A qué correo te
+  mandamos el link?»). El campo y el botón se ven sin deslizar (la esfera baja de 50 a 36 % de la pantalla).
+  «Entrar con Google» sigue abajo, como link. En la compu la portada no cambia.
+- `POST /prospecto` (público): guarda `prospectos/<id>.json` (id = huella del correo) y manda «Tu link para abrir
+  Mozari en la compu» con el link `/?p=<id>`. Protecciones, porque es una puerta pública que manda correos: 4 pedidos
+  por conexión al día, un correo por dirección cada 24 h, 80 al día en total (más los topes de siempre), campo
+  trampa para robots, solo desde la propia página, y respeta a quien se dio de baja. Lo que no cabe en el día sale
+  en la siguiente hora con lugar (hasta 3 días).
+- Origen: quien llega con `utm_source / utm_medium / utm_campaign / utm_content` o `fbclid`, o desde otra página,
+  queda anotado en una cookie propia de 30 días (`mz_origen`). Un link de campaña pisa al anterior; una visita sin
+  campaña no pisa a una campaña. Al crear la cuenta se guarda en su perfil (`origen`). Si dejó su correo en el
+  celular, la cuenta hereda ese origen por su correo o por el link que abrió (`origen.correo = true`).
+- Panel de dueño → Cuentas → «Anuncios y campañas»: por cada campaña, correos que dejaron, cuentas, cuántas hicieron
+  tour, cuántas pagaron y cuánto se cobró. «Entraron directo» cuenta las cuentas sin link desde el 20 nov.
+- Aviso de privacidad: antes decía «no usamos cookies de publicidad ni de rastreo». Ahora dice la verdad: una cookie
+  propia de medición (30 días) que anota de qué anuncio o página llegaste, que no se comparte, y el correo que se
+  deja en la portada solo para mandar el link. Fecha del aviso: 20 nov 2026.
+- Los links cortos (/planes, /precios) ya no pierden la campaña al redirigir.
+- Falta (siguiente bloque): avisarle a Meta cada cuenta creada para que el anuncio se optimice a registros, no a
+  clics. Necesita una llave de Meta que pega Amar y otra línea en el aviso de privacidad.

@@ -1,7 +1,7 @@
 {
- "fecha": "2026-11-19T23:55:07.613Z",
- "bien": 118,
- "total": 119,
+ "fecha": "2026-11-20T19:54:37.476Z",
+ "bien": 120,
+ "total": 120,
  "resultados": [
   {
    "nombre": "El escaparate abre con planes y precios",
@@ -328,6 +328,10 @@
    "ok": true
   },
   {
+   "nombre": "Anuncios → web: en el celular la portada pide el correo y manda el link para la compu; la cuenta anota de qué anuncio llegó y el Panel suma por campaña",
+   "ok": true
+  },
+  {
    "nombre": "Estados de los lotes con el nombre de cada país: «Apartado» se cambia a «Reservado» y sale en el tour",
    "ok": true
   },
@@ -449,8 +453,7 @@
   },
   {
    "nombre": "Transiciones inmersivas (Laboratorio, nace Solo yo): precarga todas las esferas con foto y en celular cambia de esfera en vivo, sin la foto plana",
-   "ok": false,
-   "motivo": "la transición no se movió en vivo (cuadros: 4 de salida, 3 de llegada)"
+   "ok": true
   },
   {
    "nombre": "Landing del desarrollo (Laboratorio, nace Solo yo): marca, plano maestro, lotes con precio y calculadora, WhatsApp con el lote y publicada en /landing",

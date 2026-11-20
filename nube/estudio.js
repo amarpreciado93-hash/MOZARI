@@ -31,6 +31,7 @@ import { json, error, rutaValida, tipoDe, servirR2, borrarPrefijo, ID_TOUR, conC
 import { vozEstado, vozAudio, adminVoz } from "./voces.js";
 import { rutasSesion, cuentaDe, perfil, leerCupo, contarCuentas, firmarLink, verificarLink } from "./sesion.js";
 import { leerConf, guardarConf, contador, enviar, TOPE_MES, TOPE_DIA, correoBienvenida, correoCompra, correoCotizacion, htmlCotizacion, textoCotizacion, TIPOS_COTIZACION, correoDeNovedad, correoCampana, enlaceBaja, iniciarCola, avanzarCola, avanzarColas, rutaBaja, CAMPANA, iniciarCampana, correoCompu, mandarRecordatorios, sembrarRecordatorios } from "./correos.js";
+import { cookiesOrigen, pedirLink, mandarProspectosPendientes, listaProspectos } from "./origen.js";
 import { PLANES, planDe, pasa, usaLotificacion, sumarMeses } from "./planes.js";
 import { apiPagos, webhookMercadoPago, webhookStripe, CODIGO, cuponClave } from "./pagos.js";
 import { EmailMessage } from "cloudflare:email";
@@ -267,6 +268,8 @@ export const LABORATORIO = {
 };
 // "pago": las cuentas Pro y Desarrollos (con su plan vigente); "todos" incluye también Gratis
 const MODOS_LAB = ["yo", "probadores", "pago", "todos"];
+// De dónde llegó la cuenta, para el panel (sin el identificador del clic)
+const origenPanel = (o) => (o && typeof o === "object" ? { fuente: o.fuente || "", medio: o.medio || "", campana: o.campana || "", anuncio: o.anuncio || "", correo: !!o.correo } : null);
 const LEER_CUENTAS = 350; // Panel de dueño: cuentas que se vuelven a leer por petición (el tope de una petición son 1,000 lecturas)
 // Noviembre 2026: todo lo que estaba en el Laboratorio salió a Pro y Desarrollos (versión 2 de la configuración).
 // Lo que se agregue después nace "Solo yo". Desde el panel cada función se puede regresar a "Solo yo".
@@ -774,6 +777,8 @@ async function admin(request, env, partes, yo) {
     return error(405, "Método no permitido");
   }
   if (partes[2] === "respaldos") return apiRespaldos(request, env, partes);
+  // Anuncios y campañas: los correos que se dejaron desde el celular, con su origen (las cuentas ya traen el suyo)
+  if (partes[2] === "origenes" && partes.length === 3 && m === "GET") return json({ prospectos: await listaProspectos(env) });
   // Cupo de cuentas y lista de espera (quien llegó con el cupo lleno)
   if (partes[2] === "cupo" && partes.length === 3) {
     if (m === "PUT") {
@@ -955,7 +960,7 @@ async function admin(request, env, partes, yo) {
       const pagos = Array.isArray(p.pagos) ? p.pagos : p.ultimoPago ? [Object.assign({ moneda: "MXN", metodo: "mercadopago" }, p.ultimoPago)] : [];
       // Los regalos de antes no guardaban para quién eran: se toma la nota de su link
       for (const x of pagos) if (x && x.metodo === "cupon" && x.cupon && x.nota === undefined) { const c = await leerJson(cuponClave(x.cupon)); x.nota = (c && c.nota) || ""; }
-      return { uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada, registro: p.registro || "", bloqueado: !!p.bloqueado, cortesia: !!p.cortesia, planAntes: p.planAntes || "", pais: p.pais || "", pagos };
+      return { uid: p.uid, email: p.email, nombre: p.nombre, plan: p.plan, vence: p.vence || null, admin: !!p.admin, creado: p.creado, ultimaEntrada: p.ultimaEntrada, registro: p.registro || "", bloqueado: !!p.bloqueado, cortesia: !!p.cortesia, planAntes: p.planAntes || "", pais: p.pais || "", pagos, origen: origenPanel(p.origen) };
     };
     const deSesiones = (l) => {
       if (!Array.isArray(l)) return null;
@@ -981,7 +986,7 @@ async function admin(request, env, partes, yo) {
       registro: registroDe(p), nTours: nTours[p.uid] || 0,
       // Lo que pagó y por dónde (los pagos de antes del historial salen de su último pago, que fue por Mercado Pago)
       pausada: !!p.bloqueado, cortesia: !!p.cortesia, planAntes: p.planAntes || "", pais: p.pais || ultimaSesion(p.uid).pais || "", ciudad: ultimaSesion(p.uid).ciudad || "",
-      pagos: p.pagos || [] })) });
+      pagos: p.pagos || [], origen: p.origen || null })) });
   }
   if (partes.length === 4 && m === "PUT") {
     const uid = partes[3], cuerpo = await request.json().catch(() => ({}));
@@ -1294,6 +1299,8 @@ export default {
     // Novedades por correo que aún tienen pendientes: una tanda por hora
     if (env.ENVIOS) ctx.waitUntil(avanzarColas(env, "https://" + (env.DOMINIO || "mozari.app"), firmaBaja(env)).catch(() => {}));
     // «Tu cuenta te espera en la compu»: a las ~24 h, a quien no ha hecho su primer tour (si el dueño lo prendió)
+    // Links para la compu que alguien pidió desde el celular y no cupieron en su día
+    if (env.ENVIOS) ctx.waitUntil(mandarProspectosPendientes(env, "https://" + (env.DOMINIO || "mozari.app"), firmaBaja(env)).catch(() => {}));
     if (env.ENVIOS) ctx.waitUntil(leerConf(env).then((c) => (c.recordatorio ? mandarRecordatorios(env, "https://" + (env.DOMINIO || "mozari.app"), firmaBaja(env)) : 0)).catch(() => {}));
   },
   async fetch(request, env, ctx) {
@@ -1314,6 +1321,8 @@ export default {
 
     // Contrata tu tour 360 (escaparate, sin sesión): el país del visitante y la solicitud de cotización
     if (url.pathname === "/cotizar") return cotizar(request, env, url);
+    // Desde el celular (portada, sin sesión): deja su correo y le llega el link para abrir Mozari en la compu
+    if (url.pathname === "/prospecto") return pedirLink(request, env, url, firmaBaja(env), /iPhone|Android.*Mobile/.test(request.headers.get("user-agent") || "") ? "celular" : /iPad|Android|Tablet/.test(request.headers.get("user-agent") || "") ? "tablet" : "compu");
     // Ventas para la hoja de Google (con su clave, sin sesión)
     if (url.pathname === "/ventas.csv" && request.method === "GET") return ventasCsv(request, env);
     // Tours hechos con Mozari: la lista pública para el sitio (sin sesión)
@@ -1334,7 +1343,7 @@ export default {
 
     // Links cortos para compartir: mozari.app/planes, /pro y /desarrollos
     const corto = { "/planes": "/#planes", "/precios": "/#planes", "/pro": "/entrar?comprar=pro", "/desarrollos": "/entrar?comprar=desarrollos" }[url.pathname.replace(/\/$/, "")];
-    if (corto && request.method === "GET") return Response.redirect(url.origin + corto, 302);
+    if (corto && request.method === "GET") return Response.redirect(url.origin + (corto.startsWith("/#") ? "/" + url.search + corto.slice(1) : corto), 302);
 
     if (segs[0] === "api" || segs[0] === "t") {
       const yo = await cuentaDe(request, env);
@@ -1361,6 +1370,8 @@ export default {
       const r = await conAsset(env, request, yo ? "/" : "/escaparate");
       const h = new Headers(r.headers);
       h.set("cache-control", "no-store");
+      // Quien aún no entra: se anota de qué anuncio o página llega (cookie propia de 30 días), para su cuenta
+      if (!yo && request.method === "GET") for (const c of cookiesOrigen(request, url)) h.append("set-cookie", c);
       return new Response(r.body, { status: r.status, headers: h });
     }
     return env.ASSETS.fetch(request);

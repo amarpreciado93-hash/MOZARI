@@ -73,6 +73,22 @@
   .tarjeta-hero p { margin: 0; color: var(--tenue); font-size: 16px; }
   .cta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
   .cta small { color: var(--suave); font-size: 13px; }
+  /* En el celular: Mozari se usa en la compu, así que aquí se pide el correo y se manda el link */
+  .cta-cel { display: grid; gap: 12px; }
+  .cta-cel[hidden], .cel-listo[hidden], .cta[hidden] { display: none; }
+  .cta-cel .cel-que { margin: 0; font-size: 15px; color: var(--texto); line-height: 1.45; }
+  .cta-cel .cel-que b { font-weight: 600; }
+  .cta-cel input[type="email"] { width: 100%; box-sizing: border-box; border: 1.5px solid #D9DBD3; border-radius: 14px; padding: 14px 16px; font: 400 16px Poppins, sans-serif; color: var(--texto); background: #fff; outline: none; }
+  .cta-cel input[type="email"]:focus { border-color: var(--texto); }
+  .cta-cel .btn { justify-content: center; width: 100%; box-sizing: border-box; }
+  .cta-cel .btn[disabled] { opacity: 0.6; }
+  .cta-cel small { color: var(--suave); font-size: 13px; line-height: 1.5; }
+  .cta-cel small a { color: var(--texto); font-weight: 500; }
+  .cta-cel .trampa { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  .cel-listo { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; background: #F3F8E1; border-radius: 16px; padding: 16px 18px; }
+  .cel-listo i { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--texto); color: #D5FF40; font: 700 17px Poppins, sans-serif; font-style: normal; }
+  .cel-listo b { display: block; font-size: 16px; font-weight: 600; }
+  .cel-listo span { display: block; margin-top: 4px; font-size: 14px; color: var(--tenue); line-height: 1.5; overflow-wrap: anywhere; }
   .error { background: #FDECEC; border: 1px solid #F3B8BA; color: #A3262B; padding: 10px 14px; border-radius: 12px; font-size: 14px; }
 
   section { padding: 96px 0; }
@@ -287,6 +303,13 @@
     .esfera-dato { top: 12px; right: 12px; font-size: 11px; }
     .tarjeta-hero { position: relative; left: 0; bottom: 0; transform: none; width: auto; margin: -36px 12px 0; padding: 26px 22px; box-shadow: 0 16px 40px rgba(11, 11, 11, 0.12); }
     section { padding: 64px 0; }
+    /* Con el campo de correo: la esfera más baja y el texto más junto, para que el campo y el botón se vean sin deslizar */
+    .pide-correo #esfera, .pide-correo .portada-fotos { height: 36vh; }
+    .pide-correo .esfera-marco .esfera-puntos { top: calc(36vh - 62px); }
+    .pide-correo .tarjeta-hero { padding: 22px 20px; gap: 10px; }
+    .pide-correo .tarjeta-hero h1 { font-size: 26px; line-height: 1.15; }
+    .pide-correo .tarjeta-hero p { font-size: 14.5px; line-height: 1.45; }
+    .pide-correo .tarjeta-hero .lado { gap: 12px; }
   }
 </style>
 </head>
@@ -307,7 +330,16 @@
     <h1>Arma tours 360 profesionales desde tu navegador.</h1>
     <div class="lado"><p>Sube tus esferas, conéctalas, ponle tu marca y comparte un link. Para casas, hoteles, negocios y desarrollos.</p>
     <div id="error" class="error" hidden></div>
-    <div class="cta"><a class="btn btn-negro" href="entrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="currentColor" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" opacity=".75"/><path fill="currentColor" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14z" opacity=".55"/><path fill="currentColor" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z" opacity=".9"/></svg>Entrar con Google</a><small>Cuenta de prueba sin costo y sin tarjeta.<br>Se usa en la compu, desde el navegador.</small></div></div>
+    <div class="cta" id="cta-compu"><a class="btn btn-negro" href="entrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="currentColor" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" opacity=".75"/><path fill="currentColor" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14z" opacity=".55"/><path fill="currentColor" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z" opacity=".9"/></svg>Entrar con Google</a><small>Cuenta de prueba sin costo y sin tarjeta.<br>Se usa en la compu, desde el navegador.</small></div>
+    <form class="cta-cel" id="cta-cel" hidden novalidate>
+      <p class="cel-que"><b>Se usa en la compu.</b> ¿A qué correo te mandamos el link?</p>
+      <input type="email" id="cel-correo" name="correo" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" maxlength="120" placeholder="tu@correo.com" aria-label="Tu correo" required>
+      <input type="text" name="sitio" class="trampa" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="error" id="cel-error" hidden></div>
+      <button class="btn btn-negro" type="submit" id="cel-enviar">Mándame el link</button>
+      <small>Cuenta de prueba sin costo y sin tarjeta. <a href="entrar">Entrar con Google</a></small>
+    </form>
+    <div class="cel-listo" id="cel-listo" hidden><i>✓</i><div><b id="cel-listo-tit">Listo. Revisa tu correo.</b><span id="cel-listo-txt"></span></div></div></div>
   </div>
 </div>
 
@@ -396,7 +428,7 @@
         <div class="precio"><b>$0</b><span>sin tarjeta · no se vence</span></div>
         <p class="para">Para probar y practicar con Mozari.</p>
         <ul class="puntos"><li>Todas las herramientas, incluida la lotificación</li><li>Tours sin límite para practicar, hasta 5 esferas cada uno</li><li>Se publica con marca de agua «Creado por Mozari»</li><li>Para quitar la marca, una licencia de pago único cuando quieras</li></ul>
-        <a class="btn btn-gris" href="entrar">Crear cuenta de prueba</a>
+        <a class="btn btn-gris" href="entrar" id="plan-prueba">Crear cuenta de prueba</a>
       </div>
       <div class="plan destacado">
         <span class="etiqueta">Pago único</span>
@@ -424,7 +456,7 @@
   <section>
     <div class="final">
       <div><h2>Haz tu primer tour hoy.</h2><p>Entra con tu cuenta de Google desde tu compu. La cuenta de prueba no cuesta nada y no pide tarjeta.</p></div>
-      <a class="btn btn-negro" href="entrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="currentColor" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" opacity=".75"/><path fill="currentColor" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14z" opacity=".55"/><path fill="currentColor" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z" opacity=".9"/></svg>Entrar con Google</a>
+      <a class="btn btn-negro" href="entrar" id="final-entrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="currentColor" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" opacity=".75"/><path fill="currentColor" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14z" opacity=".55"/><path fill="currentColor" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z" opacity=".9"/></svg>Entrar con Google</a>
     </div>
   </section>
 </main>
@@ -488,6 +520,32 @@
 <script>
   const e = new URLSearchParams(location.search).get("error");
   if (e) { const el = document.getElementById("error"); el.textContent = e; el.hidden = false; }
+
+  // En el celular Mozari no se usa: en vez de «Entrar con Google» se pide el correo y se manda el link para la compu.
+  // (Pedido de Amar, 20 nov 2026: los anuncios mandan aquí y casi todos llegan desde el celular.)
+  (function () {
+    const cel = /iPhone|Android.*Mobile/.test(navigator.userAgent) || (matchMedia("(max-width: 600px)").matches && matchMedia("(pointer: coarse)").matches);
+    if (!cel) return;
+    const f = document.getElementById("cta-cel"), campo = document.getElementById("cel-correo"), btn = document.getElementById("cel-enviar"), err = document.getElementById("cel-error"), listo = document.getElementById("cel-listo");
+    document.getElementById("cta-compu").hidden = true; f.hidden = false; document.documentElement.classList.add("pide-correo");
+    // Los otros botones de «crear cuenta» de la página llevan a este mismo campo
+    const subir = (ev) => { ev.preventDefault(); (f.hidden ? listo : f).scrollIntoView({ behavior: "smooth", block: "center" }); if (!f.hidden) setTimeout(() => campo.focus({ preventScroll: true }), 500); };
+    for (const id of ["final-entrar", "plan-prueba"]) { const b = document.getElementById(id); if (b) { if (id === "final-entrar") { const g = b.querySelector("svg"); if (g) g.remove(); b.textContent = "Mándame el link a mi correo"; } b.addEventListener("click", subir); } }
+    const inicio = Date.now();
+    const falla = (m) => { err.textContent = m; err.hidden = false; btn.disabled = false; btn.textContent = "Mándame el link"; };
+    f.addEventListener("submit", async (ev) => {
+      ev.preventDefault(); err.hidden = true;
+      const correo = campo.value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(correo)) { falla("Revisa tu correo: parece que le falta algo."); campo.focus(); return; }
+      btn.disabled = true; btn.textContent = "Mandando…";
+      const r = await fetch("prospecto", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ correo, sitio: f.elements.sitio.value, tiempo: Date.now() - inicio }) }).catch(() => null);
+      const d = r ? await r.json().catch(() => ({})) : {};
+      if (!r || !r.ok) { falla(d.error || "No se pudo mandar. Abre mozari.app en tu compu."); return; }
+      f.hidden = true; listo.hidden = false;
+      document.getElementById("cel-listo-tit").textContent = d.despues ? "Anotado. Te llega en un rato." : "Listo. Revisa tu correo.";
+      document.getElementById("cel-listo-txt").textContent = (d.despues ? "Te mandamos el link a " : "Mandamos el link a ") + correo + ". Ábrelo en tu compu y haz tu primer tour. O entra directo a mozari.app desde tu compu.";
+    });
+  })();
 
   // Tres ejemplos en loop: paneo lento, fundido al cambiar. Si alguien mueve la esfera, el loop espera.
   const crearVisor = (el) => { const v = new Marzipano.Viewer(el, { controls: { mouseViewMode: "drag" } }); v.controls().disableMethod("scrollZoom"); return v; };

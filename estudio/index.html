@@ -1154,6 +1154,20 @@
   .paises-conteo span b { display: inline; font-size: 18px; }
   .paises-conteo .bandera { font-size: 22px; line-height: 1; }
   .paises-conteo .sin-pais { opacity: 0.75; }
+  /* Panel de dueño → Anuncios y campañas: de dónde llegó cada cuenta (sin <table>: las tablas del panel son de cuentas) */
+  .campanas { margin: 12px 16px 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); }
+  .campanas h4 { margin: 0; font-size: 13px; font-weight: 600; color: var(--mz-texto); }
+  .campanas p { margin: 3px 0 0; font-size: 12px; color: var(--mz-tenue); }
+  .camp-lista { margin-top: 10px; overflow-x: auto; }
+  .camp-fila { display: grid; grid-template-columns: minmax(150px, 2fr) repeat(4, minmax(64px, 1fr)) minmax(96px, 1.2fr); gap: 0 10px; align-items: center; min-width: 540px; padding: 7px 0; border-bottom: 1px solid color-mix(in srgb, var(--mz-linea-neutra) 55%, transparent); font-size: 12.5px; color: var(--mz-texto); font-variant-numeric: tabular-nums; }
+  .camp-fila:last-child { border-bottom: 0; }
+  .camp-fila > span { text-align: right; white-space: nowrap; }
+  .camp-fila > span:first-child { text-align: left; white-space: normal; min-width: 0; }
+  .camp-fila.cab { padding: 0 0 5px; font-size: 11px; color: var(--mz-tenue); border-bottom-color: var(--mz-linea-neutra); }
+  .camp-fila b { font-weight: 600; } .camp-fila small { display: block; font-size: 11px; color: var(--mz-tenue); }
+  .camp-fila i { font-style: normal; color: var(--mz-tenue); font-size: 11px; margin-left: 4px; }
+  .camp-fila.directo { color: var(--mz-tenue); } .camp-fila.directo b { font-weight: 500; }
+  .camp-fila .cobro b { color: #3DDC84; }
   .cuentas-total { margin: 4px 16px 10px; font-size: 13px; color: var(--mz-tenue); }
   .cuentas-total b { color: var(--mz-texto); }
   .pago-monto { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; cursor: help; }
@@ -5645,6 +5659,34 @@
       '<span style="--c:#6DB4FF"><b>' + compu.length + "</b> desde la compu · " + hizo(compu) + " hicieron tour (" + pct(hizo(compu), compu.length) + ")</span>" +
       (otros ? '<span style="--c:#B8BEAE"><b>' + otros + "</b> sin dato</span>" : "") + "</div>";
   }
+  // Anuncios y campañas (20 nov 2026): los anuncios ya mandan a mozari.app. Cada cuenta trae de dónde llegó (origen)
+  // y cada correo que se deja desde el celular también. Aquí se suma por campaña: correos, cuentas, tours y pagos.
+  const DESDE_ORIGEN = "2026-11-20";
+  const FUENTES_TXT = { facebook: "Facebook", instagram: "Instagram", meta: "Meta", google: "Google", tiktok: "TikTok", youtube: "YouTube", whatsapp: "WhatsApp", correo: "Correo", x: "X", linkedin: "LinkedIn", bing: "Bing" };
+  const fuenteTxt = (f) => FUENTES_TXT[f] || f || "";
+  function campanasHtml(usuarios, prospectos) {
+    const g = {}, con = (o) => !!(o && (o.fuente || o.campana));
+    const de = (o) => { const k = [o.campana || "", o.fuente || "", o.anuncio || ""].join("\u0001"); return (g[k] = g[k] || { o, correos: 0, cuentas: [] }); };
+    const directo = { correos: 0, cuentas: usuarios.filter((c) => !con(c.origen) && String(c.creado || "") >= DESDE_ORIGEN) };
+    (prospectos || []).forEach((p) => { if (con(p)) de(p).correos++; else directo.correos++; });
+    usuarios.forEach((c) => { if (con(c.origen)) de(c.origen).cuentas.push(c); });
+    const filas = Object.values(g).sort((a, b) => b.cuentas.length - a.cuentas.length || b.correos - a.correos);
+    const pct = (a, b) => (b ? "<i>" + Math.round((a / b) * 100) + " %</i>" : "");
+    const fila = (nombre, x, cls) => {
+      const n = x.cuentas.length, tour = x.cuentas.filter((c) => c.nTours > 0).length, pagos = x.cuentas.flatMap((c) => (c.pagos || []).filter((y) => +y.monto > 0)), pago = x.cuentas.filter((c) => (c.pagos || []).some((y) => +y.monto > 0)).length;
+      const t = Object.entries(sumaPorMoneda(pagos)).map(([m, v]) => dinero(v, m)).join(" + ");
+      return '<div class="camp-fila ' + (cls || "") + '"><span>' + nombre + "</span><span>" + (x.correos || "—") + "</span><span><b>" + n + "</b></span><span>" + tour + pct(tour, n) + "</span><span>" + pago + pct(pago, n) + '</span><span class="cobro">' + (t ? "<b>" + t + "</b>" : "—") + "</span></div>";
+    };
+    const nombre = (o) => "<b>" + esc(o.campana || fuenteTxt(o.fuente)) + "</b><small>" + esc([o.campana ? fuenteTxt(o.fuente) : "sin campaña", o.anuncio].filter(Boolean).join(" · ")) + "</small>";
+    return '<div class="campanas" id="campanas"><h4>Anuncios y campañas</h4>' +
+      (filas.length
+        ? "<p>De dónde llegó cada cuenta nueva y qué hizo después. «Correos» son los que dejaron su correo desde el celular para abrir Mozari en la compu.</p>" +
+          '<div class="camp-lista" id="camp-lista"><div class="camp-fila cab"><span>Llegó de</span><span>Correos</span><span>Cuentas</span><span>Hicieron tour</span><span>Pagaron</span><span>Cobrado</span></div>' +
+          filas.map((x) => fila(nombre(x.o), x)).join("") +
+          (directo.cuentas.length || directo.correos ? fila("<b>Entraron directo</b><small>sin link de anuncio</small>", directo, "directo") : "") + "</div>"
+        : "<p>Todavía no llega nadie de un anuncio. Cuando un anuncio mande a mozari.app, aquí verás cuántas cuentas, tours y ventas dejó cada uno." +
+          (directo.correos ? " Correos que han dejado desde el celular: <b>" + directo.correos + "</b>." : "") + "</p>") + "</div>";
+  }
   async function pintarCuentas(deMemoria) {
     if (vistaDueno === "reportes") return pintarReportes();
     if (vistaDueno === "solicitudes") return pintarSolicitudes();
@@ -5656,10 +5698,10 @@
     if (vistaDueno === "estadisticas") return pintarEstadisticasAdmin();
     // El servidor recuerda las cuentas y solo vuelve a leer las que cambiaron. Si son muchas (la primera vez), las
     // lee por partes y dice cuántas faltan: se pide otra vez hasta tenerlas todas.
-    let dc = null, cupo = null;
-    if (deMemoria === true && cuentasMemo) ({ dc, cupo } = cuentasMemo);
+    let dc = null, cupo = null, prospectos = [];
+    if (deMemoria === true && cuentasMemo) ({ dc, cupo, prospectos } = cuentasMemo);
     else {
-      const pc = fetch("api/admin/cupo", { cache: "no-store" }).catch(() => null);
+      const pc = fetch("api/admin/cupo", { cache: "no-store" }).catch(() => null), po = fetch("api/admin/origenes", { cache: "no-store" }).catch(() => null);
       for (let i = 0; i < 12; i++) {
         const r = await fetch("api/admin/cuentas", { cache: "no-store" }).catch(() => null);
         if (!r || !r.ok) { avisar("No se pudieron leer las cuentas"); return; }
@@ -5668,7 +5710,8 @@
         avisar("Leyendo las cuentas… faltan " + dc.faltan);
       }
       const rc = await pc; cupo = rc && rc.ok ? await rc.json().catch(() => null) : null;
-      cuentasMemo = { dc, cupo };
+      const ro = await po; prospectos = ((ro && ro.ok ? await ro.json().catch(() => null) : null) || {}).prospectos || [];
+      cuentasMemo = { dc, cupo, prospectos };
     }
     const { cuentas: todas, tours: tt } = dc;
     // Número de usuario = orden en que se registraron (el primero es #1). Se muestran del más nuevo al más viejo.
@@ -5694,6 +5737,8 @@
       embudoSemana(usuarios.filter((c) => String(c.creado || "") >= semana)) +
       // De qué países son (lo da Cloudflare al usar Mozari; los que no han vuelto desde que se guarda, «sin dato»)
       paisesConteo(usuarios) +
+      // De qué anuncio o página llegó cada cuenta, y qué hizo después
+      campanasHtml(usuarios, prospectos) +
       // Cupo: cuántas cuentas caben por ahora. Quien compra o llega con un link de regalo entra aunque esté lleno.
       (cupo ? '<div class="cupo-fila' + (cupo.cuentas >= cupo.cupo ? " lleno" : cupo.cuentas >= cupo.cupo * 0.8 ? " casi" : "") + '"><span><b>' + cupo.cuentas + " de " + cupo.cupo + "</b> cuentas" + (cupo.cuentas >= cupo.cupo ? " · cupo lleno" : " · quedan " + (cupo.cupo - cupo.cuentas)) + "</span>" +
         '<label>Cupo <input id="cupo-num" type="number" min="0" step="10" value="' + cupo.cupo + '"></label><button class="mini" id="cupo-guardar">Guardar</button>' +

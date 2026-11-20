@@ -2896,6 +2896,89 @@ async function capasPesadas(p) {
       exige(!n.errs.length, "errores en el panel: " + n.errs.join(" | ").slice(0, 200));
       await n.context().close();
     });
+    // Pedido de Amar (20 nov 2026): los anuncios ya no mandan a WhatsApp (610 conversaciones que no llevaban a nada),
+    // mandan a mozari.app. En el celular la portada pide solo el correo y manda el link para la compu; cada cuenta
+    // anota de qué anuncio llegó y el Panel suma por campaña: correos, cuentas, tours y pagos.
+    await paso("Anuncios → web: en el celular la portada pide el correo y manda el link para la compu; la cuenta anota de qué anuncio llegó y el Panel suma por campaña", async () => {
+      const LOG = path.join(DATOS, "worker-estudio.log"), correosA = (para) => fs.readFileSync(LOG, "utf8").split("send_email binding called").slice(1).filter((b) => b.includes("To: " + para));
+      const sello = Date.now(), e1 = "anuncio-cel-" + sello + "@prueba.mx", e2 = "anuncio-otro-" + sello + "@prueba.mx", e2b = "anuncio-otro-google-" + sello + "@prueba.mx", e3 = "anuncio-compu-" + sello + "@prueba.mx", e4 = "anuncio-directo-" + sello + "@prueba.mx", robot = "robot-" + sello + "@prueba.mx";
+      const CAMP = "?utm_source=meta&utm_medium=anuncio&utm_campaign=Video+jales+nov&utm_content=Video+1&fbclid=IwAR0abcDEF_123-xyz";
+      const pide = (pg, c) => pg.evaluate(([o]) => fetch("prospecto", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(o) }).then(async (r) => ({ s: r.status, d: await r.json().catch(() => ({})) })), [c]);
+      const linkDe = (b) => { const h = (b.match(/HTML: (\S+\.html)/) || [])[1], html = h ? fs.readFileSync(h, "utf8") : ""; return { html, link: (html.match(/href="(http:\/\/localhost:8787\/\?p=[a-f0-9]{20})"/) || [])[1] }; };
+      // 1) En el celular, llegando del anuncio: no hay «Entrar con Google» al frente, se pide el correo
+      const c = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
+      await c.goto(ESTUDIO + "/" + CAMP); await c.waitForTimeout(1800);
+      exige(await c.isVisible("#cta-cel") && !(await c.isVisible("#cta-compu")) && await c.isVisible("#cel-correo"), "en el celular la portada no pide el correo");
+      exige(!/\bgratis\b/i.test(await c.textContent(".tarjeta-hero")), "la portada del celular dice «gratis»");
+      if (process.env.CAPTURAS) await c.screenshot({ path: path.join(process.env.CAPTURAS, "portada-celular-correo.png") });
+      await c.fill("#cel-correo", "sin-arroba"); await c.click("#cel-enviar"); await c.waitForTimeout(300);
+      exige(await c.isVisible("#cel-error") && !(await c.isVisible("#cel-listo")), "un correo mal escrito no avisa");
+      await c.fill("#cel-correo", e1); await c.click("#cel-enviar"); await c.waitForSelector("#cel-listo:not([hidden])", { timeout: 8000 });
+      const listo = await c.textContent("#cel-listo");
+      exige(/Revisa tu correo/.test(listo) && listo.includes(e1) && !(await c.isVisible("#cta-cel")), "después de dejar el correo no dice que ya se mandó: " + listo);
+      if (process.env.CAPTURAS) await c.screenshot({ path: path.join(process.env.CAPTURAS, "portada-celular-listo.png") });
+      const m1 = correosA(e1).filter((b) => /Subject: Tu link para abrir Mozari en la compu/.test(b));
+      exige(m1.length === 1, "el link para la compu no llegó al correo que dejó: " + correosA(e1).length);
+      const c1 = linkDe(m1[0]);
+      exige(c1.link && /\/baja\?t=/.test(c1.html) && !/gratis/i.test(c1.html) && /cuenta de prueba/i.test(c1.html) && !/misma cuenta/.test(c1.html), "el correo no trae su link, el de baja, o habla de una cuenta que aún no tiene");
+      // El mismo correo otra vez: ya tiene su link. Un robot (campo escondido lleno) o una página ajena: no se manda nada.
+      const rep = await pide(c, { correo: e1, tiempo: 5000 });
+      exige(rep.s === 200 && correosA(e1).length === 1, "se mandó dos veces el link al mismo correo");
+      const tr = await pide(c, { correo: robot, sitio: "http://spam.example", tiempo: 5000 });
+      exige(tr.s === 200 && !correosA(robot).length, "la trampa de robots dejó pasar un correo");
+      const aj = await fetch(ESTUDIO + "/prospecto", { method: "POST", headers: { "content-type": "application/json", origin: "https://otro.sitio" }, body: JSON.stringify({ correo: robot }) });
+      exige(aj.status === 403 && !correosA(robot).length, "aceptó un pedido desde otra página: " + aj.status);
+      exige((await pide(c, { correo: e2, tiempo: 5000 })).s === 200, "no aceptó un segundo correo");
+      const c2 = linkDe(correosA(e2)[0] || "");
+      exige(c2.link && c2.link !== c1.link, "el segundo correo no trae su propio link");
+      exige(!c.errs.length, "errores en la portada del celular: " + c.errs.join(" | ").slice(0, 160));
+      await c.context().close();
+      // 2) En la compu, con el mismo correo que dejó (sin cookie del celular): su cuenta hereda la campaña
+      const a = await pagina(e1);
+      exige((await a.evaluate(() => fetch("api/tours", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nombre: "Tour del anuncio" }) }).then((r) => r.status))) === 201, "no se pudo crear el tour");
+      await a.context().close();
+      // 3) Otro abre su link en la compu y entra con un correo de Google distinto: hereda la campaña por el link
+      const b = await pagina(null);
+      await b.goto(c2.link); await b.waitForTimeout(700);
+      exige(await b.isVisible("#cta-compu") && !(await b.isVisible("#cta-cel")), "en la compu la portada debe seguir con «Entrar con Google»");
+      await b.goto(ESTUDIO + "/entrar?dev=" + encodeURIComponent(e2b)); await b.waitForTimeout(2000);
+      await b.context().close();
+      // 4) En la compu desde un link de campaña; luego vuelve desde otra página sin campaña: se queda la campaña
+      const g = await pagina(null);
+      await g.goto(ESTUDIO + "/?utm_source=google&utm_campaign=Busqueda+tours"); await g.waitForTimeout(400);
+      await g.goto(ESTUDIO + "/", { referer: "https://www.youtube.com/watch?v=1" }); await g.waitForTimeout(400);
+      await g.goto(ESTUDIO + "/entrar?dev=" + encodeURIComponent(e3)); await g.waitForTimeout(2000);
+      await g.context().close();
+      // 5) Uno que entra directo, sin link de nadie
+      await (await pagina(e4)).context().close();
+      // Los links cortos (/planes) no pierden la campaña
+      const corto = await fetch(ESTUDIO + "/planes?utm_source=meta&utm_campaign=x", { redirect: "manual" });
+      exige(corto.status === 302 && /\/\?utm_source=meta&utm_campaign=x#planes$/.test(corto.headers.get("location") || ""), "el link corto /planes perdió la campaña: " + corto.headers.get("location"));
+      // 6) El Panel de dueño: cada cuenta con su origen y la tabla por campaña
+      const n = await pagina(DUENO);
+      const cuentas = (await n.evaluate(() => fetch("api/admin/cuentas").then((r) => r.json()))).cuentas, de = (e) => (cuentas.find((x) => x.email === e) || {}).origen;
+      exige(de(e1) && de(e1).campana === "Video jales nov" && de(e1).fuente === "meta" && de(e1).anuncio === "Video 1" && de(e1).correo === true && de(e1).clic === undefined, "la cuenta del celular no heredó su anuncio: " + JSON.stringify(de(e1)));
+      exige(de(e2b) && de(e2b).campana === "Video jales nov" && de(e2b).correo === true, "quien abrió su link con otro correo no heredó el anuncio: " + JSON.stringify(de(e2b)));
+      exige(de(e3) && de(e3).fuente === "google" && de(e3).campana === "Busqueda tours" && !de(e3).correo, "la cuenta de la compu no guardó su campaña (o la pisó una visita sin campaña): " + JSON.stringify(de(e3)));
+      exige(!de(e4), "una cuenta que entró directo quedó con origen: " + JSON.stringify(de(e4)));
+      await n.click("#ver-cuentas"); await n.waitForSelector("#camp-lista", { timeout: 30000 });
+      const fv = await n.$$eval("#camp-lista .camp-fila:not(.cab)", (l) => l.map((f) => [...f.children].map((x) => x.textContent.trim())));
+      // La tabla de campañas no se mezcla con la de cuentas (sus filtros y su vista de celular cuentan renglones de cuentas)
+      exige(!(await n.$("#campanas table")) && (await n.$$("#cuentas table")).length === 1, "la tabla de campañas se mezcla con la tabla de cuentas");
+      const video = fv.find((f) => /Video jales nov/.test(f[0])), bus = fv.find((f) => /Busqueda tours/.test(f[0])), dir = fv.find((f) => /Entraron directo/.test(f[0]));
+      exige(video && video[1] === "2" && video[2] === "2" && /^1/.test(video[3]) && /^0/.test(video[4]) && /Meta/.test(video[0]) && /Video 1/.test(video[0]), "la tabla no suma bien la campaña del video (2 correos, 2 cuentas, 1 con tour): " + JSON.stringify(video));
+      exige(bus && bus[1] === "—" && bus[2] === "1" && /Google/.test(bus[0]), "la tabla no trae la campaña de Google: " + JSON.stringify(bus));
+      exige(dir && +dir[2] >= 1, "la tabla no cuenta a quienes entraron directo: " + JSON.stringify(dir));
+      if (process.env.CAPTURAS) { await n.$eval("#campanas", (e) => e.scrollIntoView({ block: "center" })); await n.screenshot({ path: path.join(process.env.CAPTURAS, "panel-campanas.png") }); }
+      exige(!n.errs.length, "errores en el panel: " + n.errs.join(" | ").slice(0, 200));
+      await n.context().close();
+      // 7) Tope por conexión: después de 4 pedidos en el día ya no manda más (es una puerta pública)
+      const q = await pagina(null);
+      await q.goto(ESTUDIO + "/"); await q.waitForTimeout(300);
+      const s4 = await pide(q, { correo: "anuncio-4-" + sello + "@prueba.mx", tiempo: 5000 }), s5 = await pide(q, { correo: "anuncio-5-" + sello + "@prueba.mx", tiempo: 5000 });
+      exige(s4.s === 200 && s5.s === 429 && !correosA("anuncio-5-" + sello + "@prueba.mx").length, "no respetó el tope de pedidos por conexión: " + s4.s + " " + s5.s);
+      await q.context().close();
+    });
     // Pedido de un usuario de Perú (nov 2026): allá se dice «Reservado», no «Apartado». Los nombres de los estados se editan.
     await paso("Estados de los lotes con el nombre de cada país: «Apartado» se cambia a «Reservado» y sale en el tour", async () => {
       const n = await pagina(DUENO); await nuevoTour(n, "Estados por país");

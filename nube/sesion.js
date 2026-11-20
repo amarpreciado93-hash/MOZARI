@@ -11,6 +11,7 @@
 // Variables: GOOGLE_CLIENT_ID (no es secreto)
 // Variable: ADMIN (correo del dueño de Mozari: ve el panel de cuentas y adopta los tours viejos)
 import { mandarBienvenida, MARCA_RECORDATORIO } from "./correos.js";
+import { origenDeCuenta } from "./origen.js";
 
 const COOKIE = "mz_sesion", ESTADO = "mz_estado", COMPRAR = "mz_comprar", PENDIENTE = "mz_pendiente", DIAS = 30;
 // Cada cuenta puede tener la sesión abierta en 2 dispositivos (el dueño de Mozari, sin límite).
@@ -187,12 +188,14 @@ export async function cuentaDe(request, env) {
 }
 
 // Crea la cuenta la primera vez; después solo actualiza nombre y foto
-async function guardarCuenta(env, g, registro) {
+async function guardarCuenta(env, g, registro, request) {
   const uid = "g" + g.sub, antes = await perfil(env, uid), ahora = new Date().toISOString();
   // registro: desde dónde creó la cuenta (celular, tablet o compu), para medir la entrada desde el celular
   const p = Object.assign({ uid, plan: "gratis", creado: ahora, registro: registro || "" }, antes || {}, {
     email: g.email, nombre: g.name || g.email, foto: g.picture || "", ultimaEntrada: ahora,
   });
+  // origen: de qué anuncio o página llegó (solo al crear la cuenta). Si falla, la cuenta se crea igual.
+  if (!antes && request) { try { const o = await origenDeCuenta(env, request, g.email, uid); if (o) p.origen = o; } catch (e) { /* sin origen */ } }
   if (env.ADMIN && g.email.toLowerCase() === env.ADMIN.toLowerCase()) p.admin = true;
   await env.R2.put(perfilClave(uid), JSON.stringify(p), { httpMetadata: { contentType: "application/json" } });
   return { p, nueva: !antes };
@@ -210,7 +213,7 @@ async function iniciarSesion(request, url, env, g, adopcion, comprar) {
       return new Response(paginaCupoLleno(g.email), { status: 200, headers: h });
     }
   }
-  const { p, nueva } = await guardarCuenta(env, g, dispositivoDe(request).tipo);
+  const { p, nueva } = await guardarCuenta(env, g, dispositivoDe(request).tipo, request);
   // Recordatorio «tu cuenta te espera en la compu» (sale a las ~24 h si no ha hecho un tour y el dueño lo prendió)
   if (nueva && !p.admin) { try { await env.R2.put(MARCA_RECORDATORIO(p.uid), "", { customMetadata: { creado: p.creado } }); } catch (e) { /* sin recordatorio */ } }
   // Correo de bienvenida (si el dueño lo prendió en su panel). Si falla, la entrada sigue igual.
