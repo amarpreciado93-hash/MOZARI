@@ -1168,6 +1168,14 @@
   .camp-fila i { font-style: normal; color: var(--mz-tenue); font-size: 11px; margin-left: 4px; }
   .camp-fila.directo { color: var(--mz-tenue); } .camp-fila.directo b { font-weight: 500; }
   .camp-fila .cobro b { color: #3DDC84; }
+  .camp-pie { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; }
+  .camp-correos { margin-top: 10px; border-top: 1px solid var(--mz-linea-neutra); padding-top: 8px; max-height: 340px; overflow: auto; }
+  .camp-correos[hidden] { display: none; }
+  .camp-correo { display: grid; grid-template-columns: minmax(170px, 1.6fr) 132px minmax(120px, 1.3fr) 118px; gap: 0 10px; align-items: center; min-width: 560px; padding: 6px 0; font-size: 12.5px; color: var(--mz-texto); border-bottom: 1px solid color-mix(in srgb, var(--mz-linea-neutra) 55%, transparent); }
+  .camp-correo:last-child { border-bottom: 0; }
+  .camp-correo span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .camp-correo span:nth-child(n+2) { color: var(--mz-tenue); font-size: 11.5px; }
+  .camp-correo .si { color: #3DDC84; }
   .cuentas-total { margin: 4px 16px 10px; font-size: 13px; color: var(--mz-tenue); }
   .cuentas-total b { color: var(--mz-texto); }
   .pago-monto { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; cursor: help; }
@@ -5685,7 +5693,9 @@
           filas.map((x) => fila(nombre(x.o), x)).join("") +
           (directo.cuentas.length || directo.correos ? fila("<b>Entraron directo</b><small>sin link de anuncio</small>", directo, "directo") : "") + "</div>"
         : "<p>Todavía no llega nadie de un anuncio. Cuando un anuncio mande a mozari.app, aquí verás cuántas cuentas, tours y ventas dejó cada uno." +
-          (directo.correos ? " Correos que han dejado desde el celular: <b>" + directo.correos + "</b>." : "") + "</p>") + "</div>";
+          (directo.correos ? " Correos que han dejado desde el celular: <b>" + directo.correos + "</b>." : "") + "</p>") +
+      // La lista con cada correo: quién es, cuándo llegó, de qué anuncio y si ya creó su cuenta
+      ((prospectos || []).length ? '<div class="camp-pie"><button class="mini" id="camp-ver-correos" data-n="' + prospectos.length + '">Ver los correos (' + prospectos.length + ')</button><button class="mini" id="camp-copiar" hidden>Copiar correos</button></div><div class="camp-correos" id="camp-correos" hidden></div>' : "") + "</div>";
   }
   async function pintarCuentas(deMemoria) {
     if (vistaDueno === "reportes") return pintarReportes();
@@ -5753,6 +5763,22 @@
       "</td><td data-l=\"Pagó\">" + (c.admin ? "" : pagoDe(c)) + "</td><td data-l=\"Entró\">" + (c.ultimaEntrada ? new Date(c.ultimaEntrada).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) : "") + "</td><td>" + (c.admin ? "" : '<button class="mini" data-regalar="' + esc(c.uid) + '" title="Ponerle una licencia de regalo, con su grupo y su vigencia">Regalar</button> <button class="mini' + (c.pausada ? " primario" : "") + '" data-pausar="' + esc(c.uid) + '" data-v="' + (c.pausada ? "0" : "1") + '">' + (c.pausada ? "Reactivar" : "Pausar") + "</button>") + "</td></tr>").join("") + "</tbody></table>";
   }
   document.addEventListener("click", async (ev) => {
+    // Anuncios y campañas → «Ver los correos»: la lista de quién dejó su correo desde el celular
+    if (ev.target.id === "camp-ver-correos") {
+      const caja = $("camp-correos"), b = ev.target; if (!caja) return;
+      if (!caja.hidden) { caja.hidden = true; $("camp-copiar").hidden = true; b.textContent = "Ver los correos (" + b.dataset.n + ")"; return; }
+      b.disabled = true;
+      const r = await fetch("api/admin/origenes?correos=1", { cache: "no-store" }).catch(() => null), d = r && r.ok ? await r.json().catch(() => null) : null;
+      b.disabled = false;
+      if (!d) { avisar("No se pudieron leer los correos"); return; }
+      const l = d.correos || [], dia = (f) => { try { return new Date(f).toLocaleDateString("es-MX", { day: "numeric", month: "short" }) + " " + new Date(f).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }); } catch (e) { return ""; } };
+      caja.innerHTML = '<p style="margin:0 0 6px">Dejaron su correo solo para recibir el link de Mozari. No los uses para envíos masivos.</p>' +
+        (l.length ? l.map((x) => '<div class="camp-correo"><span title="' + esc(x.email) + '"><b>' + esc(x.email) + "</b></span><span>" + esc(dia(x.fecha)) + "</span><span title=\"" + esc([x.campana, x.anuncio].filter(Boolean).join(" · ")) + '">' + esc(x.anuncio || x.campana || fuenteTxt(x.fuente) || "Entró directo") + (x.pais ? " " + bandera(x.pais) : "") + '</span><span class="' + (x.cuenta ? "si" : "") + '">' + (x.cuenta ? "Ya creó su cuenta" : "Aún sin cuenta") + "</span></div>").join("") : "<p>Todavía nadie ha dejado su correo.</p>");
+      caja.dataset.correos = l.map((x) => x.email).join(", ");
+      caja.hidden = false; $("camp-copiar").hidden = !l.length; b.textContent = "Ocultar los correos";
+      return;
+    }
+    if (ev.target.id === "camp-copiar") { try { await navigator.clipboard.writeText(($("camp-correos") || {}).dataset.correos || ""); avisar("Correos copiados"); } catch (e) { avisar("No se pudo copiar"); } return; }
     if (ev.target.id === "cupo-espera") { const l = $("cupo-lista"); if (l) l.hidden = !l.hidden; return; }
     if (ev.target.id === "cupo-copiar") { const t = [...document.querySelectorAll("#cupo-lista small")].map((x) => x.textContent.split(" · ")[0]).join(", "); try { await navigator.clipboard.writeText(t); avisar("Correos copiados"); } catch (e) { avisar("No se pudo copiar"); } return; }
     if (ev.target.id !== "cupo-guardar") return;

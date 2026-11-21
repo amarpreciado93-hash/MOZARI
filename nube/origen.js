@@ -65,7 +65,7 @@ const leerProspecto = async (env, id) => { const o = await env.R2.get(PROSPECTO(
 // Lo que el panel suma va también en los datos del archivo: así la lista no tiene que abrir cada prospecto
 const guardarProspecto = (env, p) => {
   const o = p.origen || {}, e = encodeURIComponent;
-  return env.R2.put(PROSPECTO(p.id), JSON.stringify(p), { httpMetadata: JSONH.httpMetadata, customMetadata: { f: e(o.fuente || ""), m: e(o.medio || ""), c: e(o.campana || ""), a: e(o.anuncio || ""), d: p.fecha || "", u: p.cuenta || "" } });
+  return env.R2.put(PROSPECTO(p.id), JSON.stringify(p), { httpMetadata: JSONH.httpMetadata, customMetadata: { f: e(o.fuente || ""), m: e(o.medio || ""), c: e(o.campana || ""), a: e(o.anuncio || ""), d: p.fecha || "", u: p.cuenta || "", e: e(p.email || ""), p: p.pais || "" } });
 };
 // Manda el link: "ok", "tope" (hoy ya no caben: sale después), "baja" (pidió no recibir correos) o "error"
 async function mandarLink(env, pr, base, firma) {
@@ -134,14 +134,26 @@ export async function origenDeCuenta(env, request, email, uid) {
   if (!pr.cuenta) { pr.cuenta = uid; pr.cuentaFecha = new Date().toISOString(); try { await guardarProspecto(env, pr); await env.R2.delete(PENDIENTE(pr.id)); } catch (e) { /* la cuenta se crea igual */ } }
   return Object.assign({}, pr.origen || cookie || {}, { correo: true });
 }
-// Panel de dueño: los correos que se dejaron, con su origen (sin abrir cada archivo)
-export async function listaProspectos(env) {
+// Panel de dueño: los correos que se dejaron, con su origen (sin abrir cada archivo).
+// conCorreos: además la dirección y el país de los 300 más recientes, para la lista «Ver los correos». Los que se
+// guardaron antes de que la dirección fuera en los datos del archivo se leen uno por uno (son pocos).
+export async function listaProspectos(env, conCorreos) {
   const out = [], d = (v) => { try { return decodeURIComponent(v || ""); } catch (e) { return ""; } };
   let cur, vueltas = 0;
   do {
     const l = await env.R2.list({ prefix: "prospectos/", cursor: cur, limit: 1000, include: ["customMetadata"] });
-    for (const o of l.objects) { const m = o.customMetadata || {}; out.push({ fuente: d(m.f), medio: d(m.m), campana: d(m.c), anuncio: d(m.a), fecha: m.d || "", cuenta: !!m.u }); }
+    for (const o of l.objects) {
+      const m = o.customMetadata || {}, x = { fuente: d(m.f), medio: d(m.m), campana: d(m.c), anuncio: d(m.a), fecha: m.d || "", cuenta: !!m.u };
+      if (conCorreos) Object.assign(x, { email: d(m.e), pais: m.p || "", clave: o.key });
+      out.push(x);
+    }
     cur = l.truncated ? l.cursor : undefined;
   } while (cur && ++vueltas < 20);
-  return out;
+  if (!conCorreos) return out;
+  const recientes = out.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))).slice(0, 300);
+  await Promise.all(recientes.filter((x) => !x.email).slice(0, 200).map(async (x) => {
+    const o = await env.R2.get(x.clave).catch(() => null), p = o ? await o.json().catch(() => null) : null;
+    if (p) { x.email = p.email || ""; x.pais = p.pais || ""; }
+  }));
+  return recientes.filter((x) => x.email).map(({ clave, ...x }) => x);
 }

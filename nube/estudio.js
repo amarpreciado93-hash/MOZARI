@@ -778,7 +778,8 @@ async function admin(request, env, partes, yo) {
   }
   if (partes[2] === "respaldos") return apiRespaldos(request, env, partes);
   // Anuncios y campañas: los correos que se dejaron desde el celular, con su origen (las cuentas ya traen el suyo)
-  if (partes[2] === "origenes" && partes.length === 3 && m === "GET") return json({ prospectos: await listaProspectos(env) });
+  // Con ?correos=1: la lista de los correos más recientes (dirección, fecha, anuncio y si ya creó su cuenta)
+  if (partes[2] === "origenes" && partes.length === 3 && m === "GET") return new URL(request.url).searchParams.get("correos") ? json({ correos: await listaProspectos(env, true) }) : json({ prospectos: await listaProspectos(env) });
   // Cupo de cuentas y lista de espera (quien llegó con el cupo lleno)
   if (partes[2] === "cupo" && partes.length === 3) {
     if (m === "PUT") {

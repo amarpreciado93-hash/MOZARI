@@ -2969,7 +2969,21 @@ async function capasPesadas(p) {
       exige(video && video[1] === "2" && video[2] === "2" && /^1/.test(video[3]) && /^0/.test(video[4]) && /Meta/.test(video[0]) && /Video 1/.test(video[0]), "la tabla no suma bien la campaña del video (2 correos, 2 cuentas, 1 con tour): " + JSON.stringify(video));
       exige(bus && bus[1] === "—" && bus[2] === "1" && /Google/.test(bus[0]), "la tabla no trae la campaña de Google: " + JSON.stringify(bus));
       exige(dir && +dir[2] >= 1, "la tabla no cuenta a quienes entraron directo: " + JSON.stringify(dir));
+      // «Ver los correos»: quién dejó su correo, de qué anuncio y si ya creó su cuenta (el del robot no está)
+      exige(/Ver los correos \(2\)/.test(await n.textContent("#camp-ver-correos")), "el botón no dice cuántos correos hay: " + (await n.textContent("#camp-ver-correos").catch(() => "")));
+      await n.click("#camp-ver-correos"); await n.waitForSelector("#camp-correos:not([hidden]) .camp-correo", { timeout: 8000 });
+      const lc = await n.$$eval("#camp-correos .camp-correo", (l) => l.map((f) => [...f.children].map((x) => x.textContent.trim())));
+      const f1 = lc.find((f) => f[0] === e1), f2 = lc.find((f) => f[0] === e2);
+      exige(lc.length === 2 && f1 && f2 && /Video 1/.test(f1[2]) && /Ya creó su cuenta/.test(f1[3]) && /Ya creó su cuenta/.test(f2[3]) && !lc.some((f) => f[0] === robot), "la lista de correos no trae a quienes dejaron su correo con su anuncio: " + JSON.stringify(lc));
+      exige(await n.isVisible("#camp-copiar") && (await n.getAttribute("#camp-correos", "data-correos")).split(", ").sort().join() === [e1, e2].sort().join(), "«Copiar correos» no lleva las direcciones");
       if (process.env.CAPTURAS) { await n.$eval("#campanas", (e) => e.scrollIntoView({ block: "center" })); await n.screenshot({ path: path.join(process.env.CAPTURAS, "panel-campanas.png") }); }
+      await n.click("#camp-ver-correos"); await n.waitForTimeout(200);
+      exige(!(await n.isVisible("#camp-correos")) && /Ver los correos \(2\)/.test(await n.textContent("#camp-ver-correos")), "la lista de correos no se oculta");
+      // Solo el dueño puede pedir esa lista
+      const otro = await pagina(e4);
+      const sinPermiso = await otro.evaluate(() => fetch("api/admin/origenes?correos=1").then((r) => r.status));
+      exige(sinPermiso === 403 || sinPermiso === 404, "una cuenta normal pudo leer los correos: " + sinPermiso);
+      await otro.context().close();
       exige(!n.errs.length, "errores en el panel: " + n.errs.join(" | ").slice(0, 200));
       await n.context().close();
       // 7) Tope por conexión: después de 4 pedidos en el día ya no manda más (es una puerta pública)

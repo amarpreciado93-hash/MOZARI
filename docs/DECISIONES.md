@@ -419,3 +419,20 @@
 - Los links cortos (/planes, /precios) ya no pierden la campaña al redirigir.
 - Falta (siguiente bloque): avisarle a Meta cada cuenta creada para que el anuncio se optimice a registros, no a
   clics. Necesita una llave de Meta que pega Amar y otra línea en el aviso de privacidad.
+
+## 20 nov 2026 · Campaña web prendida y lista de correos en el Panel
+
+- Campaña nueva en Meta: «Mozari - Web - Video Jales», tráfico a mozari.app optimizado a visitas a la página, tope
+  total $2,000 MXN ($1,000 Latinoamérica + $1,000 California, Arizona, Nuevo México y Texas en español), del 20 al
+  25 nov. Mismo video; texto sin WhatsApp y sin precio. Links con `utm_campaign={{campaign.name}}` y
+  `utm_content={{ad.name}}`. Cupo de cuentas: de 600 a 1,000 (OK de Amar).
+- Amar: «antes yo medía por la gente que me mandaba mensaje, ¿ahora cómo puedo medir que está funcionando?… ¿cuáles
+  correos y dónde lo veo?». El Panel solo daba el número de correos por anuncio.
+- Panel de dueño → Cuentas → «Anuncios y campañas» → botón «Ver los correos (N)»: la lista de quién dejó su correo
+  desde el celular, con fecha, anuncio, país y si ya creó su cuenta. «Copiar correos» los copia todos.
+- `GET api/admin/origenes?correos=1` (solo dueño): los 300 más recientes. La dirección y el país van ahora también
+  en los datos del archivo del prospecto, para no abrir cada uno; los anteriores se leen uno por uno.
+- La lista avisa: «Dejaron su correo solo para recibir el link de Mozari. No los uses para envíos masivos» (es lo
+  que dice el aviso de privacidad).
+- «BETA» junto al logo se queda igual para todos (decisión de Amar: Mozari sigue en beta). Se descartó cambiarlo
+  por la licencia en las cuentas de pago.
