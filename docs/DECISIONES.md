@@ -591,3 +591,17 @@
   número y el nombre de la esfera), más chica (botón de 30px, letra de 12px) y el subtítulo en 2 renglones como máximo.
 - Prueba nueva: en las 5 plantillas, en un iPhone, la narración no tapa ningún botón, texto ni la leyenda y va en la
   mitad de abajo.
+
+## 22 nov 2026 · Interfaz del tour en el celular: nada se encima
+
+- Amar, con otra captura de Vista del Tezal (plantilla Brújula): la narración ya quedó bien abajo, «pero se encima todo
+  lo demás»: el botón de música tapaba el nombre, «Repetir recorrido» tapaba la leyenda de los lotes y había un botón
+  saliéndose de la pantalla.
+- En el celular ya no salen − y + (se acerca con los dedos): libera la fila de botones de arriba.
+- Brújula y Dock: el nombre ya no se mete bajo los botones. Brújula: «Repetir recorrido» va a la derecha, bajo la
+  brújula. Interior: la fila de botones sube cuando el panel de abajo crece con «Repetir recorrido».
+- La narración se acomoda sola justo encima de lo que la plantilla tenga abajo (título, barra, contacto, panel); se
+  vuelve a medir cada segundo mientras suena, al cambiar de esfera y al girar el teléfono.
+- Prueba nueva (reemplaza la del mediodía): en las 5 plantillas, en un iPhone, con el diseño de Vista del Tezal (logo,
+  nombre largo, música, zoom, piloto, leyenda, contacto y narración), ningún botón o texto se encima con otro ni se sale
+  de la pantalla.

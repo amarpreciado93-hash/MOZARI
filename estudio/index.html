@@ -1941,7 +1941,11 @@
   .t-brujula.sk--v .b-brujula { width: 72px; height: 72px; }
   .t-brujula.sk--v .b-brujula svg { width: 62px; height: 62px; }
   .t-brujula.sk--v .b-cta-wrap { position: static; }
-  .t-brujula.sk--v .b-pil { top: 96px; }
+  /* En el celular (captura de Amar, 22 nov 2026): el nombre no se mete bajo los botones y «Repetir recorrido» va a la derecha,
+     bajo la brújula, sin tapar la leyenda de los lotes */
+  .t-brujula.sk--v .b-marca, .t-dock.sk--v .k-marca { max-width: calc(100% - 184px); box-sizing: border-box; }
+  .t-brujula.sk--v .b-pil { top: 168px; left: auto; right: 12px; transform: none; }
+  .t-interior.sk--v:has(.i-espacio .sk-pil:not([hidden])) .i-abajo { bottom: calc(env(safe-area-inset-bottom, 0px) + 128px); } /* el panel crece con «Repetir recorrido» */
 
   /* Ficha técnica (Laboratorio: interiorismo): plano de la unidad a la izquierda; datos, precio y planes de pago a la derecha */
   .pop-caja.ficha-d.fd-tecnica { width: min(1120px, 100%); container-type: inline-size; }
@@ -14142,7 +14146,7 @@ void main(){
     const c = {
       sk, vertical, fino, escenas: est.escenas,
       logo: sk.logo.tipo === "propio" && sk.logo.img ? '<span class="sk-logo"><img src="' + esc(urlArchivo(sk.logo.img)) + '" alt=""></span>' : sk.logo.tipo === "mozari" ? '<span class="sk-logo"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg></span>' : "",
-      botones: (cls) => (sk.botones.musica && o.hayMusica ? btn("musica", "Silenciar música", cls) : "") + (sk.botones.zoom ? btn("menos", "Alejar", cls) + btn("mas", "Acercar", cls) : "") + (sk.botones.limpiar ? btn("limpiar", "Ocultar puntos y lotes", cls) : "") + (sk.botones.pantalla ? btn("pantalla", "Pantalla completa", cls) : ""),
+      botones: (cls) => (sk.botones.musica && o.hayMusica ? btn("musica", "Silenciar música", cls) : "") + (sk.botones.zoom && !vertical ? btn("menos", "Alejar", cls) + btn("mas", "Acercar", cls) : "") + (sk.botones.limpiar ? btn("limpiar", "Ocultar puntos y lotes", cls) : "") + (sk.botones.pantalla ? btn("pantalla", "Pantalla completa", cls) : ""),
       cerrar: (cls) => (o.cerrable ? btn("cerrar", "Cerrar vista previa", cls) : ""),
       cta: (cls) => c.contacto(cls) + c.pdf(cls),
       pdf: (cls) => {
@@ -14364,9 +14368,27 @@ void main(){
       '<div class="nr-tit">' + (grande ? '<span class="nr-ondas" aria-hidden="true"><i></i><i></i><i></i></span>' : "") + (VOZ.estado === "espera" ? (de ? "Escuchar" + de : "Escuchar la narración") : chica ? "Volver a escuchar" : "Narración" + de) + "</div>" +
       (dos ? '<div class="nr-idioma" role="group" aria-label="Idioma de la voz">' + ["es", "en"].map((k) => '<button type="button" data-idioma="' + k + '" lang="' + k + '" aria-pressed="' + (idiomaVoz === k) + '">' + k.toUpperCase() + "</button>").join("") + "</div>" : "") +
       (grande && n.texto ? '<div class="nr-sub"' + (dos ? ' lang="' + idiomaVoz + '"' : "") + ">" + esc(subtituloVoz(n)) + "</div>" : "") + (grande ? '<i class="nr-barra"></i>' : "");
-    barraVoz();
+    barraVoz(); ubicarVoz(); requestAnimationFrame(ubicarVoz);
   }
+  // En el celular la pastilla va justo encima de lo que la plantilla tenga abajo (barra, título, botones, contacto), sin
+  // taparlo: se mide al pintarla, al cambiar de esfera y al girar el teléfono
+  function ubicarVoz() {
+    const c = VOZ.caja; if (!c || c.hidden || !c.isConnected) return;
+    const ui = c.parentElement; if (!ui || !ui.classList.contains("sk--v")) { c.style.bottom = ""; return; }
+    const R = ui.getBoundingClientRect(); let tope = R.bottom;
+    const visible = (e) => { for (let x = e; x && x !== ui; x = x.parentElement) { const st = getComputedStyle(x); if (st.display === "none" || st.visibility === "hidden" || +st.opacity < 0.05) return false; } return true; };
+    ui.querySelectorAll("*").forEach((e) => {
+      if (e === c || c.contains(e) || e.closest(".son-pide")) return;
+      const b = e.getBoundingClientRect();
+      if (b.height < 4 || b.width < 4 || b.top < R.top + R.height * 0.45 || b.top >= tope || b.height > R.height * 0.6 || b.bottom > R.bottom + 2) return;
+      if (visible(e)) tope = b.top;
+    });
+    c.style.bottom = Math.max(12, Math.round(R.bottom - tope + 10)) + "px";
+  }
+  let tUbicarVoz = 0, ubicadaVoz = 0;
+  window.addEventListener("resize", () => { clearTimeout(tUbicarVoz); tUbicarVoz = setTimeout(ubicarVoz, 200); });
   function barraVoz() {
+    if (Date.now() - ubicadaVoz > 1000) { ubicadaVoz = Date.now(); ubicarVoz(); } // la plantilla cambia (aparece «Repetir recorrido», entra un panel)
     const c = VOZ.caja; if (!c) return;
     const b = c.querySelector(".nr-barra"); if (b && vozTour.duration) b.style.transform = "scaleX(" + Math.min(1, vozTour.currentTime / vozTour.duration).toFixed(3) + ")";
     const s = c.querySelector(".nr-sub"), n = s && narracionDe(VOZ.id); if (n && n.texto && n.texto.length > 240) { const t = subtituloVoz(n); if (s.textContent !== t) s.textContent = t; } // el subtítulo va pasando por frases

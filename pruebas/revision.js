@@ -5468,14 +5468,15 @@ async function capasPesadas(p) {
     // Narración en el celular (Amar, 22 nov 2026, con una captura de Vista del Tezal en su iPhone: «se encima en todo y es
     // demasiado invasiva en su versión móvil»). En el celular la pastilla va chica y abajo, sin tapar la leyenda, los
     // botones ni la barra de esferas, en las 5 plantillas.
-    await paso("Narración en el celular: chica y abajo, sin tapar la leyenda, los botones ni la barra de esferas (las 5 plantillas)", async () => {
+    await paso("Interfaz en el celular: nada se encima ni se sale de la pantalla (las 5 plantillas, con el diseño de Vista del Tezal: logo, nombre largo, música, zoom, piloto, leyenda y narración chica y abajo)", async () => {
       const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
       const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
       const n = await pagina(DUENO); let cel = null;
       try {
-        await nuevoTour(n, "Narracion cel"); const id = await idTour(n); await irCapas(n); await n.waitForTimeout(800); await pasarGuias(n);
+        await nuevoTour(n, "VISTA DEL TEZAL"); const id = await idTour(n); await irCapas(n); await n.waitForTimeout(800); await pasarGuias(n);
         await dibujarManzana(n, [[480, 640], [1000, 640]], [[460, 820], [1020, 820]]);
-        exige((await n.evaluate(([i, b]) => fetch("api/tours/" + i + "/f/archivos/voz-cel.wav", { method: "PUT", headers: { "content-type": "audio/wav" }, body: new Uint8Array(b) }).then((r) => r.status), [id, [...wavPrueba(12)]])) === 200, "no se pudo subir la voz");
+        const sube = (ruta, b) => n.evaluate(([i, r, b]) => fetch("api/tours/" + i + "/f/" + r, { method: "PUT", headers: { "content-type": "audio/wav" }, body: new Uint8Array(b) }).then((x) => x.status), [id, ruta, [...b]]);
+        exige((await sube("archivos/voz-cel.wav", wavPrueba(12))) === 200 && (await sube("archivos/musica-cel.wav", wavPrueba(20))) === 200, "no se pudieron subir la voz y la música");
         const texto = "Lotes habitacionales de 500 metros cuadrados, con espectacular vista a las montañas, a cinco minutos de la playa y con todos los servicios.";
         cel = await (await navegador.newContext(Object.assign({}, devices["iPhone 13"]))).newPage();
         cel.errs = []; cel.on("pageerror", (e) => cel.errs.push(e.message));
@@ -5483,31 +5484,41 @@ async function capasPesadas(p) {
         for (const pl of ["cine", "desarrollo", "dock", "brujula", "interior"]) {
           const d = (await api(n, "api/tours/" + id)).d;
           d.proyecto.vozTour = { archivo: "archivos/voz-cel.wav", nombre: "voz", duracion: 12, texto };
-          d.skin = Object.assign({}, d.skin, { plantilla: pl });
+          d.proyecto.musica = Object.assign({}, d.proyecto.musica, { archivo: "archivos/musica-cel.wav", nombre: "musica.wav", volumen: 0.5, repetir: true, preguntar: false });
+          d.skin = Object.assign({}, d.skin, { plantilla: pl, acento: "#FFFFFF", panel: "#111111", opacidad: 0.6, radio: 14, nombre: true, neutro: true, cta: { mostrar: true, texto: "Agendar visita", enlace: "https://wa.me/5214770000000" },
+            extra: { numero: true, brujula: true, ruta: true, leyenda: true, leyendaCantidad: true }, botones: { pantalla: true, musica: true, zoom: true, piloto: true, limpiar: true } });
           exige((await api(n, "api/tours/" + id, J("PUT", d))).s === 200 && (await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, pl + ": no se pudo publicar");
           await cel.goto(TOURS + "/" + id + "/?p=" + pl); await cel.waitForTimeout(4500);
+          if (await cel.$(".son-pide button")) await cel.tap(".son-pide button");
           await cel.waitForSelector("#pv-ui .nr:not([hidden])", { timeout: 15000 });
           if (await cel.$("#pv-ui .nr.espera")) await cel.tap("#pv-ui [data-voz]");
           await cel.waitForSelector("#pv-ui .nr.sonando", { timeout: 6000 }); await cel.waitForTimeout(600);
+          // el aviso del piloto al terminar («Repetir recorrido»), como lo ve el cliente
+          await cel.evaluate(() => document.querySelectorAll("#pv-ui [data-piloto]").forEach((p) => { p.hidden = false; p.classList.add("fin"); const t = [...p.childNodes].find((x) => x.nodeType === 3 && x.textContent.trim()); if (t) t.textContent = "Repetir recorrido"; }));
+          await cel.waitForTimeout(1800); // la narración se vuelve a acomodar sola
           const m = await cel.evaluate(() => {
-            const nr = document.querySelector("#pv-ui .nr"), r = nr.getBoundingClientRect(), W = innerWidth, H = innerHeight, malos = [];
-            const op = (e) => { let o = 1; for (let x = e; x && x !== document.body; x = x.parentElement) o *= +getComputedStyle(x).opacity; return o; };
-            document.querySelectorAll("#pv-ui *").forEach((e) => {
-              if (e.closest(".nr")) return;
-              const st = getComputedStyle(e); if (st.display === "none" || st.visibility === "hidden" || op(e) < 0.05) return;
-              const b = e.getBoundingClientRect(); if (b.width < 4 || b.height < 4 || b.width * b.height > W * H * 0.3) return;
-              const util = e.matches("button, a, .sk-btn, .sk-leyenda") || [...e.childNodes].some((x) => x.nodeType === 3 && x.textContent.trim());
-              if (!util) return;
+            const W = innerWidth, H = innerHeight, op = (e) => { let o = 1; for (let x = e; x && x !== document.body; x = x.parentElement) o *= +getComputedStyle(x).opacity; return o; };
+            const ve = (e) => { const st = getComputedStyle(e); if (st.display === "none" || st.visibility === "hidden" || op(e) < 0.05) return null; const b = e.getBoundingClientRect(); return b.width >= 4 && b.height >= 4 && b.width * b.height < W * H * 0.3 ? b : null; };
+            const nom = (e) => (typeof e.className === "string" && e.className ? e.className.split(" ")[0] : e.tagName.toLowerCase()) + "«" + (e.textContent || e.getAttribute("aria-label") || "").trim().slice(0, 16) + "»";
+            const util = [...document.querySelectorAll("#pv-ui *")].filter((e) => !e.closest(".son-pide") && (e.matches("button, a, .sk-btn, .sk-leyenda, .sk-pil, .nr, .b-brujula, h2, [data-txt]") || [...e.childNodes].some((x) => x.nodeType === 3 && x.textContent.trim()))).map((e) => [e, ve(e)]).filter(([, b]) => b);
+            const malos = [], fuera = [];
+            util.forEach(([e, b]) => { if (b.left < -1 || b.top < -1 || b.right > W + 1 || b.bottom > H + 1) fuera.push(nom(e)); });
+            for (let i = 0; i < util.length; i++) for (let k = i + 1; k < util.length; k++) {
+              const [a, r] = util[i], [c, b] = util[k];
+              if (a.contains(c) || c.contains(a)) continue;
               const ix = Math.min(r.right, b.right) - Math.max(r.left, b.left), iy = Math.min(r.bottom, b.bottom) - Math.max(r.top, b.top);
-              if (ix > 2 && iy > 2) malos.push((typeof e.className === "string" && e.className ? e.className.split(" ")[0] : e.tagName) + "«" + (e.textContent || "").trim().slice(0, 18) + "»");
-            });
-            return { malos: [...new Set(malos)], alto: Math.round(r.height), ancho: Math.round(r.width), arriba: Math.round(r.top), abajo: Math.round(H - r.bottom), W, H };
+              if (ix > 3 && iy > 3) malos.push(nom(a) + " con " + nom(c));
+            }
+            const nr = document.querySelector("#pv-ui .nr").getBoundingClientRect();
+            return { malos: [...new Set(malos)].slice(0, 8), fuera: [...new Set(fuera)].slice(0, 6), nrAlto: Math.round(nr.height), nrArriba: Math.round(nr.top), H };
           });
-          if (process.env.CAPTURAS) await cel.screenshot({ path: path.join(process.env.CAPTURAS, "narracion-cel-" + pl + ".png") });
-          if (m.malos.length) fallas.push(pl + ": tapa " + m.malos.join(", ") + " " + JSON.stringify(m).slice(-70));
-          else if (!(m.alto <= 96 && m.arriba > m.H / 2)) fallas.push(pl + ": no va chica y abajo " + JSON.stringify(m).slice(-70));
+          if (process.env.CAPTURAS) await cel.screenshot({ path: path.join(process.env.CAPTURAS, "cel-" + pl + ".png") });
+          if (m.malos.length) fallas.push(pl + ": se enciman " + m.malos.join(", "));
+          if (m.fuera.length) fallas.push(pl + ": se sale de la pantalla " + m.fuera.join(", "));
+          if (!(m.nrAlto <= 96 && m.nrArriba > m.H / 2)) fallas.push(pl + ": la narración no va chica y abajo " + JSON.stringify(m).slice(-60));
         }
-        exige(!fallas.length, "la narración en el celular: " + fallas.join(" · "));
+        if (fallas.length) console.log("    " + fallas.join("\n    "));
+        exige(!fallas.length, fallas.join(" · "));
         exige(!cel.errs.length, "errores en el tour: " + cel.errs.join(" | ").slice(0, 160));
       } finally {
         if (cel) await cel.context().close();
