@@ -264,6 +264,9 @@ export const LABORATORIO = {
   "voz-ia": { nombre: "Sonido del tour: música y voz", texto: "Interfaz → «Sonido del tour»: una sola ventana para la música y la voz. Subes tu canción, escribes lo que quieres que diga la voz y una voz lo lee tal cual (o subes tu propio audio). La voz suena cuando el tour empieza y sigue aunque tu cliente cambie de esfera; la música baja sola mientras habla y los subtítulos van pasando por frases. Cada tour puede crear 2 voces al mes y cada licencia trae sus letras de voz (Pro 5,000, Desarrollos 12,000; unas 900 letras son un minuto). Todo Mozari tiene un tope mensual." },
   "previa-celular": { nombre: "Vista previa en celular", texto: "Junto al botón «Vista previa» hay uno con un teléfono: abre el tour dentro de un celular 9:16, con su música, su voz, sus lotes y todo funcionando (antes el 9:16 solo se veía en Interfaz, sin sonido). Arriba se cambia a la vista de compu. Pedido de Emanuel." },
   "rotulo-corto": { nombre: "Rótulo corto y grande en los lotes", texto: "Panoramas → Fichas técnicas → «Rótulo en la esfera: Corto y grande»: cada lote dice solo «L09» y su manzana («M5»), en dos renglones y con letra mucho más grande y centrada; se lee de un vistazo, también desde lejos. La superficie sigue en la ficha del lote. Vale para todo el tour y se ve al volver a publicar." },
+  "lotes-vendidos": { nombre: "Lotes vendidos sin número ni ficha", texto: "Al tocar un lote, en Estado: «Todos los lotes Vendido del tour» trae «Muestran su número» y «Se pueden tocar». Apágalos y todos los lotes vendidos quedan en rojo, sin número y sin abrir su ficha, sin ir uno por uno; también los que marques después desde el celular o el link de tu cliente. Lo mismo para cualquier estado, también en Fichas técnicas → «Ya vendidos». Se ve al volver a publicar." },
+  "manzana-unir": { nombre: "Unir manzanas", texto: "Una manzana hecha de dos partes (los lotes de la esquina y los dobles, por ejemplo): selecciona una y en «Unir con otra manzana» elige la otra. Quedan como una sola manzana: el mismo número, la numeración sigue de una parte a la otra y el rótulo, el estilo y el contorno se cambian en las dos a la vez. «Separar» las vuelve a dejar aparte." },
+  "voz-idiomas": { nombre: "Voz en inglés y español", texto: "Interfaz → «Sonido del tour»: la voz en español y otra en inglés, cada una con sus voces (escribes el texto en cada idioma). En el tour, la pastilla de la voz trae ES | EN: cada visitante la oye en el idioma de su celular o compu y la cambia con un toque. Se ve al volver a publicar." },
   "link-cliente": { nombre: "Link de disponibilidad para tu cliente", texto: "Publicar → «Link para tu cliente»: un link que le mandas por WhatsApp a tu cliente (el desarrollador o su vendedor). Lo abre en su celular o compu, sin cuenta ni contraseña, ve sus lotes y los marca Disponible, Apartado o Vendido; el tour publicado cambia al momento. Solo puede cambiar el estado de los lotes de ese tour. Tú ves qué cambió y cuándo, y lo quitas cuando quieras. Con Desarrollos la página del cliente sale limpia; con otra licencia o la cuenta de prueba lleva la marca de agua «Creado por Mozari»." },
   "cotas": { nombre: "Cotas en paredes", texto: "En Capas → «Cota»: tocas el inicio y el final de un muro (en el piso) y Mozari calcula su largo con la altura de la cámara; un punto en el piso y otro arriba da la altura. Si tienes la medida del plano, la escribes y manda esa. Salen en el tour como en un plano." },
 };
@@ -1138,7 +1141,7 @@ async function api(request, env, partes, yo) {
   }
   // Tutoriales guiados: cada cuenta ve el de cada herramienta una sola vez (se anota en su perfil)
   // Sonido del tour (Laboratorio «voz-ia»): las voces que hay, lo que le queda a la cuenta este mes y a ese tour
-  if (partes[1] === "voz" && partes.length === 2 && m === "GET") return (await labDe(env, yo)).includes("voz-ia") ? vozEstado(env, yo, plan, new URL(request.url).searchParams.get("tour")) : error(403, "Esta función aún no está en tu cuenta");
+  if (partes[1] === "voz" && partes.length === 2 && m === "GET") { const lab = await labDe(env, yo); return lab.includes("voz-ia") ? vozEstado(env, yo, plan, new URL(request.url).searchParams.get("tour"), lab.includes("voz-idiomas")) : error(403, "Esta función aún no está en tu cuenta"); }
   // Ubicación en satélite: el satélite para la vista previa del mapa dentro del estudio (solo a quien tiene la función)
   if (partes[1] === "mapa" && partes.length === 2 && m === "GET") return json({ sat: (await labDe(env, yo)).includes("ubicacion") ? await satDe(env) : "" });
   if (partes[1] === "guias" && partes.length === 3 && m === "POST" && /^[a-z0-9-]{2,40}$/.test(partes[2])) {
@@ -1352,11 +1355,18 @@ async function api(request, env, partes, yo) {
     if (!lab.includes("landing")) delete p.proyecto.landing;
     // Rótulo corto y grande (Laboratorio): solo se publica si su dueño tiene la función
     if (!lab.includes("rotulo-corto")) delete p.proyecto.rotuloCorto;
+    // Lotes vendidos sin número ni ficha (Laboratorio «lotes-vendidos»): sin la función, todos los estados se ven como siempre
+    if (!lab.includes("lotes-vendidos") && Array.isArray(p.lotesEstados)) p.lotesEstados = p.lotesEstados.map((e) => { if (!e || typeof e !== "object") return e; const x = Object.assign({}, e); delete x.sinNumero; delete x.sinToque; return x; });
     // Ubicación en satélite (Laboratorio): el mapa /mapa solo se publica si su dueño tiene la función
     if (!lab.includes("ubicacion")) delete p.proyecto.ubicacion;
     // Voz del tour (Laboratorio): solo se publica si su dueño tiene la función; sus notas de trabajo se quedan en el borrador
     if (!lab.includes("voz-ia")) delete p.proyecto.vozTour;
-    else if (p.proyecto.vozTour && typeof p.proyecto.vozTour === "object") delete p.proyecto.vozTour.ia;
+    else if (p.proyecto.vozTour && typeof p.proyecto.vozTour === "object") {
+      const vt = p.proyecto.vozTour; delete vt.ia;
+      // La voz en inglés (Laboratorio «voz-idiomas») solo sale publicada si su dueño tiene la función
+      if (!lab.includes("voz-idiomas") || !vt.en || typeof vt.en !== "object" || !vt.en.archivo) delete vt.en; else delete vt.en.ia;
+      if (!vt.archivo && !vt.en) delete p.proyecto.vozTour;
+    }
     // Pantalla de bienvenida (Laboratorio): solo sale publicada si su dueño tiene la función
     if (!lab.includes("bienvenida")) delete p.proyecto.bienvenida;
     await env.R2.put("publicado/" + id + "/proyecto.json", JSON.stringify(p), { httpMetadata: { contentType: tipoDe("x.json"), cacheControl: "no-cache" } });
@@ -1366,8 +1376,9 @@ async function api(request, env, partes, yo) {
 
   // Sonido del tour (Laboratorio «voz-ia»): la voz lee tal cual el texto del usuario (cada tour, 2 voces al mes)
   if (partes[3] === "voz" && partes.length === 5 && m === "POST" && partes[4] === "audio") {
-    if (!(await labDe(env, yo)).includes("voz-ia")) return error(403, "Esta función aún no está en tu cuenta");
-    return vozAudio(request, env, yo, plan, base, usoDe, limite, id);
+    const lab = await labDe(env, yo);
+    if (!lab.includes("voz-ia")) return error(403, "Esta función aún no está en tu cuenta");
+    return vozAudio(request, env, yo, plan, base, usoDe, limite, id, lab.includes("voz-idiomas"));
   }
 
   if (partes[3] === "f" && partes.length > 4) {

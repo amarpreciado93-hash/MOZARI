@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto", "nuevo-voz-idiomas", "nuevo-lotes-vendidos", "nuevo-unir-manzanas"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -5200,12 +5200,12 @@ async function capasPesadas(p) {
         await n.click('#nav button:has-text("Mis Tours")'); await n.waitForTimeout(900); await n.click("#ver-cuentas"); await n.waitForTimeout(900);
         await n.click('[data-dueno="laboratorio"]'); await n.waitForSelector("#lab-voz", { timeout: 8000 });
         const fila = await n.textContent("#lab-voz");
-        exige(/Modo de prueba/.test(fila) && /2 voces: Ana, Luis/.test(fila) && /este mes: [\d,]+ de 90,000 letras/.test(fila) && await n.isDisabled("#lab-voz [data-lab-voces]"), "el panel no dice cómo van las voces: " + fila);
+        exige(/Modo de prueba/.test(fila) && /Español: Ana, Luis · Inglés: Emma, Jack/.test(fila) && /este mes: [\d,]+ de 90,000 letras/.test(fila) && await n.isDisabled("#lab-voz [data-lab-voces]"), "el panel no dice cómo van las voces: " + fila);
         exige((await api(n, "api/admin/voz/catalogo")).s === 503, "sin llave no debe intentar leer la cuenta de ElevenLabs");
         exige((await api(n, "api/admin/voz", J("PUT", { modelo: "eleven_flash_v2_5", voces: [{ id: "abcDEF123456", nombre: "Renata", tono: "Cálida · mexicana", muestra: "https://ejemplo.mx/renata.mp3" }, { id: "<mala>", nombre: "x" }] }))).s === 200, "el dueño no pudo guardar las voces");
         const cat = (await api(n, "api/voz")).d;
         exige(cat.voces.length === 1 && cat.voces[0].nombre === "Renata" && cat.voces[0].muestra === "https://ejemplo.mx/renata.mp3" && cat.tope === null && cat.max === 1200, "las voces que eligió el dueño no son las que se ofrecen: " + JSON.stringify(cat).slice(0, 200));
-        exige((await api(n, "api/admin/voz", J("PUT", { modelo: "eleven_multilingual_v2", voces: [] }))).s === 200 && (await api(n, "api/voz")).d.voces.length === 2, "no se pudo regresar a las voces de prueba");
+        exige((await api(n, "api/admin/voz", J("PUT", { modelo: "eleven_multilingual_v2", voces: [] }))).s === 200 && (await api(n, "api/voz")).d.voces.length === 4, "no se pudo regresar a las voces de prueba");
         exige((await api(u, "api/admin/voz")).s === 403, "una cuenta normal puede ver el panel de voces");
         // 8) Nace Solo yo: una cuenta normal no la ve, no puede usar el servicio y no publica voz
         await nuevoTour(u, "Sin voz"); const iu = await idTour(u);
@@ -5246,6 +5246,216 @@ async function capasPesadas(p) {
       } finally {
         await api(n, "api/admin/laboratorio/voz-ia", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
         await api(n, "api/admin/voz", J("PUT", { modelo: "eleven_multilingual_v2", voces: [] })).catch(() => {});
+        if (t) await t.context().close();
+        await u.context().close(); await n.context().close();
+      }
+    });
+    // Voz en inglés y español (Amar, 22 nov 2026: «que la voz venga en inglés y en español y que en tu interfaz puedas switchar
+    // el idioma de inglés a español… vamos a abrirlo únicamente para mi laboratorio»).
+    await paso("Voz en inglés y español (Laboratorio, nace Solo yo): cada idioma con su texto, su voz y su audio; en el tour la pastilla trae ES | EN y arranca en el idioma del visitante (también publicado)", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const medios = () => { window.__medios = []; const p = HTMLMediaElement.prototype.play; HTMLMediaElement.prototype.play = function () { if (!window.__medios.includes(this)) window.__medios.push(this); return p.apply(this, arguments); }; };
+      const tutoriales = async (p) => { const vistos = []; for (let i = 0, quieto = 0; i < 30 && quieto < 4; i++) { await p.waitForTimeout(700); if (await p.isVisible(".guia-tarjeta").catch(() => false)) { quieto = 0; vistos.push(await p.textContent(".guia-tarjeta")); await p.click('.guia-tarjeta [data-guia="seguir"]'); } else quieto++; } return vistos; };
+      const fuente = (p) => p.evaluate(() => { const m = (window.__medios || []).filter((x) => /voz-/.test(x.src)).pop(); return m ? [m.src.split("/").pop(), m.paused, +m.currentTime.toFixed(1)] : null; });
+      const correoU = "bilingue@prueba.mx", n = await pagina(DUENO, { sonido: true, locale: "es-MX" }), u = await pagina(correoU, { sonido: true, locale: "es-MX" });
+      let t = null;
+      try {
+        await nuevoTour(n, "Bilingue"); const id = await idTour(n);
+        await n.click('#nav button:has-text("Interfaz")'); await n.waitForTimeout(2000); await tutoriales(n);
+        await n.click("#sk-voz-crear"); await n.waitForSelector("#dlg-voz[open] .vz-voz", { timeout: 8000 });
+        // 1) Dos botones de idioma; en español solo salen las voces de español
+        const nombres = () => n.$$eval("#dlg-voz .vz-voz b", (l) => l.map((x) => x.textContent).join());
+        exige(await n.isVisible('#dlg-voz [data-vz-idioma="es"][aria-pressed="true"]') && await n.isVisible('#dlg-voz [data-vz-idioma="en"]') && (await nombres()) === "Ana,Luis", "la ventana no trae Español | Inglés, o en español salen voces de otro idioma: " + (await nombres()));
+        const es = "Bienvenido a Bilingue. Recorre cada espacio con calma.", en = "Welcome to Bilingue. Take your time and explore every space.";
+        await n.fill('#dlg-voz [data-vz-campo="texto"]', es);
+        // 2) Inglés: sus voces y su texto aparte; lo escrito en español no se pierde
+        await n.click('#dlg-voz [data-vz-idioma="en"]'); await n.waitForTimeout(300);
+        exige((await nombres()) === "Emma,Jack" && (await n.inputValue('#dlg-voz [data-vz-campo="texto"]')) === "" && /en inglés/.test(await n.textContent("#son-voz .fe-campo")), "en inglés no salen sus voces, o se quedó el texto de español: " + (await nombres()));
+        await n.fill('#dlg-voz [data-vz-campo="texto"]', en); await n.click('#dlg-voz .vz-voz:has-text("Jack")'); await n.waitForTimeout(200);
+        await n.click('#dlg-voz [data-vz="audio"]'); await n.waitForSelector("#vz-listo", { timeout: 15000 });
+        exige(/voz en inglés de tu tour/.test(await n.textContent("#vz-listo")) && /Voz de Jack/.test(await n.textContent("#son-voz-actual")) && /Inglés ✓/.test(await n.textContent('#dlg-voz [data-vz-idioma="en"]')), "al crear la voz en inglés no avisa que quedó");
+        await n.click('#dlg-voz [data-vz-idioma="es"]'); await n.waitForTimeout(300);
+        exige((await n.inputValue('#dlg-voz [data-vz-campo="texto"]')) === es && !(await n.$("#son-voz-actual")) && (await nombres()) === "Ana,Luis", "al regresar a español se perdió lo escrito, o la voz en inglés sale como si fuera la de español");
+        await n.click('#dlg-voz [data-vz="audio"]'); await n.waitForSelector("#vz-listo", { timeout: 15000 }); await n.waitForTimeout(1500);
+        let vt = (await api(n, "api/tours/" + id)).d.proyecto.vozTour || {};
+        exige(vt.archivo && vt.texto === es && vt.ia.voz === "prueba-ana" && vt.en && vt.en.archivo && vt.en.archivo !== vt.archivo && vt.en.texto === en && vt.en.ia.voz === "prueba-jack", "no quedaron las dos voces, cada una con su texto: " + JSON.stringify(vt).slice(0, 300));
+        const ev = (await api(n, "api/voz?tour=" + id)).d;
+        exige(ev.idiomas === true && ev.creadas === 1 && ev.creadasEn === 1, "las voces de cada idioma no se cuentan aparte: " + JSON.stringify(ev).slice(-160));
+        // el servidor no mezcla: una voz de inglés no lee en español ni al revés
+        let r = await api(n, "api/tours/" + id + "/voz/audio", J("POST", { texto: "Hola, este es el recorrido.", voz: "prueba-emma" }));
+        exige(r.s === 400 && /Elige una voz/.test(r.d.error), "una voz de inglés leyó en español: " + r.s);
+        r = await api(n, "api/tours/" + id + "/voz/audio", J("POST", { texto: "Hello, this is the tour.", voz: "prueba-ana", idioma: "en" }));
+        exige(r.s === 400, "una voz de español leyó en inglés: " + r.s);
+        // 3) Quitar la de inglés deja la de español; y en inglés también se sube un audio propio
+        await n.click('#dlg-voz [data-vz-idioma="en"]'); await n.waitForTimeout(300);
+        await n.click('#dlg-voz [data-son="voz-quitar"]'); await n.waitForTimeout(200); await n.click('#dlg-voz [data-son="voz-quitar"]'); await n.waitForTimeout(1500);
+        vt = (await api(n, "api/tours/" + id)).d.proyecto.vozTour || {};
+        exige(vt.archivo && vt.texto === es && !vt.en && !(await n.$("#son-voz-actual")), "quitar la voz en inglés también quitó la de español (o no la quitó): " + JSON.stringify(vt).slice(0, 200));
+        await n.setInputFiles("#son-voz-archivo", { name: "english.wav", mimeType: "audio/wav", buffer: wavPrueba(4) });
+        await n.waitForSelector("#son-voz-actual", { timeout: 15000 }); await n.waitForTimeout(1500);
+        vt = (await api(n, "api/tours/" + id)).d.proyecto.vozTour || {};
+        exige(vt.texto === es && vt.en && vt.en.nombre === "english.wav" && /^archivos\/voz-[a-z0-9]+\.wav$/.test(vt.en.archivo), "el audio propio en inglés no quedó como la voz en inglés: " + JSON.stringify(vt).slice(0, 240));
+        await n.fill('#dlg-voz [data-vz-campo="texto"]', en); await n.click('#dlg-voz .vz-voz:has-text("Emma")'); await n.waitForTimeout(200);
+        await n.click('#dlg-voz [data-vz="audio"]'); await n.waitForSelector("#vz-listo", { timeout: 15000 }); await n.waitForTimeout(1500);
+        vt = (await api(n, "api/tours/" + id)).d.proyecto.vozTour || {};
+        exige(vt.en.texto === en && vt.en.ia.voz === "prueba-emma" && vt.texto === es, "no se pudo cambiar la voz en inglés: " + JSON.stringify(vt.en).slice(0, 200));
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "voz-idiomas-ventana.png") });
+        await n.click("#dlg-voz .dp-cerrar"); await n.waitForTimeout(500);
+        exige(/Voz: Voz de Ana, 0:\d\d · Inglés: Voz de Emma/.test(await n.textContent("#sk-voz-dato")), "Interfaz no dice que hay voz en inglés: " + (await n.textContent("#sk-voz-dato")));
+        // 4) Vista previa: ES | EN en la pastilla; arranca en el idioma del navegador (es-MX) y EN la cambia desde el principio
+        await n.addInitScript(medios);
+        await n.reload(); await n.waitForTimeout(3000); await cerrarAnuncio(n);
+        await n.click('button:has-text("Vista previa")'); await n.waitForTimeout(3500);
+        const arranca = async (p) => {
+          await p.waitForSelector("#pv-ui .nr:not([hidden])", { timeout: 15000 }); await p.waitForSelector("#pv-carga", { state: "hidden", timeout: 15000 }); await p.waitForTimeout(400);
+          if (await p.$("#pv-ui .nr.espera")) await p.click("#pv-ui [data-voz]");
+          await p.waitForSelector("#pv-ui .nr.sonando.idiomas", { timeout: 6000 });
+        };
+        await arranca(n);
+        exige(await n.isVisible('#pv-ui .nr-idioma [data-idioma="es"][aria-pressed="true"]') && (await fuente(n))[0] === vt.archivo.split("/").pop() && (await n.textContent("#pv-ui .nr-sub")).trim() === es, "con el navegador en español no arranca la voz en español con ES marcado: " + JSON.stringify(await fuente(n)));
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "voz-idiomas-es.png") });
+        await n.waitForTimeout(1500);
+        await n.click('#pv-ui [data-idioma="en"]'); await n.waitForTimeout(500);
+        const f2 = await fuente(n);
+        exige(f2[0] === vt.en.archivo.split("/").pop() && !f2[1] && f2[2] < 1.2 && await n.isVisible('#pv-ui .nr.sonando [data-idioma="en"][aria-pressed="true"]') && (await n.textContent("#pv-ui .nr-sub")).trim() === en, "EN no cambió la voz al inglés desde el principio: " + JSON.stringify(f2));
+        exige(await n.evaluate(() => sessionStorage.getItem("mz-idioma-voz")) === "en", "no recuerda el idioma que eligió");
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "voz-idiomas-en.png") });
+        await n.keyboard.press("Escape"); await n.waitForTimeout(500);
+        // 5) Publicado: van las dos (sin lo de trabajo) y un visitante con el teléfono en inglés la oye en inglés
+        exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        const vp = (await (await fetch(TOURS + "/" + id + "/proyecto.json")).json()).proyecto.vozTour || {};
+        exige(vp.archivo === vt.archivo && vp.en && vp.en.archivo === vt.en.archivo && vp.en.texto === en && !("ia" in vp) && !("ia" in vp.en), "el tour publicado no lleva las dos voces (o lleva lo de trabajo): " + JSON.stringify(vp).slice(0, 240));
+        t = await pagina(null, { locale: "en-US" }); await t.addInitScript(medios);
+        await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(4500);
+        await arranca(t);
+        exige(await t.isVisible('#pv-ui [data-idioma="en"][aria-pressed="true"]') && (await fuente(t))[0] === vt.en.archivo.split("/").pop() && (await t.textContent("#pv-ui .nr-sub")).trim() === en, "un visitante con el navegador en inglés no la oye en inglés: " + JSON.stringify(await fuente(t)));
+        await t.click('#pv-ui [data-idioma="es"]'); await t.waitForTimeout(500);
+        exige((await fuente(t))[0] === vt.archivo.split("/").pop() && (await t.textContent("#pv-ui .nr-sub")).trim() === es, "en el tour publicado ES no regresa la voz al español");
+        exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
+        // 6) Nace Solo yo: con «Sonido del tour» pero sin esta función, solo voces de español y sin botones de idioma; la voz en inglés no se crea ni se publica
+        exige((await api(n, "api/admin/laboratorio/voz-ia", J("PUT", { modo: "todos", probadores: [] }))).s === 200, "no se pudo abrir «Sonido del tour»");
+        await nuevoTour(u, "Solo espanol"); const iu = await idTour(u);
+        const eu = (await api(u, "api/voz?tour=" + iu)).d;
+        exige(eu.idiomas === false && eu.voces.length === 2 && eu.voces.every((v) => v.idioma === "es"), "sin la función se ofrecen voces en inglés: " + JSON.stringify(eu.voces));
+        r = await api(u, "api/tours/" + iu + "/voz/audio", J("POST", { texto: "Hello, this is the tour.", voz: "prueba-emma", idioma: "en" }));
+        exige(r.s === 403, "sin la función se pudo crear la voz en inglés: " + r.s);
+        await u.goto(ESTUDIO + "/#t=" + iu); await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u);
+        await u.click('#nav button:has-text("Interfaz")'); await u.waitForTimeout(1500);
+        let vistos = await tutoriales(u);
+        exige(!vistos.some((x) => /inglés y español/.test(x)), "sin la función salió el tutorial de la voz en inglés");
+        await u.click("#sk-voz-crear"); await u.waitForSelector("#dlg-voz[open] .vz-voz", { timeout: 8000 });
+        exige(!(await u.$("#dlg-voz [data-vz-idioma]")), "sin la función salen los botones de idioma");
+        await u.click("#dlg-voz .dp-cerrar"); await u.waitForTimeout(300);
+        const du = (await api(u, "api/tours/" + iu)).d; du.proyecto.vozTour = { archivo: "archivos/voz-aaa.wav", nombre: "x", duracion: 4, texto: "", en: { archivo: "archivos/voz-bbb.wav", nombre: "y", duracion: 4, texto: "" } };
+        exige((await api(u, "api/tours/" + iu, J("PUT", du))).s === 200 && (await api(u, "api/tours/" + iu + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        const pu = (await (await fetch(TOURS + "/" + iu + "/proyecto.json")).json()).proyecto.vozTour || {};
+        exige(pu.archivo === "archivos/voz-aaa.wav" && !pu.en, "una cuenta sin la función publicó la voz en inglés");
+        // … con la función (probador): botones de idioma y su tutorial la primera vez
+        exige((await api(n, "api/admin/laboratorio/voz-idiomas", J("PUT", { modo: "probadores", probadores: [correoU] }))).s === 200, "no se pudo dar la función a un probador");
+        await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u);
+        await u.click('#nav button:has-text("Interfaz")'); await u.waitForTimeout(1500);
+        vistos = await tutoriales(u);
+        exige(vistos.some((x) => /Nuevo: la voz en inglés y español/.test(x)), "con la función no salió su tutorial: " + vistos.map((x) => x.slice(0, 40)).join(" | "));
+        await u.click("#sk-voz-crear"); await u.waitForSelector("#dlg-voz[open] .vz-voz", { timeout: 8000 });
+        exige(await u.isVisible('#dlg-voz [data-vz-idioma="en"]') && (await api(u, "api/voz")).d.voces.length === 4, "con la función no salen los botones de idioma o las voces en inglés");
+        await u.click("#dlg-voz .dp-cerrar"); await u.waitForTimeout(300);
+        exige(!n.errs.length && !u.errs.length, "errores en el estudio: " + n.errs.concat(u.errs).join(" | ").slice(0, 200));
+      } finally {
+        await api(n, "api/admin/laboratorio/voz-ia", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
+        await api(n, "api/admin/laboratorio/voz-idiomas", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
+        if (t) await t.context().close();
+        await u.context().close(); await n.context().close();
+      }
+    });
+    // Lotes vendidos y manzanas unidas (Amar, 22 nov 2026): «si ya está en rojo, ya no quiero que salgan los putos números…
+    // ni la ficha técnica… ya no es clicable»; «una manzana tiene dobles lotes… pero en la esquina tiene lotes en vertical…
+    // hago dos manzanas… y cuando pongo manzana 1 no se fusionan».
+    await paso("Lotes vendidos sin número ni ficha y unir manzanas (Laboratorio, nacen Solo yo): el estado apaga el rótulo y el toque de todos sus lotes; dos partes quedan como una sola manzana con la numeración seguida", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const n = await pagina(DUENO), u = await pagina("sin-vendidos@prueba.mx");
+      let t = null;
+      try {
+        await nuevoTour(n, "Vendidos"); const id = await idTour(n); await irCapas(n); await n.waitForTimeout(800); await pasarGuias(n);
+        await dibujarManzana(n, [[380, 600], [560, 600]], [[380, 720], [560, 720]]);
+        await dibujarManzana(n, [[700, 600], [1020, 600]], [[700, 780], [1020, 780]]);
+        const leer = async () => (await api(n, "api/tours/" + id)).d;
+        const mzs = async () => { const d = await leer(), l = Object.values(d.capas).flat(); return l.filter((c) => c.manzana).map((m) => ({ m, lotes: l.filter((x) => x.deManzana === m.id).sort((a, b) => a.iManzana - b.iManzana) })); };
+        const rango = (x) => { const v = x.lotes.map((y) => +y.lote.numero); return Math.min(...v) + "-" + Math.max(...v); };
+        let M = await mzs();
+        exige(M.length === 2 && M[0].m.manzana.mz === "1" && M[1].m.manzana.mz === "2" && rango(M[0]) === "1-10" && rango(M[1]) === "1-10", "no se dibujaron las dos manzanas: " + M.map((x) => x.m.manzana.mz + ":" + rango(x)).join(" "));
+        // 1) Unir: la 2 se vuelve parte de la 1, con su número, su estilo y la numeración seguida
+        await n.click('#lista li:has-text("Manzana 1")'); await n.waitForTimeout(800); await pasarGuias(n);
+        exige(await n.isVisible("#mz-unir [data-mz-unir]"), "la manzana no ofrece «Unir con otra manzana»");
+        await n.$eval("#props [data-k='_lotes.lote.opacidad']", (e) => { e.value = "0.8"; e.dispatchEvent(new Event("input", { bubbles: true })); }); await n.waitForTimeout(600);
+        await n.selectOption("#mz-unir [data-mz-unir]", { label: "Manzana 2 · 10 lotes" }); await n.waitForTimeout(1500); await pasarGuias(n);
+        M = await mzs();
+        exige(M.every((x) => x.m.manzana.mz === "1" && x.m.manzana.union && x.m.manzana.union === M[0].m.manzana.union) && rango(M[0]) === "1-10" && rango(M[1]) === "11-20" && M[1].lotes.every((y) => y.lote.manzana === "1" && y.lote.opacidad === 0.8), "al unir no quedaron como una sola manzana con la numeración seguida y el mismo estilo: " + M.map((x) => x.m.manzana.mz + ":" + rango(x) + ":" + x.lotes[0].lote.opacidad).join(" "));
+        exige(/parte 1 de 2/.test(await n.textContent("#mz-unir")) && !/Hay otra/.test(await n.textContent("#props")), "el panel no dice que es la parte 1 de 2, o avisa que hay otra manzana con el mismo número");
+        // 2) Cambiar los lotes de la primera recorre los números de la segunda; el número de manzana y el estilo van a las dos
+        await n.click("#props [data-mz-n='1']"); await n.waitForTimeout(1200);
+        await n.fill("#props [data-mz='mz']", "7"); await n.press("#props [data-mz='mz']", "Tab"); await n.waitForTimeout(1200);
+        await n.$eval("#props [data-k='_lotes.lote.opacidad']", (e) => { e.value = "0.5"; e.dispatchEvent(new Event("input", { bubbles: true })); }); await n.waitForTimeout(1500);
+        M = await mzs();
+        exige(rango(M[0]) === "1-11" && rango(M[1]) === "12-21" && M.every((x) => x.m.manzana.mz === "7" && x.lotes.every((y) => y.lote.manzana === "7" && y.lote.opacidad === 0.5)), "la segunda parte no siguió los cambios de la primera: " + M.map((x) => x.m.manzana.mz + ":" + rango(x) + ":" + x.lotes[0].lote.opacidad).join(" "));
+        // 3) «Que esta parte vaya primero» y «Separar»
+        await n.click('#lista li:has-text("Manzana 7") >> nth=0'); await n.waitForTimeout(800); // la lista va de la última a la primera
+        exige(/parte 2 de 2/.test(await n.textContent("#mz-unir")), "la segunda parte no dice que es la 2 de 2");
+        await n.click("#props [data-mz-primero]"); await n.waitForTimeout(1500);
+        M = await mzs(); const segunda = M.find((x) => x.lotes.length === 10);
+        exige(rango(segunda) === "1-10" && rango(M.find((x) => x.lotes.length === 11)) === "11-21", "«Que esta parte vaya primero» no cambió la numeración: " + M.map(rango).join(" "));
+        await n.click("#props [data-mz-separar]"); await n.waitForTimeout(1500);
+        M = await mzs();
+        exige(M.every((x) => !x.m.manzana.union) && M.every((x) => x.m.manzana.mz === "7"), "«Separar» no dejó las partes sueltas");
+        await n.click('#lista li:has-text("Manzana 7") >> nth=1'); await n.waitForTimeout(800);
+        await n.selectOption("#mz-unir [data-mz-unir]", { index: 1 }); await n.waitForTimeout(1500);
+        exige((await mzs()).every((x) => x.m.manzana.union), "no se pudieron volver a unir");
+        // «Primer número» de la primera parte: la segunda la sigue
+        await n.fill("#props [data-mz='inicio']", "1"); await n.press("#props [data-mz='inicio']", "Tab"); await n.waitForTimeout(1500);
+        M = await mzs();
+        exige(rango(M.find((x) => x.lotes.length === 11)) === "1-11" && rango(M.find((x) => x.lotes.length === 10)) === "12-21", "con «Primer número» la otra parte no siguió la numeración: " + M.map(rango).join(" "));
+        // 4) Vendido sin número ni ficha: en el panel del lote, para todos los lotes de su estado
+        await n.locator("#lista li", { hasText: /^\s*Lote 3 ·/ }).first().click(); await n.waitForTimeout(800); await pasarGuias(n);
+        exige(/Todos los lotes Disponible del tour/.test(await n.textContent("#props .regla-estado")), "el lote no ofrece las opciones de su estado");
+        await n.click('#props [data-estado="vendido"]'); await n.waitForTimeout(800);
+        exige(/Todos los lotes Vendido del tour/.test(await n.textContent("#props .regla-estado")), "al marcarlo Vendido no salen las opciones de Vendido");
+        const rotulo = (p, txt) => p.evaluate((t) => [...document.querySelectorAll(".lt-planos .lt-p, .lote-etq text, .lote-etq tspan")].some((e) => [...e.childNodes].some((x) => x.nodeType === 3 && new RegExp("^" + t + "\\b").test(x.textContent.trim()))), txt);
+        exige(await rotulo(n, "Lote 3"), "antes de apagarlo, el lote vendido no tenía rótulo");
+        await n.click('#props .regla-estado [data-k="_regla.sinNumero"]'); await n.waitForTimeout(1200);
+        await n.click('#props .regla-estado [data-k="_regla.sinToque"]'); await n.waitForTimeout(1500);
+        let d = await leer(); const vend = (d.lotesEstados || []).find((e) => e.id === "vendido") || {};
+        exige(vend.sinNumero === true && vend.sinToque === true, "las opciones de Vendido no se guardaron: " + JSON.stringify(vend));
+        exige(!(await rotulo(n, "Lote 3")) && await rotulo(n, "Lote 4"), "el lote vendido sigue con su número (o se fue el de los demás)");
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "lotes-vendidos-editor.png") });
+        // también en Fichas técnicas → «Ya vendidos»
+        await n.click('#subtabs button:has-text("Fichas técnicas")'); await n.waitForTimeout(1200); await pasarGuias(n);
+        exige(await n.isVisible("#lt-reglas-fila") && (await n.getAttribute('#lt-reglas [data-regla="sinNumero"][data-regla-estado="vendido"]', "aria-pressed")) === "true" && (await n.getAttribute('#lt-reglas [data-regla="sinNumero"][data-regla-estado="apartado"]', "aria-pressed")) === "false", "Fichas técnicas no muestra qué estados van sin número");
+        await n.click('#lt-reglas [data-regla="sinToque"][data-regla-estado="apartado"]'); await n.waitForTimeout(1200);
+        exige(((await leer()).lotesEstados.find((e) => e.id === "apartado") || {}).sinToque === true, "desde Fichas técnicas no se guarda");
+        await n.click('#lt-reglas [data-regla="sinToque"][data-regla-estado="apartado"]'); await n.waitForTimeout(1200);
+        // 5) Publicado: el vendido sin rótulo y sin toque; los demás como siempre
+        exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        const pub = await (await fetch(TOURS + "/" + id + "/proyecto.json")).json();
+        exige((pub.lotesEstados.find((e) => e.id === "vendido") || {}).sinNumero === true && !(pub.lotesEstados.find((e) => e.id === "apartado") || {}).sinToque, "el tour publicado no lleva las opciones de los estados");
+        t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(5000);
+        const tocables = await t.evaluate(() => document.querySelectorAll(".cp-lote path.con-accion").length), total = (await mzs()).reduce((a, x) => a + x.lotes.length, 0);
+        exige(tocables === total - 1, "en el tour el lote vendido se puede tocar (o los demás no): " + tocables + " de " + total);
+        exige(!(await rotulo(t, "Lote 3")) && await rotulo(t, "Lote 4"), "en el tour el lote vendido sigue con su número");
+        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "lotes-vendidos-tour.png") });
+        exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
+        // 6) Nacen Solo yo: sin las funciones no salen y lo guardado no se publica
+        await nuevoTour(u, "Sin vendidos"); const iu = await idTour(u); await irCapas(u); await pasarGuias(u);
+        await dibujarManzana(u, [[700, 600], [1020, 600]], [[700, 780], [1020, 780]]);
+        exige(!(await u.$("#mz-unir")), "una cuenta sin la función ve «Unir con otra manzana»");
+        await u.locator("#lista li", { hasText: /^\s*Lote 3 ·/ }).first().click(); await u.waitForTimeout(800);
+        exige(!(await u.$("#props .regla-estado")), "una cuenta sin la función ve las opciones de los estados");
+        const du = (await api(u, "api/tours/" + iu)).d; du.lotesEstados = [{ id: "disponible", nombre: "Disponible", color: "#22B573" }, { id: "apartado", nombre: "Apartado", color: "#F2A900" }, { id: "vendido", nombre: "Vendido", color: "#E5484D", sinNumero: true, sinToque: true }];
+        exige((await api(u, "api/tours/" + iu, J("PUT", du))).s === 200 && (await api(u, "api/tours/" + iu + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        const pu = await (await fetch(TOURS + "/" + iu + "/proyecto.json")).json(), vu = (pu.lotesEstados || []).find((e) => e.id === "vendido") || {};
+        exige(!vu.sinNumero && !vu.sinToque, "una cuenta sin la función publicó los lotes vendidos sin número");
+        exige(!n.errs.length && !u.errs.length, "errores en el estudio: " + n.errs.concat(u.errs).join(" | ").slice(0, 200));
+      } finally {
         if (t) await t.context().close();
         await u.context().close(); await n.context().close();
       }

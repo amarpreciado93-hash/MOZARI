@@ -783,6 +783,11 @@
   .nr.chica .nr-play { width: 30px; height: 30px; }
   .nr.chica .nr-tit { font-weight: 500; font-size: 12px; }
   .nr.espera .nr-play { animation: nr-late 1.6s ease-in-out infinite; }
+  /* ES | EN de la voz del tour (Laboratorio «voz-idiomas») */
+  .nr.idiomas { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .nr-idioma { grid-column: 3; grid-row: 1 / span 2; align-self: center; display: inline-flex; gap: 2px; padding: 2px; margin-left: 2px; border-radius: 14px; background: rgba(255, 255, 255, 0.14); }
+  .nr-idioma button { border: 0; background: transparent; color: rgba(255, 255, 255, 0.8); font: 700 11px/1 var(--mz-texto-ui); letter-spacing: 0.04em; padding: 6px 8px; border-radius: 12px; cursor: pointer; }
+  .nr-idioma button[aria-pressed="true"] { background: var(--sk-acento, #D5FF40); color: var(--sk-sobre, #0B0B0B); }
   .mv-prueba { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13.5px; line-height: 1.4; }
   .mv-prueba li { position: relative; padding-left: 22px; }
   .mv-prueba li::before { content: ""; position: absolute; left: 2px; top: 0.42em; width: 10px; height: 6px; border-left: 2px solid var(--mz-lima); border-bottom: 2px solid var(--mz-lima); transform: rotate(-45deg); }
@@ -1305,6 +1310,12 @@
   .lt-estados label { display: flex; align-items: center; gap: 6px; }
   .lt-estados i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
   .lt-estado { display: inline-flex; align-items: center; gap: 2px; }
+  .lt-reglas { display: grid; gap: 8px; }
+  .lt-regla { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .lt-regla > b { font-size: 12px; font-weight: 500; color: var(--mz-tenue); min-width: 150px; }
+  .regla-estado { margin-top: 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); background: color-mix(in srgb, var(--c) 8%, transparent); display: grid; gap: 8px; }
+  .regla-estado .nota { margin: 0; }
+  .regla-estado .nota b { color: var(--c); }
   .lt-quitar { all: unset; cursor: pointer; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; color: var(--mz-tenue); font-size: 17px; line-height: 1; }
   .lt-quitar:hover, .lt-quitar:focus-visible { color: #fff; background: rgba(255, 255, 255, 0.1); }
   .lt-mas { align-self: center; border: 1px dashed var(--mz-linea-neutra); background: transparent; color: var(--mz-texto); border-radius: var(--mz-pastilla); padding: 8px 14px; font: 500 13px var(--mz-texto-ui); cursor: pointer; }
@@ -2486,6 +2497,11 @@
           <div class="estados" role="group" aria-label="Rótulo de los lotes en la esfera"><button type="button" data-lt-rotulo="0" style="--c:var(--mz-lima)">Completo</button><button type="button" data-lt-rotulo="1" style="--c:var(--mz-lima)">Corto y grande</button></div>
           <span class="nota" id="lt-rotulo-ejemplo"></span>
         </div>
+        <div class="lotes-terminos" id="lt-reglas-fila" hidden>
+          <span>Ya vendidos:</span>
+          <span class="lt-reglas" id="lt-reglas"></span>
+          <span class="nota">Los estados marcados van sin número o sin ficha en el tour (por ejemplo, Vendido). Vale para todos sus lotes, también los que marques después.</span>
+        </div>
         <div class="lotes-terminos" id="lt-estados-fila">
           <span>Estados:</span>
           <span class="lt-estados" id="lt-estados"></span>
@@ -2766,6 +2782,13 @@
   const ESTADOS_SUGERIDOS = [["En negociación", "#3B82F6"], ["Bloqueado", "#6B7280"], ["Escriturado", "#8B5CF6"], ["Próximamente", "#14B8A6"], ["Promoción", "#EC4899"]];
   const estadoPropio = (e) => !ESTADOS_DEF.some((d) => d.id === e.id);
   const estadoDe = (c) => estadosLote().find((e) => e.id === (c.lote && c.lote.estado)) || estadosLote()[0];
+  // Lotes vendidos sin número ni ficha (Laboratorio «lotes-vendidos», pedido de Amar 22 nov 2026: «si ya está en rojo, ya no
+  // quiero que salgan los números… ni la ficha técnica… ya no es clicable ese lote»). Cada estado puede quitarle a sus lotes
+  // el rótulo (sinNumero: número, superficie y medidas) y el toque (sinToque: ni ficha ni rollover). Vale para todos los lotes
+  // en ese estado, también los que se marquen después desde el celular o el link del cliente. De inicio ningún estado los quita.
+  const reglasEstado = () => { try { return MODO === "tour" || enLab("lotes-vendidos"); } catch (e) { return false; } };
+  const reglaDe = (c) => (c && c.lote && reglasEstado() ? estadoDe(c) : null);
+  const loteTocable = (c) => { const e = reglaDe(c); return !(e && e.sinToque); };
   const LOTE_DEF = { numero: "", manzana: "", area: "", precio: "", lados: [], frente: 0, estado: "disponible", etiqueta: true, verArea: true, medidas: true, opacidad: 0.35, borde: "blanco", rollover: true, rotulo: "plano", tamRotulo: 0.6, giroRotulo: 0, fuente: "", pesoRotulo: 600, colorRotulo: "#FFFFFF", sombra: "suave" };
   // Tipografías (pedido de Amar, 13 nov 2026: «muchas más, o subir las tuyas»). Las de Google se cargan solo si alguien las
   // usa; las propias del proyecto (P().fuentes, Laboratorio «tipografias») se suben como archivo y se cargan con FontFace.
@@ -2840,7 +2863,12 @@
     s.setProperty("--lt-color", l.colorRotulo || "#FFFFFF");
     s.setProperty("--lt-sombra", sb.css); s.setProperty("--lt-trazo", sb.trazo); s.setProperty("--lt-trazo-g", sb.g);
   }
-  const loteDe = (c) => Object.assign({}, LOTE_DEF, c.lote);
+  const loteDe = (c) => {
+    const l = Object.assign({}, LOTE_DEF, c.lote), e = reglaDe(c);
+    if (e && e.sinNumero) { l.etiqueta = false; l.verArea = false; l.medidas = false; }
+    if (e && e.sinToque) l.rollover = false;
+    return l;
+  };
   const numES = (v) => { const n = parseFloat(String(v).replace(/,/g, "")); return isFinite(n) && /^[\d.,\s]+$/.test(String(v).trim()) ? n : null; };
   const fmtNum = (n) => n.toLocaleString("es-MX", { maximumFractionDigits: 2 });
   const fmtArea = (v) => { if (!String(v || "").trim()) return ""; const n = numES(v); return n === null ? String(v) : fmtNum(n) + " m²"; };
@@ -4765,9 +4793,49 @@
     esVisible("#ref-lotes") && { el: "#ref-lotes", titulo: "¿Tienes el PDF original?",
       texto: "Con <b>▭ Lotes</b> arrastras un recuadro sobre una manzana y Mozari arma sus lotes por ti. Te explica los pasos la primera vez." },
   ].filter(Boolean), () => REF.on && esVisible("#ref-panel"));
+  // Lotes vendidos sin número ni ficha: los lotes en Vendido se apagan y al tocarlos no pasa nada
+  const togG = (x, y, on) => '<rect x="' + x + '" y="' + y + '" width="22" height="12" rx="6" fill="' + (on ? "#D5FF40" : "rgba(255,255,255,.22)") + '"/><circle cx="' + (on ? x + 16 : x + 6) + '" cy="' + (y + 6) + '" r="4.5" fill="' + (on ? "#0B0B0B" : "#fff") + '"/>';
+  function animVendidos(svg, t) {
+    const sinNum = t > 1.25, sinToque = t > 2.0, u = sv((t - 1.25) / 0.4);
+    let h = '<rect width="360" height="200" fill="#161a12"/><rect x="0" y="0" width="216" height="200" fill="#5f8a4a"/>';
+    [["18", "#22B573"], ["19", "#22B573"], ["20", "#E5484D"]].forEach(([n, col], i) => {
+      const x = 18 + i * 64, vend = i === 2, op = vend && sinNum ? 1 - u : 1;
+      h += '<path d="M' + x + ' 64 L' + (x + 58) + ' 56 L' + (x + 62) + ' 132 L' + (x + 4) + ' 140Z" fill="' + col + '" fill-opacity=".45" stroke="#fff" stroke-width="1.5"/>';
+      h += '<g opacity="' + op.toFixed(2) + '"><text x="' + (x + 31) + '" y="96" fill="#fff" font-size="8.5" font-weight="700" text-anchor="middle">Lote ' + n + '</text><text x="' + (x + 31) + '" y="107" fill="#fff" font-size="7" text-anchor="middle">M2 · 200 m²</text></g>';
+    });
+    h += '<rect x="226" y="40" width="122" height="82" rx="10" fill="#101210" stroke="rgba(229,72,77,.6)"/><text x="236" y="58" fill="rgba(255,255,255,.7)" font-size="7.5">Todos los lotes</text><text x="294" y="58" fill="#E5484D" font-size="7.5" font-weight="700">Vendido</text>';
+    h += '<text x="236" y="81" fill="#fff" font-size="8">Muestran su número</text>' + togG(318, 73, !sinNum) + '<text x="236" y="105" fill="#fff" font-size="8">Se pueden tocar</text>' + togG(318, 97, !sinToque);
+    // tocar el vendido: nada; tocar el disponible: su ficha
+    if (t > 3.55) h += '<rect x="24" y="150" width="104" height="38" rx="8" fill="#fff"/><text x="34" y="166" fill="#0B0B0B" font-size="8.5" font-weight="700">Lote 18 · M2</text><text x="34" y="179" fill="#22B573" font-size="7.5" font-weight="700">Disponible</text>';
+    const [cx, cy] = camino([[0, 330, 190], [0.9, 329, 79], [1.4, 329, 79], [1.8, 329, 103], [2.2, 329, 103], [2.9, 178, 100], [3.2, 178, 100], [3.5, 50, 100], [4.4, 50, 100]], t);
+    h += TOQUE_G(329, 79, t, 1.2) + TOQUE_G(329, 103, t, 1.95) + TOQUE_G(178, 100, t, 3.0) + TOQUE_G(50, 100, t, 3.5) + CURSOR_G(cx, cy) + pieG(t > 3.5 ? "Los disponibles sí abren su ficha" : t > 2.9 ? "El vendido ya no se toca" : "Sin número ni ficha, todos a la vez", t > 2.9);
+    svg.innerHTML = h;
+  }
+  // Unir manzanas: la de la esquina y la doble quedan como una sola, con la numeración seguida
+  function animUnirMz(svg, t) {
+    const unida = t > 1.9, u = sv((t - 1.9) / 0.5);
+    let h = '<rect width="360" height="200" fill="#161a12"/><rect x="0" y="0" width="220" height="200" fill="#5f8a4a"/>';
+    const borde = (otra) => (unida ? "#D5FF40" : otra ? "#7FC8FF" : "#fff");
+    // esquina: 3 lotes en vertical
+    for (let i = 0; i < 3; i++) h += '<rect x="16" y="' + (28 + i * 46) + '" width="44" height="46" fill="rgba(34,181,115,.4)" stroke="' + borde(false) + '" stroke-width="1.4"/><text x="38" y="' + (55 + i * 46) + '" fill="#fff" font-size="9" font-weight="700" text-anchor="middle">' + (i + 1) + "</text>";
+    // doble: 2 filas de 3
+    for (let r = 0; r < 2; r++) for (let k = 0; k < 3; k++) {
+      const n = r === 0 ? k + 1 : 6 - k, nn = unida ? n + 3 : n;
+      h += '<rect x="' + (66 + k * 46) + '" y="' + (28 + r * 69) + '" width="46" height="69" fill="rgba(34,181,115,.4)" stroke="' + borde(true) + '" stroke-width="1.4"/><text x="' + (89 + k * 46) + '" y="' + (66 + r * 69) + '" fill="' + (unida ? "rgba(213,255,64," + (0.4 + 0.6 * u).toFixed(2) + ")" : "#fff") + '" font-size="9" font-weight="700" text-anchor="middle">' + nn + "</text>";
+    }
+    h += '<text x="38" y="20" fill="#fff" font-size="8" font-weight="700" text-anchor="middle">Mz 1</text><text x="135" y="20" fill="' + (unida ? "#D5FF40" : "#fff") + '" font-size="8" font-weight="700" text-anchor="middle">' + (unida ? "Mz 1" : "Mz 2") + "</text>";
+    h += '<rect x="230" y="44" width="118" height="76" rx="10" fill="#101210" stroke="rgba(255,255,255,.18)"/><text x="240" y="62" fill="#fff" font-size="8" font-weight="700">Unir con otra manzana</text>';
+    h += '<rect x="240" y="72" width="98" height="20" rx="6" fill="#0b0c0a" stroke="' + (t > 1.0 && t < 1.9 ? "#D5FF40" : "rgba(255,255,255,.25)") + '"/><text x="247" y="85" fill="#fff" font-size="7.5">' + (t > 1.5 ? "Manzana 2 · 6 lotes" : "Elige la manzana…") + "</text>";
+    if (unida) h += '<text x="240" y="110" fill="#D5FF40" font-size="7.5" font-weight="700" opacity="' + u.toFixed(2) + '">✓ Lotes del 1 al 9</text>';
+    const [cx, cy] = camino([[0, 330, 190], [0.9, 300, 82], [1.6, 300, 82], [4.4, 330, 190]], t);
+    h += TOQUE_G(300, 82, t, 1.0) + CURSOR_G(cx, cy) + pieG(unida ? "Una sola manzana, numeración seguida" : "Dos partes de la misma manzana", unida);
+    svg.innerHTML = h;
+  }
   // Manzana elegida: curvas y fila de atrás desfasada
   function guiasDeManzana(c) {
     if (!c || !(c.manzana || c.mzPlano) || !guiasVistas.has("manzana-editar")) return;
+    if (enLab("manzana-unir") && esVisible("#mz-unir")) guiaNueva("nuevo-unir-manzanas", () => [{ el: "#mz-unir", titulo: "Nuevo: unir manzanas", anim: animUnirMz, dur: 4.6,
+      texto: "¿Tu manzana es de dos partes, como los lotes de la esquina y los dobles? Dibuja cada parte y aquí elige la otra en <b>Unir con</b>. Quedan como una sola: el mismo número, la <b>numeración seguida</b> y el mismo rótulo y estilo." }], () => esVisible("#mz-unir"));
     if (enLab("manzana-curvas") && esVisible("[data-mz-suave]")) guiaNueva("nuevo-curvas", () => [{ el: () => document.querySelector("[data-mz-suave]") && document.querySelector("[data-mz-suave]").closest(".grupo"),
       titulo: "Nuevo: calles curvas y esquinas redondeadas", anim: animCurva, dur: 4.5,
       texto: "Pica <b>Suavizar toda la orilla</b> o <b>Redondear las 4 esquinas</b> y salen <b>manijas rojas</b> en la esfera. Jálalas para curvar la calle como la pluma de Illustrator, o para redondear una esquina." }], () => esVisible("[data-mz-suave]"));
@@ -4783,6 +4851,8 @@
       texto: "Los navegadores no dejan sonar un tour hasta que el visitante toca la pantalla. Ahora, al abrirlo le preguntamos <b>Activar sonido</b> o <b>Sin sonido</b>, con los colores de tu tour, y la música y las voces arrancan con su respuesta." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "musica");
     if (clave === "publicar/landing" && enLab("landing")) guiaNueva("nuevo-landing", () => [esVisible("#ld-form .comp-tarjeta") && { el: "#ld-form .comp-tarjeta", titulo: "Nuevo: la landing de tu desarrollo", anim: animLanding, dur: 5.8,
       texto: "Una página para mandar por WhatsApp o poner en tus anuncios. Sube tu <b>logo</b> y tu <b>plano maestro</b>, pon los <b>colores y letras</b> de tu marca y tu <b>WhatsApp</b>. Los lotes, sus precios, las fotos y los lugares cercanos salen solos del tour. A la derecha la ves como en el celular." }].filter(Boolean), () => nav.sub === "landing" && esVisible("#ld-form .comp-tarjeta"));
+    if (clave.startsWith("skin/") && vozIdiomas()) guiaNueva("nuevo-voz-idiomas", () => [esVisible("#sk-voz-grupo") && { el: "#sk-voz-grupo", titulo: "Nuevo: la voz en inglés y español", anim: animVozIdiomas, dur: 4.6,
+      texto: "En «Sonido del tour» elige <b>Inglés</b>, escribe el texto en inglés y crea su voz. En el tour, la pastilla de la voz trae <b>ES | EN</b>: cada quien la oye en el idioma de su celular o compu y la cambia con un toque. Se ve al <b>volver a publicar</b>." }].filter(Boolean), () => nav.sec === "skin" && esVisible("#sk-voz-grupo"));
     if (clave.startsWith("skin/") && vozIA()) guiaNueva("nuevo-voz-ia", () => [esVisible("#sk-voz-grupo") && { el: "#sk-voz-grupo", titulo: "Nuevo: el sonido de tu tour", anim: animVozIA, dur: 4.8,
       texto: "La <b>música</b> y la <b>voz</b> de tu recorrido se arreglan en <b>una sola ventana</b>: subes tu canción, escribes lo que quieres que diga la voz (la lee tal cual) y oyes cómo queda. La música baja sola mientras la voz habla." }].filter(Boolean), () => nav.sec === "skin" && esVisible("#sk-voz-grupo"));
     if (clave === "media/ubicacion" && enLab("ubicacion")) guiaNueva("nuevo-ubicacion", () => [esVisible("#ub-form .comp-tarjeta") && { el: "#ub-form .comp-tarjeta", titulo: "Nuevo: tu desarrollo en el satélite", anim: animUbicacion, dur: 5.6,
@@ -5280,7 +5350,7 @@
       funciones.map((f) => '<div class="lab-fila" data-lab="' + esc(f.clave) + '"><div><b>' + esc(f.nombre) + " " + CHIP_LAB + "</b><span>" + esc(f.texto) + "</span></div>" +
         '<div class="estados">' + MODOS_LAB.map(([v, n]) => '<button data-lab-modo="' + v + '" aria-pressed="' + (f.modo === v) + '">' + n + "</button>").join("") + "</div>" +
         (f.modo === "todos" || f.modo === "pago" ? '<button class="mini primario" data-lab-anunciar>' + (f.modo === "pago" ? "Anunciarla a Pro y Desarrollos" : "Anunciarla a todos") + "</button>" : "") +
-        (f.clave === "voz-ia" && voz ? '<div class="lab-probadores lab-voz" id="lab-voz"><span>' + (voz.llave ? "Llave de ElevenLabs conectada" : voz.prueba ? "Modo de prueba (sin llave)" : "Falta la llave de ElevenLabs") + " · " + (voz.voces.length ? voz.voces.length + (voz.voces.length === 1 ? " voz: " : " voces: ") + esc(voz.voces.map((x) => x.nombre).join(", ")) : "sin voces elegidas") +
+        (f.clave === "voz-ia" && voz ? '<div class="lab-probadores lab-voz" id="lab-voz"><span>' + (voz.llave ? "Llave de ElevenLabs conectada" : voz.prueba ? "Modo de prueba (sin llave)" : "Falta la llave de ElevenLabs") + " · " + (voz.voces.length ? [["Español", voz.voces.filter((x) => x.idioma !== "en")], ["Inglés", voz.voces.filter((x) => x.idioma === "en")]].filter(([, l]) => l.length).map(([k, l]) => k + ": " + esc(l.map((x) => x.nombre).join(", "))).join(" · ") : "sin voces elegidas") +
           " · este mes: " + voz.usoMes.toLocaleString("es-MX") + " de " + voz.topeMes.toLocaleString("es-MX") + ' letras</span><button class="mini primario" data-lab-voces' + (voz.llave ? "" : " disabled") + ">Elegir voces</button></div>" : "") +
         (f.clave === "ubicacion" ? '<label class="lab-probadores">Llave del mapa satelital (pégala tú). Sin llave, el plano sale sobre fondo oscuro.<input class="entrada" type="password" data-lab-llave autocomplete="off" placeholder="' + (mapa && mapa.hay ? "Guardada · termina en " + esc(mapa.fin) : "Pega aquí la llave") + '"><button class="mini primario" data-lab-llave-guardar>Guardar llave</button></label>' : "") +
         (f.modo === "probadores" ? '<label class="lab-probadores">Correos de tus probadores (uno por renglón o separados por coma)<textarea rows="3" data-lab-correos placeholder="marco@ejemplo.com">' + esc(f.probadores.join("\n")) + '</textarea><button class="mini primario" data-lab-guardar>Guardar probadores</button></label>' : "") + "</div>").join("");
@@ -6752,7 +6822,7 @@
             cota = { sombra, tics, et };
           }
           nodos.set(c.id, { el, c, svg, path, etq, planos, toque, cota });
-          if (!editable && accionDe(c) !== "ninguna") { path.classList.add("con-accion"); path.addEventListener("click", (ev) => { ev.stopPropagation(); ejecutar(c); }); }
+          if (!editable && accionDe(c) !== "ninguna" && loteTocable(c)) { path.classList.add("con-accion"); path.addEventListener("click", (ev) => { ev.stopPropagation(); ejecutar(c); }); }
         } else if (c.tipo === "interes") {
           construirInteres(el, c, editable);
           el.querySelector(".pi-dot").addEventListener("pointerdown", (ev) => tomar(ev, c, "mover"));
@@ -9570,7 +9640,7 @@ void main(){
     try { if (motorEd && motorEd.actual && motorEd.actual.id === id) tomas = await tomarCapas(motorEd, id, (W / (2 * Math.PI * 400)) * 1.3); } catch (e) { console.warn("Foto 360: sin toma del editor", e); tomas = null; }
     // Los que no salieron en la toma (rótulo «de frente» en el suelo, celular): se dibujan planchados como antes
     const conToma = new Set((tomas ? tomas.lotes : []).map((x) => x.lid));
-    const rot = capas.filter((c) => !conToma.has(c.id)).filter((c) => c.lote && !loteVacio(c) && c.lote.etiqueta !== false).map((c) => {
+    const rot = capas.filter((c) => !conToma.has(c.id)).filter((c) => c.lote && !loteVacio(c) && loteDe(c).etiqueta !== false).map((c) => {
       const G = c.puntos.map(([yy, pp]) => aPlano(yy, pp)); if (G.some((g) => !g)) return null;
       let A2 = 0, cx = 0, cz = 0; G.forEach((p, i) => { const q = G[(i + 1) % G.length], k = p[0] * q[1] - q[0] * p[1]; A2 += k; cx += (p[0] + q[0]) * k; cz += (p[1] + q[1]) * k; });
       const C = Math.abs(A2) > 1e-12 ? [cx / (3 * A2), cz / (3 * A2)] : G[0];
@@ -9578,7 +9648,7 @@ void main(){
       let v = [-e0[1], e0[0]]; if (v[0] * C[0] + v[1] * C[1] < 0) v = [-v[0], -v[1]]; // la parte de arriba del texto, lejos de la cámara
       const u = [v[1], -v[0]]; // así se lee derecho (no en espejo) desde la cámara
       const pu = G.map((g) => (g[0] - C[0]) * u[0] + (g[1] - C[1]) * u[1]), pv = G.map((g) => (g[0] - C[0]) * v[0] + (g[1] - C[1]) * v[1]);
-      const tx = document.createElement("canvas"), t2 = tx.getContext("2d"), rc = rotuloCortoDe(c), txt = rc ? rc[0] : nombreLote(c), area = rc ? rc[1] || "" : c.lote.verArea !== false ? fmtArea(c.lote.area) : "";
+      const tx = document.createElement("canvas"), t2 = tx.getContext("2d"), rc = rotuloCortoDe(c), txt = rc ? rc[0] : nombreLote(c), area = rc ? rc[1] || "" : loteDe(c).verArea !== false ? fmtArea(c.lote.area) : "";
       const f2 = rc ? "600 64px Poppins, sans-serif" : "400 46px Poppins, sans-serif"; // corto: el segundo renglón («M5») va del mismo tamaño
       t2.font = "600 64px Poppins, sans-serif"; const w1 = t2.measureText(txt).width; t2.font = f2; const w2 = area ? t2.measureText(area).width : 0;
       tx.width = Math.ceil(Math.max(w1, w2) + 24); tx.height = area ? (rc ? 150 : 132) : 84;
@@ -11313,6 +11383,48 @@ void main(){
   // La manzana guarda su contorno (frente + fondo al revés) y dónde cae cada corte en cada lado
   // (fracción del largo medido en el suelo). Sus lotes son lotes normales que se recalculan solos.
   const lotesDeManzana = (m) => cs().filter((x) => x.deManzana === m.id).sort((a, b) => a.iManzana - b.iManzana);
+  // Unir manzanas (Laboratorio «manzana-unir», pedido de Amar 22 nov 2026: «hay una manzana que tiene dobles lotes de enfrente
+  // y de atrás, pero en la esquina tiene lotes en vertical… hago dos manzanas… y cuando pongo manzana 1 no se fusionan»).
+  // Las partes llevan la misma manzana.union y su orden en manzana.parte: el mismo número de manzana, la numeración sigue de
+  // una parte a la otra y el rótulo, el estilo de los lotes y el contorno se cambian en todas a la vez. Solo en la misma esfera.
+  const partesMz = (c) => { const u = c && c.manzana && c.manzana.union; return !u ? (c ? [c] : []) : cs().filter((x) => x.manzana && x.manzana.union === u).sort((a, b) => (+a.manzana.parte || 0) - (+b.manzana.parte || 0)); };
+  const ESTILO_UNION = ["etiqueta", "verArea", "medidas", "rotulo", "tamRotulo", "giroRotulo", "fuente", "pesoRotulo", "colorRotulo", "sombra", "opacidad", "borde", "rollover"];
+  function numerarUnion(c) {
+    const P = partesMz(c); if (P.length < 2) return;
+    let sig = null;
+    P.forEach((x, i) => {
+      x.manzana.parte = i + 1;
+      if (sig !== null && +x.manzana.inicio !== sig) { x.manzana.inicio = sig; x.manzana.numeros = {}; }
+      repartirManzana(x);
+      sig = (+x.manzana.inicio || 1) + lotesDeManzana(x).length;
+      if (x.vinculo && motorEd) propagar(x, motorEd.actual.id);
+    });
+  }
+  function unirManzanas(c, o) {
+    if (!c || !o || c === o || !c.manzana || !o.manzana) return;
+    const u = c.manzana.union || "u" + nuevoId(), P = partesMz(c), Q = o.manzana.union ? partesMz(o) : [o];
+    P.forEach((x, i) => { x.manzana.union = u; x.manzana.parte = i + 1; });
+    // la otra (con sus partes) va después y toma el número, el rótulo, el estilo y el contorno de esta
+    const l0 = lotesDeManzana(c)[0], base = Object.assign({}, c.manzana.estiloLotes);
+    if (l0) { ESTILO_UNION.forEach((k) => { if (l0.lote[k] !== undefined) base["lote." + k] = l0.lote[k]; }); if (l0.trazo) base["trazo.grosor"] = l0.trazo.grosor; }
+    Q.forEach((x, i) => {
+      x.manzana.union = u; x.manzana.parte = P.length + i + 1; x.manzana.mz = c.manzana.mz; x.nombre = c.nombre;
+      x.manzana.estiloLotes = Object.assign({}, base); x.trazo = Object.assign({}, c.trazo);
+      lotesDeManzana(x).forEach((y) => Object.entries(base).forEach(([r, v]) => { try { escribir(y, r, v); } catch (e) { /* ruta vieja */ } }));
+    });
+    numerarUnion(c);
+    const T = partesMz(c), nums = T.flatMap((x) => lotesDeManzana(x).map((y) => parseInt(y.lote.numero, 10))).filter((v) => isFinite(v));
+    cambio();
+    avisar(terminos().manzana + " " + c.manzana.mz + ": " + T.length + " partes unidas" + (nums.length ? ", " + plural(terminos().lote).toLowerCase() + " del " + Math.min(...nums) + " al " + Math.max(...nums) : "") + ".", 5000);
+  }
+  // Separar: la parte queda como una manzana sola, con su número y sus lotes como estaban
+  function separarManzana(c) {
+    const P = partesMz(c); if (P.length < 2) return;
+    delete c.manzana.union; delete c.manzana.parte;
+    const R = P.filter((x) => x !== c);
+    if (R.length === 1) { delete R[0].manzana.union; delete R[0].manzana.parte; } else numerarUnion(R[0]);
+    cambio(); avisar("Parte separada. Sigue como " + terminos().manzana.toLowerCase() + " " + c.manzana.mz + "; cámbiale el número si es otra.", 5000);
+  }
   function cadenaSuelo(pts) {
     let suelo = pts.map(([y, p]) => aPlano(y, p));
     const plano = suelo.every(Boolean);
@@ -11794,6 +11906,17 @@ void main(){
     }
     if (ev.target.closest("[data-mz-recto]")) { c.puntos = c.puntos.map((p) => p.slice(0, 2)); cambio(); avisar("Orillas rectas otra vez"); }
   });
+  // Unir manzanas (Laboratorio «manzana-unir»)
+  $("props").addEventListener("change", (ev) => {
+    if (!ev.target.matches || !ev.target.matches("[data-mz-unir]") || !ev.target.value) return;
+    ev.stopImmediatePropagation();
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (c && c.manzana) unirManzanas(c, buscar(ev.target.value));
+  }, true);
+  $("props").addEventListener("click", (ev) => {
+    const c = motorEd && motorEd.elegida && buscar(motorEd.elegida); if (!c || !c.manzana) return;
+    if (ev.target.closest("[data-mz-separar]")) { separarManzana(c); return; }
+    if (ev.target.closest("[data-mz-primero]")) { const P = partesMz(c), ini = +P[0].manzana.inicio || 1; c.manzana.parte = 0; c.manzana.inicio = ini; c.manzana.numeros = {}; numerarUnion(c); cambio(); avisar("Esta parte va primero: sus " + plural(terminos().lote).toLowerCase() + " empiezan en el " + ini + "."); }
+  });
   // Doble y línea del centro (no son datos de capa normales)
   $("props").addEventListener("input", (ev) => {
     if (ev.target.dataset && ev.target.dataset.k === "_mzDesfase") {
@@ -11825,7 +11948,7 @@ void main(){
     if (k === "n") { const n = parseInt(v, 10); if (n >= 1 && n <= 60 && n !== c.manzana.n) { c.manzana.n = n; c.manzana.cortes = null; } }
     if (k === "nB") { const n = parseInt(v, 10); if (n >= 1 && n <= 60) c.manzana.nB = n; }
     if (k === "inicio") { const n = parseInt(v, 10); if (n >= 0) { c.manzana.inicio = n; c.manzana.numeros = {}; } } // «Primer número» vuelve a numerar todos seguidos
-    if (k === "mz") { c.manzana.mz = v; c.nombre = terminos().manzana + " " + v; }
+    if (k === "mz") partesMz(c).forEach((x) => { x.manzana.mz = v; x.nombre = terminos().manzana + " " + v; }); // en una manzana unida, todas sus partes
     cambio();
   });
   // Edificio: pisos, departamentos por piso y numeración
@@ -12054,7 +12177,7 @@ void main(){
     if (!l.length) { ul.innerHTML = '<li class="vacio" role="presentation">Este panorama no tiene capas. ' + (acorLimpio() ? "Toca «+ Agregar» para poner un lote, un polígono, un texto o un hotspot." : "Agrega un polígono, un texto o un hotspot.") + "</li>"; return; }
     const fila = (c, o = {}) => '<li role="option" draggable="' + !o.hijo + '" data-id="' + c.id + '" aria-selected="' + (c.id === motorEd.elegida || (seleccion.size > 1 && seleccion.has(c.id))) + '" class="' + [c.visible ? "" : "oculta", o.carpeta ? "carpeta" : "", o.abierta ? "abierta" : "", o.hijo ? "hijo" : ""].join(" ").trim() + '">' +
       (o.carpeta ? '<button class="carp-flecha" data-carpeta="' + c.id + '" aria-expanded="' + !!o.abierta + '" aria-label="' + (o.abierta ? "Cerrar" : "Abrir") + ' la carpeta de lotes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>' : "") +
-      (c.lote ? ICONOS.lote : c.manzana || c.mzPlano ? ICONOS.manzana : c.cota ? ICONOS.cota : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.tipo === "interes" ? (piDe(c).nombre || "Punto de interés") + (piDe(c).dato ? " · " + piDe(c).dato : "") : c.nombre)) + (c.vinculo ? ICO_VINC : "") + (o.carpeta ? "<small>" + o.n + " " + (o.n === 1 ? terminos().lote : plural(terminos().lote)).toLowerCase() + "</small>" : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>";
+      (c.lote ? ICONOS.lote : c.manzana || c.mzPlano ? ICONOS.manzana : c.cota ? ICONOS.cota : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.tipo === "interes" ? (piDe(c).nombre || "Punto de interés") + (piDe(c).dato ? " · " + piDe(c).dato : "") : c.nombre)) + (c.vinculo ? ICO_VINC : "") + (o.carpeta ? "<small>" + (c.manzana && c.manzana.union && partesMz(c).length > 1 ? "parte " + (partesMz(c).indexOf(c) + 1) + " · " : "") + o.n + " " + (o.n === 1 ? terminos().lote : plural(terminos().lote)).toLowerCase() + "</small>" : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>";
     if (!enCarpetas()) { ul.innerHTML = l.slice().reverse().map((c) => fila(c)).join(""); return; }
     // Carpetas (Laboratorio «carpetas», pedido de Amar 10 nov 2026): cada manzana guarda sus lotes, como un grupo de
     // Photoshop. Cerrada de inicio; se abre con su flechita o sola al elegir uno de sus lotes en la esfera.
@@ -12145,7 +12268,8 @@ void main(){
     h += '<div class="grupo"><b>Estado</b><div class="estados">' + estadosLote().map((e) =>
       '<button data-estado="' + e.id + '" aria-pressed="' + (estadoDe(c).id === e.id) + '" style="--c:' + e.color + '"><i></i>' + esc(e.nombre) + "</button>").join("") + "</div>" +
       '<p class="nota">Cambia en todas las esferas donde aparece este lote y en su ficha.</p>' +
-      '<div class="estado-colores"><span>Colores:</span>' + estadosLote().map((e) => '<label title="Color de ' + esc(e.nombre) + '"><input type="color" value="' + e.color + '" data-color-estado="' + e.id + '" aria-label="Color de ' + esc(e.nombre) + '">' + esc(e.nombre) + "</label>").join("") + "</div></div>";
+      '<div class="estado-colores"><span>Colores:</span>' + estadosLote().map((e) => '<label title="Color de ' + esc(e.nombre) + '"><input type="color" value="' + e.color + '" data-color-estado="' + e.id + '" aria-label="Color de ' + esc(e.nombre) + '">' + esc(e.nombre) + "</label>").join("") + "</div>" +
+      (enLab("lotes-vendidos") ? (() => { const e = estadoDe(c); return '<div class="regla-estado" style="--c:' + e.color + '"><p class="nota">Todos los lotes <b>' + esc(e.nombre) + "</b> del tour:</p>" + interruptor("Muestran su número", "_regla.sinNumero", !e.sinNumero) + interruptor("Se pueden tocar (abren su ficha)", "_regla.sinToque", !e.sinToque) + "</div>"; })() : "") + "</div>";
     h += '<div class="grupo"><b>Medidas por lado</b><div class="lados">' + l.lados.map((v, i) =>
       '<label class="lado"><span><input type="radio" name="frente" data-frente="' + i + '"' + (+l.frente === i ? " checked" : "") + ' aria-label="Este lado es el frente">' + (+l.frente === i ? "Frente" : "Lado " + (i + 1)) + '</span><input type="text" inputmode="decimal" data-k="lote.lados.' + i + '" data-lado="' + i + '" value="' + esc(v) + '" placeholder="m"></label>').join("") + "</div>" +
       '<p class="nota">Al escribir, el lado se marca en la esfera. El círculo marca cuál es el frente.</p></div>';
@@ -12334,7 +12458,7 @@ void main(){
     }
     else if (c.manzana) {
       const m = c.manzana, lotes = lotesDeManzana(c);
-      const gemela = cs().some((x) => x !== c && x.manzana && String(x.manzana.mz).trim().toLowerCase() === String(m.mz).trim().toLowerCase());
+      const gemela = cs().some((x) => x !== c && x.manzana && !(m.union && x.manzana.union === m.union) && String(x.manzana.mz).trim().toLowerCase() === String(m.mz).trim().toLowerCase());
       h += '<div class="grupo"><b>Lotes de la manzana <button class="guia-ayuda" data-guia-ayuda="manzana" title="Ver cómo se usa">?</button></b>' +
         (gemela ? '<p class="nota" style="color:#F2A900">Hay otra ' + esc(terminos().manzana.toLowerCase()) + ' ' + esc(m.mz) + ' en esta esfera. Ponle otro número para que sus lotes no se confundan.</p>' : "") +
         campo("Manzana", '<input type="text" data-mz="mz" value="' + esc(m.mz) + '" placeholder="3">') +
@@ -12358,6 +12482,16 @@ void main(){
       h += '<div class="grupo"><b>Estilo de los lotes</b>' + campo("Color", campoRango("_lotes.lote.opacidad", l0.opacidad ?? 0.35, 0, 1, 0.05, pct)) + campo("Borde", campoRango("_lotes.trazo.grosor", g0, 0, 8, 0.5, px)) +
         campo("Borde de", '<select data-k="_lotes.lote.borde"><option value="blanco"' + (l0.borde !== "estado" ? " selected" : "") + '>Blanco</option><option value="estado"' + (l0.borde === "estado" ? " selected" : "") + ">Color del estado</option></select>") +
         interruptor("Rollover (se ilumina al pasar el mouse)", "_lotes.lote.rollover", l0.rollover !== false) + "</div>";
+      if (enLab("manzana-unir")) {
+        const P = partesMz(c), T = terminos(), otras = cs().filter((x) => x !== c && x.manzana && !(m.union && x.manzana.union === m.union));
+        const rango = (x) => { const v = lotesDeManzana(x).map((y) => parseInt(y.lote.numero, 10)).filter((n) => isFinite(n)); return v.length ? Math.min(...v) + "–" + Math.max(...v) : ""; };
+        h += '<div class="grupo" id="mz-unir"><b>Unir con otra ' + esc(T.manzana.toLowerCase()) + "</b>" +
+          (P.length > 1 ? '<p class="nota">Es la parte ' + (P.indexOf(c) + 1) + " de " + P.length + " de la " + esc(T.manzana.toLowerCase()) + " " + esc(m.mz) + " (" + P.map((x, i) => "parte " + (i + 1) + ": " + rango(x)).join(", ") + "). La numeración sigue de una parte a la otra y el rótulo, el estilo y el contorno se cambian en todas.</p>" +
+            '<div class="orden">' + (P.indexOf(c) > 0 ? '<button class="mini" data-mz-primero>Que esta parte vaya primero</button>' : "") + '<button class="mini" data-mz-separar>Separar esta parte</button></div>' : "") +
+          (otras.length ? campo(P.length > 1 ? "Unir otra" : "Unir con", '<select data-mz-unir><option value="">Elige la ' + esc(T.manzana.toLowerCase()) + "…</option>" + otras.map((x) => '<option value="' + x.id + '">' + esc(T.manzana + " " + x.manzana.mz) + " · " + lotesDeManzana(x).length + " " + plural(T.lote).toLowerCase() + "</option>").join("") + "</select>") +
+            (P.length > 1 ? "" : '<p class="nota">Para una ' + esc(T.manzana.toLowerCase()) + " hecha de dos partes (los lotes de la esquina y los dobles, por ejemplo): quedan como una sola, con el mismo número y la numeración seguida.</p>")
+            : P.length > 1 ? "" : '<p class="nota">Dibuja la otra parte de la ' + esc(T.manzana.toLowerCase()) + " en esta esfera y aquí las unes.</p>") + "</div>";
+      }
       h += '<div class="grupo"><b>Contorno de la manzana</b>' + campo("Color", campoColor("trazo.color", c.trazo.color)) + campo("Grosor", campoRango("trazo.grosor", c.trazo.grosor, 0, 12, 0.5, px)) + campo("Opacidad", campoRango("trazo.opacidad", c.trazo.opacidad, 0, 1, 0.05, pct)) + "</div>";
     }
     else if (c.mzPlano) {
@@ -12485,6 +12619,8 @@ void main(){
     cont.innerHTML = h;
     acordeonProps(cont, c);
     guiasDeManzana(c);
+    if (c.lote && enLab("lotes-vendidos")) guiaNueva("nuevo-lotes-vendidos", () => [esVisible(".regla-estado") && { el: ".regla-estado", titulo: "Nuevo: lotes vendidos sin número ni ficha", anim: animVendidos, dur: 4.6,
+      texto: "Apaga <b>Muestran su número</b> y <b>Se pueden tocar</b> y todos los lotes de ese estado (Vendido, por ejemplo) quedan en su color, sin número y sin abrir su ficha. Vale también para los que vendas después desde el celular o el link de tu cliente." }].filter(Boolean), () => esVisible(".regla-estado"));
     if (c.tipo === "texto") guiaNueva("nuevo-letra", () => [esVisible("#grupo-letra-texto") && { el: "#grupo-letra-texto", titulo: "Nuevo: tipografías, sombra y contorno",
       texto: "Elige entre más de 40 <b>tipografías</b> (sin serif, condensadas, con serif y manuscritas) y dale <b>sombra</b> o <b>contorno</b> para que se lea sobre el cielo o el pasto." +
         (enLab("tipografias") ? " Al final de la lista, <b>Subir tu tipografía</b> (TTF, OTF o WOFF): sale igual en el tour publicado." : "") }].filter(Boolean), () => esVisible("#grupo-letra-texto"));
@@ -12498,9 +12634,12 @@ void main(){
     if (v === "true" || v === "false") v = v === "true"; // botones de sí/no (por ejemplo: fijo en 3D)
     // Manzana: el cambio va a todos sus lotes y se guarda para los que se agreguen después
     if (el.dataset.k.startsWith("_lotes.") && (c.manzana || c.mzPlano || c.edificio)) {
-      const ruta = el.dataset.k.slice(7), M = c.manzana || c.mzPlano || c.edificio;
-      M.estiloLotes = Object.assign({}, M.estiloLotes, { [ruta]: v });
-      lotesDeManzana(c).forEach((x) => { try { escribir(x, ruta, v); } catch (e) { return; } if (x.vinculo) propagar(x, motorEd.actual.id); });
+      const ruta = el.dataset.k.slice(7);
+      (c.manzana ? partesMz(c) : [c]).forEach((g) => { // una manzana unida cambia todas sus partes
+        const M = g.manzana || g.mzPlano || g.edificio;
+        M.estiloLotes = Object.assign({}, M.estiloLotes, { [ruta]: v });
+        lotesDeManzana(g).forEach((x) => { try { escribir(x, ruta, v); } catch (e) { return; } if (x.vinculo) propagar(x, motorEd.actual.id); });
+      });
       const etqM = document.querySelector('[data-v-de="' + el.dataset.k + '"]');
       if (etqM) etqM.textContent = (FMTS[el.dataset.k] || px)(v);
       guardar(); motorEd.construir(); if (repintar) pintarProps();
@@ -12508,6 +12647,8 @@ void main(){
     }
     if (el.dataset.k.startsWith("t3d.")) c.t3d = t3(c);
     escribir(c, el.dataset.k, v);
+    // Contorno de una manzana unida: igual en todas sus partes
+    if (c.manzana && c.manzana.union && /^(trazo|relleno)\./.test(el.dataset.k)) partesMz(c).forEach((x) => { if (x === c) return; try { escribir(x, el.dataset.k, v); } catch (e) { return; } if (x.vinculo) propagar(x, motorEd.actual.id); });
     // Varias seleccionadas: el mismo cambio en todas (menos lo que identifica a cada una)
     const otras = seleccionadas().filter((x) => x !== c);
     if (otras.length && !/^(nombre|lote\.(numero|lados|frente))/.test(el.dataset.k)) {
@@ -12522,7 +12663,7 @@ void main(){
     // Lotes que salen de una manzana: su manzana manda (si no, al repartirla se regresaría el número viejo)
     if (el.dataset.k === "lote.manzana") {
       const padres = new Set([c].concat(otras).filter((x) => x.deManzana).map((x) => x.deManzana));
-      padres.forEach((pid) => { const m = buscar(pid); if (m && m.edificio) { m.edificio.torre = v; m.nombre = "Edificio " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); return; } if (m && m.mzPlano) { m.mzPlano.mz = v; m.nombre = terminos().manzana + " " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); return; } if (!m || !m.manzana) return; m.manzana.mz = v; m.nombre = terminos().manzana + " " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); });
+      padres.forEach((pid) => { const m = buscar(pid); if (m && m.edificio) { m.edificio.torre = v; m.nombre = "Edificio " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); return; } if (m && m.mzPlano) { m.mzPlano.mz = v; m.nombre = terminos().manzana + " " + v; lotesDeManzana(m).forEach((x) => { x.lote.manzana = v; }); return; } if (!m || !m.manzana) return; partesMz(m).forEach((g) => { g.manzana.mz = v; g.nombre = terminos().manzana + " " + v; lotesDeManzana(g).forEach((x) => { x.lote.manzana = v; }); }); });
       if (otras.length) pintarCapas();
     }
     // Número escrito a mano en un lote de manzana: la manzana lo recuerda (si no, al ajustarla se perdía)
@@ -12618,11 +12759,27 @@ void main(){
   }
   $("lt-estados").addEventListener("input", (ev) => { const id = ev.target.dataset && ev.target.dataset.nombreEstado; if (id) nombreEstado(id, ev.target.value); });
   function pintarNombresEstados(forzar) {
+    pintarReglasEstados();
     const caja = $("lt-estados"), E = estadosLote(), lab = enLab("estados");
     if (!forzar && caja.contains(document.activeElement)) return; // no se le borra lo que está escribiendo
     caja.innerHTML = E.map((e) => '<span class="lt-estado"><label style="--c:' + e.color + '"><i></i><input class="entrada" data-nombre-estado="' + e.id + '" maxlength="16" value="' + esc(e.nombre) + '" aria-label="Nombre del estado ' + esc(e.nombre) + '"></label>' +
       (lab && estadoPropio(e) ? '<button type="button" class="lt-quitar" data-quitar-estado="' + e.id + '" title="Quitar este estado" aria-label="Quitar el estado ' + esc(e.nombre) + '">×</button>' : "") + "</span>").join("") +
       (lab && E.length < MAX_ESTADOS ? '<button type="button" class="lt-mas" data-mas-estado title="Hasta ' + MAX_ESTADOS + ' estados">+ Estado</button>' : "");
+  }
+  // Lotes vendidos sin número ni ficha (Laboratorio «lotes-vendidos»): lo mismo que en el panel del lote, para todos los estados
+  function pintarReglasEstados() {
+    const fila = $("lt-reglas-fila"); fila.hidden = !(MODO === "nube" && enLab("lotes-vendidos")); if (fila.hidden) return;
+    const E = estadosLote(), grupo = (k, t) => '<span class="lt-regla"><b>' + t + '</b><span class="estados">' + E.map((e) => '<button type="button" data-regla="' + k + '" data-regla-estado="' + e.id + '" aria-pressed="' + !!e[k] + '" style="--c:' + e.color + '"><i></i>' + esc(e.nombre) + "</button>").join("") + "</span></span>";
+    $("lt-reglas").innerHTML = grupo("sinNumero", "Sin número") + grupo("sinToque", "Sin ficha (no se tocan)");
+  }
+  $("lt-reglas").addEventListener("click", (ev) => { const b = ev.target.closest("[data-regla]"); if (b) cambiarReglaEstado(b.dataset.reglaEstado, b.dataset.regla, b.getAttribute("aria-pressed") !== "true"); });
+  function cambiarReglaEstado(id, k, si) {
+    if (k !== "sinNumero" && k !== "sinToque") return;
+    est.lotesEstados = estadosLote().map((e) => { if (e.id !== id) return e; const x = Object.assign({}, e); if (si) x[k] = true; else delete x[k]; return x; });
+    guardar(); pintarReglasEstados();
+    if (motorEd) { motorEd.construir(); pintarCapas(); if (motorEd.elegida) pintarProps(); }
+    const e = estadosLote().find((x) => x.id === id) || {}, n = lotesUnicos().filter((x) => estadoDe(x.c).id === id).length, de = "Los lotes «" + e.nombre + "»" + (n ? " (" + n + ")" : "");
+    avisar(k === "sinNumero" ? de + (si ? " ya no muestran su número en el tour." : " vuelven a mostrar su número.") : de + (si ? " ya no se pueden tocar en el tour: no abren su ficha." : " se pueden tocar otra vez."), 4200);
   }
   $("lt-estados").addEventListener("click", (ev) => {
     if (ev.target.closest("[data-mas-estado]")) { agregarEstado(); return; }
@@ -12660,6 +12817,7 @@ void main(){
   }
   $("props").addEventListener("change", (ev) => {
     if (ev.target.dataset.k === "_vinculo") { vincular(ev.target.checked); return; }
+    if (/^_regla\.(sinNumero|sinToque)$/.test(ev.target.dataset.k || "")) { const c = buscar(motorEd.elegida); if (c && c.lote) cambiarReglaEstado(estadoDe(c).id, ev.target.dataset.k.slice(7), !ev.target.checked); return; }
     if (ev.target.dataset.frente !== undefined) { const c = buscar(motorEd.elegida); c.lote.frente = +ev.target.dataset.frente; c.lote.frenteManual = true; if (c.vinculo) propagar(c, motorEd.actual.id); guardar(); pintarProps(); return; }
     if (ev.target.dataset.subir === "imagen") { subirImagenAccion(ev.target); return; }
     if (ev.target.dataset.subir === "capa") { const f = ev.target.files[0], c = motorEd.elegida && buscar(motorEd.elegida); ev.target.value = ""; if (f && c) imagenCapa(f, c); return; }
@@ -12811,7 +12969,7 @@ void main(){
     };
     d.puntos = d.puntos.map(gira);
     if (d.manzana) {
-      delete m.hov;
+      delete m.hov; delete m.union; delete m.parte;
       ["a", "b"].forEach((k) => { if (m.lados && Array.isArray(m.lados[k])) m.lados[k] = m.lados[k].map(gira); });
       (m.cortes || []).forEach((x) => { if (x && Array.isArray(x.medios)) x.medios = x.medios.map(gira); });
     } else m.ctrl.forEach((k) => { const g = gira([k.s[0], k.s[1]].concat(k.h ? [k.h[0], k.h[1]] : [])); k.s = [g[0], g[1]]; if (k.h) k.h = [g[2], g[3]]; });
@@ -12866,6 +13024,7 @@ void main(){
     const giro = misma ? 0.05 * PORTA.veces : centro().yaw - desde + 0.05 * (PORTA.veces - 1);
     const mapa = new Map(), nuevas = PORTA.capas.map((c0) => { const d = JSON.parse(JSON.stringify(c0)); mapa.set(d.id, (d.id = nuevoId())); delete d.vinculo; return d; });
     nuevas.forEach((d) => { if (d.deManzana) d.deManzana = mapa.get(d.deManzana) || d.deManzana; girarCapa(d, giro); });
+    const uniones = new Map(); nuevas.forEach((d) => { if (d.manzana && d.manzana.union) { if (!uniones.has(d.manzana.union)) uniones.set(d.manzana.union, "u" + nuevoId()); d.manzana.union = uniones.get(d.manzana.union); } }); // las copias forman su propia manzana unida
     const l = cs(); nuevas.forEach((d) => l.push(d));
     nuevas.forEach((d) => { if (d.manzana) repartirManzana(d); else if (d.mzPlano) repartirPlano(d); });
     const arriba = nuevas.filter((d) => !d.deManzana);
@@ -12923,7 +13082,7 @@ void main(){
   }
   function cambio() {
     const c = motorEd.elegida && buscar(motorEd.elegida);
-    if (c && c.manzana) repartirManzana(c);
+    if (c && c.manzana) { repartirManzana(c); if (c.manzana.union) numerarUnion(c); }
     if (c && c.edificio) repartirEdificio(c);
     if (c && c.mzPlano) repartirPlano(c);
     if (c && c.vinculo) propagar(c, motorEd.actual.id);
@@ -14143,7 +14302,13 @@ void main(){
   // La voz del tour (Laboratorio «voz-ia»): una sola para todo el recorrido. Va primero y no se corta al cambiar de esfera;
   // cuando ya se oyó siguen las voces por esfera (si las hay) y, donde no hay, su pastilla chica queda para volver a oírla.
   const VOZ_TOUR = "__tour";
-  const vozGeneral = () => { const g = P().vozTour; return g && g.archivo ? g : null; };
+  // Voz en inglés y español (Laboratorio «voz-idiomas»): con las dos, la pastilla trae ES | EN. De inicio va en el idioma del
+  // celular o la compu del visitante; lo que elija se recuerda mientras siga en esa pestaña.
+  const labIdiomas = () => { try { return MODO === "tour" || enLab("voz-idiomas"); } catch (e) { return false; } };
+  const vozIdi = (idi) => { const g = P().vozTour; if (!g) return null; const v = idi === "en" ? g.en : g; return v && v.archivo ? v : null; };
+  const dosIdiomas = () => labIdiomas() && !!vozIdi("es") && !!vozIdi("en");
+  let idiomaVoz = (() => { try { const s = sessionStorage.getItem("mz-idioma-voz"); if (s === "es" || s === "en") return s; } catch (e) { /* sin almacenamiento */ } return /^en\b/i.test(navigator.language || "") ? "en" : "es"; })();
+  const vozGeneral = () => (dosIdiomas() ? vozIdi(idiomaVoz) : vozIdi("es") || (labIdiomas() ? vozIdi("en") : null));
   const narracionDe = (id) => { if (id === VOZ_TOUR) return vozGeneral(); const e = id && escena(id); return e && e.narracion && e.narracion.archivo ? e.narracion : null; };
   // Subtítulos de una voz larga: pasan por frases, repartidas según su largo (la voz no trae tiempos)
   let subVoz = { texto: null, trozos: [], hasta: [] };
@@ -14181,11 +14346,13 @@ void main(){
     c.hidden = !n || VOZ.estado === "nada";
     if (c.hidden) return;
     const chica = VOZ.estado === "oida", grande = VOZ.estado === "sonando" || VOZ.estado === "pausa";
-    c.className = "nr " + VOZ.estado + (chica ? " chica" : ""); c.dataset.esfera = VOZ.id;
+    const dos = VOZ.id === VOZ_TOUR && dosIdiomas();
+    c.className = "nr " + VOZ.estado + (chica ? " chica" : "") + (dos ? " idiomas" : ""); c.dataset.esfera = VOZ.id;
     const ico = VOZ.estado === "sonando" ? ICO_VOZ.pausa : chica ? ICO_VOZ.otra : ICO_VOZ.play, etq = VOZ.estado === "sonando" ? "Pausar la narración" : chica ? "Volver a escuchar" : "Escuchar la narración";
     c.innerHTML = '<button class="nr-play" data-voz aria-label="' + etq + '">' + ico + "</button>" +
       '<div class="nr-tit">' + (grande ? '<span class="nr-ondas" aria-hidden="true"><i></i><i></i><i></i></span>' : "") + (VOZ.estado === "espera" ? (de ? "Escuchar" + de : "Escuchar la narración") : chica ? "Volver a escuchar" : "Narración" + de) + "</div>" +
-      (grande && n.texto ? '<div class="nr-sub">' + esc(subtituloVoz(n)) + "</div>" : "") + (grande ? '<i class="nr-barra"></i>' : "");
+      (dos ? '<div class="nr-idioma" role="group" aria-label="Idioma de la voz">' + ["es", "en"].map((k) => '<button type="button" data-idioma="' + k + '" lang="' + k + '" aria-pressed="' + (idiomaVoz === k) + '">' + k.toUpperCase() + "</button>").join("") + "</div>" : "") +
+      (grande && n.texto ? '<div class="nr-sub"' + (dos ? ' lang="' + idiomaVoz + '"' : "") + ">" + esc(subtituloVoz(n)) + "</div>" : "") + (grande ? '<i class="nr-barra"></i>' : "");
     barraVoz();
   }
   function barraVoz() {
@@ -14197,6 +14364,16 @@ void main(){
   vozTour.addEventListener("pause", () => { if (vozTour.ended) return; if (VOZ.estado === "sonando") VOZ.estado = "pausa"; musicaPorVoz(false); pintarVoz(); });
   vozTour.addEventListener("ended", () => { VOZ.estado = "oida"; musicaPorVoz(false); pintarVoz(); });
   vozTour.addEventListener("timeupdate", barraVoz);
+  // ES | EN: la voz del tour vuelve a empezar en el otro idioma (el toque del visitante deja que suene)
+  function cambiarIdiomaVoz(idi) {
+    if ((idi !== "es" && idi !== "en") || idi === idiomaVoz || !dosIdiomas()) return;
+    idiomaVoz = idi; try { sessionStorage.setItem("mz-idioma-voz", idi); } catch (e) { /* sin almacenamiento */ }
+    if (VOZ.id !== VOZ_TOUR) { pintarVoz(); return; }
+    const url = urlArchivo(vozGeneral().archivo);
+    vozTour.pause(); vozTour.src = url; vozTour.dataset.url = url;
+    VOZ.estado = "espera"; pintarVoz();
+    vozTour.play().catch(() => { if (VOZ.id === VOZ_TOUR && vozTour.paused) { VOZ.estado = "espera"; pintarVoz(); esperarToqueVoz(); } });
+  }
   function tocarVoz() {
     if (vozSonando()) { vozTour.pause(); return; }
     if (VOZ.estado === "oida" || vozTour.ended) vozTour.currentTime = 0;
@@ -14237,7 +14414,7 @@ void main(){
   function pastillaVoz(ui) {
     if (!vozGeneral() && !est.escenas.some((e) => e.narracion && e.narracion.archivo)) return { escena() {} };
     const c = document.createElement("div"); c.className = "nr"; c.hidden = true; c.setAttribute("role", "status");
-    c.addEventListener("click", (ev) => { ev.stopPropagation(); if (ev.target.closest("[data-voz]")) tocarVoz(); });
+    c.addEventListener("click", (ev) => { ev.stopPropagation(); const b = ev.target.closest("[data-idioma]"); if (b) { cambiarIdiomaVoz(b.dataset.idioma); return; } if (ev.target.closest("[data-voz]")) tocarVoz(); });
     ["pointerdown", "wheel", "touchstart"].forEach((x) => c.addEventListener(x, (ev) => ev.stopPropagation(), { passive: true }));
     ui.appendChild(c); VOZ.caja = c;
     return { escena(id) {
@@ -14586,6 +14763,7 @@ void main(){
       if (ev.target === pop || ev.target.closest(".pop-x")) cerrarPop();
     });
     function accion(c) {
+      if (!loteTocable(c)) return; // su estado ya no se ofrece (Vendido, por ejemplo)
       const a = accionDe(c), url = urlSegura(c.url);
       if (piloto) piloto.interrumpir(true);
       if (a === "ficha" && c.lote) { statsLote(c); pop.innerHTML = fichaLote(c); pop.hidden = false; return; }
@@ -15019,6 +15197,23 @@ void main(){
   // P().vozTour: { archivo, nombre, peso, duracion, texto (lo que dice), ia: { voz } }. «ia» es de trabajo y no se publica.
   const vozIA = () => MODO === "nube" && enLab("voz-ia");
   const vozDelTour = () => (P().vozTour && P().vozTour.archivo ? P().vozTour : null);
+  // Voz en inglés y español (Laboratorio «voz-idiomas», pedido de Amar 22 nov 2026: «que la voz venga en inglés y en español
+  // y que en tu interfaz puedas switchar el idioma»). La de inglés va en P().vozTour.en con la misma forma; la de español
+  // sigue arriba, como siempre. En la ventana se elige el idioma con dos botones y cada uno tiene su texto, su voz y su audio.
+  const vozIdiomas = () => vozIA() && enLab("voz-idiomas");
+  const vozEnDe = (g) => (g && g.en && g.en.archivo ? g.en : null);
+  const vozDeIdioma = (idi) => (idi === "en" ? vozEnDe(P().vozTour) : vozDelTour());
+  function ponerVozIdioma(idi, datos) {
+    const g = P().vozTour || {};
+    if (idi === "en") P().vozTour = Object.assign({}, g, { en: datos });
+    else P().vozTour = Object.assign(datos, g.en ? { en: g.en } : {});
+  }
+  function quitarVozIdioma(idi) {
+    const g = P().vozTour; if (!g) return;
+    if (idi === "en") delete g.en; else ["archivo", "nombre", "peso", "duracion", "texto", "ia"].forEach((k) => delete g[k]);
+    if (!g.archivo && !g.en) delete P().vozTour;
+  }
+  const vocesVZ = () => (vzEstado ? vzEstado.voces.filter((v) => (v.idioma || "es") === ((VZ && VZ.idioma) || "es")) : []);
   let VZ = null, VZA = null, vzEstado = null, vzSonando = "", vzQuitar = 0, sonReloj = 0;
   const vzMuestra = new Audio();
   const vzRepintar = () => { if (VZ) pintarCrearVoz(); else if (VZA && VZA.pinta) VZA.pinta(); };
@@ -15034,7 +15229,7 @@ void main(){
   const vzSeg = (t) => { const p = String(t).trim().split(/\s+/).filter(Boolean).length; return p ? Math.max(1, Math.round(p / 2.5)) : 0; };
   const vzDuracion = (src) => new Promise((ok) => { const a = new Audio(); a.preload = "metadata"; a.onloadedmetadata = () => ok(isFinite(a.duration) ? +a.duration.toFixed(1) : 0); a.onerror = () => ok(0); setTimeout(() => ok(0), 6000); a.src = src; });
   const vzError = async (r, porDefecto) => { const d = r ? await r.json().catch(() => ({})) : {}; return d.error || porDefecto; };
-  const sonResumen = () => { const g = vozDelTour(); return "Música: " + (musica ? musica.nombre : "sin música") + " · Voz: " + (g ? [g.nombre || "Voz", durTxt(g.duracion)].filter(Boolean).join(", ") : "sin voz"); };
+  const sonResumen = () => { const g = vozDelTour(), en = vozIdiomas() && vozEnDe(P().vozTour), d = (x) => [x.nombre || "Voz", durTxt(x.duracion)].filter(Boolean).join(", "); return "Música: " + (musica ? musica.nombre : "sin música") + " · Voz: " + (g ? d(g) : "sin voz") + (en ? " · Inglés: " + d(en) : ""); };
   // El grupo de Interfaz: un resumen y la puerta a la única ventana donde se arregla el sonido
   function vozGrupoHtml() {
     return '<div class="grupo" id="sk-voz-grupo"><b>Sonido del tour ' + CHIP_LAB + "</b>" +
@@ -15045,17 +15240,26 @@ void main(){
   async function abrirVoz() {
     const g = P().vozTour || {};
     audioPrueba.pause(); $("m-play").innerHTML = ICO_PLAY;
-    VZA = null; vzEstado = null; VZ = { texto: g.texto || "", voz: (g.ia || {}).voz || "", ocupado: "", error: "", listo: "" };
+    VZA = null; vzEstado = null; VZ = { idioma: "es", otro: { en: { texto: (g.en && g.en.texto) || "", voz: ((g.en && g.en.ia) || {}).voz || "" } }, texto: g.texto || "", voz: (g.ia || {}).voz || "", ocupado: "", error: "", listo: "" };
     pintarCrearVoz(); if (!$("dlg-voz").open) $("dlg-voz").showModal();
     const turno = VZ, r = await fetch("api/voz?tour=" + encodeURIComponent(TOUR || ""), { cache: "no-store" }).catch(() => null), S = r && r.ok ? await r.json().catch(() => null) : null;
     if (VZ !== turno) return;
     vzEstado = S || { activo: false, voces: [], usadas: 0, tope: 0, max: 1200, fallo: true };
-    if (!vzEstado.voces.some((v) => v.id === VZ.voz)) VZ.voz = (vzEstado.voces[0] || {}).id || "";
+    const vs = vocesVZ(); if (!vs.some((v) => v.id === VZ.voz)) VZ.voz = (vs[0] || {}).id || "";
     pintarCrearVoz();
+  }
+  // Español o inglés: cada uno con su texto y su voz (lo escrito en el otro se guarda mientras la ventana sigue abierta)
+  function vzIdioma(idi) {
+    if (!VZ || idi === VZ.idioma || VZ.ocupado) return;
+    sonCallar(); VZ.otro[VZ.idioma] = { texto: VZ.texto, voz: VZ.voz };
+    const o = VZ.otro[idi], g = (idi === "en" ? (P().vozTour || {}).en : P().vozTour) || {};
+    VZ.idioma = idi; VZ.texto = o ? o.texto : g.texto || ""; VZ.voz = (o && o.voz) || (g.ia || {}).voz || "";
+    const vs = vocesVZ(); if (!vs.some((v) => v.id === VZ.voz)) VZ.voz = (vs[0] || {}).id || "";
+    VZ.error = ""; VZ.listo = ""; vzQuitar = 0; pintarCrearVoz();
   }
   const vzCuenta = () => { const n = VZ.texto.trim().length, max = (vzEstado && vzEstado.max) || 1200; return n.toLocaleString("es-MX") + " de " + max.toLocaleString("es-MX") + " letras" + (n ? " · unos " + vzSeg(VZ.texto) + " segundos de voz" : ""); };
   // Cuántas voces puede crear todavía este tour este mes (null: sin límite, el dueño)
-  const vzQuedan = () => { const S = vzEstado; return !S || S.porTour === null || S.porTour === undefined ? null : Math.max(0, S.porTour - (S.creadas || 0)); };
+  const vzQuedan = () => { const S = vzEstado; return !S || S.porTour === null || S.porTour === undefined ? null : Math.max(0, S.porTour - ((VZ && VZ.idioma === "en" ? S.creadasEn : S.creadas) || 0)); };
   const vzSinPlan = () => { const S = vzEstado; return !!S && !S.tope && S.tope !== null && S.tope !== undefined; };
   function vzSaldo() {
     const S = vzEstado; if (!S) return "";
@@ -15063,14 +15267,15 @@ void main(){
     if (!S.activo) return "Las voces aún no están conectadas." + (NUBE.admin ? " Pega la llave de ElevenLabs y elige las voces en Panel de dueño → Laboratorio." : " Mientras, puedes subir tu propio audio.");
     if (vzSinPlan()) return "Las voces de Mozari vienen con las licencias Pro y Desarrollos. Mientras, puedes subir tu propio audio.";
     const q = vzQuedan();
-    if (q === 0) return "Este tour ya creó sus " + S.porTour + " voces de este mes. Puedes subir tu propio audio; el día 1 puedes crear otra.";
+    if (q === 0) return "Este tour ya creó sus " + S.porTour + " voces " + (VZ.idioma === "en" ? "en inglés " : "") + "de este mes. Puedes subir tu propio audio; el día 1 puedes crear otra.";
     if (S.tope !== null && S.tope !== undefined && S.tope - S.usadas < VZ.texto.trim().length) return "No te alcanzan las letras de voz de este mes (te quedan " + Math.max(0, S.tope - S.usadas).toLocaleString("es-MX") + "). Acorta el texto o sube tu propio audio.";
     return q === null ? "Oye las muestras con ▶ antes de crearla." : "Te " + (q === 1 ? "queda 1 voz" : "quedan " + q + " voces") + " para este tour este mes. Oye las muestras con ▶ antes de crearla: no gastan.";
   }
   // La ventana: 1) música, 2) voz, 3) cómo suena en el tour
   function pintarCrearVoz() {
     const d = $("dlg-voz"); if (!VZ) return;
-    const S = vzEstado, max = (S && S.max) || 1200, g = vozDelTour(), vol = P().musica.volumen, sinVoz = !S || !S.activo || vzSinPlan() || vzQuedan() === 0;
+    const S = vzEstado, max = (S && S.max) || 1200, en = VZ.idioma === "en", g = vozDeIdioma(VZ.idioma), vol = P().musica.volumen, vs = vocesVZ(), sinVoz = !S || !S.activo || vzSinPlan() || vzQuedan() === 0 || !vs.length;
+    const dos = vozIdiomas() && (!S || S.idiomas !== false);
     const play = (que, hay) => '<button type="button" class="play" data-son="' + que + '"' + (hay ? "" : " disabled") + ' aria-label="' + (vzSonando === que ? "Pausar" : "Escuchar") + '">' + (vzSonando === que ? ICO_PAUSA : ICO_PLAY) + "</button>";
     const audios = "audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,.mp3,.m4a,.wav";
     d.innerHTML = '<div class="dp-cuerpo vz son"><button type="button" class="dp-cerrar" data-vz="cerrar" aria-label="Cerrar">×</button><span class="etiq">Sonido del tour · ' + esc(P().nombre || "Tu tour") + '</span><h2 id="vz-titulo">La música y la voz de tu tour</h2>' +
@@ -15079,12 +15284,14 @@ void main(){
       '<label class="btn-sec" for="son-musica-archivo">' + (musica ? "Cambiar" : "Subir mi canción") + '</label><input type="file" id="son-musica-archivo" accept="' + audios + '" hidden>' + (musica ? '<button type="button" class="btn-sec" data-son="musica-quitar">Quitar</button>' : "") + "</div>" +
       (musica ? '<div class="fila-campo"><span>Volumen</span><div class="rango"><input type="range" data-son-vol min="0" max="1" step="0.05" value="' + vol + '" aria-label="Volumen de la música"><span class="valor" id="son-vol-v">' + Math.round(vol * 100) + "%</span></div></div>" : "") + "</section>" +
       '<section class="son-bloque" id="son-voz"><b class="son-t"><i>2</i>Voz</b>' +
-      (g ? '<div class="musica" id="son-voz-actual">' + play("voz", true) + '<div class="info"><b>' + esc(g.nombre || "Voz") + "</b><small>" + esc([durTxt(g.duracion), "suena cuando el tour empieza"].filter(Boolean).join(" · ")) + '</small></div><button type="button" class="btn-sec" data-son="voz-quitar">' + (Date.now() - vzQuitar < 4000 ? "¿Quitar? Toca otra vez" : "Quitar") + "</button></div>" : "") +
-      '<label class="fe-campo">' + (g ? "Para cambiarla, escribe" : "Escribe") + ' lo que quieres que diga. La voz lo lee tal cual.<textarea rows="5" maxlength="' + max + '" data-vz-campo="texto" placeholder="Ej. Lomas del Encino está a diez minutos de León. Tiene casa club, lago y lotes desde doscientos metros cuadrados.">' + esc(VZ.texto) + '</textarea></label><p class="nota" id="vz-cuenta">' + vzCuenta() + "</p>" +
-      (S && S.voces.length ? '<div class="vz-voces" role="radiogroup" aria-label="Voz">' + S.voces.map((v) => '<label class="vz-voz"><input type="radio" name="vz-voz" value="' + esc(v.id) + '"' + (VZ.voz === v.id ? " checked" : "") + "><b>" + esc(v.nombre) + "</b><small>" + esc(v.tono || "Voz") + "</small>" +
-        (v.muestra ? '<button type="button" class="mini" data-vz-muestra="' + esc(v.id) + '" aria-label="Escuchar a ' + esc(v.nombre) + '">' + (vzSonando === v.id ? "❚❚" : "▶") + "</button>" : "") + "</label>").join("") + "</div>" : S ? "" : '<p class="nota">Cargando las voces…</p>') +
+      (dos ? '<div class="estados vz-idiomas" role="group" aria-label="Idioma de la voz">' + [["es", "Español"], ["en", "Inglés"]].map(([k, n]) => '<button type="button" data-vz-idioma="' + k + '" aria-pressed="' + (VZ.idioma === k) + '" style="--c:var(--mz-lima)">' + n + (vozDeIdioma(k) ? " ✓" : "") + "</button>").join("") + "</div>" +
+        '<p class="nota">En el tour, la pastilla de la voz trae <b>ES | EN</b>: cada quien la oye en el idioma de su celular o compu y la cambia con un toque.</p>' : "") +
+      (g ? '<div class="musica" id="son-voz-actual">' + play("voz", true) + '<div class="info"><b>' + esc(g.nombre || "Voz") + "</b><small>" + esc([durTxt(g.duracion), en ? "suena en inglés (botón EN del tour)" : "suena cuando el tour empieza"].filter(Boolean).join(" · ")) + '</small></div><button type="button" class="btn-sec" data-son="voz-quitar">' + (Date.now() - vzQuitar < 4000 ? "¿Quitar? Toca otra vez" : "Quitar") + "</button></div>" : "") +
+      '<label class="fe-campo">' + (g ? "Para cambiarla, escribe" : "Escribe") + (en ? " en inglés" : "") + ' lo que quieres que diga. La voz lo lee tal cual.<textarea rows="5" maxlength="' + max + '" data-vz-campo="texto"' + (en ? ' lang="en"' : "") + ' placeholder="' + (en ? "Ex. Lomas del Encino is ten minutes from León. It has a clubhouse, a lake and lots from two hundred square meters." : "Ej. Lomas del Encino está a diez minutos de León. Tiene casa club, lago y lotes desde doscientos metros cuadrados.") + '">' + esc(VZ.texto) + '</textarea></label><p class="nota" id="vz-cuenta">' + vzCuenta() + "</p>" +
+      (S && vs.length ? '<div class="vz-voces" role="radiogroup" aria-label="Voz">' + vs.map((v) => '<label class="vz-voz"><input type="radio" name="vz-voz" value="' + esc(v.id) + '"' + (VZ.voz === v.id ? " checked" : "") + "><b>" + esc(v.nombre) + "</b><small>" + esc(v.tono || "Voz") + "</small>" +
+        (v.muestra ? '<button type="button" class="mini" data-vz-muestra="' + esc(v.id) + '" aria-label="Escuchar a ' + esc(v.nombre) + '">' + (vzSonando === v.id ? "❚❚" : "▶") + "</button>" : "") + "</label>").join("") + "</div>" : S ? (en && S.activo ? '<p class="nota">Todavía no hay voces en inglés. Mientras, puedes subir tu propio audio en inglés.</p>' : "") : '<p class="nota">Cargando las voces…</p>') +
       (VZ.error ? '<p class="ub-error" id="vz-error" role="alert">' + esc(VZ.error) + "</p>" : "") +
-      (VZ.listo ? '<div class="vz-listo" id="vz-listo"><b>Listo: ya es la voz de tu tour.</b><span class="nota">Tócale a «Escuchar cómo queda», aquí abajo.</span></div>' : "") +
+      (VZ.listo ? '<div class="vz-listo" id="vz-listo"><b>Listo: ya es la voz ' + (en ? "en inglés " : "") + 'de tu tour.</b><span class="nota">Tócale a «Escuchar cómo queda», aquí abajo.</span></div>' : "") +
       '<div class="ub-acc"><button type="button" class="btn-prim" data-vz="audio"' + (VZ.ocupado || sinVoz ? " disabled" : "") + ">" + (VZ.ocupado === "audio" ? "Creando la voz…" : g ? "Crear otra voz" : "Crear la voz") + '</button><label class="btn-sec" for="son-voz-archivo">Subir mi audio</label><input type="file" id="son-voz-archivo" accept="' + audios + '" hidden><span class="nota" id="vz-saldo">' + esc(vzSaldo()) + "</span></div></section>" +
       '<section class="son-bloque" id="son-mezcla"><b class="son-t"><i>3</i>Así suena en tu tour</b>' +
       '<div class="voz-fila"><button type="button" class="btn-sec" data-son="mezcla"' + (musica || g ? "" : " disabled") + ">" + (vzSonando === "mezcla" ? "❚❚ Detener" : "▶ Escuchar cómo queda") + '</button><span class="nota">La música baja sola mientras la voz habla.</span></div>' +
@@ -15095,7 +15302,7 @@ void main(){
   // Escuchar la música, la voz o las dos juntas (la música al 20 % mientras la voz habla, como en el tour)
   function sonOir(que) {
     const ya = vzSonando === que; sonCallar(); if (ya) return;
-    const g = vozDelTour(), vol = P().musica.volumen, falla = () => { sonCallar(); if (VZ) { VZ.error = "No se pudo reproducir. Inténtalo otra vez."; pintarCrearVoz(); } };
+    const g = vozDeIdioma(VZ ? VZ.idioma : "es"), vol = P().musica.volumen, falla = () => { sonCallar(); if (VZ) { VZ.error = "No se pudo reproducir. Inténtalo otra vez."; pintarCrearVoz(); } };
     if ((que === "musica" || que === "mezcla") && musicaUrl) { audioPrueba.src = musicaUrl; audioPrueba.loop = que === "mezcla" && !!g && !!P().musica.repetir; audioPrueba.volume = que === "mezcla" && g ? vol * 0.2 : vol; audioPrueba.play().catch(falla); }
     if ((que === "voz" || que === "mezcla") && g) { vzMuestra.src = urlArchivo(g.archivo); vzMuestra.play().catch(falla); }
     vzSonando = que;
@@ -15109,28 +15316,30 @@ void main(){
       const u = URL.createObjectURL(f), duracion = await vzDuracion(u); URL.revokeObjectURL(u);
       const ruta = "archivos/voz-" + Date.now().toString(36) + "." + tipo;
       await subirArchivo(ruta, f);
-      P().vozTour = { archivo: ruta, nombre: f.name.slice(0, 80), peso: f.size, duracion, texto: "" };
+      ponerVozIdioma(VZ ? VZ.idioma : "es", { archivo: ruta, nombre: f.name.slice(0, 80), peso: f.size, duracion, texto: "" });
       guardar(); return "";
     } catch (err) { return err.message || "No se pudo subir el audio"; }
   }
   async function vzAudio() {
-    const turno = VZ, texto = VZ.texto.replace(/\s+/g, " ").trim();
+    const turno = VZ, idi = VZ.idioma, texto = VZ.texto.replace(/\s+/g, " ").trim();
     if (texto.length < 5) { VZ.error = "Primero escribe lo que quieres que diga la voz."; pintarCrearVoz(); return; }
     VZ.ocupado = "audio"; VZ.error = ""; VZ.listo = ""; sonCallar(); pintarCrearVoz();
-    const r = await fetch("api/tours/" + TOUR + "/voz/audio", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ texto, voz: VZ.voz }) }).catch(() => null);
+    const r = await fetch("api/tours/" + TOUR + "/voz/audio", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(Object.assign({ texto, voz: VZ.voz }, idi === "en" ? { idioma: "en" } : {})) }).catch(() => null);
     if (VZ !== turno) return;
     if (!r || !r.ok) { VZ.error = await vzError(r, "No se pudo crear la voz. Revisa tu internet e inténtalo otra vez."); VZ.ocupado = ""; pintarCrearVoz(); return; }
     const d = await r.json().catch(() => ({})), duracion = await vzDuracion(urlArchivo(d.ruta));
     if (VZ !== turno) return;
-    P().vozTour = { archivo: d.ruta, nombre: "Voz de " + (d.voz || "Mozari"), peso: d.peso || 0, duracion: duracion || vzSeg(texto), texto, ia: { voz: VZ.voz } };
+    ponerVozIdioma(idi, { archivo: d.ruta, nombre: "Voz de " + (d.voz || "Mozari"), peso: d.peso || 0, duracion: duracion || vzSeg(texto), texto, ia: { voz: VZ.voz } });
     guardar();
-    if (vzEstado) { vzEstado.usadas = d.usadas || vzEstado.usadas; if (typeof d.creadas === "number") vzEstado.creadas = d.creadas; }
+    if (vzEstado) { vzEstado.usadas = d.usadas || vzEstado.usadas; if (typeof d.creadas === "number") vzEstado[idi === "en" ? "creadasEn" : "creadas"] = d.creadas; }
     VZ.ocupado = ""; VZ.listo = d.ruta; pintarCrearVoz();
     const l = $("vz-listo"); if (l) l.scrollIntoView({ block: "nearest" });
   }
   $("dlg-voz").addEventListener("click", (ev) => {
     if (!VZ) return;
     if (ev.target === $("dlg-voz") || ev.target.closest('[data-vz="cerrar"]')) { $("dlg-voz").close(); return; }
+    const ti = ev.target.closest("[data-vz-idioma]");
+    if (ti) { vzIdioma(ti.dataset.vzIdioma); return; }
     const mu = ev.target.closest("[data-vz-muestra]");
     if (mu) {
       ev.preventDefault(); const v = vzEstado.voces.find((x) => x.id === mu.dataset.vzMuestra); if (!v) return;
@@ -15144,7 +15353,7 @@ void main(){
       const k = s.dataset.son;
       if (k === "musica" || k === "voz" || k === "mezcla") sonOir(k);
       else if (k === "musica-quitar") { sonCallar(); quitarMusica(true).then(() => { if (VZ) pintarCrearVoz(); }); return; }
-      else if (k === "voz-quitar") { if (Date.now() - vzQuitar > 4000) vzQuitar = Date.now(); else { vzQuitar = 0; sonCallar(); delete P().vozTour; guardar(); VZ.listo = ""; } }
+      else if (k === "voz-quitar") { if (Date.now() - vzQuitar > 4000) vzQuitar = Date.now(); else { vzQuitar = 0; sonCallar(); quitarVozIdioma(VZ.idioma); guardar(); VZ.listo = ""; } }
       pintarCrearVoz(); return;
     }
     const a = ev.target.closest("[data-vz]"); if (!a || a.disabled || VZ.ocupado) return;
@@ -15167,10 +15376,29 @@ void main(){
     sonCallar(); VZ.ocupado = deMusica ? "musica" : "audio"; VZ.error = ""; VZ.listo = ""; pintarCrearVoz();
     const fallo = deMusica ? await ponerMusica(f, true) : await vozPropia(f);
     if (VZ !== turno) return;
-    VZ.ocupado = ""; VZ.error = fallo || ""; if (!fallo && !deMusica) { VZ.texto = ""; VZ.listo = P().vozTour.archivo; }
+    VZ.ocupado = ""; VZ.error = fallo || ""; if (!fallo && !deMusica) { VZ.texto = ""; VZ.listo = (vozDeIdioma(VZ.idioma) || {}).archivo || ""; }
     pintarCrearVoz();
   });
   $("dlg-voz").addEventListener("close", () => { const era = !!VZ; sonCallar(); VZ = null; VZA = null; $("dlg-voz").innerHTML = ""; if (!era) return; if (nav.sec === "skin" && $("sk-voz-grupo")) pintarPanelSkin(); pintarMusica(); });
+  // Mini tutorial de la voz en inglés y español: eliges «Inglés», escribes, creas su voz y en el tour la pastilla cambia de ES a EN
+  function animVozIdiomas(svg, t) {
+    const en = t > 1.0, lista = t > 2.2, enTour = t > 2.95, u = sv((t - 1.1) / 0.9);
+    let h = '<rect width="360" height="200" fill="#161a12"/><rect x="16" y="14" width="168" height="150" rx="12" fill="#101210" stroke="rgba(255,255,255,.18)"/>';
+    h += '<text x="28" y="32" fill="rgba(255,255,255,.6)" font-size="7.5" font-weight="700" letter-spacing="1.1">SONIDO DEL TOUR · VOZ</text>';
+    h += BTN_G(28, 40, 66, "Español", en ? "transparent" : "#D5FF40", en ? "#fff" : "#0B0B0B", en ? "rgba(255,255,255,.35)" : undefined) + BTN_G(100, 40, 66, "Inglés", en ? "#D5FF40" : "transparent", en ? "#0B0B0B" : "#fff", en ? undefined : "rgba(255,255,255,.35)");
+    h += '<rect x="28" y="70" width="144" height="50" rx="7" fill="#0b0c0a" stroke="' + (en && !lista ? "#D5FF40" : "rgba(255,255,255,.2)") + '"/>';
+    const a = "Welcome to Lomas", b = "del Sol.", todo = a + " " + b, k = en ? Math.round(todo.length * u) : 0, sl = todo.slice(0, k);
+    h += en ? '<text x="36" y="88" fill="#fff" font-size="8.5">' + sl.slice(0, a.length) + '</text><text x="36" y="100" fill="#fff" font-size="8.5">' + sl.slice(a.length + 1) + "</text>" : '<text x="36" y="88" fill="#fff" font-size="8.5">Bienvenido a Lomas</text><text x="36" y="100" fill="#fff" font-size="8.5">del Sol.</text>';
+    h += BTN_G(28, 130, 92, lista ? "✓ Voz lista" : "Crear la voz", lista ? "rgba(213,255,64,.15)" : "#D5FF40", lista ? "#D5FF40" : "#0B0B0B", lista ? "#D5FF40" : undefined);
+    h += '<rect x="200" y="14" width="144" height="150" rx="12" fill="#6f9fc0"/><path d="M200 112 L240 86 L270 102 L310 78 L344 100 V152 Q344 164 332 164 H212 Q200 164 200 152Z" fill="#5f8a4a"/>';
+    h += '<rect x="206" y="22" width="132" height="46" rx="15" fill="rgba(11,11,11,.82)"/><circle cx="221" cy="45" r="9" fill="#D5FF40"/><path d="M218 40 v10 l8 -5z" fill="#0B0B0B"/>';
+    h += '<text x="235" y="39" fill="#fff" font-size="7.5" font-weight="700">Narración</text><text x="235" y="57" fill="rgba(255,255,255,.9)" font-size="6.5">' + (enTour ? "Welcome to Lomas del Sol." : "Bienvenido a Lomas del Sol.") + "</text>";
+    h += '<rect x="296" y="29" width="36" height="15" rx="7.5" fill="rgba(255,255,255,.16)"/><rect x="' + (enTour ? 314 : 297) + '" y="30" width="17" height="13" rx="6.5" fill="#D5FF40"/>' +
+      '<text x="305.5" y="39.5" fill="' + (enTour ? "#fff" : "#0B0B0B") + '" font-size="6.5" font-weight="700" text-anchor="middle">ES</text><text x="322.5" y="39.5" fill="' + (enTour ? "#0B0B0B" : "#fff") + '" font-size="6.5" font-weight="700" text-anchor="middle">EN</text>';
+    const [cx, cy] = camino([[0, 330, 190], [0.8, 133, 51], [1.2, 133, 51], [1.9, 74, 141], [2.3, 74, 141], [2.8, 322, 37], [3.2, 322, 37], [4.4, 330, 190]], t);
+    h += TOQUE_G(133, 51, t, 0.85) + TOQUE_G(74, 141, t, 1.95) + TOQUE_G(322, 37, t, 2.85) + CURSOR_G(cx, cy) + pieG(enTour ? "Cada quien la oye en su idioma" : en ? "Escribe en inglés y crea su voz" : "Elige el idioma de la voz", enTour);
+    svg.innerHTML = h;
+  }
   // Mini tutorial: subes tu canción, escribes lo que dice la voz y el tour suena con las dos
   function animVozIA(svg, t) {
     const cancion = t > 0.8, escribe = Math.max(0, Math.min(1, (t - 1.3) / 1.2)), crea = t > 3.0, onda = t > 3.3;
@@ -15202,7 +15430,7 @@ void main(){
         const s = VZA.saldo;
         h += (s ? "<p>Tu cuenta de ElevenLabs (" + esc(s.plan || "plan") + "): " + (s.incluidas - s.usadas).toLocaleString("es-MX") + " letras disponibles" + (s.renueva ? "; se renuevan el " + esc(s.renueva) : "") + ".</p>" : "") +
           '<label class="fe-campo">Modelo de voz<select class="entrada" data-vza-modelo>' + VZA.modelos.map((x) => '<option value="' + esc(x.id) + '"' + (x.id === VZA.modelo ? " selected" : "") + ">" + esc(x.nombre) + "</option>").join("") + "</select></label>" +
-          '<p class="nota">Marca hasta 12 voces. El nombre es el que verán tus usuarios; puedes cambiarlo.</p><div class="vza-lista">' + VZA.voces.map((v, i) => '<div class="vza-voz"><input type="checkbox" class="toggle" data-vza-si="' + i + '"' + (v.si ? " checked" : "") + ' aria-label="Ofrecer ' + esc(v.nombre) + '"><input class="entrada" data-vza-nombre="' + i + '" value="' + esc(v.nombre) + '" maxlength="40" title="' + esc(v.completo || v.nombre) + '"><small>' + esc(v.tono || v.tipo || "") + (v.idioma && v.idioma !== "es" ? " · " + esc(v.idioma) : "") + "</small>" +
+          '<p class="nota">Marca hasta 16 voces (las de inglés salen solo con «Voz en inglés y español»). El nombre es el que verán tus usuarios; puedes cambiarlo.</p><div class="vza-lista">' + VZA.voces.map((v, i) => '<div class="vza-voz"><input type="checkbox" class="toggle" data-vza-si="' + i + '"' + (v.si ? " checked" : "") + ' aria-label="Ofrecer ' + esc(v.nombre) + '"><input class="entrada" data-vza-nombre="' + i + '" value="' + esc(v.nombre) + '" maxlength="40" title="' + esc(v.completo || v.nombre) + '"><small>' + esc(v.tono || v.tipo || "") + (v.idioma === "en" ? " · inglés" : v.idioma && v.idioma !== "es" ? " · " + esc(v.idioma) : "") + "</small>" +
             (v.muestra ? '<button type="button" class="mini" data-vza-muestra="' + i + '">' + (vzSonando === v.id ? "❚❚" : "▶") + "</button>" : "<span></span>") + "</div>").join("") + "</div>" +
           '<div class="ub-acc"><button type="button" class="btn-prim" data-vza="guardar">Guardar voces</button><span class="nota" id="vza-nota"></span></div>';
       }
@@ -15225,7 +15453,7 @@ void main(){
     const mu = ev.target.closest("[data-vza-muestra]");
     if (mu) { const v = VZA.voces[+mu.dataset.vzaMuestra]; if (vzSonando === v.id) vzCallar(); else { vzMuestra.src = v.muestra; vzSonando = v.id; vzMuestra.play().catch(() => (vzSonando = "")); } VZA.pinta(); return; }
     if (ev.target.closest('[data-vza="guardar"]')) {
-      const voces = VZA.voces.filter((v) => v.si).slice(0, 12).map((v) => ({ id: v.id, nombre: v.nombre, tono: v.tono, muestra: v.muestra }));
+      const voces = VZA.voces.filter((v) => v.si).slice(0, 16).map((v) => ({ id: v.id, nombre: v.nombre, tono: v.tono, muestra: v.muestra, idioma: v.idioma === "en" ? "en" : "es" }));
       const r = await fetch("api/admin/voz", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ modelo: VZA.modelo, voces }) }).catch(() => null);
       if (r && r.ok) { vzEstado = null; $("dlg-voz").close(); avisar(voces.length + (voces.length === 1 ? " voz guardada" : " voces guardadas")); pintarLaboratorio(); } else { const n = $("vza-nota"); if (n) n.textContent = await vzError(r, "No se pudo guardar"); }
     }

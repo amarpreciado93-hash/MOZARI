@@ -509,3 +509,65 @@
 - La actualización «Tu cliente marca sus lotes vendidos» (publicada el 22 nov con su animación de 13 s) se cambia a
   este destino después del push.
 - Revisión completa: 121 de 121.
+
+## 22 nov 2026 · La voz de ElevenLabs no salía: no había voces elegidas
+
+- Amar: «no ha funcionado lo de 11 Labs». Causa: la llave sí servía (el catálogo respondía y el saldo iba en 8,556 de
+  300,000), pero en config/voz.json no había ninguna voz elegida; sin voces, «Sonido del tour» decía que las voces no
+  estaban disponibles. Nunca se había generado una voz real (pendiente desde el 18 nov).
+- Se guardaron 7 voces en español, con el modelo eleven_multilingual_v2: Verónica, Daisy y Maya (mujer, latinas);
+  Pablo, Alberto, Eduardo y Enrique (hombre, mexicanas). Se dejaron fuera su voz clonada («Amar Preciado») y «WANDA
+  VIRTUAL»: son voces de personas y no se ofrecen a todos sin que él lo diga. Los nombres van solo con el nombre de pila.
+- Probado en producción: una voz de 53 letras salió en 2 s (MP3 de 3.8 s) en el borrador Enza (el archivo quedó
+  suelto, sin ponerse en el tour) y la ventana «Sonido del tour» ya muestra las 7 voces con su muestra.
+- El Laboratorio «voz-ia» sigue en «Solo yo».
+- Mismo día, con OK de Amar («todo lo que ya funciona de Eleven Labs ábrelo para todos… con la nueva actualización y su
+  mini tutorial»): Laboratorio «voz-ia» pasa a «todos». Las cuentas de prueba ven la ventana y pueden subir su música y
+  su propio audio, pero no crean voces (0 letras). Novedad «La música y la voz de tu tour, en una sola ventana»
+  (mws47fwp195o, para todos, botón a Interfaz) con video hecho en canvas en el navegador (13.9 s). En iPhone la música
+  sigue pausándose mientras habla la voz (pendiente conocido del 19 nov).
+
+## 22 nov 2026 · Voz en inglés y español (Laboratorio «voz-idiomas», nace Solo yo)
+
+- Amar: «que la voz venga en inglés y en español y que en tu interfaz puedas switchar el idioma… vamos a abrirlo
+  únicamente para mi laboratorio».
+- En «Sonido del tour», la parte de la voz trae «Español | Inglés». Cada idioma tiene su texto, su voz y su audio (se
+  puede subir uno propio). La de inglés se guarda en proyecto.vozTour.en con la misma forma que la de español.
+- Las voces elegidas en el panel dicen su idioma (config/voz.json → idioma "es" o "en"; las que no lo dicen son de
+  español). Hasta 16 voces. Sin la función solo se ofrecen las de español y el servidor no deja crear voz en inglés.
+  Una voz de inglés no lee en español ni al revés. El texto en inglés va tal cual (las abreviaturas «Mz»/«Lt» solo
+  se cambian en español). Cada idioma cuenta sus 2 voces al mes por tour aparte (<tour>:en).
+- En el tour, con las dos voces la pastilla de la voz trae ES | EN. Arranca en el idioma del navegador del visitante
+  (inglés si su celular o compu está en inglés) y se recuerda en la pestaña. Al cambiar, la voz vuelve a empezar en el
+  otro idioma con su subtítulo. La interfaz del tour (botones, ficha) sigue en español.
+- Al publicar, la voz en inglés solo sale si su dueño tiene la función; lo de trabajo (ia) no se publica.
+- Mini tutorial «Nuevo: la voz en inglés y español» en Interfaz.
+- Pendiente después del push: elegir las voces en inglés en el panel (no antes: sin este código el idioma se perdía
+  y saldrían como voces de español para todos).
+
+## 22 nov 2026 · Lotes vendidos sin número ni ficha (Laboratorio «lotes-vendidos», nace Solo yo)
+
+- Amar: «vendí 4 lotes… sigue apareciendo el número del lote 20, manzana 2… Si ya está en rojo, ya no quiero que salgan
+  los números… ni la ficha técnica… ya no es clicable… quiero borrar los números pero no puedo… se borra toda la manzana».
+- Causa: el rótulo y el clic se apagaban lote por lote (o la manzana entera, que se los quitaba a todos), y el número
+  no es una pieza aparte que se pueda borrar.
+- Ahora manda el estado: cada estado puede apagar «Muestran su número» (sinNumero: número, superficie y medidas) y
+  «Se pueden tocar» (sinToque: ni ficha ni rollover). Vale para todos los lotes en ese estado, también los que se
+  marquen después desde el celular o el link del cliente. De inicio ningún estado los apaga (los tours de siempre no
+  cambian).
+- Dónde: al tocar un lote, en Estado («Todos los lotes Vendido del tour»), y en Fichas técnicas → «Ya vendidos».
+- Se aplica en loteDe (el rótulo y el rollover), en el clic del tour y en la Foto 360. Al publicar, sin la función
+  los estados se publican sin estas opciones.
+- Mini tutorial «Nuevo: lotes vendidos sin número ni ficha» al tocar un lote.
+
+## 22 nov 2026 · Unir manzanas (Laboratorio «manzana-unir», nace Solo yo)
+
+- Amar: «hay una manzana que tiene dobles lotes de enfrente y de atrás, pero en la esquina tiene lotes en vertical…
+  hago dos manzanas… y cuando pongo manzana 1 no se fusionan… que las dos tengan la misma propiedad».
+- En la manzana: «Unir con otra manzana». La otra queda como su parte 2: toma su número, su rótulo, el estilo de los
+  lotes y el contorno, y la numeración sigue (parte 1: 1–11, parte 2: 12–21). Se guarda en manzana.union y
+  manzana.parte. Cambiar lotes, «Primer número», el número de manzana, el rótulo, el estilo o el contorno de una
+  cambia todas. «Que esta parte vaya primero» y «Separar esta parte». Ya no avisa que hay otra manzana con el mismo
+  número si es su parte. En Capas cada parte dice «parte N».
+- Solo en la misma esfera. Duplicar una manzana la deja sin unión; al pegar, las copias forman su propia unión.
+- Mini tutorial «Nuevo: unir manzanas» en la manzana.

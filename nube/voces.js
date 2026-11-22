@@ -24,7 +24,12 @@
 //
 //   cuentas/<uid>/voz.json   { mes, letras, tours: { <id>: voces creadas } }   lo usado en el mes
 //   config/voz-uso.json      { mes, letras }            lo usado por todo Mozari en el mes
-//   config/voz.json          { modelo, voces: [{ id, nombre, tono, muestra }] }
+//   config/voz.json          { modelo, voces: [{ id, nombre, tono, muestra, idioma }] }
+//
+// Voz en inglés y español (Laboratorio «voz-idiomas», pedido de Amar 22 nov 2026: «que la voz venga en inglés y en
+// español y que en la interfaz se pueda switchar el idioma»): cada voz elegida dice su idioma ("es" o "en"; las que
+// no lo dicen son de español). Quien no tiene la función solo ve las de español. La voz en inglés del tour se cuenta
+// aparte (<tour>:en), así cada idioma tiene sus 2 voces al mes.
 
 import { json, error } from "./comun.js";
 
@@ -32,7 +37,10 @@ export const VOZ_LETRAS = { gratis: 0, pro: 5000, desarrollos: 12000 };  // letr
 export const VOZ_POR_TOUR = 2;                                           // voces que cada tour puede crear al mes (el dueño no tiene límite)
 export const VOZ_TOPE_MES = 90000;                                       // todo Mozari, al mes (hora y media de voz); va por debajo del tope de la llave
 export const VOZ_MAX = 1200;                                             // letras por voz (poco más de un minuto)
-const VOCES_PRUEBA = [{ id: "prueba-ana", nombre: "Ana", tono: "Cálida", muestra: "" }, { id: "prueba-luis", nombre: "Luis", tono: "Seria", muestra: "" }];
+const VOCES_PRUEBA = [{ id: "prueba-ana", nombre: "Ana", tono: "Cálida", muestra: "", idioma: "es" }, { id: "prueba-luis", nombre: "Luis", tono: "Seria", muestra: "", idioma: "es" },
+  { id: "prueba-emma", nombre: "Emma", tono: "Voz de mujer · estadounidense", muestra: "", idioma: "en" }, { id: "prueba-jack", nombre: "Jack", tono: "Voz de hombre · británica", muestra: "", idioma: "en" }];
+const MAX_VOCES = 16; // las de español y las de inglés
+const idiomaDe = (v) => (v && v.idioma === "en" ? "en" : "es");
 
 const mesHoy = () => new Date().toISOString().slice(0, 7);
 const deJson = async (env, k) => { const o = await env.R2.get(k); return o ? o.json().catch(() => null) : null; };
@@ -56,8 +64,8 @@ const nombreCorto = (n) => corto(String(n || "").replace(/^\s*\[[^\]]*\]\s*/, ""
 
 export async function confVoz(env) {
   const c = (await deJson(env, "config/voz.json")) || {};
-  const voces = (Array.isArray(c.voces) ? c.voces : []).filter((v) => v && /^[A-Za-z0-9_-]{6,60}$/.test(v.id || "")).slice(0, 12)
-    .map((v) => ({ id: v.id, nombre: corto(v.nombre || "Voz", 40), tono: /\b(male|female|middle_aged)\b|·\s*(en|es)\s*$/.test(v.tono || "") ? tonoEs(v.tono) : corto(v.tono, 60), muestra: /^https:\/\/[^\s"<>]+$/.test(v.muestra || "") ? String(v.muestra).slice(0, 400) : "" }));
+  const voces = (Array.isArray(c.voces) ? c.voces : []).filter((v) => v && /^[A-Za-z0-9_-]{6,60}$/.test(v.id || "")).slice(0, MAX_VOCES)
+    .map((v) => ({ id: v.id, nombre: corto(v.nombre || "Voz", 40), tono: /\b(male|female|middle_aged)\b|·\s*(en|es)\s*$/.test(v.tono || "") ? tonoEs(v.tono) : corto(v.tono, 60), muestra: /^https:\/\/[^\s"<>]+$/.test(v.muestra || "") ? String(v.muestra).slice(0, 400) : "", idioma: idiomaDe(v) }));
   return { modelo: /^[a-z0-9_.-]{3,60}$/.test(c.modelo || "") ? c.modelo : "eleven_multilingual_v2", voces: voces.length ? voces : dePrueba(env) ? VOCES_PRUEBA : [] };
 }
 async function usoVoz(env, uid) {
@@ -74,9 +82,10 @@ const conectadas = (env) => !!env.ELEVENLABS_KEY || dePrueba(env);
 
 const idTour = (t) => (/^[a-z0-9-]{1,80}$/.test(t || "") ? t : "");
 // GET api/voz?tour=<id>: las voces que hay, lo que le queda a la cuenta este mes y las voces que ese tour ya creó
-export async function vozEstado(env, yo, plan, tour) {
-  const c = await confVoz(env), u = await usoVoz(env, yo.uid);
-  return json({ activo: conectadas(env) && c.voces.length > 0, voces: c.voces, usadas: u.letras, tope: topeDe(yo, plan), max: VOZ_MAX, porTour: yo.admin ? null : VOZ_POR_TOUR, creadas: +u.tours[idTour(tour)] || 0 });
+// (idiomas: la cuenta tiene «voz-idiomas»; sin ella solo se ofrecen las voces de español)
+export async function vozEstado(env, yo, plan, tour, idiomas) {
+  const c = await confVoz(env), u = await usoVoz(env, yo.uid), voces = idiomas ? c.voces : c.voces.filter((v) => v.idioma === "es"), t = idTour(tour);
+  return json({ activo: conectadas(env) && voces.length > 0, voces, idiomas: !!idiomas, usadas: u.letras, tope: topeDe(yo, plan), max: VOZ_MAX, porTour: yo.admin ? null : VOZ_POR_TOUR, creadas: +u.tours[t] || 0, creadasEn: idiomas ? +u.tours[t + ":en"] || 0 : 0 });
 }
 
 // ---------- La voz ----------
@@ -93,11 +102,11 @@ function wavPrueba(seg) {
   return b.buffer;
 }
 const NO_HAY = "Las voces de Mozari no están disponibles por ahora. Mientras, puedes subir tu propio audio.";
-async function leerEleven(env, conf, vozId, texto) {
+async function leerEleven(env, conf, vozId, texto, idioma) {
   const RESPALDO = "eleven_multilingual_v2";
   const pedir = (modelo, conIdioma) => fetch("https://api.elevenlabs.io/v1/text-to-speech/" + encodeURIComponent(vozId) + "?output_format=mp3_44100_128", { method: "POST",
     headers: { "xi-api-key": env.ELEVENLABS_KEY, "content-type": "application/json", accept: "audio/mpeg" },
-    body: JSON.stringify(Object.assign({ text: texto, model_id: modelo, apply_text_normalization: "auto" }, conIdioma ? { language_code: "es" } : {})) }).catch(() => null);
+    body: JSON.stringify(Object.assign({ text: texto, model_id: modelo, apply_text_normalization: "auto" }, conIdioma ? { language_code: idioma === "en" ? "en" : "es" } : {})) }).catch(() => null);
   const conIdioma = /v2_5|v3|v4/.test(conf.modelo); // los modelos nuevos aceptan que se les fije el idioma; el multilingüe v2 no
   const noLoAcepta = (x) => x && (x.status === 400 || x.status === 422);
   let r = await pedir(conf.modelo, conIdioma);
@@ -115,33 +124,35 @@ async function leerEleven(env, conf, vozId, texto) {
   return { status: 502, error: "No se pudo generar la voz. Inténtalo otra vez." };
 }
 
-// POST api/tours/<id>/voz/audio  { texto, voz } → { ruta, peso, letras, usadas, tope, voz, creadas, porTour }
-// usoDe y limite vienen del estudio (el espacio de la cuenta y su respuesta de «llegaste al límite»)
-export async function vozAudio(request, env, yo, plan, base, usoDe, limite, tour) {
-  const c = await request.json().catch(() => ({})), texto = corto(c.texto, VOZ_MAX + 50), conf = await confVoz(env), voz = conf.voces.find((v) => v.id === c.voz);
+// POST api/tours/<id>/voz/audio  { texto, voz, idioma } → { ruta, peso, letras, usadas, tope, voz, idioma, creadas, porTour }
+// usoDe y limite vienen del estudio (el espacio de la cuenta y su respuesta de «llegaste al límite»); idiomas: tiene «voz-idiomas»
+export async function vozAudio(request, env, yo, plan, base, usoDe, limite, tour, idiomas) {
+  const c = await request.json().catch(() => ({})), texto = corto(c.texto, VOZ_MAX + 50), conf = await confVoz(env), idioma = idiomas && c.idioma === "en" ? "en" : "es";
+  if (c.idioma === "en" && !idiomas) return error(403, "La voz en inglés aún no está en tu cuenta");
+  const voz = conf.voces.find((v) => v.id === c.voz && v.idioma === idioma);
   if (texto.length < 5) return error(400, "Escribe primero lo que quieres que diga la voz");
   if (texto.length > VOZ_MAX) return error(400, "El texto pasa de " + VOZ_MAX.toLocaleString("es-MX") + " letras (poco más de un minuto). Acórtalo un poco.");
   if (!conectadas(env) || !conf.voces.length) return error(503, NO_HAY);
   if (!voz) return error(400, "Elige una voz");
-  const u = await usoVoz(env, yo.uid), tope = topeDe(yo, plan), todos = await usoTodos(env), t = idTour(tour), creadas = +u.tours[t] || 0;
-  if (!yo.admin && creadas >= VOZ_POR_TOUR) return error(429, "Este tour ya creó sus " + VOZ_POR_TOUR + " voces de este mes. Quédate con la que tienes o sube tu propio audio; el día 1 puedes crear otra.");
+  const u = await usoVoz(env, yo.uid), tope = topeDe(yo, plan), todos = await usoTodos(env), t = idTour(tour) && idTour(tour) + (idioma === "en" ? ":en" : ""), creadas = +u.tours[t] || 0;
+  if (!yo.admin && creadas >= VOZ_POR_TOUR) return error(429, "Este tour ya creó sus " + VOZ_POR_TOUR + " voces " + (idioma === "en" ? "en inglés " : "") + "de este mes. Quédate con la que tienes o sube tu propio audio; el día 1 puedes crear otra.");
   if (tope !== null && u.letras + texto.length > tope) return limite(tope ? "Este mes ya usaste tus " + tope.toLocaleString("es-MX") + " letras de voz. Se renuevan el día 1; mientras, puedes subir tu propio audio." : "Las voces de Mozari vienen con las licencias Pro y Desarrollos. Con tu cuenta de prueba puedes subir tu propio audio.", "voz");
   if (todos.letras + texto.length > VOZ_TOPE_MES) return error(503, "Las voces de Mozari llegaron a su tope de este mes y vuelven el día 1. Mientras, puedes subir tu propio audio.");
   if (plan.bytes !== null) { const esp = await usoDe(env, yo.uid); if (esp.bytes + texto.length * 1100 > plan.bytes) return limite("No queda espacio en tu cuenta para guardar la voz. Borra un tour o una esfera que ya no uses.", "espacio"); }
   let audio, ext = "mp3";
   if (dePrueba(env)) { audio = wavPrueba(texto.length / 15); ext = "wav"; }
-  else { const r = await leerEleven(env, conf, voz.id, aVoz(texto)); if (!r.audio) return error(r.status, r.error); audio = r.audio; }
+  else { const r = await leerEleven(env, conf, voz.id, idioma === "en" ? texto : aVoz(texto), idioma); if (!r.audio) return error(r.status, r.error); audio = r.audio; }
   const ruta = "archivos/voz-" + Date.now().toString(36) + "." + ext;
   await env.R2.put(base + ruta, audio, { httpMetadata: { contentType: ext === "mp3" ? "audio/mpeg" : "audio/wav" } });
   u.letras += texto.length; todos.letras += texto.length;
   if (t) { u.tours[t] = creadas + 1; const ks = Object.keys(u.tours); if (ks.length > 400) delete u.tours[ks[0]]; }
   await Promise.all([aJson(env, "cuentas/" + yo.uid + "/voz.json", u), aJson(env, "config/voz-uso.json", todos)]);
-  return json({ ruta, peso: audio.byteLength, letras: texto.length, usadas: u.letras, tope, voz: voz.nombre, creadas: t ? u.tours[t] : 0, porTour: yo.admin ? null : VOZ_POR_TOUR });
+  return json({ ruta, peso: audio.byteLength, letras: texto.length, usadas: u.letras, tope, voz: voz.nombre, idioma, creadas: t ? u.tours[t] : 0, porTour: yo.admin ? null : VOZ_POR_TOUR });
 }
 
 // ---------- Panel de dueño ----------
 //   GET  api/admin/voz            cómo está: llave, modelo, voces elegidas y lo usado en el mes
-//   PUT  api/admin/voz            { modelo, voces: [{ id, nombre, tono, muestra }] }
+//   PUT  api/admin/voz            { modelo, voces: [{ id, nombre, tono, muestra, idioma }] }
 //   GET  api/admin/voz/catalogo   las voces y los modelos de la cuenta de ElevenLabs, y su saldo
 export async function adminVoz(request, env, partes) {
   const m = request.method;
@@ -151,7 +162,7 @@ export async function adminVoz(request, env, partes) {
   }
   if (partes.length === 3 && m === "PUT") {
     const c = await request.json().catch(() => ({})), antes = (await deJson(env, "config/voz.json")) || {};
-    const voces = Array.isArray(c.voces) ? c.voces.filter((v) => v && /^[A-Za-z0-9_-]{6,60}$/.test(v.id || "")).slice(0, 12).map((v) => ({ id: v.id, nombre: corto(v.nombre || "Voz", 40), tono: corto(v.tono, 60), muestra: /^https:\/\/[^\s"<>]+$/.test(v.muestra || "") ? String(v.muestra).slice(0, 400) : "" })) : antes.voces || [];
+    const voces = Array.isArray(c.voces) ? c.voces.filter((v) => v && /^[A-Za-z0-9_-]{6,60}$/.test(v.id || "")).slice(0, MAX_VOCES).map((v) => ({ id: v.id, nombre: corto(v.nombre || "Voz", 40), tono: corto(v.tono, 60), muestra: /^https:\/\/[^\s"<>]+$/.test(v.muestra || "") ? String(v.muestra).slice(0, 400) : "", idioma: idiomaDe(v) })) : antes.voces || [];
     const modelo = typeof c.modelo === "string" ? c.modelo.trim() : antes.modelo || "eleven_multilingual_v2";
     if (!/^[a-z0-9_.-]{3,60}$/.test(modelo)) return error(400, "Ese modelo de voz no es válido");
     await aJson(env, "config/voz.json", { modelo, voces });
