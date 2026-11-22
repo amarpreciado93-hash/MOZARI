@@ -571,3 +571,13 @@
   número si es su parte. En Capas cada parte dice «parte N».
 - Solo en la misma esfera. Duplicar una manzana la deja sin unión; al pegar, las copias forman su propia unión.
 - Mini tutorial «Nuevo: unir manzanas» en la manzana.
+
+## 22 nov 2026 · Lotes disponibles transparentes (Laboratorio «lotes-vendidos»)
+
+- Amar: «todos los lotes disponibles me gustaría que queden color transparente».
+- Cada estado tiene una tercera opción: «Con color» (apagada = sinRelleno: el lote queda transparente, solo con su
+  borde; al pasar el mouse se ilumina un poco si tiene rollover). En el panel del lote (Estado) y en Fichas técnicas →
+  «Por estado» → «Transparentes». Vale para todos los lotes en ese estado. Sin la función no se publica.
+- Voces en inglés elegidas después del push de 23d2db0: Sarah, Matilda y Bella (mujer), Eric, Brian y George (hombre);
+  una voz real en inglés salió bien en producción.
+- La revisión completa del 23d2db0 se detuvo en 76 pruebas, todas bien (Amar pidió esto antes de que terminara).

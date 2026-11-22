@@ -2498,9 +2498,9 @@
           <span class="nota" id="lt-rotulo-ejemplo"></span>
         </div>
         <div class="lotes-terminos" id="lt-reglas-fila" hidden>
-          <span>Ya vendidos:</span>
+          <span>Por estado:</span>
           <span class="lt-reglas" id="lt-reglas"></span>
-          <span class="nota">Los estados marcados van sin número o sin ficha en el tour (por ejemplo, Vendido). Vale para todos sus lotes, también los que marques después.</span>
+          <span class="nota">Los estados marcados van sin número, sin ficha o transparentes en el tour (por ejemplo, Vendido sin número; Disponible transparente). Vale para todos sus lotes, también los que marques después.</span>
         </div>
         <div class="lotes-terminos" id="lt-estados-fila">
           <span>Estados:</span>
@@ -2867,6 +2867,7 @@
     const l = Object.assign({}, LOTE_DEF, c.lote), e = reglaDe(c);
     if (e && e.sinNumero) { l.etiqueta = false; l.verArea = false; l.medidas = false; }
     if (e && e.sinToque) l.rollover = false;
+    if (e && e.sinRelleno) l.opacidad = 0; // transparentes (Amar, 22 nov 2026: «todos los lotes disponibles… que queden color transparente»)
     return l;
   };
   const numES = (v) => { const n = parseFloat(String(v).replace(/,/g, "")); return isFinite(n) && /^[\d.,\s]+$/.test(String(v).trim()) ? n : null; };
@@ -12269,7 +12270,7 @@ void main(){
       '<button data-estado="' + e.id + '" aria-pressed="' + (estadoDe(c).id === e.id) + '" style="--c:' + e.color + '"><i></i>' + esc(e.nombre) + "</button>").join("") + "</div>" +
       '<p class="nota">Cambia en todas las esferas donde aparece este lote y en su ficha.</p>' +
       '<div class="estado-colores"><span>Colores:</span>' + estadosLote().map((e) => '<label title="Color de ' + esc(e.nombre) + '"><input type="color" value="' + e.color + '" data-color-estado="' + e.id + '" aria-label="Color de ' + esc(e.nombre) + '">' + esc(e.nombre) + "</label>").join("") + "</div>" +
-      (enLab("lotes-vendidos") ? (() => { const e = estadoDe(c); return '<div class="regla-estado" style="--c:' + e.color + '"><p class="nota">Todos los lotes <b>' + esc(e.nombre) + "</b> del tour:</p>" + interruptor("Muestran su número", "_regla.sinNumero", !e.sinNumero) + interruptor("Se pueden tocar (abren su ficha)", "_regla.sinToque", !e.sinToque) + "</div>"; })() : "") + "</div>";
+      (enLab("lotes-vendidos") ? (() => { const e = estadoDe(c); return '<div class="regla-estado" style="--c:' + e.color + '"><p class="nota">Todos los lotes <b>' + esc(e.nombre) + "</b> del tour:</p>" + interruptor("Muestran su número", "_regla.sinNumero", !e.sinNumero) + interruptor("Se pueden tocar (abren su ficha)", "_regla.sinToque", !e.sinToque) + interruptor("Con color (apagado: transparentes, solo el borde)", "_regla.sinRelleno", !e.sinRelleno) + "</div>"; })() : "") + "</div>";
     h += '<div class="grupo"><b>Medidas por lado</b><div class="lados">' + l.lados.map((v, i) =>
       '<label class="lado"><span><input type="radio" name="frente" data-frente="' + i + '"' + (+l.frente === i ? " checked" : "") + ' aria-label="Este lado es el frente">' + (+l.frente === i ? "Frente" : "Lado " + (i + 1)) + '</span><input type="text" inputmode="decimal" data-k="lote.lados.' + i + '" data-lado="' + i + '" value="' + esc(v) + '" placeholder="m"></label>').join("") + "</div>" +
       '<p class="nota">Al escribir, el lado se marca en la esfera. El círculo marca cuál es el frente.</p></div>';
@@ -12770,16 +12771,16 @@ void main(){
   function pintarReglasEstados() {
     const fila = $("lt-reglas-fila"); fila.hidden = !(MODO === "nube" && enLab("lotes-vendidos")); if (fila.hidden) return;
     const E = estadosLote(), grupo = (k, t) => '<span class="lt-regla"><b>' + t + '</b><span class="estados">' + E.map((e) => '<button type="button" data-regla="' + k + '" data-regla-estado="' + e.id + '" aria-pressed="' + !!e[k] + '" style="--c:' + e.color + '"><i></i>' + esc(e.nombre) + "</button>").join("") + "</span></span>";
-    $("lt-reglas").innerHTML = grupo("sinNumero", "Sin número") + grupo("sinToque", "Sin ficha (no se tocan)");
+    $("lt-reglas").innerHTML = grupo("sinNumero", "Sin número") + grupo("sinToque", "Sin ficha (no se tocan)") + grupo("sinRelleno", "Transparentes (solo el borde)");
   }
   $("lt-reglas").addEventListener("click", (ev) => { const b = ev.target.closest("[data-regla]"); if (b) cambiarReglaEstado(b.dataset.reglaEstado, b.dataset.regla, b.getAttribute("aria-pressed") !== "true"); });
   function cambiarReglaEstado(id, k, si) {
-    if (k !== "sinNumero" && k !== "sinToque") return;
+    if (k !== "sinNumero" && k !== "sinToque" && k !== "sinRelleno") return;
     est.lotesEstados = estadosLote().map((e) => { if (e.id !== id) return e; const x = Object.assign({}, e); if (si) x[k] = true; else delete x[k]; return x; });
     guardar(); pintarReglasEstados();
     if (motorEd) { motorEd.construir(); pintarCapas(); if (motorEd.elegida) pintarProps(); }
     const e = estadosLote().find((x) => x.id === id) || {}, n = lotesUnicos().filter((x) => estadoDe(x.c).id === id).length, de = "Los lotes «" + e.nombre + "»" + (n ? " (" + n + ")" : "");
-    avisar(k === "sinNumero" ? de + (si ? " ya no muestran su número en el tour." : " vuelven a mostrar su número.") : de + (si ? " ya no se pueden tocar en el tour: no abren su ficha." : " se pueden tocar otra vez."), 4200);
+    avisar(k === "sinNumero" ? de + (si ? " ya no muestran su número en el tour." : " vuelven a mostrar su número.") : k === "sinRelleno" ? de + (si ? " quedan transparentes, solo con su borde." : " vuelven a llevar su color.") : de + (si ? " ya no se pueden tocar en el tour: no abren su ficha." : " se pueden tocar otra vez."), 4200);
   }
   $("lt-estados").addEventListener("click", (ev) => {
     if (ev.target.closest("[data-mas-estado]")) { agregarEstado(); return; }
@@ -12817,7 +12818,7 @@ void main(){
   }
   $("props").addEventListener("change", (ev) => {
     if (ev.target.dataset.k === "_vinculo") { vincular(ev.target.checked); return; }
-    if (/^_regla\.(sinNumero|sinToque)$/.test(ev.target.dataset.k || "")) { const c = buscar(motorEd.elegida); if (c && c.lote) cambiarReglaEstado(estadoDe(c).id, ev.target.dataset.k.slice(7), !ev.target.checked); return; }
+    if (/^_regla\.(sinNumero|sinToque|sinRelleno)$/.test(ev.target.dataset.k || "")) { const c = buscar(motorEd.elegida); if (c && c.lote) cambiarReglaEstado(estadoDe(c).id, ev.target.dataset.k.slice(7), !ev.target.checked); return; }
     if (ev.target.dataset.frente !== undefined) { const c = buscar(motorEd.elegida); c.lote.frente = +ev.target.dataset.frente; c.lote.frenteManual = true; if (c.vinculo) propagar(c, motorEd.actual.id); guardar(); pintarProps(); return; }
     if (ev.target.dataset.subir === "imagen") { subirImagenAccion(ev.target); return; }
     if (ev.target.dataset.subir === "capa") { const f = ev.target.files[0], c = motorEd.elegida && buscar(motorEd.elegida); ev.target.value = ""; if (f && c) imagenCapa(f, c); return; }

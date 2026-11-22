@@ -5434,6 +5434,9 @@ async function capasPesadas(p) {
         await n.click('#lt-reglas [data-regla="sinToque"][data-regla-estado="apartado"]'); await n.waitForTimeout(1200);
         exige(((await leer()).lotesEstados.find((e) => e.id === "apartado") || {}).sinToque === true, "desde Fichas técnicas no se guarda");
         await n.click('#lt-reglas [data-regla="sinToque"][data-regla-estado="apartado"]'); await n.waitForTimeout(1200);
+        // los disponibles, transparentes (solo su borde)
+        await n.click('#lt-reglas [data-regla="sinRelleno"][data-regla-estado="disponible"]'); await n.waitForTimeout(1200);
+        exige(((await leer()).lotesEstados.find((e) => e.id === "disponible") || {}).sinRelleno === true, "«Transparentes» no se guarda");
         // 5) Publicado: el vendido sin rótulo y sin toque; los demás como siempre
         exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
         const pub = await (await fetch(TOURS + "/" + id + "/proyecto.json")).json();
@@ -5442,6 +5445,8 @@ async function capasPesadas(p) {
         const tocables = await t.evaluate(() => document.querySelectorAll(".cp-lote path.con-accion").length), total = (await mzs()).reduce((a, x) => a + x.lotes.length, 0);
         exige(tocables === total - 1, "en el tour el lote vendido se puede tocar (o los demás no): " + tocables + " de " + total);
         exige(!(await rotulo(t, "Lote 3")) && await rotulo(t, "Lote 4"), "en el tour el lote vendido sigue con su número");
+        const rellenos = await t.evaluate(() => [...document.querySelectorAll(".cp-lote path")].map((x) => x.style.getPropertyValue("--fo")));
+        exige(rellenos.filter((v) => +v === 0).length === total - 1 && rellenos.filter((v) => +v > 0).length === 1, "en el tour los disponibles no quedaron transparentes (y el vendido con su color): " + rellenos.join(","));
         if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "lotes-vendidos-tour.png") });
         exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
         // 6) Nacen Solo yo: sin las funciones no salen y lo guardado no se publica

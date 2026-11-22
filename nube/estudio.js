@@ -1356,7 +1356,7 @@ async function api(request, env, partes, yo) {
     // Rótulo corto y grande (Laboratorio): solo se publica si su dueño tiene la función
     if (!lab.includes("rotulo-corto")) delete p.proyecto.rotuloCorto;
     // Lotes vendidos sin número ni ficha (Laboratorio «lotes-vendidos»): sin la función, todos los estados se ven como siempre
-    if (!lab.includes("lotes-vendidos") && Array.isArray(p.lotesEstados)) p.lotesEstados = p.lotesEstados.map((e) => { if (!e || typeof e !== "object") return e; const x = Object.assign({}, e); delete x.sinNumero; delete x.sinToque; return x; });
+    if (!lab.includes("lotes-vendidos") && Array.isArray(p.lotesEstados)) p.lotesEstados = p.lotesEstados.map((e) => { if (!e || typeof e !== "object") return e; const x = Object.assign({}, e); delete x.sinNumero; delete x.sinToque; delete x.sinRelleno; return x; });
     // Ubicación en satélite (Laboratorio): el mapa /mapa solo se publica si su dueño tiene la función
     if (!lab.includes("ubicacion")) delete p.proyecto.ubicacion;
     // Voz del tour (Laboratorio): solo se publica si su dueño tiene la función; sus notas de trabajo se quedan en el borrador
