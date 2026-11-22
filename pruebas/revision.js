@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto", "nuevo-voz-idiomas", "nuevo-lotes-vendidos", "nuevo-unir-manzanas"];
+const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto", "nuevo-voz-idiomas", "nuevo-lotes-vendidos", "nuevo-unir-manzanas", "nuevo-equipo"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -5547,6 +5547,85 @@ async function capasPesadas(p) {
         exige(!fallas.length, fallas.length + " fallas: " + fallas.slice(0, 3).join(" · "));
       } finally {
         await n.context().close();
+      }
+    });
+    // Equipo (Amar, 22 nov 2026: «¿hay forma de poder trabajar en equipo un tour que yo ya estoy trabajando?»)
+    await paso("Equipo (Laboratorio, nace Solo yo): el dueño invita por correo; la otra cuenta ve el tour en «Compartidos contigo», lo edita y publica; uno edita a la vez y el otro solo ve hasta que se libera", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const SOCIO = "socio-equipo@prueba.mx", n = await pagina(DUENO), s2 = await pagina(SOCIO), otra = await pagina("sin-equipo@prueba.mx");
+      try {
+        await nuevoTour(n, "Equipo Lomas"); const id = await idTour(n);
+        // 1) Proyecto → General → Equipo: invitar por correo
+        await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(600); await n.click('#subtabs button:has-text("General")'); await n.waitForTimeout(1200); await pasarGuias(n);
+        exige(await n.isVisible("#p-equipo #eq-invitar"), "el dueño no ve «Equipo» con el campo para invitar");
+        await n.fill("#eq-invitar input", "correo-malo"); await n.click("#eq-invitar button"); await n.waitForTimeout(800);
+        exige(!(await n.$("#p-equipo .eq-lista")), "aceptó un correo inválido");
+        await n.fill("#eq-invitar input", SOCIO.toUpperCase()); await n.click("#eq-invitar button"); await n.waitForTimeout(1500);
+        exige((await n.textContent("#p-equipo .eq-lista")).includes(SOCIO), "el correo invitado no sale en el equipo");
+        let r = await api(n, "api/tours/" + id + "/equipo", J("POST", { email: DUENO }));
+        exige(r.s === 400, "el dueño se pudo invitar a sí mismo");
+        // 2) La otra cuenta: «Compartidos contigo», lo abre, lo edita y se guarda en el tour del dueño (el dueño ya salió del tour)
+        await n.goto(ESTUDIO + "/"); await n.waitForTimeout(1500);
+        await s2.reload(); await s2.waitForTimeout(2500); await cerrarAnuncio(s2);
+        exige(/Compartidos contigo/.test(await s2.textContent("#tours")) && await s2.isVisible('#tours .card.compartido[data-tour="' + id + '"]'), "la cuenta invitada no ve el tour en «Compartidos contigo»");
+        exige(/de dueno/.test(await s2.textContent('#tours .card.compartido[data-tour="' + id + '"]')), "la tarjeta no dice de quién es el tour");
+        await s2.click('#tours .card.compartido[data-tour="' + id + '"]'); await s2.waitForTimeout(3500); await pasarGuias(s2);
+        await s2.click('#nav button:has-text("Proyecto")'); await s2.waitForTimeout(600); await s2.click('#subtabs button:has-text("General")'); await s2.waitForTimeout(1500);
+        exige(await s2.isVisible("#p-equipo") && /Este tour es de/.test(await s2.textContent("#p-equipo")) && !(await s2.$("#eq-invitar")) && await s2.isVisible("[data-eq-salir]"), "el socio no ve de quién es el tour, o puede invitar");
+        await s2.fill("#p-nombre", "Equipo Lomas (socio)"); await s2.press("#p-nombre", "Tab"); await s2.waitForTimeout(2500);
+        exige((await api(n, "api/tours/" + id)).d.proyecto.nombre === "Equipo Lomas (socio)", "el cambio del socio no quedó en el tour del dueño");
+        exige((await s2.evaluate((u) => fetch(u).then((x) => x.status), "t/" + id + "/proyecto.json")) === 200, "el socio no puede abrir los archivos del tour");
+        // trabaja con la licencia del dueño: en el tour compartido no le sale la marca de agua de su cuenta de prueba
+        await s2.click('#nav button:has-text("Publicar")'); await s2.waitForTimeout(1500); await pasarGuias(s2);
+        exige(!(await s2.isVisible(".pub-revision")), "en el tour compartido al socio le sale la marca de agua de su cuenta de prueba");
+        // el socio no borra el tour ni invita
+        exige((await api(s2, "api/tours/" + id, { method: "DELETE" })).s === 403 && (await api(s2, "api/tours/" + id + "/equipo", J("POST", { email: "x@prueba.mx" }))).s === 403, "el socio pudo borrar el tour o invitar");
+        // 3) Uno edita a la vez: el socio lo tiene abierto; el dueño llega y solo ve
+        await n.goto(ESTUDIO + "/#t=" + id); await n.reload(); await n.waitForTimeout(3500); await cerrarAnuncio(n);
+        await n.waitForSelector("#eq-banda:not([hidden])", { timeout: 15000 });
+        exige(/socio-equipo está editando este tour/.test(await n.textContent("#eq-banda")), "al dueño no le dice quién está editando: " + (await n.textContent("#eq-banda")));
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "equipo-solo-ver.png") });
+        const d0 = (await api(n, "api/tours/" + id)).d; d0.proyecto.nombre = "Cambio del dueño";
+        r = await api(n, "api/tours/" + id, J("PUT", d0));
+        exige(r.s === 409 && /está editando/.test(r.d.error), "el servidor aceptó el cambio del dueño mientras el socio editaba: " + r.s);
+        exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 409, "se pudo publicar mientras otra persona editaba");
+        await n.fill("#p-nombre", "No se debe guardar").catch(() => {}); await n.waitForTimeout(1500);
+        exige((await api(s2, "api/tours/" + id)).d.proyecto.nombre === "Equipo Lomas (socio)", "lo que movió el dueño en «solo ver» se guardó encima del trabajo del socio");
+        // el socio cierra su pestaña: se libera y al dueño se le abre solo con los cambios del socio
+        await s2.goto(ESTUDIO + "/"); await s2.waitForTimeout(1500);
+        await n.waitForFunction(() => document.getElementById("eq-banda").hidden, null, { timeout: 25000 });
+        await n.waitForTimeout(4000); await cerrarAnuncio(n);
+        exige(!(await n.isVisible("#eq-banda")), "al liberarse, al dueño le sigue saliendo «está editando»");
+        const d1 = (await api(n, "api/tours/" + id)).d; d1.proyecto.nombre = "Ya edita el dueño";
+        exige((await api(n, "api/tours/" + id, J("PUT", d1))).s === 200, "ya libre, el dueño no pudo guardar");
+        // 4) El socio publica con la licencia del dueño (cuando nadie más edita)
+        await n.goto(ESTUDIO + "/"); await n.waitForTimeout(1500);
+        await s2.evaluate((i) => fetch("api/tours/" + i + "/editando", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }), id);
+        r = await api(s2, "api/tours/" + id + "/publicar", { method: "POST" });
+        exige(r.s === 200 && (await (await fetch(TOURS + "/" + id + "/proyecto.json")).json()).proyecto.marcaMozari === false, "el socio no pudo publicar con la licencia del dueño: " + r.s);
+        // sus propios tours van con su propia cuenta (de prueba: con marca de agua hasta que compre su licencia)
+        await s2.goto(ESTUDIO + "/"); await s2.waitForTimeout(2000); await cerrarAnuncio(s2);
+        await nuevoTour(s2, "Del socio"); await s2.click('#nav button:has-text("Publicar")'); await s2.waitForTimeout(1500); await pasarGuias(s2);
+        exige(await s2.isVisible(".pub-revision") && /marca de agua/.test(await s2.textContent(".pub-revision")), "en su propio tour el socio no ve que sale con marca de agua (debe usar su propia licencia)");
+        // 5) Salir del equipo / quitarlo: ya no lo ve ni lo abre
+        r = await api(n, "api/tours/" + id + "/equipo/" + encodeURIComponent(SOCIO), { method: "DELETE" });
+        exige(r.s === 200 && !r.d.miembros.length, "el dueño no pudo quitar al socio");
+        exige((await api(s2, "api/tours/" + id)).s === 404 && !((await api(s2, "api/tours")).d.compartidos || []).length, "quitado del equipo, el socio todavía abre el tour o lo ve en su lista");
+        // 6) Nace Solo yo: una cuenta sin la función no ve «Equipo» ni puede invitar
+        await nuevoTour(otra, "Sin equipo"); const io = await idTour(otra);
+        await otra.click('#nav button:has-text("Proyecto")'); await otra.waitForTimeout(600); await otra.click('#subtabs button:has-text("General")'); await otra.waitForTimeout(1200);
+        exige(!(await otra.isVisible("#p-equipo")), "una cuenta sin la función ve «Equipo»");
+        exige((await api(otra, "api/tours/" + io + "/equipo", J("POST", { email: SOCIO }))).s === 403, "una cuenta sin la función pudo invitar");
+        // 7) Borrar el tour lo quita también de «Compartidos contigo»
+        exige((await api(n, "api/tours/" + id + "/equipo", J("POST", { email: SOCIO }))).s === 200 && ((await api(s2, "api/tours")).d.compartidos || []).length === 1, "no se pudo volver a invitar");
+        exige((await api(n, "api/tours/" + id, { method: "DELETE" })).s === 200 && !((await api(s2, "api/tours")).d.compartidos || []).length, "al borrar el tour le sigue saliendo al socio");
+        exige(!n.errs.length && !s2.errs.length, "errores en el estudio: " + n.errs.concat(s2.errs).join(" | ").slice(0, 200));
+      } catch (e) {
+        if (process.env.CAPTURAS) for (const [k, p] of [["dueno", n], ["socio", s2], ["otra", otra]]) await p.screenshot({ path: path.join(process.env.CAPTURAS, "equipo-falla-" + k + ".png") }).catch(() => {});
+        throw e;
+      } finally {
+        await otra.context().close(); await s2.context().close(); await n.context().close();
       }
     });
     // Vista previa en celular (pedido de Emanuel, 19 nov 2026: «en el botón de vista previa, que se pueda seleccionar la vista 16:9 y la

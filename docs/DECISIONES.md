@@ -621,3 +621,24 @@
 - WhatsApp: con OK de Amar se mandó a quienes escribieron «Hola, quiero info de Mozari» un 30% de descuento en Pro o
   Desarrollos con link personal de un solo uso (vence 29 nov). Se crearon 30 links (nota «WhatsApp «quiero info» 22
   nov»); Amar pidió parar para no saturar y solo se mandó uno (AL-85M2NV). Los otros 29 quedan sin usar y vencen solos.
+
+## 22 nov 2026 · Equipo: trabajar un tour entre varios (Laboratorio «equipo», nace Solo yo)
+
+- Amar: «¿hay forma de poder trabajar en equipo un tour que yo ya estoy trabajando?» y «ese socio no ha pagado su
+  licencia: en trabajos compartidos sí puede editar con todas las funciones de mi licencia de Desarrollos, pero no puede
+  crear más tours, solo si compra su licencia».
+- Proyecto → General → «Equipo»: el dueño invita con su correo (hasta 5). La otra persona entra con su propia cuenta y
+  el tour le sale en Mis Tours → «Compartidos contigo» (dice de quién es). Lo edita y publica con la licencia, el espacio
+  y el Laboratorio del dueño; no puede borrarlo ni invitar a otros. Puede salir del equipo; el dueño la puede quitar.
+- Sus propios tours van con su propia cuenta: en cuenta de prueba salen con marca de agua hasta que compre su licencia.
+- Una sola persona edita a la vez: mientras el estudio tiene el tour abierto avisa «estoy editando» cada 25 s (vale
+  75 s). Si otra persona del equipo ya lo tiene abierto, sale «Fulano está editando este tour» y solo ve: no se guarda
+  nada, y el servidor rechaza sus cambios y su publicación (409). Cuando el otro cierra, se abre solo con sus cambios.
+  En un tour sin equipo no cambia nada.
+- Servidor: lo de un tour pasó a apiTour(dueño, miembro); tours/<id>/equipo.json, compartidos/<huella del correo>/<id>
+  y tours/<id>/editando.json. Borrar el tour lo quita de «Compartidos contigo». Si el dueño pierde la función, su
+  equipo deja de entrar.
+- No se manda correo de invitación: el estudio le dice al dueño que le avise a esa persona.
+- Mini tutorial «Nuevo: trabaja un tour en equipo» en Proyecto → General.
+- Pruebas: la nueva de Equipo y 16 más de tours (publicar, descargar, privado, cuenta de prueba, celular, link del
+  cliente, Mejora, landing, sonido, lotes); todas bien.

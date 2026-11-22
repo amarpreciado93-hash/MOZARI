@@ -264,6 +264,7 @@ export const LABORATORIO = {
   "voz-ia": { nombre: "Sonido del tour: música y voz", texto: "Interfaz → «Sonido del tour»: una sola ventana para la música y la voz. Subes tu canción, escribes lo que quieres que diga la voz y una voz lo lee tal cual (o subes tu propio audio). La voz suena cuando el tour empieza y sigue aunque tu cliente cambie de esfera; la música baja sola mientras habla y los subtítulos van pasando por frases. Cada tour puede crear 2 voces al mes y cada licencia trae sus letras de voz (Pro 5,000, Desarrollos 12,000; unas 900 letras son un minuto). Todo Mozari tiene un tope mensual." },
   "previa-celular": { nombre: "Vista previa en celular", texto: "Junto al botón «Vista previa» hay uno con un teléfono: abre el tour dentro de un celular 9:16, con su música, su voz, sus lotes y todo funcionando (antes el 9:16 solo se veía en Interfaz, sin sonido). Arriba se cambia a la vista de compu. Pedido de Emanuel." },
   "rotulo-corto": { nombre: "Rótulo corto y grande en los lotes", texto: "Panoramas → Fichas técnicas → «Rótulo en la esfera: Corto y grande»: cada lote dice solo «L09» y su manzana («M5»), en dos renglones y con letra mucho más grande y centrada; se lee de un vistazo, también desde lejos. La superficie sigue en la ficha del lote. Vale para todo el tour y se ve al volver a publicar." },
+  "equipo": { nombre: "Equipo: trabajar un tour entre varios", texto: "Proyecto → General → «Equipo»: invita con su correo a quien te ayuda con un tour (hasta 5). Con su propia cuenta le sale en Mis Tours → «Compartidos contigo» y lo edita y publica con tu licencia; no puede borrarlo ni invitar a otros. Una sola persona edita a la vez: si alguien más lo tiene abierto, sale «Fulano está editando» y solo ves hasta que termine, así nadie borra el trabajo del otro." },
   "lotes-vendidos": { nombre: "Lotes vendidos sin número ni ficha", texto: "Al tocar un lote, en Estado: «Todos los lotes Vendido del tour» trae «Muestran su número» y «Se pueden tocar». Apágalos y todos los lotes vendidos quedan en rojo, sin número y sin abrir su ficha, sin ir uno por uno; también los que marques después desde el celular o el link de tu cliente. Lo mismo para cualquier estado, también en Fichas técnicas → «Ya vendidos». Se ve al volver a publicar." },
   "manzana-unir": { nombre: "Unir manzanas", texto: "Una manzana hecha de dos partes (los lotes de la esquina y los dobles, por ejemplo): selecciona una y en «Unir con otra manzana» elige la otra. Quedan como una sola manzana: el mismo número, la numeración sigue de una parte a la otra y el rótulo, el estilo y el contorno se cambian en las dos a la vez. «Separar» las vuelve a dejar aparte." },
   "voz-idiomas": { nombre: "Voz en inglés y español", texto: "Interfaz → «Sonido del tour»: la voz en español y otra en inglés, cada una con sus voces (escribes el texto en cada idioma). En el tour, la pastilla de la voz trae ES | EN: cada visitante la oye en el idioma de su celular o compu y la cambia con un toque. Se ve al volver a publicar." },
@@ -1164,7 +1165,7 @@ async function api(request, env, partes, yo) {
       const l = await env.R2.list({ prefix: "cuentas/" + uid + "/tours/", include: ["customMetadata"], limit: 1000 });
       const tours = l.objects.map((o) => Object.assign({ id: o.key.split("/").pop() }, o.customMetadata))
         .sort((a, b) => String(b.actualizado).localeCompare(String(a.actualizado)));
-      return json({ tours });
+      return json({ tours, compartidos: await compartidosCon(env, yo) });
     }
     if (m === "POST") {
       if (plan.tours !== null) {
@@ -1185,12 +1186,120 @@ async function api(request, env, partes, yo) {
 
   const id = partes[2];
   if (!ID_TOUR.test(id)) return error(400, "Tour inválido");
-  if (!(await esDueno(env, uid, id))) return error(404, "No existe ese tour");
+  if (await esDueno(env, uid, id)) return apiTour(request, env, partes, yo, id, null);
+  // Equipo: un miembro trabaja el tour con la licencia, el espacio y el Laboratorio de su dueño
+  const d = await duenoDeEquipo(env, yo, id);
+  if (!d) return error(404, "No existe ese tour");
+  return apiTour(request, env, partes, d, id, yo);
+}
+
+// ---------- Equipo (Laboratorio «equipo», pedido de Amar 22 nov 2026: «¿hay forma de poder trabajar en equipo un tour que
+// yo ya estoy trabajando?») ----------
+// El dueño invita por correo a quien le ayuda; con su propia cuenta le sale el tour en «Compartidos contigo» y lo edita y
+// publica como si fuera del dueño (con su licencia, su espacio y su Laboratorio). No puede borrarlo ni invitar a otros.
+// Para que nadie borre el trabajo del otro, una sola persona edita a la vez: mientras el estudio está abierto se renueva
+// tours/<id>/editando.json; quien llega después solo ve hasta que se libere, y el servidor no acepta sus cambios.
+//   tours/<id>/equipo.json        { dueno: uid, miembros: [{ email, desde }] }
+//   compartidos/<huella del correo>/<id>   vacío, con { dueno, duenoNombre } (para su lista)
+//   tours/<id>/editando.json      { uid, nombre, email, hasta }   vale 75 s; el estudio lo renueva cada 25 s
+const MAX_EQUIPO = 5, VIGENCIA_EDITANDO = 75e3;
+const CORREO_OK = /^[^\s@<>"']{1,64}@[^\s@<>"']{1,190}\.[a-z]{2,24}$/i;
+const claveCompartido = (h, id) => "compartidos/" + h + "/" + id;
+async function huellaCorreo(email) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("mz-equipo:" + String(email).trim().toLowerCase()));
+  return [...new Uint8Array(d)].slice(0, 16).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+async function leerEquipo(env, id) {
+  const o = await env.R2.get("tours/" + id + "/equipo.json"), e = o ? await o.json().catch(() => null) : null;
+  return { dueno: (e && e.dueno) || "", miembros: e && Array.isArray(e.miembros) ? e.miembros.filter((x) => x && CORREO_OK.test(x.email || "")) : [] };
+}
+async function duenoDeEquipo(env, yo, id) {
+  const eq = await leerEquipo(env, id), correo = String(yo.email || "").toLowerCase();
+  if (!eq.dueno || !correo || !eq.miembros.some((x) => x.email === correo) || !(await esDueno(env, eq.dueno, id))) return null;
+  const d = await perfil(env, eq.dueno);
+  if (!d || d.bloqueado) return null;
+  d.uid = d.uid || eq.dueno;
+  return (await labDe(env, d)).includes("equipo") ? d : null; // si el dueño ya no tiene la función, el equipo deja de entrar
+}
+async function editandoDe(env, id) {
+  const o = await env.R2.get("tours/" + id + "/editando.json"), l = o ? await o.json().catch(() => null) : null;
+  return l && Date.parse(l.hasta) > Date.now() ? l : null;
+}
+// Si otra persona del equipo tiene el tour abierto: { nombre, email } (en un tour sin equipo, nunca)
+async function otroEditando(env, id, quien) {
+  const l = await editandoDe(env, id);
+  if (!l || l.uid === quien.uid) return null;
+  return (await leerEquipo(env, id)).miembros.length ? { nombre: l.nombre, email: l.email } : null;
+}
+async function apiEquipo(request, env, partes, yo, id, miembro) {
+  const m = request.method, quien = miembro || yo, base = "tours/" + id + "/", eq = await leerEquipo(env, id);
+  const guardarEquipo = () => env.R2.put(base + "equipo.json", JSON.stringify({ dueno: yo.uid, miembros: eq.miembros }), { httpMetadata: { contentType: "application/json" } });
+  const vista = async () => {
+    const l = await editandoDe(env, id);
+    return json({ miembros: eq.miembros.map((x) => ({ email: x.email, desde: x.desde })), dueno: { nombre: yo.nombre || yo.email, email: yo.email }, soyDueno: !miembro,
+      plan: miembro ? planDe(yo) : undefined, duenoAdmin: miembro ? !!yo.admin : undefined, // el estudio del miembro trabaja con la licencia del dueño
+      puedeInvitar: !miembro && (await labDe(env, yo)).includes("equipo"), max: MAX_EQUIPO, editando: l && l.uid !== quien.uid && eq.miembros.length ? { nombre: l.nombre, email: l.email } : null });
+  };
+  // Mientras el estudio está abierto: «estoy editando» cada 25 s; al cerrarlo, se suelta
+  if (partes[3] === "editando" && partes.length === 4 && m === "POST") {
+    if (!eq.miembros.length) return json({ libre: true, solo: true });
+    const c = await request.json().catch(() => ({})), l = await editandoDe(env, id);
+    if (c.soltar) { if (l && l.uid === quien.uid) await env.R2.delete(base + "editando.json"); return json({ ok: true }); }
+    if (l && l.uid !== quien.uid) return json({ libre: false, editando: { nombre: l.nombre, email: l.email } });
+    await env.R2.put(base + "editando.json", JSON.stringify({ uid: quien.uid, nombre: String(quien.nombre || quien.email).slice(0, 60), email: quien.email, hasta: new Date(Date.now() + VIGENCIA_EDITANDO).toISOString() }), { httpMetadata: { contentType: "application/json" } });
+    return json({ libre: true });
+  }
+  if (partes[3] !== "equipo") return error(404, "Ruta desconocida");
+  if (partes.length === 4 && m === "GET") return vista();
+  if (partes.length === 4 && m === "POST") {
+    if (miembro) return error(403, "Solo el dueño del tour invita a su equipo");
+    if (!(await labDe(env, yo)).includes("equipo")) return error(403, "Función del Laboratorio");
+    const c = await request.json().catch(() => ({})), email = String(c.email || "").trim().toLowerCase();
+    if (!CORREO_OK.test(email)) return error(400, "Escribe un correo válido");
+    if (email === String(yo.email || "").toLowerCase()) return error(400, "Ese es tu correo: tú ya eres el dueño del tour");
+    if (eq.miembros.some((x) => x.email === email)) return error(400, "Esa persona ya está en el equipo");
+    if (eq.miembros.length >= MAX_EQUIPO) return error(400, "Un tour puede tener hasta " + MAX_EQUIPO + " personas en su equipo");
+    eq.miembros.push({ email, desde: new Date().toISOString() });
+    await guardarEquipo();
+    await env.R2.put(claveCompartido(await huellaCorreo(email), id), "", { customMetadata: { dueno: yo.uid, duenoNombre: String(yo.nombre || yo.email).slice(0, 80) } });
+    return vista();
+  }
+  if (partes.length === 5 && m === "DELETE") {
+    const email = decodeURIComponent(partes[4] || "").trim().toLowerCase();
+    if (miembro && email !== String(miembro.email || "").toLowerCase()) return error(403, "Solo el dueño quita a otras personas del equipo");
+    if (!eq.miembros.some((x) => x.email === email)) return error(404, "Esa persona no está en el equipo");
+    eq.miembros = eq.miembros.filter((x) => x.email !== email);
+    await guardarEquipo();
+    await env.R2.delete(claveCompartido(await huellaCorreo(email), id));
+    const l = await editandoDe(env, id); if (l && String(l.email || "").toLowerCase() === email) await env.R2.delete(base + "editando.json");
+    return miembro ? json({ ok: true, salio: true }) : vista();
+  }
+  return error(405, "Método no permitido");
+}
+// Los tours que otros le compartieron a esta cuenta (para Mis Tours → «Compartidos contigo»)
+async function compartidosCon(env, yo) {
+  if (!yo.email) return [];
+  const h = await huellaCorreo(yo.email), l = await env.R2.list({ prefix: "compartidos/" + h + "/", include: ["customMetadata"], limit: 100 });
+  const r = await Promise.all(l.objects.map(async (o) => {
+    const id = o.key.split("/").pop(), md = o.customMetadata || {};
+    if (!ID_TOUR.test(id) || !md.dueno) return null;
+    const ix = await env.R2.head(indiceDe(md.dueno, id)); if (!ix) return null;
+    return Object.assign({ id }, ix.customMetadata, { compartido: true, duenoNombre: md.duenoNombre || "" });
+  }));
+  return r.filter(Boolean).sort((a, b) => String(b.actualizado).localeCompare(String(a.actualizado)));
+}
+
+// Todo lo de un tour. yo = su dueño; miembro = quien lo trabaja si no es el dueño (Equipo)
+async function apiTour(request, env, partes, yo, id, miembro) {
+  const m = request.method, uid = yo.uid, plan = planDe(yo), quien = miembro || yo;
   const base = "tours/" + id + "/";
+  if (miembro && partes.length === 3 && m === "DELETE") return error(403, "Solo el dueño puede borrar el tour");
+  if (partes[3] === "equipo" || partes[3] === "editando") return apiEquipo(request, env, partes, yo, id, miembro);
 
   if (partes.length === 3) {
     if (m === "GET") return servirR2(env, request, base + "proyecto.json", "no-store");
     if (m === "PUT") {
+      const otro = await otroEditando(env, id, quien); if (otro) return json({ error: otro.nombre + " está editando este tour. Tus cambios no se guardaron.", editando: otro }, 409);
       const largo = +request.headers.get("content-length") || 0;
       if (largo > MAX_PROYECTO) return error(413, "El proyecto pesa demasiado");
       let txt = await request.text();
@@ -1225,6 +1334,8 @@ async function api(request, env, partes, yo) {
     if (m === "DELETE") {
       const cli = await leerJSON(env, base + "cliente.json"); // su link para el cliente deja de existir con él
       if (cli && TOKEN_CLIENTE.test(cli.token || "")) await env.R2.delete("clientes/" + (await huellaToken(cli.token)) + ".json");
+      const eq = await leerEquipo(env, id); // y a su equipo ya no le sale en «Compartidos contigo»
+      if (eq.miembros.length) await env.R2.delete(await Promise.all(eq.miembros.map(async (x) => claveCompartido(await huellaCorreo(x.email), id))));
       const n = await borrarPrefijo(env, base) + await borrarPrefijo(env, "publicado/" + id + "/");
       await env.R2.delete([indiceDe(uid, id), "privados/" + id]);
       await usoDe(env, uid, true);
@@ -1335,6 +1446,7 @@ async function api(request, env, partes, yo) {
   }
 
   if (partes[3] === "publicar" && partes.length === 4 && m === "POST") {
+    const otro = await otroEditando(env, id, quien); if (otro) return json({ error: otro.nombre + " está editando este tour. Publica cuando termine.", editando: otro }, 409);
     const obj = await env.R2.get(base + "proyecto.json");
     if (!obj) return error(404, "No existe ese tour");
     const p = await obj.json();
@@ -1478,7 +1590,7 @@ export default {
       const id = segs[1], ruta = segs.slice(2).join("/");
       if (!ID_TOUR.test(id || "") || !rutaValida(ruta)) return error(400, "Ruta inválida");
       if (request.method !== "GET" && request.method !== "HEAD") return error(405, "Método no permitido");
-      if (!(await esDueno(env, yo.uid, id))) return error(404, "No existe");
+      if (!(await esDueno(env, yo.uid, id)) && !(await duenoDeEquipo(env, yo, id))) return error(404, "No existe");
       const ed = rutasEdicion(ruta), cc = ruta.endsWith(".json") ? "no-store" : "private, max-age=31536000, immutable";
       if (ed) { for (const c of ed.slice(0, -1)) { const r = await servirR2(env, request, "tours/" + id + "/" + c, cc); if (r.status !== 404) return r; } return servirR2(env, request, "tours/" + id + "/" + ed[ed.length - 1], cc); }
       return servirR2(env, request, "tours/" + id + "/" + ruta, cc);
