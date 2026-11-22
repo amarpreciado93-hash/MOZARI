@@ -3629,7 +3629,7 @@
   const hostTours = () => /^mozari-estudio\./.test(location.host) ? location.host.replace(/^mozari-estudio\./, "mozari-tours.") : /^(localhost|127\.)/.test(location.host) ? location.host : "tours." + location.host.replace(/^www\./, "");
   const linkTour = () => location.protocol + "//" + hostTours() + "/" + TOUR + "/";
   function pintarPublicar() {
-    const t = (toursNube || []).find((x) => x.id === TOUR) || {};
+    const t = (toursNube || []).concat(toursCompartidos || []).find((x) => x.id === TOUR) || {};
     const pub = t.publicado ? new Date(t.publicado).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
     const oculto = t.privado === "1";
     $("proximo").innerHTML = '<div class="icono">' + ICO.web + '</div><span class="etiq">Publicar</span><h1>Tu tour en la web</h1>' +
@@ -6477,13 +6477,22 @@
   }
   function iniciarLatido() { if (EQ.latido) return; latidoEquipo(); EQ.latido = setInterval(latidoEquipo, 25000); }
   function pararLatido() { clearInterval(EQ.latido); EQ.latido = 0; }
+  // Solo se aparta el tour mientras de verdad se está editando (Amar: «no puede publicar cambios mi colega»: el estudio
+  // abierto en otra pestaña, o sin tocarlo, ya no le cierra el paso a los demás): la pestaña a la vista, alguien la usó
+  // en los últimos 3 minutos y no está en Mis Tours. Al irse a otra pestaña se suelta al momento.
+  let eqUltimaAccion = Date.now();
+  ["pointerdown", "keydown", "wheel"].forEach((x) => document.addEventListener(x, () => { const antes = eqUltimaAccion; eqUltimaAccion = Date.now(); if (eqConEquipo() && !EQ.sostengo && !EQ.soloVer && Date.now() - antes > 4000) latidoEquipo(); }, { capture: true, passive: true }));
+  const eqActivo = () => document.visibilityState === "visible" && Date.now() - eqUltimaAccion < 180000 && nav.sec !== "tours";
+  const eqSoltar = () => { if (!EQ.sostengo || !TOUR) return; EQ.sostengo = false; fetch("api/tours/" + TOUR + "/editando", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ soltar: true }), keepalive: true }).catch(() => {}); };
+  document.addEventListener("visibilitychange", () => { if (!eqConEquipo()) return; if (document.visibilityState === "hidden") eqSoltar(); else latidoEquipo(); });
   async function latidoEquipo() {
-    const r = await fetch("api/tours/" + TOUR + "/editando", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }).catch(() => null);
+    if (!EQ.soloVer && !eqActivo()) { eqSoltar(); return; } // nadie lo está usando: que otra persona del equipo pueda editarlo
+    const r = await fetch("api/tours/" + TOUR + "/editando", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(EQ.soloVer ? { mirar: true } : {}) }).catch(() => null);
     const d = r && r.ok ? await r.json().catch(() => null) : null; if (!d) return;
     if (d.solo) { EQ.sostengo = false; return; }
     if (!d.libre) { entrarSoloVer(d.editando); return; }
+    if (EQ.soloVer) { const quien = EQ.soloVer.nombre; EQ.soloVer = null; $("eq-banda").hidden = true; avisar("Ya puedes editar. Se abren los últimos cambios de " + quien + ".", 3000); setTimeout(() => location.reload(), 1500); return; }
     EQ.sostengo = true;
-    if (EQ.soloVer) { const quien = EQ.soloVer.nombre; EQ.soloVer = null; $("eq-banda").hidden = true; avisar("Ya puedes editar. Se abren los últimos cambios de " + quien + ".", 3000); setTimeout(() => location.reload(), 1500); }
   }
   function entrarSoloVer(ed) {
     const ya = !!EQ.soloVer;

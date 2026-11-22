@@ -642,3 +642,13 @@
 - Mini tutorial «Nuevo: trabaja un tour en equipo» en Proyecto → General.
 - Pruebas: la nueva de Equipo y 16 más de tours (publicar, descargar, privado, cuenta de prueba, celular, link del
   cliente, Mejora, landing, sonido, lotes); todas bien.
+
+## 22 nov 2026 · Equipo: el estudio abierto sin usarse ya no aparta el tour
+
+- Amar: «no puede publicar cambios mi colega». Causa: el tour se apartaba con solo tener el estudio abierto, aunque
+  fuera en otra pestaña o sin tocarlo; mientras tanto el servidor no dejaba guardar ni publicar al colega.
+- Ahora solo se aparta mientras de verdad se edita: la pestaña a la vista, alguien la usó en los últimos 3 minutos y no
+  está en Mis Tours. Al irse a otra pestaña se suelta al momento; al regresar y tocar algo se vuelve a apartar si nadie
+  más lo tiene. Quien solo está viendo pregunta si ya se liberó sin apartarlo ({ mirar: true }).
+- Publicar en un tour compartido ya dice «Publicar cambios» y la fecha de la última publicación.
+- Prueba de Equipo ampliada: con el dueño editando el socio no publica; con el estudio del dueño en otra pestaña, sí.

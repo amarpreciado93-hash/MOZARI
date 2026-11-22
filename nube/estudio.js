@@ -1246,6 +1246,7 @@ async function apiEquipo(request, env, partes, yo, id, miembro) {
     const c = await request.json().catch(() => ({})), l = await editandoDe(env, id);
     if (c.soltar) { if (l && l.uid === quien.uid) await env.R2.delete(base + "editando.json"); return json({ ok: true }); }
     if (l && l.uid !== quien.uid) return json({ libre: false, editando: { nombre: l.nombre, email: l.email } });
+    if (c.mirar) return json({ libre: true }); // quien solo está viendo pregunta si ya se liberó, sin apartarlo
     await env.R2.put(base + "editando.json", JSON.stringify({ uid: quien.uid, nombre: String(quien.nombre || quien.email).slice(0, 60), email: quien.email, hasta: new Date(Date.now() + VIGENCIA_EDITANDO).toISOString() }), { httpMetadata: { contentType: "application/json" } });
     return json({ libre: true });
   }

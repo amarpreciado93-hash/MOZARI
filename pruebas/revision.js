@@ -5599,11 +5599,16 @@ async function capasPesadas(p) {
         exige(!(await n.isVisible("#eq-banda")), "al liberarse, al dueño le sigue saliendo «está editando»");
         const d1 = (await api(n, "api/tours/" + id)).d; d1.proyecto.nombre = "Ya edita el dueño";
         exige((await api(n, "api/tours/" + id, J("PUT", d1))).s === 200, "ya libre, el dueño no pudo guardar");
-        // 4) El socio publica con la licencia del dueño (cuando nadie más edita)
-        await n.goto(ESTUDIO + "/"); await n.waitForTimeout(1500);
-        await s2.evaluate((i) => fetch("api/tours/" + i + "/editando", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }), id);
+        // 4) Con el tour a la vista, el dueño lo aparta; si se va a otra pestaña lo suelta al momento y el socio publica
+        // (Amar: «no puede publicar cambios mi colega», con el estudio abierto en otra pestaña)
+        exige((await api(s2, "api/tours/" + id + "/publicar", { method: "POST" })).s === 409, "con el dueño editando, el socio pudo publicar");
+        const vista = (p, v) => p.evaluate((x) => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => x }); document.dispatchEvent(new Event("visibilitychange")); }, v);
+        await vista(n, "hidden"); await n.waitForTimeout(1500);
         r = await api(s2, "api/tours/" + id + "/publicar", { method: "POST" });
-        exige(r.s === 200 && (await (await fetch(TOURS + "/" + id + "/proyecto.json")).json()).proyecto.marcaMozari === false, "el socio no pudo publicar con la licencia del dueño: " + r.s);
+        exige(r.s === 200 && (await (await fetch(TOURS + "/" + id + "/proyecto.json")).json()).proyecto.marcaMozari === false, "con el estudio del dueño en otra pestaña, el socio no pudo publicar con la licencia del dueño: " + r.s);
+        await vista(n, "visible"); await n.waitForTimeout(2000);
+        exige((await api(s2, "api/tours/" + id + "/publicar", { method: "POST" })).s === 409, "al regresar a la pestaña, el dueño no volvió a apartar el tour");
+        await n.goto(ESTUDIO + "/"); await n.waitForTimeout(1500);
         // sus propios tours van con su propia cuenta (de prueba: con marca de agua hasta que compre su licencia)
         await s2.goto(ESTUDIO + "/"); await s2.waitForTimeout(2000); await cerrarAnuncio(s2);
         await nuevoTour(s2, "Del socio"); await s2.click('#nav button:has-text("Publicar")'); await s2.waitForTimeout(1500); await pasarGuias(s2);
