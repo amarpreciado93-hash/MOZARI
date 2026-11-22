@@ -605,3 +605,19 @@
 - Prueba nueva (reemplaza la del mediodía): en las 5 plantillas, en un iPhone, con el diseño de Vista del Tezal (logo,
   nombre largo, música, zoom, piloto, leyenda, contacto y narración), ningún botón o texto se encima con otro ni se sale
   de la pantalla.
+
+## 22 nov 2026 · La narración en el celular deja aire arriba de la barra
+
+- Amar: «cuando está activa, los textos tapan la interfaz de los nodos de abajo… súbele un poquito más… tómate tu
+  tiempo y hazlo bien. Haz pruebas».
+- Causa: la narración se acomodaba solo con lo que ya se veía. Lo que entra con transparencia (la barra al cargar, la
+  etiqueta de los puntos de la ruta) no contaba, y fuera de la voz sonando no se volvía a medir.
+- Ahora cuenta todo lo que ocupa lugar abajo aunque esté entrando, deja 16 px de aire (antes 10) y se vuelve a medir
+  cada 1.2 s mientras la pastilla se ve (también en pausa o ya oída), al cambiar de esfera y al girar el teléfono.
+- Prueba ampliada: 5 plantillas × 4 teléfonos (iPhone SE, iPhone 13, iPhone 15 Pro Max, Pixel 7) × antes, durante y
+  después de la voz, con 4 esferas y el diseño de Vista del Tezal: nada se encima ni se sale de la pantalla y la
+  narración queda al menos 10 px arriba de lo de abajo. Las cosas recortadas por un contenedor con scroll (la fila de
+  esferas del Dock) se miden recortadas.
+- WhatsApp: con OK de Amar se mandó a quienes escribieron «Hola, quiero info de Mozari» un 30% de descuento en Pro o
+  Desarrollos con link personal de un solo uso (vence 29 nov). Se crearon 30 links (nota «WhatsApp «quiero info» 22
+  nov»); Amar pidió parar para no saturar y solo se mandó uno (AL-85M2NV). Los otros 29 quedan sin usar y vencen solos.

@@ -14376,17 +14376,19 @@ void main(){
     const c = VOZ.caja; if (!c || c.hidden || !c.isConnected) return;
     const ui = c.parentElement; if (!ui || !ui.classList.contains("sk--v")) { c.style.bottom = ""; return; }
     const R = ui.getBoundingClientRect(); let tope = R.bottom;
-    const visible = (e) => { for (let x = e; x && x !== ui; x = x.parentElement) { const st = getComputedStyle(x); if (st.display === "none" || st.visibility === "hidden" || +st.opacity < 0.05) return false; } return true; };
+    // Cuenta también lo que está por aparecer (entra con transparencia, o la etiqueta de un punto de la ruta): ocupa su lugar
+    const oculto = (e) => { for (let x = e; x && x !== ui; x = x.parentElement) { const st = getComputedStyle(x); if (st.display === "none" || st.visibility === "hidden") return true; } return false; };
     ui.querySelectorAll("*").forEach((e) => {
       if (e === c || c.contains(e) || e.closest(".son-pide")) return;
       const b = e.getBoundingClientRect();
       if (b.height < 4 || b.width < 4 || b.top < R.top + R.height * 0.45 || b.top >= tope || b.height > R.height * 0.6 || b.bottom > R.bottom + 2) return;
-      if (visible(e)) tope = b.top;
+      if (!oculto(e)) tope = b.top;
     });
-    c.style.bottom = Math.max(12, Math.round(R.bottom - tope + 10)) + "px";
+    c.style.bottom = Math.max(12, Math.round(R.bottom - tope + 16)) + "px"; // 16px de aire (Amar: «súbele un poquito más»)
   }
   let tUbicarVoz = 0, ubicadaVoz = 0;
   window.addEventListener("resize", () => { clearTimeout(tUbicarVoz); tUbicarVoz = setTimeout(ubicarVoz, 200); });
+  setInterval(() => { if (VOZ.caja && !VOZ.caja.hidden && document.visibilityState !== "hidden") ubicarVoz(); }, 1200); // también en pausa o ya oída
   function barraVoz() {
     if (Date.now() - ubicadaVoz > 1000) { ubicadaVoz = Date.now(); ubicarVoz(); } // la plantilla cambia (aparece «Repetir recorrido», entra un panel)
     const c = VOZ.caja; if (!c) return;
