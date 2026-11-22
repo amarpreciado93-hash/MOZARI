@@ -436,3 +436,35 @@
   que dice el aviso de privacidad).
 - «BETA» junto al logo se queda igual para todos (decisión de Amar: Mozari sigue en beta). Se descartó cambiarlo
   por la licencia en las cuentas de pago.
+
+## 21 nov 2026 · La campaña web no trae cuentas; la de WhatsApp sí las traía
+
+- A las 19 horas de prendida, «Mozari - Web - Video Jales» llevaba $319 MXN, 424 visitas a la página, 1 correo (de
+  Bolivia) y 0 cuentas. Amar: «está medio floja o siento que no tiene el mismo resultado».
+- Por país (grupo Latinoamérica, $131): Bolivia $29 y Nicaragua $27 (la mitad de las visitas); México $1.83 y 71
+  impresiones. Con objetivo «visitas a la página», Meta se va al clic más barato. Cuentas que han pagado por país:
+  MX 7, CO 6, PE 5, HN 2, GT 2, EC 2, AR 2, SV 1, CR 1; Bolivia 0 de 35 cuentas, Nicaragua 0 de 3.
+- Corregido con OK de Amar: el grupo «Latinoamerica» pasa a llamarse «México» y solo pauta México (mismo tope de
+  $1,000); «EEUU frontera» queda en pausa ($186 gastados, 47 visitas a $3.96, 0 correos). Los 6 borradores viejos
+  siguen sin publicar.
+- Lo que no se había mirado el 20 nov: cuentas nuevas por día contra el gasto de la campaña de WhatsApp
+  («Mozari - Video Jales», 10–20 nov, $1,970, 649 conversaciones). Del 11 al 19 nov entraron 315 cuentas (35 al día)
+  con $204 diarios: menos de $10 por cuenta, y 7 de esas cuentas ya pagaron. El 21 nov, sin WhatsApp y con la portada
+  del celular pidiendo correo, 0 cuentas hasta las 11 am.
+- Causa: desde WhatsApp el link se abre en el navegador del celular y Google deja entrar de un toque. Desde el
+  anuncio a la web la página se abre dentro de Facebook o Instagram, donde Google no deja entrar, y hay que
+  escribir el correo.
+- Con OK de Amar se volvió a prender la campaña de WhatsApp «Mozari - Video Jales (oculto)»: tope total de $2,000 a
+  $2,780 (unos $810 nuevos) y su conjunto hasta el 25 nov. Mismo video, texto y países que antes.
+- Meta no dejaba publicarla: «Necesitas una cuenta de WhatsApp Business…» (#2923012). El número sí es WhatsApp
+  Business y está en el portafolio R360, pero la cuenta de anuncios era personal y no estaba en ese portafolio. Con OK
+  de Amar, el portafolio R360 pidió acceso a la cuenta de anuncios (rol «Administrar campañas»; se aprobó solo). La
+  cuenta sigue siendo de Amar. Las campañas viejas siguen corriendo sin esto; la regla aplica al volver a publicar.
+- Pendiente de Amar: el anuncio y el saludo de WhatsApp dicen «Licencia de un solo pago» y «30% de descuento» (su regla
+  dice no poner precio). Se dejó igual porque así funcionaba; se quita si él lo pide.
+- Portada en el celular (escaparate): «Entrar con Google» vuelve al frente, a todo lo ancho y sin deslizar; debajo,
+  «Mándame el link a mi correo» abre el campo del correo (lo del 20 nov queda como opción). Los demás botones de la
+  página vuelven a ir a «Entrar con Google».
+- Desde Instagram o Facebook, «Entrar con Google» lleva a /entrar, que pide abrir Mozari en Safari o Chrome. Ese link
+  ahora se lleva el anuncio (utm_… y fbclid, tomados de la cookie de la visita) y /entrar, ya en Safari o Chrome, lo
+  anota en la cookie de allá antes de ir a Google. Así la cuenta sigue contando para su anuncio en el Panel.

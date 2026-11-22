@@ -11,7 +11,7 @@
 // Variables: GOOGLE_CLIENT_ID (no es secreto)
 // Variable: ADMIN (correo del dueño de Mozari: ve el panel de cuentas y adopta los tours viejos)
 import { mandarBienvenida, MARCA_RECORDATORIO } from "./correos.js";
-import { origenDeCuenta } from "./origen.js";
+import { origenDeCuenta, urlConOrigen, cookiesOrigen } from "./origen.js";
 
 const COOKIE = "mz_sesion", ESTADO = "mz_estado", COMPRAR = "mz_comprar", PENDIENTE = "mz_pendiente", DIAS = 30;
 // Cada cuenta puede tener la sesión abierta en 2 dispositivos (el dueño de Mozari, sin límite).
@@ -303,7 +303,7 @@ export async function rutasSesion(request, env, adopcion) {
     if (app) {
       // Para medir: cuántos llegan desde cada app (metricas/app-interna/<día>/<app>-<azar>)
       try { await env.R2.put("metricas/app-interna/" + new Date().toISOString().slice(0, 10) + "/" + app.replace(/\W/g, "") + "-" + b64u(crypto.getRandomValues(new Uint8Array(6))), ""); } catch (e) { /* sin métrica */ }
-      return new Response(paginaAbrirFuera(app, url, ua), { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+      return new Response(paginaAbrirFuera(app, urlConOrigen(request, url), ua), { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
     }
     if (!env.GOOGLE_CLIENT_ID) return new Response("Falta configurar el acceso con Google", { status: 503 });
     const estado = b64u(crypto.getRandomValues(new Uint8Array(24)));
@@ -314,6 +314,8 @@ export async function rutasSesion(request, env, adopcion) {
     const h = new Headers({ location: "https://accounts.google.com/o/oauth2/v2/auth?" + params });
     h.append("set-cookie", cookie(url, ESTADO, estado, 600));
     if (comprar) h.append("set-cookie", cookie(url, COMPRAR, comprar, 900));
+    // Llegó desde Instagram o Facebook con el anuncio en el link: aquí (Safari o Chrome) no tenía la cookie
+    for (const c of cookiesOrigen(request, url)) h.append("set-cookie", c);
     return new Response(null, { status: 302, headers: h });
   }
   if (url.pathname === "/auth/google") {

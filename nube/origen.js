@@ -2,9 +2,9 @@
 // Pedido de Amar (20 nov 2026): los anuncios ya no mandan a WhatsApp, mandan a mozari.app. Para saber qué anuncio sirve:
 // 1. Quien llega con un link de campaña (utm_… o fbclid) o desde otra página queda anotado en una cookie propia de
 //    30 días (mz_origen). Al crear su cuenta, eso se guarda en su perfil (origen).
-// 2. Mozari no se usa en el celular: ahí la portada pide solo el correo y manda el link para abrirlo en la compu
-//    (prospectos/<id>.json, id = huella del correo). Al crear la cuenta con ese correo, o desde ese link, la cuenta
-//    hereda el origen que traía en el celular.
+// 2. En el celular la portada ofrece, debajo de «Entrar con Google», «Mándame el link a mi correo» para abrirlo en la
+//    compu (prospectos/<id>.json, id = huella del correo). Al crear la cuenta con ese correo, o desde ese link, la
+//    cuenta hereda el origen que traía en el celular. (Del 20 al 21 nov el correo iba al frente: ver DECISIONES.)
 // 3. El panel de dueño suma por campaña: correos que se dejaron, cuentas, cuántas hicieron tour y cuánto pagaron.
 import { json, error } from "./comun.js";
 import { contador, enviar, correoCompu, claveBajaCorreo, enlaceBaja } from "./correos.js";
@@ -53,6 +53,16 @@ export function cookiesOrigen(request, url) {
   const p = url.searchParams.get("p") || "";
   if (ID.test(p)) out.push(C_PROSPECTO + "=" + p + fin);
   return out;
+}
+
+// Revisión de la campaña (21 nov 2026): desde Instagram o Facebook, /entrar pide abrir Mozari en Safari o Chrome, y
+// allá no está la cookie de aquí. El link que se abre lleva el anuncio (utm_… y fbclid) y /entrar lo anota allá.
+export function urlConOrigen(request, url) {
+  const u = new URL(url), q = u.searchParams;
+  if (q.get("utm_source") || q.get("utm_campaign")) return u;
+  const o = leerOrigen(request) || (origenDe(request, url) || [])[0];
+  if (o) for (const [k, p] of [["fuente", "utm_source"], ["medio", "utm_medium"], ["campana", "utm_campaign"], ["anuncio", "utm_content"], ["clic", "fbclid"]]) if (o[k]) q.set(p, o[k]);
+  return u;
 }
 
 // ---------- El correo que se deja desde el celular ----------

@@ -73,6 +73,7 @@
   .tarjeta-hero p { margin: 0; color: var(--tenue); font-size: 16px; }
   .cta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
   .cta small { color: var(--suave); font-size: 13px; }
+  .cta small a { color: var(--texto); font-weight: 500; white-space: nowrap; }
   /* En el celular: Mozari se usa en la compu, así que aquí se pide el correo y se manda el link */
   .cta-cel { display: grid; gap: 12px; }
   .cta-cel[hidden], .cel-listo[hidden], .cta[hidden] { display: none; }
@@ -303,13 +304,14 @@
     .esfera-dato { top: 12px; right: 12px; font-size: 11px; }
     .tarjeta-hero { position: relative; left: 0; bottom: 0; transform: none; width: auto; margin: -36px 12px 0; padding: 26px 22px; box-shadow: 0 16px 40px rgba(11, 11, 11, 0.12); }
     section { padding: 64px 0; }
-    /* Con el campo de correo: la esfera más baja y el texto más junto, para que el campo y el botón se vean sin deslizar */
-    .pide-correo #esfera, .pide-correo .portada-fotos { height: 36vh; }
-    .pide-correo .esfera-marco .esfera-puntos { top: calc(36vh - 62px); }
-    .pide-correo .tarjeta-hero { padding: 22px 20px; gap: 10px; }
-    .pide-correo .tarjeta-hero h1 { font-size: 26px; line-height: 1.15; }
-    .pide-correo .tarjeta-hero p { font-size: 14.5px; line-height: 1.45; }
-    .pide-correo .tarjeta-hero .lado { gap: 12px; }
+    /* En el celular: la esfera más baja y el texto más junto, para que «Entrar con Google» (o el campo del correo) se vea sin deslizar */
+    .portada-cel #esfera, .portada-cel .portada-fotos { height: 36vh; }
+    .portada-cel .esfera-marco .esfera-puntos { top: calc(36vh - 62px); }
+    .portada-cel .tarjeta-hero { padding: 22px 20px; gap: 10px; }
+    .portada-cel .tarjeta-hero h1 { font-size: 26px; line-height: 1.15; }
+    .portada-cel .tarjeta-hero p { font-size: 14.5px; line-height: 1.45; }
+    .portada-cel .tarjeta-hero .lado { gap: 12px; }
+    .portada-cel #cta-compu .btn { width: 100%; justify-content: center; box-sizing: border-box; }
   }
 </style>
 </head>
@@ -521,16 +523,17 @@
   const e = new URLSearchParams(location.search).get("error");
   if (e) { const el = document.getElementById("error"); el.textContent = e; el.hidden = false; }
 
-  // En el celular Mozari no se usa: en vez de «Entrar con Google» se pide el correo y se manda el link para la compu.
-  // (Pedido de Amar, 20 nov 2026: los anuncios mandan aquí y casi todos llegan desde el celular.)
+  // En el celular: «Entrar con Google» al frente, como antes del 20 nov, y «Mándame el link a mi correo» como opción.
+  // Revisión de la campaña (21 nov 2026): con el correo al frente, 424 visitas del anuncio dejaron 1 correo y las
+  // cuentas desde el celular bajaron a 0. Desde Instagram o Facebook, «Entrar con Google» lleva a /entrar, que pide
+  // abrir Mozari en Safari o Chrome y se lleva el anuncio en el link.
   (function () {
     const cel = /iPhone|Android.*Mobile/.test(navigator.userAgent) || (matchMedia("(max-width: 600px)").matches && matchMedia("(pointer: coarse)").matches);
     if (!cel) return;
-    const f = document.getElementById("cta-cel"), campo = document.getElementById("cel-correo"), btn = document.getElementById("cel-enviar"), err = document.getElementById("cel-error"), listo = document.getElementById("cel-listo");
-    document.getElementById("cta-compu").hidden = true; f.hidden = false; document.documentElement.classList.add("pide-correo");
-    // Los otros botones de «crear cuenta» de la página llevan a este mismo campo
-    const subir = (ev) => { ev.preventDefault(); (f.hidden ? listo : f).scrollIntoView({ behavior: "smooth", block: "center" }); if (!f.hidden) setTimeout(() => campo.focus({ preventScroll: true }), 500); };
-    for (const id of ["final-entrar", "plan-prueba"]) { const b = document.getElementById(id); if (b) { if (id === "final-entrar") { const g = b.querySelector("svg"); if (g) g.remove(); b.textContent = "Mándame el link a mi correo"; } b.addEventListener("click", subir); } }
+    const f = document.getElementById("cta-cel"), campo = document.getElementById("cel-correo"), btn = document.getElementById("cel-enviar"), err = document.getElementById("cel-error"), listo = document.getElementById("cel-listo"), compu = document.getElementById("cta-compu");
+    document.documentElement.classList.add("portada-cel");
+    compu.querySelector("small").innerHTML = 'Cuenta de prueba sin costo y sin tarjeta.<br>Se usa en la compu. <a href="#" id="cel-pedir">Mándame el link a mi correo</a>';
+    document.getElementById("cel-pedir").addEventListener("click", (ev) => { ev.preventDefault(); compu.hidden = true; f.hidden = false; campo.focus(); });
     const inicio = Date.now();
     const falla = (m) => { err.textContent = m; err.hidden = false; btn.disabled = false; btn.textContent = "Mándame el link"; };
     f.addEventListener("submit", async (ev) => {

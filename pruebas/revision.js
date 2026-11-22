@@ -2896,20 +2896,27 @@ async function capasPesadas(p) {
       exige(!n.errs.length, "errores en el panel: " + n.errs.join(" | ").slice(0, 200));
       await n.context().close();
     });
-    // Pedido de Amar (20 nov 2026): los anuncios ya no mandan a WhatsApp (610 conversaciones que no llevaban a nada),
-    // mandan a mozari.app. En el celular la portada pide solo el correo y manda el link para la compu; cada cuenta
-    // anota de qué anuncio llegó y el Panel suma por campaña: correos, cuentas, tours y pagos.
-    await paso("Anuncios → web: en el celular la portada pide el correo y manda el link para la compu; la cuenta anota de qué anuncio llegó y el Panel suma por campaña", async () => {
+    // Pedido de Amar (20 nov 2026): anuncios que mandan a mozari.app; cada cuenta anota de qué anuncio llegó y el Panel
+    // suma por campaña: correos, cuentas, tours y pagos. Revisión del 21 nov: en el celular «Entrar con Google» vuelve al
+    // frente (con el correo al frente casi nadie entraba) y el correo queda como opción debajo.
+    await paso("Anuncios → web: en el celular «Entrar con Google» al frente y el link por correo como opción; desde Instagram el anuncio viaja a Safari; la cuenta anota de qué anuncio llegó y el Panel suma por campaña", async () => {
       const LOG = path.join(DATOS, "worker-estudio.log"), correosA = (para) => fs.readFileSync(LOG, "utf8").split("send_email binding called").slice(1).filter((b) => b.includes("To: " + para));
       const sello = Date.now(), e1 = "anuncio-cel-" + sello + "@prueba.mx", e2 = "anuncio-otro-" + sello + "@prueba.mx", e2b = "anuncio-otro-google-" + sello + "@prueba.mx", e3 = "anuncio-compu-" + sello + "@prueba.mx", e4 = "anuncio-directo-" + sello + "@prueba.mx", robot = "robot-" + sello + "@prueba.mx";
       const CAMP = "?utm_source=meta&utm_medium=anuncio&utm_campaign=Video+jales+nov&utm_content=Video+1&fbclid=IwAR0abcDEF_123-xyz";
       const pide = (pg, c) => pg.evaluate(([o]) => fetch("prospecto", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(o) }).then(async (r) => ({ s: r.status, d: await r.json().catch(() => ({})) })), [c]);
       const linkDe = (b) => { const h = (b.match(/HTML: (\S+\.html)/) || [])[1], html = h ? fs.readFileSync(h, "utf8") : ""; return { html, link: (html.match(/href="(http:\/\/localhost:8787\/\?p=[a-f0-9]{20})"/) || [])[1] }; };
-      // 1) En el celular, llegando del anuncio: no hay «Entrar con Google» al frente, se pide el correo
+      // 1) En el celular, llegando del anuncio: «Entrar con Google» al frente y sin deslizar (revisión del 21 nov:
+      //    con el correo al frente casi nadie entraba); debajo, «Mándame el link a mi correo» abre el campo
       const c = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
       await c.goto(ESTUDIO + "/" + CAMP); await c.waitForTimeout(1800);
-      exige(await c.isVisible("#cta-cel") && !(await c.isVisible("#cta-compu")) && await c.isVisible("#cel-correo"), "en el celular la portada no pide el correo");
+      const gBtn = await c.$("#cta-compu a.btn"), gCaja = gBtn && await gBtn.boundingBox();
+      exige(await c.isVisible("#cta-compu") && /Entrar con Google/.test(await c.textContent("#cta-compu")) && !(await c.isVisible("#cta-cel")) && await c.isVisible("#cel-pedir"), "en el celular la portada no tiene «Entrar con Google» al frente con «Mándame el link a mi correo» abajo");
+      exige(gCaja && gCaja.y + gCaja.height <= 844, "en el celular «Entrar con Google» no se ve sin deslizar: " + JSON.stringify(gCaja));
+      exige((await c.getAttribute("#final-entrar", "href")) === "entrar" && /Google/.test(await c.textContent("#final-entrar")), "el botón de abajo del celular ya no lleva a «Entrar con Google»");
       exige(!/\bgratis\b/i.test(await c.textContent(".tarjeta-hero")), "la portada del celular dice «gratis»");
+      if (process.env.CAPTURAS) await c.screenshot({ path: path.join(process.env.CAPTURAS, "portada-celular-google.png") });
+      await c.click("#cel-pedir"); await c.waitForTimeout(300);
+      exige(await c.isVisible("#cta-cel") && await c.isVisible("#cel-correo") && !(await c.isVisible("#cta-compu")), "«Mándame el link a mi correo» no abre el campo del correo");
       if (process.env.CAPTURAS) await c.screenshot({ path: path.join(process.env.CAPTURAS, "portada-celular-correo.png") });
       await c.fill("#cel-correo", "sin-arroba"); await c.click("#cel-enviar"); await c.waitForTimeout(300);
       exige(await c.isVisible("#cel-error") && !(await c.isVisible("#cel-listo")), "un correo mal escrito no avisa");
@@ -2933,6 +2940,19 @@ async function capasPesadas(p) {
       exige(c2.link && c2.link !== c1.link, "el segundo correo no trae su propio link");
       exige(!c.errs.length, "errores en la portada del celular: " + c.errs.join(" | ").slice(0, 160));
       await c.context().close();
+      // 1b) Desde Instagram: «Entrar con Google» pide abrir en Safari y ese link se lleva el anuncio; en Safari, /entrar
+      //     lo anota antes de ir a Google (allá no estaba la cookie de Instagram)
+      const IG = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 345.0.0.32.97 (iPhone14,5; iOS 17_5; es_MX)";
+      const SF = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
+      const ig = await pagina(null, Object.assign({}, devices["iPhone 13"], { userAgent: IG, acceptDownloads: false }));
+      await ig.goto(ESTUDIO + "/" + CAMP); await ig.waitForTimeout(1200);
+      await ig.click("#cta-compu a.btn"); await ig.waitForSelector("#abrir", { timeout: 8000 });
+      const haciaSafari = (await ig.getAttribute("#abrir", "href")) || "";
+      exige(/^x-safari-http:\/\/localhost:8787\/entrar\?/.test(haciaSafari) && /utm_campaign=Video\+jales\+nov/.test(haciaSafari) && /utm_content=Video\+1/.test(haciaSafari) && /fbclid=IwAR0abcDEF_123-xyz/.test(haciaSafari), "el link para abrir en Safari no se lleva el anuncio: " + haciaSafari.slice(0, 160));
+      await ig.context().close();
+      const sf = await fetch(haciaSafari.replace(/^x-safari-/, ""), { headers: { "user-agent": SF }, redirect: "manual" });
+      const galletas = sf.headers.getSetCookie().join("\n");
+      exige(sf.status === 302 && /accounts\.google\.com/.test(sf.headers.get("location") || "") && /mz_origen=[^;]*Video%20jales%20nov/.test(galletas), "en Safari /entrar no anotó el anuncio antes de ir a Google: " + sf.status + " " + galletas.slice(0, 120));
       // 2) En la compu, con el mismo correo que dejó (sin cookie del celular): su cuenta hereda la campaña
       const a = await pagina(e1);
       exige((await a.evaluate(() => fetch("api/tours", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nombre: "Tour del anuncio" }) }).then((r) => r.status))) === 201, "no se pudo crear el tour");
