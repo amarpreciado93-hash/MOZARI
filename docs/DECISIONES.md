@@ -581,3 +581,13 @@
 - Voces en inglés elegidas después del push de 23d2db0: Sarah, Matilda y Bella (mujer), Eric, Brian y George (hombre);
   una voz real en inglés salió bien en producción.
 - La revisión completa del 23d2db0 se detuvo en 76 pruebas, todas bien (Amar pidió esto antes de que terminara).
+
+## 22 nov 2026 · La narración en el celular va chica y abajo
+
+- Amar, con una captura de Vista del Tezal en su iPhone: «se encima en todo y es demasiado invasiva en su versión
+  móvil». La pastilla iba arriba (top 92px) a todo lo ancho y tapaba la leyenda de los lotes, la brújula y «Repetir
+  recorrido», con el subtítulo completo en 3 renglones.
+- En el celular (.sk--v) ahora va abajo, justo encima de la barra de cada plantilla (150px; en Cine 200px, encima del
+  número y el nombre de la esfera), más chica (botón de 30px, letra de 12px) y el subtítulo en 2 renglones como máximo.
+- Prueba nueva: en las 5 plantillas, en un iPhone, la narración no tapa ningún botón, texto ni la leyenda y va en la
+  mitad de abajo.

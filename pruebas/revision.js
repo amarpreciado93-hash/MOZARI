@@ -5465,6 +5465,55 @@ async function capasPesadas(p) {
         await u.context().close(); await n.context().close();
       }
     });
+    // Narración en el celular (Amar, 22 nov 2026, con una captura de Vista del Tezal en su iPhone: «se encima en todo y es
+    // demasiado invasiva en su versión móvil»). En el celular la pastilla va chica y abajo, sin tapar la leyenda, los
+    // botones ni la barra de esferas, en las 5 plantillas.
+    await paso("Narración en el celular: chica y abajo, sin tapar la leyenda, los botones ni la barra de esferas (las 5 plantillas)", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const n = await pagina(DUENO); let cel = null;
+      try {
+        await nuevoTour(n, "Narracion cel"); const id = await idTour(n); await irCapas(n); await n.waitForTimeout(800); await pasarGuias(n);
+        await dibujarManzana(n, [[480, 640], [1000, 640]], [[460, 820], [1020, 820]]);
+        exige((await n.evaluate(([i, b]) => fetch("api/tours/" + i + "/f/archivos/voz-cel.wav", { method: "PUT", headers: { "content-type": "audio/wav" }, body: new Uint8Array(b) }).then((r) => r.status), [id, [...wavPrueba(12)]])) === 200, "no se pudo subir la voz");
+        const texto = "Lotes habitacionales de 500 metros cuadrados, con espectacular vista a las montañas, a cinco minutos de la playa y con todos los servicios.";
+        cel = await (await navegador.newContext(Object.assign({}, devices["iPhone 13"]))).newPage();
+        cel.errs = []; cel.on("pageerror", (e) => cel.errs.push(e.message));
+        const fallas = [];
+        for (const pl of ["cine", "desarrollo", "dock", "brujula", "interior"]) {
+          const d = (await api(n, "api/tours/" + id)).d;
+          d.proyecto.vozTour = { archivo: "archivos/voz-cel.wav", nombre: "voz", duracion: 12, texto };
+          d.skin = Object.assign({}, d.skin, { plantilla: pl });
+          exige((await api(n, "api/tours/" + id, J("PUT", d))).s === 200 && (await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, pl + ": no se pudo publicar");
+          await cel.goto(TOURS + "/" + id + "/?p=" + pl); await cel.waitForTimeout(4500);
+          await cel.waitForSelector("#pv-ui .nr:not([hidden])", { timeout: 15000 });
+          if (await cel.$("#pv-ui .nr.espera")) await cel.tap("#pv-ui [data-voz]");
+          await cel.waitForSelector("#pv-ui .nr.sonando", { timeout: 6000 }); await cel.waitForTimeout(600);
+          const m = await cel.evaluate(() => {
+            const nr = document.querySelector("#pv-ui .nr"), r = nr.getBoundingClientRect(), W = innerWidth, H = innerHeight, malos = [];
+            const op = (e) => { let o = 1; for (let x = e; x && x !== document.body; x = x.parentElement) o *= +getComputedStyle(x).opacity; return o; };
+            document.querySelectorAll("#pv-ui *").forEach((e) => {
+              if (e.closest(".nr")) return;
+              const st = getComputedStyle(e); if (st.display === "none" || st.visibility === "hidden" || op(e) < 0.05) return;
+              const b = e.getBoundingClientRect(); if (b.width < 4 || b.height < 4 || b.width * b.height > W * H * 0.3) return;
+              const util = e.matches("button, a, .sk-btn, .sk-leyenda") || [...e.childNodes].some((x) => x.nodeType === 3 && x.textContent.trim());
+              if (!util) return;
+              const ix = Math.min(r.right, b.right) - Math.max(r.left, b.left), iy = Math.min(r.bottom, b.bottom) - Math.max(r.top, b.top);
+              if (ix > 2 && iy > 2) malos.push((typeof e.className === "string" && e.className ? e.className.split(" ")[0] : e.tagName) + "«" + (e.textContent || "").trim().slice(0, 18) + "»");
+            });
+            return { malos: [...new Set(malos)], alto: Math.round(r.height), ancho: Math.round(r.width), arriba: Math.round(r.top), abajo: Math.round(H - r.bottom), W, H };
+          });
+          if (process.env.CAPTURAS) await cel.screenshot({ path: path.join(process.env.CAPTURAS, "narracion-cel-" + pl + ".png") });
+          if (m.malos.length) fallas.push(pl + ": tapa " + m.malos.join(", ") + " " + JSON.stringify(m).slice(-70));
+          else if (!(m.alto <= 96 && m.arriba > m.H / 2)) fallas.push(pl + ": no va chica y abajo " + JSON.stringify(m).slice(-70));
+        }
+        exige(!fallas.length, "la narración en el celular: " + fallas.join(" · "));
+        exige(!cel.errs.length, "errores en el tour: " + cel.errs.join(" | ").slice(0, 160));
+      } finally {
+        if (cel) await cel.context().close();
+        await n.context().close();
+      }
+    });
     // Vista previa en celular (pedido de Emanuel, 19 nov 2026: «en el botón de vista previa, que se pueda seleccionar la vista 16:9 y la
     // 9:16, para que uno pueda visualizar y revisar con el audio y todo completo»).
     await paso("Vista previa en celular (Laboratorio, nace Solo yo): el botón del teléfono abre el tour en 9:16 con su interfaz vertical y de ahí se cambia a compu", async () => {
