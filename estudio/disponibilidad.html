@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Disponibilidad de lotes</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap">
+<style>
+  /* Link de disponibilidad para el cliente (Laboratorio «link-cliente», pedido de Amar 21 nov 2026).
+     Quien lo abre no tiene cuenta: solo ve los lotes de un tour y les cambia el estado. Claro y simple, primero celular. */
+  :root { --fondo: #FFFFFF; --gris: #F3F4F1; --linea: #E1E3DD; --texto: #0B0B0B; --tenue: #5F645A; --suave: #8A8F84; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--texto); font: 400 15px/1.5 Poppins, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  button, input { font: inherit; color: inherit; }
+  .marco { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 22px) 16px calc(env(safe-area-inset-bottom, 0px) + 28px); display: grid; gap: 14px; }
+  .etiq { font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--suave); }
+  h1 { margin: 2px 0 0; font-size: 24px; line-height: 1.2; font-weight: 600; overflow-wrap: anywhere; }
+  .nota { margin: 0; color: var(--tenue); font-size: 14px; }
+  .ver-tour { justify-self: start; display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 999px; background: var(--gris); color: var(--texto); text-decoration: none; font-size: 13.5px; font-weight: 500; }
+  .resumen { display: flex; flex-wrap: wrap; gap: 6px; }
+  .resumen span { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 999px; background: var(--gris); font-size: 13px; }
+  .resumen b { font-weight: 600; }
+  .punto { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+  .mzs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+  .mzs::-webkit-scrollbar { display: none; }
+  .mzs button { flex: none; padding: 8px 13px; border-radius: 999px; border: 1px solid var(--linea); background: #fff; font-size: 13.5px; font-weight: 500; cursor: pointer; }
+  .mzs button[aria-pressed="true"] { background: var(--texto); color: #fff; border-color: var(--texto); }
+  #buscar { width: 100%; padding: 13px 15px; border-radius: 14px; border: 1.5px solid var(--linea); background: #fff; font-size: 16px; outline: none; }
+  #buscar:focus { border-color: var(--texto); }
+  .lista { display: grid; gap: 7px; }
+  .lista h2 { margin: 10px 0 0; font-size: 11.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--suave); }
+  .lote { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%; padding: 13px 13px 13px 15px; border-radius: 14px; border: 1px solid var(--linea); background: #fff; text-align: left; cursor: pointer; }
+  .lote:active { background: var(--gris); }
+  .lote b { display: block; font-size: 15.5px; font-weight: 600; }
+  .lote small { display: block; font-size: 12.5px; color: var(--tenue); }
+  .est { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; background: color-mix(in srgb, var(--c) 14%, #fff); border: 1px solid color-mix(in srgb, var(--c) 50%, #fff); }
+  .vacio { padding: 18px; border-radius: 14px; background: var(--gris); color: var(--tenue); text-align: center; font-size: 14px; }
+  .pie { margin-top: 10px; color: var(--suave); font-size: 12.5px; text-align: center; }
+  .pie a { color: var(--texto); font-weight: 600; }
+  /* Sin la licencia Desarrollos: marca de agua «Creado por Mozari» sobre toda la página (no estorba para tocar) */
+  .agua { position: fixed; inset: 0; z-index: 25; pointer-events: none; background-position: 0 0; background-size: 340px 220px; background-repeat: repeat; }
+  .hoja { position: fixed; inset: 0; z-index: 20; display: grid; align-items: end; background: rgba(11, 11, 11, 0.45); }
+  .hoja > div { width: 100%; max-width: 640px; margin: 0 auto; display: grid; gap: 9px; padding: 20px 16px calc(env(safe-area-inset-bottom, 0px) + 18px); border-radius: 22px 22px 0 0; background: #fff; }
+  .hoja h3 { margin: 0; font-size: 19px; font-weight: 600; }
+  .hoja p { margin: 0 0 6px; color: var(--tenue); font-size: 14px; }
+  .opcion { display: flex; align-items: center; gap: 12px; width: 100%; padding: 15px 16px; border-radius: 14px; border: 1.5px solid var(--linea); background: #fff; font-size: 16px; font-weight: 600; text-align: left; cursor: pointer; }
+  .opcion[aria-pressed="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 12%, #fff); }
+  .opcion .punto { width: 14px; height: 14px; }
+  .opcion small { margin-left: auto; font-size: 12.5px; font-weight: 500; color: var(--tenue); }
+  .cancelar { padding: 13px; border: 0; border-radius: 14px; background: var(--gris); font-weight: 500; cursor: pointer; }
+  #aviso { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); transform: translate(-50%, 20px); opacity: 0; transition: 0.25s; z-index: 30; max-width: calc(100% - 32px); padding: 12px 16px; border-radius: 14px; background: var(--texto); color: #fff; font-size: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
+  #aviso.ver { opacity: 1; transform: translate(-50%, 0); }
+  .cerrado { min-height: 70vh; display: grid; place-items: center; text-align: center; }
+  .cerrado b { display: block; font-size: 20px; margin-bottom: 6px; }
+  @media (min-width: 700px) { .marco { padding-top: 48px; } h1 { font-size: 30px; } .hoja { align-items: center; } .hoja > div { border-radius: 22px; max-width: 420px; } }
+</style>
+</head>
+<body>
+<main class="marco" id="app" aria-live="polite"><p class="nota">Cargando…</p></main>
+<div id="aviso" role="status"></div>
+<script>
+  const token = (location.pathname.split("/")[2] || "").trim();
+  const ESTADO = { d: null, mz: "", buscar: "" };
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const llave = (mz, num) => String(mz).trim().toLowerCase() + "|" + String(num).trim().toLowerCase();
+  const num = (v) => { const x = parseFloat(v); return isFinite(x) ? x : Infinity; };
+  let tAviso;
+  const avisar = (t, ms) => { const a = $("aviso"); a.textContent = t; a.classList.add("ver"); clearTimeout(tAviso); tAviso = setTimeout(() => a.classList.remove("ver"), ms || 3500); };
+  const cerrado = (t) => { $("app").innerHTML = '<div class="cerrado"><div><b>Link no disponible</b><p class="nota">' + esc(t || "Este link ya no está activo. Pídele uno nuevo a quien te lo mandó.") + "</p></div></div>"; };
+
+  async function cargar() {
+    if (!/^[A-Za-z0-9_-]{32}$/.test(token)) return cerrado();
+    const r = await fetch("/disponibilidad/" + token + "/datos", { cache: "no-store" }).catch(() => null);
+    const d = r ? await r.json().catch(() => null) : null;
+    if (!r) { if (!ESTADO.d) $("app").innerHTML = '<p class="nota">No hay internet. Revisa tu conexión y vuelve a abrir el link.</p>'; return; }
+    if (!r.ok || !d || !Array.isArray(d.lotes)) return cerrado(d && d.error);
+    ESTADO.d = d; document.title = "Disponibilidad · " + d.nombre;
+    pintar();
+  }
+  const ordenados = () => ESTADO.d.lotes.slice().sort((a, b) => a.mz.localeCompare(b.mz, "es", { numeric: true }) || num(a.num) - num(b.num) || a.num.localeCompare(b.num, "es", { numeric: true }));
+  const estadoDe = (id) => ESTADO.d.estados.find((e) => e.id === id) || ESTADO.d.estados[0];
+
+  function pintar() {
+    const d = ESTADO.d, T = d.terminos, lotes = ordenados(), foco = document.activeElement && document.activeElement.id === "buscar", pos = foco ? $("buscar").selectionStart : 0;
+    let h = '<div><div class="etiq">Disponibilidad</div><h1>' + esc(d.nombre) + "</h1></div>" +
+      '<p class="nota">Toca un ' + esc(T.lote.toLowerCase()) + " para cambiar su estado. El tour se actualiza al momento.</p>" +
+      (d.tour ? '<a class="ver-tour" href="' + esc(d.tour) + '" target="_blank" rel="noopener">Ver el tour ↗</a>' : "");
+    if (!lotes.length) { $("app").innerHTML = h + '<div class="vacio">Este tour todavía no tiene ' + esc(T.lote.toLowerCase()) + "s.</div>"; return; }
+    const cuenta = {}; lotes.forEach((x) => (cuenta[x.estado] = (cuenta[x.estado] || 0) + 1));
+    h += '<div class="resumen" id="resumen">' + d.estados.filter((e) => cuenta[e.id]).map((e) => '<span style="--c:' + esc(e.color) + '"><i class="punto"></i>' + esc(e.nombre) + " <b>" + cuenta[e.id] + "</b></span>").join("") + "</div>";
+    const mzs = [...new Set(lotes.map((x) => x.mz))];
+    if (mzs.length > 1) h += '<div class="mzs" id="mzs">' + ['<button data-mz="" aria-pressed="' + !ESTADO.mz + '">Todas</button>'].concat(mzs.map((m) => '<button data-mz="' + esc(m) + '" aria-pressed="' + (ESTADO.mz === m) + '">' + esc(T.manzana + " " + (m || "—")) + "</button>")).join("") + "</div>";
+    h += '<input type="search" id="buscar" inputmode="numeric" autocomplete="off" placeholder="Busca por número" aria-label="Buscar por número" value="' + esc(ESTADO.buscar) + '">';
+    const ver = lotes.filter((x) => (!ESTADO.mz || x.mz === ESTADO.mz) && (!ESTADO.buscar || x.num.toLowerCase().includes(ESTADO.buscar.toLowerCase())));
+    let grupo = null, lista = "";
+    ver.forEach((x) => {
+      if (mzs.length > 1 && x.mz !== grupo) { grupo = x.mz; lista += "<h2>" + esc(T.manzana + " " + (x.mz || "—")) + "</h2>"; }
+      const e = estadoDe(x.estado);
+      lista += '<button class="lote" data-k="' + esc(llave(x.mz, x.num)) + '"><span><b>' + esc(T.lote + " " + x.num) + "</b><small>" + [x.mz ? T.manzana + " " + x.mz : "", x.area ? x.area + " m²" : "", x.precio ? "$" + x.precio : ""].filter(Boolean).map(esc).join(" · ") + '</small></span><span class="est" style="--c:' + esc(e.color) + '"><i class="punto"></i>' + esc(e.nombre) + "</span></button>";
+    });
+    h += '<div class="lista" id="lista">' + (lista || '<div class="vacio">Ningún ' + esc(T.lote.toLowerCase()) + " con ese número.</div>") + "</div>" +
+      '<p class="pie">Con este link solo se cambia el estado de los ' + esc(T.lote.toLowerCase()) + "s. · " + (d.marca ? '<a href="https://mozari.app/" target="_blank" rel="noopener">Creado por Mozari · Haz el tuyo</a>' : "Hecho con Mozari") + "</p>";
+    $("app").innerHTML = h;
+    marcaDeAgua(d.marca);
+    if (foco) { const i = $("buscar"); i.focus(); try { i.setSelectionRange(pos, pos); } catch (e) { /* nada */ } }
+  }
+
+  function marcaDeAgua(si) {
+    let a = document.querySelector(".agua");
+    if (!si) { if (a) a.remove(); return; }
+    if (a) return;
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="340" height="220" viewBox="0 0 340 220"><g transform="rotate(-24 170 110)" fill="#0B0B0B" fill-opacity=".09" font-family="Poppins,Arial,sans-serif"><text x="40" y="112" font-size="19" font-weight="600" letter-spacing="2">CREADO POR MOZARI</text><text x="40" y="132" font-size="11" font-weight="500" letter-spacing="1.5">Haz el tuyo en mozari.app</text></g></svg>';
+    a = document.createElement("div"); a.className = "agua"; a.setAttribute("aria-hidden", "true");
+    a.style.backgroundImage = 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+    document.body.appendChild(a);
+  }
+  function hoja(k) {
+    const x = ESTADO.d.lotes.find((y) => llave(y.mz, y.num) === k); if (!x) return;
+    const T = ESTADO.d.terminos, el = document.createElement("div");
+    el.className = "hoja"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true");
+    el.innerHTML = "<div><h3>" + esc(T.lote + " " + x.num) + (x.mz ? " · " + esc(T.manzana + " " + x.mz) : "") + "</h3><p>¿Cómo está ahora?</p>" +
+      ESTADO.d.estados.map((e) => '<button class="opcion" data-estado="' + esc(e.id) + '" aria-pressed="' + (e.id === x.estado) + '" style="--c:' + esc(e.color) + '"><i class="punto"></i>' + esc(e.nombre) + (e.id === x.estado ? "<small>Así está</small>" : "") + "</button>").join("") +
+      '<button class="cancelar" data-cerrar>Cancelar</button></div>';
+    document.body.appendChild(el);
+    const fuera = (ev) => { if (ev.key === "Escape") quitar(); };
+    const quitar = () => { el.remove(); document.removeEventListener("keydown", fuera); };
+    document.addEventListener("keydown", fuera);
+    (el.querySelector('[aria-pressed="true"]') || el.querySelector(".opcion")).focus();
+    el.addEventListener("click", async (ev) => {
+      if (ev.target === el || ev.target.closest("[data-cerrar]")) { quitar(); return; }
+      const b = ev.target.closest("[data-estado]"); if (!b || b.disabled) return;
+      if (b.dataset.estado === x.estado) { quitar(); return; }
+      el.querySelectorAll("button").forEach((y) => (y.disabled = true)); b.innerHTML += "<small>Guardando…</small>";
+      const r = await fetch("/disponibilidad/" + token + "/estados", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cambios: [{ mz: x.mz, num: x.num, estado: b.dataset.estado }] }) }).catch(() => null);
+      const d = r ? await r.json().catch(() => ({})) : {};
+      quitar();
+      if (r && !r.ok && d.cerrado) return cerrado(d.error);
+      if (!r || !r.ok) { avisar(d.error || "No se pudo guardar. Revisa tu internet e intenta de nuevo.", 5000); return; }
+      if (Array.isArray(d.lotes)) ESTADO.d.lotes = d.lotes; else x.estado = b.dataset.estado;
+      pintar();
+      avisar(T.lote + " " + x.num + " quedó " + estadoDe(b.dataset.estado).nombre + (d.enTour ? ". Ya se ve en el tour." : "."), 4500);
+    });
+  }
+
+  document.addEventListener("click", (ev) => {
+    const l = ev.target.closest(".lote"); if (l) { hoja(l.dataset.k); return; }
+    const m = ev.target.closest("[data-mz]"); if (m) { ESTADO.mz = m.dataset.mz; pintar(); }
+  });
+  document.addEventListener("input", (ev) => { if (ev.target.id === "buscar") { ESTADO.buscar = ev.target.value.trim(); pintar(); } });
+  // Si alguien más cambió algo mientras la página estaba en segundo plano, se ve al volver
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && ESTADO.d && !document.querySelector(".hoja")) cargar(); });
+  cargar();
+</script>
+</body>
+</html>

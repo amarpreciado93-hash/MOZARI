@@ -1367,6 +1367,14 @@
   .resp-lista { display: grid; gap: 6px; }
   .resp-fila { display: grid; grid-template-columns: 170px 1fr auto; gap: 12px; align-items: center; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); font-size: 13px; }
   .resp-fila span, .resp-fila small { color: var(--mz-tenue); }
+  /* Link de disponibilidad para el cliente (Laboratorio «link-cliente») */
+  .pub-cliente > div { min-width: 0; grid-template-columns: minmax(0, 1fr); }
+  .pub-cliente .pub-caja { margin: 6px 0 0; max-width: none; width: 100%; box-sizing: border-box; }
+  .pub-cliente .cli-acc { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .pub-cliente .cli-acc .btn-sec { text-decoration: none; }
+  .pub-cliente .cli-cambios { margin-top: 6px; display: grid; gap: 3px; }
+  .pub-cliente .cli-cambios b { font-size: 12px; color: var(--mz-texto); }
+  .pub-cliente .cli-cambios div { font-size: 12.5px; color: var(--mz-tenue); }
   .pub-hosting-aviso { flex-basis: 100%; margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: #F2A900; }
   .comp { text-align: left; display: grid; gap: 18px; }
   /* Landing del desarrollo (Laboratorio «landing») */
@@ -3399,7 +3407,7 @@
     if (motorEd) { motorEd.construir(); pintarCapas(); }
     if (nav.sec + "/" + nav.sub === "panoramas/lotes") pintarLotes();
     const x = lista[0], nombre = estadosLote().find((e) => e.id === x.estado);
-    avisar("Desde el celular: " + (lista.length === 1 ? terminos().lote + " " + x.num + (x.mz ? " (" + terminos().manzana + " " + x.mz + ")" : "") + " quedó " + (nombre ? nombre.nombre : x.estado) : lista.length + " " + plural(terminos().lote).toLowerCase() + " cambiaron de estado"), 6000);
+    avisar((lista.every((y) => y.quien === "cliente") ? "Tu cliente cambió la disponibilidad: " : "Desde el celular: ") + (lista.length === 1 ? terminos().lote + " " + x.num + (x.mz ? " (" + terminos().manzana + " " + x.mz + ")" : "") + " quedó " + (nombre ? nombre.nombre : x.estado) : lista.length + " " + plural(terminos().lote).toLowerCase() + " cambiaron de estado"), 6000);
   }
   window.addEventListener("beforeunload", (ev) => { if (MODO === "nube" && (pendienteNube !== null || enviando)) { ev.preventDefault(); ev.returnValue = ""; } });
   function viajarHistorial(atras) {
@@ -3572,12 +3580,79 @@
       (pub && enLab("privado") ? '<div class="pub-hosting pub-privado' + (oculto ? " oculto" : "") + '"><div><b>' + (oculto ? "Tour oculto" : "Modo privado") + "</b><span>" +
         (oculto ? "Quien abra el link ve «Este tour no está disponible por ahora». Nada se borró: al mostrarlo vuelve igual, con el mismo link." : "Esconde el tour sin borrarlo, por ejemplo mientras tu cliente termina de pagar. El link y tus cambios se quedan igual.") +
         '</span></div><button class="' + (oculto ? "btn-prim" : "btn-sec") + '" id="pub-privado">' + (oculto ? "Mostrar tour" : "Ocultar tour") + "</button></div>" : "") +
+      // Link de disponibilidad para el cliente (Laboratorio): licencia Desarrollos y un tour con lotes
+      (puedeLinkCliente() ? '<div class="pub-hosting pub-cliente" id="pub-cliente"><div><b>Link para tu cliente</b><span>Cargando…</span></div></div>' : "") +
       (conMarcaPrueba() ? '<div class="pub-revision"><span><b>Se publica con marca de agua.</b> ' + (PLAN.marca ? "Tu cuenta de prueba es para probar todo; tus clientes verán el tour con la marca de agua «Creado por Mozari»." : "Este tour tiene lotes y la lotificación es del plan Desarrollos.") + '</span><div><button class="btn-prim" data-comprar="' + (tieneLotes() ? "desarrollos" : "pro") + '">' + (tieneLotes() ? "Obtener Desarrollos" : "Quitar la marca") + "</button></div></div>" : "");
     $("v-proximo").hidden = false;
+    if ($("pub-cliente")) pintarCliente();
     if (!toursNube) cargarToursNube().then(() => nav.sec === "publicar" && pintarPublicar());
   }
+  // =================== LINK DE DISPONIBILIDAD PARA EL CLIENTE (Laboratorio «link-cliente», pedido de Amar 21 nov 2026) ===================
+  // «Mandarle algo a mi cliente para que él solito modifique su disponibilidad»: un link sin cuenta que solo cambia el
+  // estado de los lotes de este tour (borrador y publicado al momento). Aquí se crea, se copia, se manda y se quita.
+  // Es de Desarrollos, pero todos lo usan: sin Desarrollos la página del cliente lleva la marca de agua (pedido de Amar)
+  const puedeLinkCliente = () => MODO === "nube" && enLab("link-cliente") && tieneLotes();
+  const CLI = { tour: "", link: "", creado: "", cambios: [], marca: false };
+  async function pintarCliente(recargar) {
+    const caja = $("pub-cliente"); if (!caja) return;
+    if (recargar !== false || CLI.tour !== TOUR) {
+      const r = await fetch("api/tours/" + TOUR + "/cliente", { cache: "no-store" }).catch(() => null), d = r && r.ok ? await r.json().catch(() => null) : null;
+      if (!$("pub-cliente")) return;
+      if (!d) { caja.innerHTML = '<div><b>Link para tu cliente</b><span>No se pudo cargar. Revisa tu internet.</span></div>'; return; }
+      Object.assign(CLI, { tour: TOUR, link: d.link || "", creado: d.creado || "", cambios: d.cambios || [], marca: !!d.marca });
+    }
+    const T = terminos(), cuando = (ts) => new Date(ts).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    const nombreEst = (id) => { const e = estadosLote().find((x) => x.id === id); return e ? e.nombre : id; };
+    const marca = CLI.marca ? '<p class="pub-hosting-aviso" id="cli-marca">La página de tu cliente lleva la marca de agua «Creado por Mozari». Con Desarrollos sale limpia. <button class="btn-prim" data-comprar="desarrollos">Obtener Desarrollos</button></p>' : "";
+    if (!CLI.link) {
+      caja.innerHTML = '<div><b>Link para tu cliente</b><span>Mándale a tu cliente un link para que él mismo marque sus ' + esc(plural(T.lote).toLowerCase()) + " Disponible, Apartado o Vendido desde su celular, sin cuenta. Solo puede cambiar el estado; tu tour publicado cambia al momento.</span></div>" +
+        '<button class="btn-sec" id="cli-crear">Crear link</button>' + marca;
+    } else {
+      const wa = "https://wa.me/?text=" + encodeURIComponent("Aquí puedes marcar la disponibilidad de los " + plural(T.lote).toLowerCase() + " de " + (P().nombre || "tu proyecto") + " (Disponible, Apartado o Vendido). El tour se actualiza al momento: " + CLI.link);
+      caja.innerHTML = '<div><b>Link para tu cliente</b><span>Quien tenga este link puede cambiar el estado de los ' + esc(plural(T.lote).toLowerCase()) + " de este tour, y nada más. Si lo quitas, deja de funcionar.</span>" +
+        '<div class="pub-caja"><code id="cli-link">' + esc(CLI.link) + '</code><button class="btn-sec" id="cli-copiar">Copiar</button></div>' +
+        '<div class="cli-acc"><a class="btn-sec" id="cli-wa" href="' + esc(wa) + '" target="_blank" rel="noopener">Mandar por WhatsApp</a><button class="btn-sec" id="cli-quitar">Quitar link</button></div>' +
+        (CLI.cambios.length ? '<div class="cli-cambios" id="cli-cambios"><b>Lo que cambió tu cliente</b>' + CLI.cambios.slice(0, 5).map((x) => "<div>" + esc(T.lote + " " + x.num + (x.mz ? " (" + T.manzana + " " + x.mz + ")" : "") + " → " + nombreEst(x.estado) + " · " + cuando(x.ts)) + "</div>").join("") + "</div>"
+          : '<div class="cli-cambios"><div>Tu cliente aún no ha cambiado nada.</div></div>') + "</div>" + marca;
+    }
+    guiaNueva("nuevo-link-cliente", pasosCli, () => !!$("pub-cliente") && nav.sec === "publicar");
+  }
+  async function accionCliente(id, b) {
+    if (id === "cli-copiar") { try { await navigator.clipboard.writeText(CLI.link); avisar("Link copiado. Mándaselo a tu cliente."); } catch (e) { avisar(CLI.link, 8000); } return; }
+    if (id === "cli-quitar" && !confirm("¿Quitar el link? Tu cliente ya no podrá cambiar la disponibilidad con él. Puedes crear otro cuando quieras.")) return;
+    b.disabled = true; b.textContent = id === "cli-crear" ? "Creando…" : "Quitando…";
+    const r = await fetch("api/tours/" + TOUR + "/cliente", { method: id === "cli-crear" ? "POST" : "DELETE" }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    if (!r || !r.ok) { avisar(d.error || "No se pudo. Revisa tu internet e intenta de nuevo."); pintarCliente(false); return; }
+    await pintarCliente();
+    avisar(id === "cli-crear" ? "Listo: copia el link o mándalo por WhatsApp a tu cliente." : "Link quitado. Ya no funciona.");
+  }
+  function animCli(svg, t) {
+    const vendido = t >= 2.6, hoja = t > 1.3 && t < 2.9;
+    let h = '<rect width="360" height="200" fill="#1a2014"/>' +
+      '<rect x="24" y="40" width="120" height="70" rx="10" fill="#0b0b0b" stroke="rgba(255,255,255,.25)"/><text x="36" y="62" fill="#fff" font-size="9" font-weight="700">Tu estudio</text>' +
+      '<rect x="36" y="72" width="96" height="22" rx="7" fill="' + (t > 0.3 ? "#D5FF40" : "#1c1f19") + '" fill-opacity="' + (t > 0.3 ? 0.25 : 1) + '" stroke="#D5FF40"/><text x="84" y="86" fill="#fff" font-size="7.5" text-anchor="middle">Link para tu cliente</text>' +
+      '<path d="M150 75 C 175 75, 180 75, 205 75" stroke="#D5FF40" stroke-width="2" stroke-dasharray="4 4" fill="none" opacity="' + (t > 0.6 ? 1 : 0) + '"/>' +
+      '<rect x="212" y="10" width="110" height="168" rx="16" fill="#fff"/><text x="224" y="32" fill="#0b0b0b" font-size="9" font-weight="700">Disponibilidad</text>';
+    [["Lote 11", "Disponible", "#22B573"], ["Lote 12", vendido ? "Vendido" : "Disponible", vendido ? "#E5484D" : "#22B573"], ["Lote 13", "Apartado", "#F2A900"]].forEach(([n, e, c], i) => {
+      const y = 42 + i * 28;
+      h += '<rect x="220" y="' + y + '" width="94" height="22" rx="7" fill="#fff" stroke="' + (i === 1 && t > 0.9 && t < 1.4 ? "#0b0b0b" : "#E1E3DD") + '"/><text x="226" y="' + (y + 14) + '" fill="#0b0b0b" font-size="8" font-weight="600">' + n + '</text><rect x="268" y="' + (y + 5) + '" width="42" height="12" rx="6" fill="' + c + '" fill-opacity=".2" stroke="' + c + '"/><text x="289" y="' + (y + 14) + '" fill="#0b0b0b" font-size="6.2" text-anchor="middle">' + e + "</text>";
+    });
+    if (hoja) {
+      h += '<rect x="212" y="112" width="110" height="66" rx="14" fill="#F3F4F1"/>';
+      [["Disponible", "#22B573"], ["Vendido", "#E5484D"]].forEach(([e, c], i) => (h += '<rect x="220" y="' + (120 + i * 26) + '" width="94" height="20" rx="6" fill="' + (i === 1 && t > 2.2 ? c : "#fff") + '" fill-opacity="' + (i === 1 && t > 2.2 ? 0.3 : 1) + '" stroke="' + c + '"/><circle cx="229" cy="' + (130 + i * 26) + '" r="3" fill="' + c + '"/><text x="236" y="' + (133 + i * 26) + '" fill="#0b0b0b" font-size="7.5" font-weight="600">' + e + "</text>"));
+    }
+    const c = t < 0.9 ? [300 - 40 * sv(t / 0.9), 160 - 90 * sv(t / 0.9)] : t < 2.3 ? [260 - 10 * sv((t - 1.4) / 0.8), 70 + 80 * sv((t - 1.4) / 0.8)] : [250, 150];
+    h += (t < 2.9 ? CURSOR_G(c[0], c[1]) : "") + pieG(vendido ? "Listo: tu tour ya dice Vendido" : t > 0.6 ? "Tu cliente toca el lote en su celular" : "Creas el link y se lo mandas", vendido);
+    svg.innerHTML = h;
+  }
+  const pasosCli = () => [
+    { el: () => $("pub-cliente"), titulo: "Nuevo: link de disponibilidad para tu cliente", anim: animCli, dur: 4.2,
+      texto: "Crea el link y mándaselo a tu cliente por WhatsApp. Él lo abre en su celular <b>sin cuenta</b>, toca un lote y lo marca <b>Apartado</b> o <b>Vendido</b>; tu tour publicado cambia al momento. Solo puede cambiar el estado de los lotes. Aquí ves qué cambió y lo quitas cuando quieras." },
+  ];
   $("proximo").addEventListener("click", async (ev) => {
     if (ev.target.id === "pub-ir-lotes") { ir("panoramas", "lotes"); return; }
+    if (/^cli-(crear|copiar|quitar)$/.test(ev.target.id)) { accionCliente(ev.target.id, ev.target); return; }
     if (ev.target.id === "pub-descargar") { descargarTour(ev.target); return; }
     if (ev.target.id === "pub-privado") {
       const b = ev.target, t = (toursNube || []).find((x) => x.id === TOUR) || {}, ocultar = t.privado !== "1";

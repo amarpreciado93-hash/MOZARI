@@ -468,3 +468,29 @@
 - Desde Instagram o Facebook, «Entrar con Google» lleva a /entrar, que pide abrir Mozari en Safari o Chrome. Ese link
   ahora se lleva el anuncio (utm_… y fbclid, tomados de la cookie de la visita) y /entrar, ya en Safari o Chrome, lo
   anota en la cookie de allá antes de ir a Google. Así la cuenta sigue contando para su anuncio en el Panel.
+
+## 21 nov 2026 · Link de disponibilidad para el cliente (para todos; limpio con Desarrollos)
+
+- Amar: «a un tour de terrenos con lotes, poder mandarle algo a mi cliente para que el cliente literalmente pueda tener
+  una herramienta donde él solito modifique su disponibilidad».
+- Amar: «esta herramienta solo es exclusiva para desarrollos pero que todos puedan usarla con marca de agua si no está
+  en desarrollos», y que salga como actualización para todos con su animación de uso.
+- Publicar → «Link para tu cliente» (Laboratorio «link-cliente», en un tour con lotes, cualquier licencia): «Crear link»,
+  «Copiar», «Mandar por WhatsApp», «Quitar link» y «Lo que cambió tu cliente» (los últimos 5). Mini tutorial la
+  primera vez.
+- El cliente abre mozari.app/disponibilidad/<link> en su celular o compu, sin cuenta: ve los lotes del tour (resumen
+  por estado, filtro por manzana, buscador por número), toca uno y elige Disponible, Apartado, Vendido o los estados
+  propios del tour. Cambia el borrador y el tour publicado al momento, igual que «Disponibilidad desde el celular».
+  El estudio abierto en la compu no lo regresa y avisa «Tu cliente cambió la disponibilidad».
+- Con el link solo se cambia el estado de los lotes de ESE tour: no abre la API del estudio, no acepta cambios desde
+  otra página ni estados que no existen, máximo 300 cambios por hora. Crear uno nuevo o quitarlo deja sin efecto el
+  anterior al momento. Si se apaga en el Laboratorio, el link queda en pausa (no se borra).
+- Con Desarrollos la página del cliente sale limpia. Sin Desarrollos (Pro o cuenta de prueba) lleva la marca de agua
+  «Creado por Mozari» en mosaico (no estorba para tocar) y el pie «Creado por Mozari · Haz el tuyo»; en el estudio se
+  avisa con el botón «Obtener Desarrollos».
+- Nace en el Laboratorio como todo lo nuevo; con el push se pone en «Todos» desde el Panel y sale la actualización con
+  su video de uso (crear el link, mandarlo, el cliente marca Vendido, el tour cambia).
+- Datos: tours/<id>/cliente.json (el link, para volver a copiarlo), clientes/<huella>.json (índice por SHA-256 del
+  link), tours/<id>/cambios-cliente.json (últimos 100 cambios). Al borrar el tour se borra su índice.
+- Revisión completa: 118 de 121. Las 3 que fallaron miden tiempos y no tocan esto (tutorial de estadísticas en Pro,
+  plano con radar, mapa de 5,000 lotes en el celular); el servidor de pruebas iba más cargado. Repetidas solas: pasaron.

@@ -1813,6 +1813,99 @@ async function capasPesadas(p) {
       await m.context().close(); await n.context().close();
     });
 
+    // Pedido de Amar (21 nov 2026): «a un tour de terrenos con lotes, poder mandarle algo a mi cliente para que el cliente
+    // literalmente pueda tener una herramienta donde él solito modifique su disponibilidad».
+    await paso("Link de disponibilidad para el cliente: sin cuenta cambia el estado de los lotes (el tour publicado al momento), el dueño ve qué cambió y lo quita; sin Desarrollos va con marca de agua", async () => {
+      const n = await pagina(DUENO); await nuevoTour(n, "Lotes del cliente");
+      const id = await idTour(n), leer = () => n.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), id);
+      const d = await leer(), esc = d.proyecto.escenaInicial || d.escenas[0].id, v = d.escenas.find((e) => e.id === esc).vista || {}, y = v.yaw || 0, p = (v.pitch || 0) + 0.25;
+      const lote = (num, mz, dy) => ({ id: "lote-" + mz + num, tipo: "poligono", nombre: "Lote", visible: true, puntos: [[y - 0.1 + dy, p], [y + dy, p], [y + dy, p + 0.08], [y - 0.1 + dy, p + 0.08]],
+        relleno: { color: "#D5FF40", opacidad: 0.35 }, trazo: { color: "#D5FF40", grosor: 1.5, opacidad: 1 }, lote: { numero: num, manzana: mz, area: "160", precio: "450,000", lados: [], frente: 0, estado: "disponible" } });
+      d.capas[esc] = (d.capas[esc] || []).concat([lote("1", "A", 0), lote("2", "A", 0.12), lote("1", "B", 0.24)]);
+      exige((await n.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [id, d])) === 200, "no se pudieron poner los lotes");
+      exige((await n.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), id)) === 200, "no se pudo publicar");
+      await n.reload(); await n.waitForTimeout(3000); await cerrarAnuncio(n); await cerrarGuia(n);
+      // Publicar → «Link para tu cliente», con su mini tutorial la primera vez
+      await n.click('#nav button:has-text("Publicar")'); await n.waitForSelector("#cli-crear", { timeout: 10000 }); await n.waitForTimeout(1500);
+      exige(/link de disponibilidad para tu cliente/i.test(await n.textContent(".guia-tarjeta").catch(() => "")) || ((await n.evaluate(() => fetch("api/yo").then((r) => r.json()))).guias || []).includes("nuevo-link-cliente"), "la primera vez no sale el mini tutorial del link para el cliente");
+      if (process.env.CAPTURAS) { await n.waitForTimeout(1500); await n.screenshot({ path: path.join(process.env.CAPTURAS, "cliente-tutorial.png") }); }
+      await pasarGuias(n);
+      await n.click("#cli-crear"); await n.waitForSelector("#cli-link", { timeout: 8000 });
+      const link = (await n.textContent("#cli-link")).trim(), token = link.split("/").pop();
+      exige(/^http:\/\/localhost:8787\/disponibilidad\/[A-Za-z0-9_-]{32}$/.test(link), "el link para el cliente no tiene la forma esperada: " + link);
+      exige(decodeURIComponent(await n.getAttribute("#cli-wa", "href")).includes(link), "«Mandar por WhatsApp» no lleva el link");
+      if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "cliente-estudio.png") });
+      // El cliente: en su celular, sin cuenta
+      const c = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
+      await c.goto(link); await c.waitForSelector(".lote", { timeout: 10000 });
+      exige((await c.$$(".lote")).length === 3 && /Lotes del cliente/.test(await c.textContent("h1")), "el cliente no ve los 3 lotes de su tour");
+      exige((await c.getAttribute(".ver-tour", "href")) === TOURS + "/" + id + "/", "no trae el botón para ver el tour publicado");
+      exige(!/\bgratis\b/i.test(await c.textContent("body")), "la página del cliente dice «gratis»");
+      exige(!(await c.$(".agua")), "con Desarrollos la página del cliente salió con marca de agua");
+      if (process.env.CAPTURAS) await c.screenshot({ path: path.join(process.env.CAPTURAS, "cliente-lista.png") });
+      await c.click('#mzs [data-mz="B"]'); await c.waitForTimeout(200);
+      exige((await c.$$(".lote")).length === 1, "el filtro por manzana no funciona");
+      await c.click('#mzs [data-mz=""]'); await c.fill("#buscar", "2"); await c.waitForTimeout(250);
+      exige((await c.$$(".lote")).length === 1, "el buscador no filtra por número");
+      await c.click(".lote"); await c.waitForSelector(".hoja");
+      if (process.env.CAPTURAS) await c.screenshot({ path: path.join(process.env.CAPTURAS, "cliente-hoja.png") });
+      await c.click('.hoja [data-estado="vendido"]'); await c.waitForTimeout(1500);
+      exige(/Vendido/.test(await c.textContent(".lote")), "en la página del cliente el lote no quedó Vendido");
+      exige(/Ya se ve en el tour/.test(await c.textContent("#aviso")), "no le avisó al cliente que ya se ve en el tour");
+      const estadoDe = (dd, num, mz) => Object.values(dd.capas).flat().find((x) => x && x.lote && x.lote.numero === num && x.lote.manzana === mz).lote.estado;
+      const pub = await (await fetch(TOURS + "/" + id + "/proyecto.json")).json();
+      exige(estadoDe(pub, "2", "A") === "vendido" && estadoDe(pub, "1", "A") === "disponible" && estadoDe(pub, "1", "B") === "disponible", "el tour publicado no cambió al momento (o cambió otro lote)");
+      exige(estadoDe(await leer(), "2", "A") === "vendido", "el borrador no cambió");
+      // Con el link no se puede nada más: ni la API del estudio, ni desde otra página, ni un estado que no existe
+      exige((await c.evaluate((id) => fetch("/api/tours/" + id).then((r) => r.status), id)) === 401, "con el link se puede leer la API del estudio");
+      const ajena = await fetch(ESTUDIO + "/disponibilidad/" + token + "/estados", { method: "POST", headers: { "content-type": "application/json", origin: "https://otro.sitio" }, body: JSON.stringify({ cambios: [{ mz: "A", num: "1", estado: "vendido" }] }) });
+      exige(ajena.status === 403, "aceptó un cambio desde otra página: " + ajena.status);
+      const raro = await c.evaluate((t) => fetch("/disponibilidad/" + t + "/estados", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cambios: [{ mz: "A", num: "1", estado: "<b>robado</b>" }] }) }).then((r) => r.json()), token);
+      exige(raro.cambiados === 0 && estadoDe(await leer(), "1", "A") === "disponible", "aceptó un estado que no existe");
+      // El estudio abierto en la compu guarda otra cosa: no regresa el lote y avisa que fue el cliente
+      await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(500);
+      await n.fill("#p-desc", "Cambio en la compu con el link del cliente"); await n.waitForTimeout(3000);
+      exige(estadoDe(await leer(), "2", "A") === "vendido", "la compu regresó el lote del cliente a disponible");
+      exige(/Tu cliente cambió/.test(await n.textContent("#toast").catch(() => "")), "la compu no avisó que el cliente cambió un lote");
+      // El dueño ve qué cambió su cliente
+      await n.click('#nav button:has-text("Publicar")'); await n.waitForSelector("#cli-cambios", { timeout: 10000 });
+      exige(/Lote 2 \(Manzana A\) → Vendido/.test(await n.textContent("#cli-cambios")), "el dueño no ve lo que cambió su cliente: " + (await n.textContent("#cli-cambios")).slice(0, 120));
+      // Quitar el link: deja de funcionar al momento
+      // (las páginas de prueba aceptan solas el «¿Quitar el link?»)
+      await n.click("#cli-quitar"); await n.waitForSelector("#cli-crear", { timeout: 8000 });
+      await c.reload(); await c.waitForSelector(".cerrado", { timeout: 8000 });
+      if (process.env.CAPTURAS) await c.screenshot({ path: path.join(process.env.CAPTURAS, "cliente-quitado.png") });
+      const viejo = await fetch(ESTUDIO + "/disponibilidad/" + token + "/datos");
+      exige(viejo.status === 404, "el link quitado todavía funciona: " + viejo.status);
+      exige((await fetch(ESTUDIO + "/disponibilidad/x" + token.slice(1) + "/datos")).status === 404, "un link inventado responde");
+      exige(!c.errs.length && !n.errs.length, "errores: " + c.errs.concat(n.errs).join(" | ").slice(0, 200));
+      await c.context().close();
+      // Pedido de Amar: es de Desarrollos, pero todos lo pueden usar; sin Desarrollos la página del cliente lleva marca de agua
+      const J = (m, b) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(b) });
+      exige((await n.evaluate((o) => fetch("api/admin/laboratorio/link-cliente", o).then((r) => r.status), J("PUT", { modo: "todos", probadores: [] }))) === 200, "no se pudo prender para todos");
+      const correo = "cliente-prueba-" + Date.now() + "@prueba.mx", g = await pagina(correo); await nuevoTour(g, "Sin licencia"); const suyo = await idTour(g);
+      const dg = await g.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), suyo), eg = dg.proyecto.escenaInicial || dg.escenas[0].id;
+      dg.capas[eg] = (dg.capas[eg] || []).concat([lote("7", "C", 0)]);
+      exige((await g.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [suyo, dg])) === 200, "no se pudo poner el lote en la cuenta de prueba");
+      await g.reload(); await g.waitForTimeout(3000); await cerrarAnuncio(g); await cerrarGuia(g);
+      const cg = await g.evaluate((id) => fetch("api/tours/" + id + "/cliente", { method: "POST" }).then(async (r) => ({ s: r.status, d: await r.json() })), suyo);
+      exige(cg.s === 201 && cg.d.marca === true && /\/disponibilidad\//.test(cg.d.link), "la cuenta de prueba no puede crear su link (con marca): " + JSON.stringify(cg).slice(0, 160));
+      await g.click('#nav button:has-text("Publicar")'); await g.waitForSelector("#cli-marca", { timeout: 10000 }); await pasarGuias(g);
+      exige(/marca de agua/.test(await g.textContent("#cli-marca")) && await g.$('#cli-marca [data-comprar="desarrollos"]'), "en el estudio no avisa que el link lleva marca de agua sin Desarrollos");
+      const cp = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
+      await cp.goto(cg.d.link); await cp.waitForSelector(".lote", { timeout: 10000 });
+      exige(await cp.$(".agua") && /Creado por Mozari/.test(await cp.textContent(".pie")), "sin Desarrollos la página del cliente no lleva la marca de agua");
+      if (process.env.CAPTURAS) await cp.screenshot({ path: path.join(process.env.CAPTURAS, "cliente-con-marca.png") });
+      await cp.click(".lote"); await cp.waitForSelector(".hoja"); await cp.click('.hoja [data-estado="apartado"]'); await cp.waitForTimeout(1200);
+      exige(/Apartado/.test(await cp.textContent(".lote")), "con marca de agua no se pudo cambiar el lote");
+      exige(!cp.errs.length && !g.errs.length, "errores: " + cp.errs.concat(g.errs).join(" | ").slice(0, 200));
+      await n.evaluate((o) => fetch("api/admin/laboratorio/link-cliente", o), J("PUT", { modo: "yo", probadores: [] }));
+      // Apagado en el Laboratorio: el link queda en pausa
+      const pausa = await fetch(cg.d.link + "/datos");
+      exige(pausa.status === 403, "con la función apagada el link sigue funcionando: " + pausa.status);
+      await cp.context().close(); await g.context().close(); await n.context().close();
+    });
+
     // Pedido de Amar (10 nov 2026): «en edificios, al hacer zoom se borran los textos; que exista la opción de planchar
     // los departamentos para que no se muevan». Rótulo «Planchado en la fachada» y en la foto 360 van en la fachada.
     await paso("Edificio: los nombres de los departamentos no se borran con el zoom, se planchan en la fachada y salen en la foto 360", async () => {

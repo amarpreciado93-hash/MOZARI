@@ -264,6 +264,7 @@ export const LABORATORIO = {
   "voz-ia": { nombre: "Sonido del tour: música y voz", texto: "Interfaz → «Sonido del tour»: una sola ventana para la música y la voz. Subes tu canción, escribes lo que quieres que diga la voz y una voz lo lee tal cual (o subes tu propio audio). La voz suena cuando el tour empieza y sigue aunque tu cliente cambie de esfera; la música baja sola mientras habla y los subtítulos van pasando por frases. Cada tour puede crear 2 voces al mes y cada licencia trae sus letras de voz (Pro 5,000, Desarrollos 12,000; unas 900 letras son un minuto). Todo Mozari tiene un tope mensual." },
   "previa-celular": { nombre: "Vista previa en celular", texto: "Junto al botón «Vista previa» hay uno con un teléfono: abre el tour dentro de un celular 9:16, con su música, su voz, sus lotes y todo funcionando (antes el 9:16 solo se veía en Interfaz, sin sonido). Arriba se cambia a la vista de compu. Pedido de Emanuel." },
   "rotulo-corto": { nombre: "Rótulo corto y grande en los lotes", texto: "Panoramas → Fichas técnicas → «Rótulo en la esfera: Corto y grande»: cada lote dice solo «L09» y su manzana («M5»), en dos renglones y con letra mucho más grande y centrada; se lee de un vistazo, también desde lejos. La superficie sigue en la ficha del lote. Vale para todo el tour y se ve al volver a publicar." },
+  "link-cliente": { nombre: "Link de disponibilidad para tu cliente", texto: "Publicar → «Link para tu cliente»: un link que le mandas por WhatsApp a tu cliente (el desarrollador o su vendedor). Lo abre en su celular o compu, sin cuenta ni contraseña, ve sus lotes y los marca Disponible, Apartado o Vendido; el tour publicado cambia al momento. Solo puede cambiar el estado de los lotes de ese tour. Tú ves qué cambió y cuándo, y lo quitas cuando quieras. Con Desarrollos la página del cliente sale limpia; con otra licencia o la cuenta de prueba lleva la marca de agua «Creado por Mozari»." },
   "cotas": { nombre: "Cotas en paredes", texto: "En Capas → «Cota»: tocas el inicio y el final de un muro (en el piso) y Mozari calcula su largo con la altura de la cámara; un punto en el piso y otro arriba da la altura. Si tienes la medida del plano, la escribes y manda esa. Salen en el tour como en un plano." },
 };
 // "pago": las cuentas Pro y Desarrollos (con su plan vigente); "todos" incluye también Gratis
@@ -306,6 +307,99 @@ function cambiarEstados(p, cambios) {
   return { n, antes };
 }
 async function leerJSON(env, clave) { const o = await env.R2.get(clave); return o ? o.json().catch(() => null) : null; }
+// Cambia el estado de lotes en el borrador Y en el tour publicado, y lo anota para que un estudio abierto no lo regrese.
+// quien: "celular" (el dueño desde su cel) o "cliente" (el link de disponibilidad para el cliente).
+async function aplicarEstados(env, id, cambios, quien) {
+  const base = "tours/" + id + "/", borrador = await leerJSON(env, base + "proyecto.json");
+  if (!borrador) return null;
+  const r1 = cambiarEstados(borrador, cambios);
+  if (r1.n) await env.R2.put(base + "proyecto.json", JSON.stringify(borrador), { httpMetadata: { contentType: tipoDe("x.json") } });
+  const pub = await leerJSON(env, "publicado/" + id + "/proyecto.json");
+  let r2 = { n: 0 };
+  if (pub) { r2 = cambiarEstados(pub, cambios); if (r2.n) await env.R2.put("publicado/" + id + "/proyecto.json", JSON.stringify(pub), { httpMetadata: { contentType: tipoDe("x.json"), cacheControl: "no-cache" } }); }
+  if (r1.n) {
+    const movil = (await leerJSON(env, base + "estados-movil.json")) || {}, ts = new Date().toISOString();
+    cambios.forEach((x) => { const k = llaveLote(x.mz, x.num); if (k in r1.antes) movil[k] = { estado: x.estado, antes: movil[k] && movil[k].antes ? movil[k].antes : r1.antes[k], ts, quien }; });
+    await env.R2.put(base + "estados-movil.json", JSON.stringify(movil), { httpMetadata: { contentType: "application/json" } });
+  }
+  return { borrador: r1.n, publicado: r2.n, enTour: !!pub, antes: r1.antes, proyecto: borrador };
+}
+
+// Link de disponibilidad para el cliente (Laboratorio «link-cliente», pedido de Amar 21 nov 2026): «mandarle algo a mi
+// cliente para que él solito modifique su disponibilidad». Un link sin cuenta ni contraseña que SOLO cambia el estado de
+// los lotes de ese tour (borrador y publicado, igual que desde el celular). El dueño lo crea, lo copia y lo quita.
+//   tours/<id>/cliente.json          { token, creado }        el link, para volver a copiarlo
+//   clientes/<huella>.json           { id, uid, creado }      huella = SHA-256 del token (el índice no guarda el link)
+//   tours/<id>/cambios-cliente.json  [{ mz, num, estado, antes, ts }]   los últimos 100, para el dueño
+const TOKEN_CLIENTE = /^[A-Za-z0-9_-]{32}$/, CAMBIOS_CLIENTE_HORA = 300;
+// Pedido de Amar: es de Desarrollos, pero todos lo pueden usar; sin Desarrollos la página del cliente lleva la marca de agua
+const conMarcaCliente = (cuenta) => !cuenta.admin && planDe(cuenta).id !== "desarrollos";
+const huellaToken = async (t) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)))].slice(0, 16).map((x) => x.toString(16).padStart(2, "0")).join("");
+const tokenNuevo = () => btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(24)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const lotesParaCliente = (p) => {
+  const m = new Map();
+  Object.values(p.capas || {}).forEach((l) => (Array.isArray(l) ? l : []).forEach((c) => {
+    if (!c || !c.lote || (!String(c.lote.numero || "").trim() && !String(c.lote.manzana || "").trim())) return;
+    const k = llaveLote(c.lote.manzana, c.lote.numero);
+    if (!m.has(k)) m.set(k, { mz: String(c.lote.manzana || "").slice(0, 40), num: String(c.lote.numero || "").slice(0, 40), estado: String(c.lote.estado || "disponible"), area: String(c.lote.area || "").slice(0, 20), precio: String(c.lote.precio || "").slice(0, 30) });
+  }));
+  return [...m.values()];
+};
+async function linkDeCliente(env, token) {
+  if (!TOKEN_CLIENTE.test(token || "")) return null;
+  const ix = await leerJSON(env, "clientes/" + (await huellaToken(token)) + ".json");
+  if (!ix || !ID_TOUR.test(ix.id || "") || !ix.uid) return null;
+  const c = await leerJSON(env, "tours/" + ix.id + "/cliente.json");
+  if (!c || c.token !== token || !(await esDueno(env, ix.uid, ix.id))) return null; // lo quitaron o lo cambiaron
+  const dueno = await perfil(env, ix.uid);
+  if (!dueno || dueno.bloqueado) return null;
+  // Si se apaga en el Laboratorio, el link queda en pausa sin borrarse. Sin Desarrollos funciona con marca de agua.
+  if (!(await labDe(env, dueno)).includes("link-cliente")) return { apagado: true };
+  return { id: ix.id, uid: ix.uid, marca: conMarcaCliente(dueno) };
+}
+const sinCache = { "cache-control": "no-store", "x-robots-tag": "noindex, nofollow", "referrer-policy": "no-referrer" };
+async function rutaCliente(request, env, url, segs) {
+  const token = segs[1] || "", m = request.method;
+  // La página (es la misma para todos; lee el link de la dirección)
+  if (segs.length === 2 && m === "GET") {
+    const r = await conAsset(env, request, "/disponibilidad"), h = new Headers(r.headers);
+    Object.entries(sinCache).forEach(([k, v]) => h.set(k, v));
+    return new Response(r.body, { status: TOKEN_CLIENTE.test(token) ? r.status : 404, headers: h });
+  }
+  const conCabeceras = (res) => { Object.entries(sinCache).forEach(([k, v]) => res.headers.set(k, v)); return res; };
+  const l = await linkDeCliente(env, token);
+  if (!l) return conCabeceras(json({ error: "Este link ya no está activo. Pídele uno nuevo a quien te lo mandó.", cerrado: true }, 404));
+  if (l.apagado) return conCabeceras(json({ error: "Este link está en pausa. Pídele a quien te lo mandó que lo revise.", cerrado: true }, 403));
+  if (segs[2] === "datos" && segs.length === 3 && m === "GET") {
+    const p = await leerJSON(env, "tours/" + l.id + "/proyecto.json");
+    if (!p) return conCabeceras(json({ error: "Este link ya no está activo.", cerrado: true }, 404));
+    const t = (p.proyecto && p.proyecto.terminos) || {}, publicado = !!(await env.R2.head("publicado/" + l.id + "/proyecto.json"));
+    const estados = (Array.isArray(p.lotesEstados) && p.lotesEstados.length ? p.lotesEstados : [{ id: "disponible", nombre: "Disponible", color: "#22B573" }, { id: "apartado", nombre: "Apartado", color: "#F2A900" }, { id: "vendido", nombre: "Vendido", color: "#E5484D" }])
+      .filter((e) => e && e.id).slice(0, 8).map((e) => ({ id: String(e.id).slice(0, 40), nombre: String(e.nombre || e.id).slice(0, 40), color: /^#[0-9a-f]{3,8}$/i.test(e.color || "") ? e.color : "#888888" }));
+    return conCabeceras(json({ nombre: String((p.proyecto && p.proyecto.nombre) || "Tour").slice(0, 120), terminos: { lote: String(t.lote || "Lote").slice(0, 30), manzana: String(t.manzana || "Manzana").slice(0, 30) }, estados, lotes: lotesParaCliente(p), tour: publicado ? origenTours(env, url) + "/" + l.id + "/" : "", marca: !!l.marca }));
+  }
+  if (segs[2] === "estados" && segs.length === 3 && m === "POST") {
+    // Solo desde la propia página del link
+    const origen = request.headers.get("origin");
+    if (origen && origen !== url.origin) return conCabeceras(error(403, "Origen no permitido"));
+    const c = await request.json().catch(() => ({}));
+    const cambios = (Array.isArray(c.cambios) ? c.cambios : []).slice(0, 20).map((x) => ({ mz: String((x && x.mz) || "").slice(0, 40), num: String((x && x.num) || "").slice(0, 40), estado: String((x && x.estado) || "").slice(0, 40) })).filter((x) => x.num && x.estado);
+    if (!cambios.length) return conCabeceras(error(400, "Sin cambios"));
+    // Tope por hora para el link (por si alguien lo usa de más)
+    const ku = "clientes/uso/" + (await huellaToken(token)) + "-" + new Date().toISOString().slice(0, 13), ou = await env.R2.get(ku), usados = ou ? +(await ou.text()) || 0 : 0;
+    if (usados + cambios.length > CAMBIOS_CLIENTE_HORA) return conCabeceras(error(429, "Hiciste muchos cambios seguidos. Espera un rato y vuelve a intentar."));
+    await env.R2.put(ku, String(usados + cambios.length));
+    const r = await aplicarEstados(env, l.id, cambios, "cliente");
+    if (!r) return conCabeceras(json({ error: "Este link ya no está activo.", cerrado: true }, 404));
+    if (r.borrador) {
+      const kc = "tours/" + l.id + "/cambios-cliente.json", lista = (await leerJSON(env, kc)) || [], ts = new Date().toISOString();
+      cambios.forEach((x) => { const k = llaveLote(x.mz, x.num); if (k in r.antes) lista.unshift({ mz: x.mz, num: x.num, estado: x.estado, antes: r.antes[k], ts }); });
+      await env.R2.put(kc, JSON.stringify(lista.slice(0, 100)), { httpMetadata: { contentType: "application/json" } });
+    }
+    return conCabeceras(json({ ok: true, cambiados: r.borrador, enTour: r.enTour, lotes: lotesParaCliente(r.proyecto) }));
+  }
+  return conCabeceras(error(404, "Ruta desconocida"));
+}
 async function labDe(env, yo) {
   const cfg = await leerLab(env), correo = String(yo.email || "").toLowerCase(), pago = !planDe(yo).marca;
   return Object.keys(cfg).filter((k) => yo.admin || cfg[k].modo === "todos" || (cfg[k].modo === "pago" && pago) || (cfg[k].modo === "probadores" && cfg[k].probadores.includes(correo)));
@@ -1112,7 +1206,7 @@ async function api(request, env, partes, yo) {
           const actual = c.lote.estado || "disponible";
           // El estudio dice cuándo abrió el tour: si fue después del cambio en el celular, ya lo vio y lo que trae manda
           if (cargado && cargado > r.ts) { r.listo = true; return; }
-          if (actual !== r.estado && (cargado || actual === r.antes)) { c.lote.estado = r.estado; cambio = true; if (!corregidos.some((x) => x.k === k)) corregidos.push({ k, mz: c.lote.manzana || "", num: c.lote.numero || "", estado: r.estado }); }
+          if (actual !== r.estado && (cargado || actual === r.antes)) { c.lote.estado = r.estado; cambio = true; if (!corregidos.some((x) => x.k === k)) corregidos.push({ k, mz: c.lote.manzana || "", num: c.lote.numero || "", estado: r.estado, quien: r.quien === "cliente" ? "cliente" : "celular" }); }
           else if (actual !== r.antes) r.listo = true; // ya coincide o lo cambiaron a propósito en la compu
         }));
         Object.keys(movil).forEach((k) => { if (movil[k].listo) delete movil[k]; });
@@ -1126,6 +1220,8 @@ async function api(request, env, partes, yo) {
       return json(corregidos.length ? { ok: true, estados: corregidos } : { ok: true });
     }
     if (m === "DELETE") {
+      const cli = await leerJSON(env, base + "cliente.json"); // su link para el cliente deja de existir con él
+      if (cli && TOKEN_CLIENTE.test(cli.token || "")) await env.R2.delete("clientes/" + (await huellaToken(cli.token)) + ".json");
       const n = await borrarPrefijo(env, base) + await borrarPrefijo(env, "publicado/" + id + "/");
       await env.R2.delete([indiceDe(uid, id), "privados/" + id]);
       await usoDe(env, uid, true);
@@ -1140,19 +1236,28 @@ async function api(request, env, partes, yo) {
     const c = await request.json().catch(() => ({}));
     const cambios = (Array.isArray(c.cambios) ? c.cambios : []).slice(0, 50).map((x) => ({ mz: String((x && x.mz) || "").slice(0, 40), num: String((x && x.num) || "").slice(0, 40), estado: String((x && x.estado) || "").slice(0, 40) })).filter((x) => x.num && x.estado);
     if (!cambios.length) return error(400, "Sin cambios");
-    const borrador = await leerJSON(env, base + "proyecto.json");
-    if (!borrador) return error(404, "No existe ese tour");
-    const r1 = cambiarEstados(borrador, cambios);
-    if (r1.n) await env.R2.put(base + "proyecto.json", JSON.stringify(borrador), { httpMetadata: { contentType: tipoDe("x.json") } });
-    const pub = await leerJSON(env, "publicado/" + id + "/proyecto.json");
-    let r2 = { n: 0 };
-    if (pub) { r2 = cambiarEstados(pub, cambios); if (r2.n) await env.R2.put("publicado/" + id + "/proyecto.json", JSON.stringify(pub), { httpMetadata: { contentType: tipoDe("x.json"), cacheControl: "no-cache" } }); }
-    if (r1.n) {
-      const movil = (await leerJSON(env, base + "estados-movil.json")) || {}, ts = new Date().toISOString();
-      cambios.forEach((x) => { const k = llaveLote(x.mz, x.num); if (k in r1.antes) movil[k] = { estado: x.estado, antes: movil[k] && movil[k].antes ? movil[k].antes : r1.antes[k], ts }; });
-      await env.R2.put(base + "estados-movil.json", JSON.stringify(movil), { httpMetadata: { contentType: "application/json" } });
+    const r = await aplicarEstados(env, id, cambios, "celular");
+    if (!r) return error(404, "No existe ese tour");
+    return json({ ok: true, borrador: r.borrador, publicado: r.publicado, enTour: r.enTour });
+  }
+  // Link de disponibilidad para el cliente (Laboratorio «link-cliente»): verlo, crearlo (o cambiarlo) y quitarlo
+  if (partes[3] === "cliente" && partes.length === 4) {
+    if (!(await labDe(env, yo)).includes("link-cliente")) return error(403, "Función del Laboratorio");
+    const actual = await leerJSON(env, base + "cliente.json"), origen = new URL(request.url).origin;
+    const quitar = async () => { if (actual && TOKEN_CLIENTE.test(actual.token || "")) await env.R2.delete(["clientes/" + (await huellaToken(actual.token)) + ".json", base + "cliente.json"]); };
+    if (m === "GET") {
+      const cambios = ((await leerJSON(env, base + "cambios-cliente.json")) || []).slice(0, 20);
+      return json({ link: actual ? origen + "/disponibilidad/" + actual.token : "", creado: actual ? actual.creado : "", cambios, marca: conMarcaCliente(yo) });
     }
-    return json({ ok: true, borrador: r1.n, publicado: r2.n, enTour: !!pub });
+    if (m === "POST") {
+      await quitar(); // uno nuevo deja sin efecto el anterior
+      const token = tokenNuevo(), creado = new Date().toISOString();
+      await env.R2.put("clientes/" + (await huellaToken(token)) + ".json", JSON.stringify({ id, uid, creado }), { httpMetadata: { contentType: "application/json" } });
+      await env.R2.put(base + "cliente.json", JSON.stringify({ token, creado }), { httpMetadata: { contentType: "application/json" } });
+      return json({ link: origen + "/disponibilidad/" + token, creado, marca: conMarcaCliente(yo) }, 201);
+    }
+    if (m === "DELETE") { await quitar(); return json({ ok: true }); }
+    return error(405, "Método no permitido");
   }
   // Descargar el tour publicado para subirlo a otro hosting: la página, el proyecto y la lista de archivos.
   // El estudio baja cada archivo y arma el .zip en la compu del usuario (el servidor no hace el trabajo pesado).
@@ -1335,6 +1440,9 @@ export default {
       if (!n || !n.activa || !n.publicada || n.mediaTipo !== "imagen") return new Response("No existe", { status: 404 });
       return servirR2(env, request, "novedades/" + segs[2] + ".media", "public, max-age=86400");
     }
+
+    // Link de disponibilidad para el cliente (sin sesión: el link es la llave)
+    if (segs[0] === "disponibilidad" && segs.length >= 2) return rutaCliente(request, env, url, segs);
 
     const s = await rutasSesion(request, env, (p) => adoptarTours(env, p));
     if (s) return s;
