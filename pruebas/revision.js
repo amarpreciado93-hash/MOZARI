@@ -1870,6 +1870,12 @@ async function capasPesadas(p) {
       // El dueño ve qué cambió su cliente
       await n.click('#nav button:has-text("Publicar")'); await n.waitForSelector("#cli-cambios", { timeout: 10000 });
       exige(/Lote 2 \(Manzana A\) → Vendido/.test(await n.textContent("#cli-cambios")), "el dueño no ve lo que cambió su cliente: " + (await n.textContent("#cli-cambios")).slice(0, 120));
+      // «Probar ahora» de la actualización (destino «publicar/cliente»): lleva a Publicar con su mini tutorial, aunque ya se haya visto
+      await n.click('#nav button:has-text("Proyecto")'); await n.waitForTimeout(400);
+      await n.evaluate(() => { const b = document.createElement("button"); b.dataset.novIr = "publicar/cliente"; document.getElementById("dlg-nov").appendChild(b); b.click(); b.remove(); });
+      await n.waitForSelector(".guia-tarjeta", { timeout: 8000 });
+      exige(/link de disponibilidad/i.test(await n.textContent(".guia-tarjeta")) && /Crea el link/.test(await n.textContent(".guia-tarjeta")) && await n.isVisible("#cli-cambios"), "«Probar ahora» de la actualización no llevó a Publicar con su mini tutorial");
+      await pasarGuias(n);
       // Quitar el link: deja de funcionar al momento
       // (las páginas de prueba aceptan solas el «¿Quitar el link?»)
       await n.click("#cli-quitar"); await n.waitForSelector("#cli-crear", { timeout: 8000 });
@@ -1884,6 +1890,22 @@ async function capasPesadas(p) {
       const J = (m, b) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(b) });
       exige((await n.evaluate((o) => fetch("api/admin/laboratorio/link-cliente", o).then((r) => r.status), J("PUT", { modo: "todos", probadores: [] }))) === 200, "no se pudo prender para todos");
       const correo = "cliente-prueba-" + Date.now() + "@prueba.mx", g = await pagina(correo); await nuevoTour(g, "Sin licencia"); const suyo = await idTour(g);
+      // En un tour sin lotes la caja sale igual (con su mini tutorial) y explica que el link es para tours con lotes
+      await g.click('#nav button:has-text("Publicar")'); await g.waitForSelector("#pub-cliente", { timeout: 10000 }); await g.waitForTimeout(600);
+      exige(/Funciona en tours con lotes/.test(await g.textContent("#pub-cliente")) && !(await g.$("#cli-crear")), "en un tour sin lotes la caja del link no explica que es para tours con lotes");
+      await g.waitForSelector(".guia-tarjeta", { timeout: 6000 }).catch(() => {});
+      exige(/link de disponibilidad/i.test(await g.textContent(".guia-tarjeta").catch(() => "")), "en un tour sin lotes no salió el mini tutorial del link");
+      await pasarGuias(g);
+      // «Probar ahora» sin ningún tour abierto (Mis Tours): el mini tutorial sale al centro y luego dice dónde está
+      const h = await pagina("cliente-nov-" + Date.now() + "@prueba.mx"); await h.waitForTimeout(1500); await cerrarAnuncio(h); await cerrarGuia(h);
+      await h.evaluate(() => { const b = document.createElement("button"); b.dataset.novIr = "publicar/cliente"; document.getElementById("dlg-nov").appendChild(b); b.click(); b.remove(); });
+      await h.waitForSelector(".guia-tarjeta", { timeout: 6000 });
+      exige(/En Publicar de un tour con lotes/.test(await h.textContent(".guia-tarjeta")), "sin tour abierto, «Probar ahora» no mostró el mini tutorial del link");
+      if (process.env.CAPTURAS) { await h.waitForTimeout(1800); await h.screenshot({ path: path.join(process.env.CAPTURAS, "cliente-probar-sin-tour.png") }); }
+      await pasarGuias(h); await h.waitForTimeout(300);
+      exige(/Abre un tour con lotes/.test(await h.textContent("#toast").catch(() => "")), "después del mini tutorial no dice dónde encontrar el link");
+      exige(!h.errs.length, "errores: " + h.errs.join(" | ").slice(0, 160));
+      await h.context().close();
       const dg = await g.evaluate((id) => fetch("api/tours/" + id).then((x) => x.json()), suyo), eg = dg.proyecto.escenaInicial || dg.escenas[0].id;
       dg.capas[eg] = (dg.capas[eg] || []).concat([lote("7", "C", 0)]);
       exige((await g.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [suyo, dg])) === 200, "no se pudo poner el lote en la cuenta de prueba");

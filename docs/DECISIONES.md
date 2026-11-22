@@ -494,3 +494,18 @@
   link), tours/<id>/cambios-cliente.json (últimos 100 cambios). Al borrar el tour se borra su índice.
 - Revisión completa: 118 de 121. Las 3 que fallaron miden tiempos y no tocan esto (tutorial de estadísticas en Pro,
   plano con radar, mapa de 5,000 lotes en el celular); el servidor de pruebas iba más cargado. Repetidas solas: pasaron.
+
+## 22 nov 2026 · «Probar ahora» de la actualización abre el mini tutorial del link para el cliente
+
+- Amar: «yo quiero que reciban una actualización cuando abran Mozari y que les muestres un mini tutorial de cómo
+  funciona, que les mandes el link a tus clientes; como siempre con cada nueva actualización».
+- Lo que faltaba: «Probar ahora» llevaba a Publicar, pero sin un tour abierto (Mis Tours) no pasaba nada, y en un tour
+  sin lotes la caja del link no salía, así que tampoco su mini tutorial.
+- Destino nuevo para las actualizaciones: «Publicar → Link para tu cliente (con su mini tutorial)». Con un tour
+  abierto lleva a Publicar y muestra el mini tutorial junto al link; sin tour abierto lo muestra al centro y luego
+  avisa «Abre un tour con lotes y entra a Publicar → Link para tu cliente». Sale aunque ya se haya visto.
+- En Publicar la caja «Link para tu cliente» sale en cualquier tour (con su mini tutorial la primera vez); en uno sin
+  lotes dice que funciona en tours con lotes y no deja crear el link.
+- La actualización «Tu cliente marca sus lotes vendidos» (publicada el 22 nov con su animación de 13 s) se cambia a
+  este destino después del push.
+- Revisión completa: 121 de 121.

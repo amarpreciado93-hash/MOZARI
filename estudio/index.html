@@ -3591,10 +3591,16 @@
   // «Mandarle algo a mi cliente para que él solito modifique su disponibilidad»: un link sin cuenta que solo cambia el
   // estado de los lotes de este tour (borrador y publicado al momento). Aquí se crea, se copia, se manda y se quita.
   // Es de Desarrollos, pero todos lo usan: sin Desarrollos la página del cliente lleva la marca de agua (pedido de Amar)
-  const puedeLinkCliente = () => MODO === "nube" && enLab("link-cliente") && tieneLotes();
+  // Sale en cualquier tour (con su mini tutorial); el link se crea solo en un tour con lotes
+  const puedeLinkCliente = () => MODO === "nube" && enLab("link-cliente");
   const CLI = { tour: "", link: "", creado: "", cambios: [], marca: false };
   async function pintarCliente(recargar) {
     const caja = $("pub-cliente"); if (!caja) return;
+    if (!tieneLotes()) {
+      caja.innerHTML = '<div><b>Link para tu cliente</b><span>Funciona en tours con lotes: le mandas un link a tu cliente y él marca cada lote Disponible, Apartado o Vendido desde su celular, sin cuenta. Este tour todavía no tiene lotes.</span></div>';
+      guiaNueva("nuevo-link-cliente", pasosCli, () => !!$("pub-cliente") && nav.sec === "publicar");
+      return;
+    }
     if (recargar !== false || CLI.tour !== TOUR) {
       const r = await fetch("api/tours/" + TOUR + "/cliente", { cache: "no-store" }).catch(() => null), d = r && r.ok ? await r.json().catch(() => null) : null;
       if (!$("pub-cliente")) return;
@@ -3647,9 +3653,20 @@
     svg.innerHTML = h;
   }
   const pasosCli = () => [
-    { el: () => $("pub-cliente"), titulo: "Nuevo: link de disponibilidad para tu cliente", anim: animCli, dur: 4.2,
-      texto: "Crea el link y mándaselo a tu cliente por WhatsApp. Él lo abre en su celular <b>sin cuenta</b>, toca un lote y lo marca <b>Apartado</b> o <b>Vendido</b>; tu tour publicado cambia al momento. Solo puede cambiar el estado de los lotes. Aquí ves qué cambió y lo quitas cuando quieras." },
+    { el: () => $("pub-cliente") || null, titulo: "Nuevo: link de disponibilidad para tu cliente", anim: animCli, dur: 4.2,
+      texto: ($("pub-cliente") && tieneLotes() ? "Crea el link" : "En <b>Publicar</b> de un tour con lotes, crea el «Link para tu cliente»") + " y mándaselo por WhatsApp. Él lo abre en su celular <b>sin cuenta</b>, toca un lote y lo marca <b>Apartado</b> o <b>Vendido</b>; tu tour publicado cambia al momento. Solo puede cambiar el estado de los lotes. Ahí ves qué cambió y lo quitas cuando quieras." },
   ];
+  // «Probar ahora» de la actualización: el mini tutorial sale siempre. Con un tour abierto, en Publicar junto al link;
+  // sin tour abierto (Mis Tours), al centro, y luego dice dónde encontrarlo.
+  function probarLinkCliente() {
+    const opc = { repetir: guiasVistas.has("nuevo-link-cliente") };
+    if (TOUR) {
+      ir("publicar", "web");
+      let n = 0; const esperar = () => { if ($("pub-cliente") && !/Cargando/.test($("pub-cliente").textContent)) mostrarGuia("nuevo-link-cliente", pasosCli(), opc); else if (++n < 20) setTimeout(esperar, 250); };
+      setTimeout(esperar, 300); return;
+    }
+    mostrarGuia("nuevo-link-cliente", pasosCli(), Object.assign(opc, { alTerminar: () => avisar("Abre un tour con lotes y entra a Publicar → «Link para tu cliente».", 6000) }));
+  }
   $("proximo").addEventListener("click", async (ev) => {
     if (ev.target.id === "pub-ir-lotes") { ir("panoramas", "lotes"); return; }
     if (/^cli-(crear|copiar|quitar)$/.test(ev.target.id)) { accionCliente(ev.target.id, ev.target); return; }
@@ -5294,7 +5311,7 @@
   });
   // =================== NOVEDADES ===================
   // Cada anuncio se ve una vez por cuenta (se anota en el servidor). El botón ✦ junto a BETA los vuelve a abrir.
-  const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Fichas técnicas"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Interfaz"], ["publicar/web", "Publicar"], ["publicar/landing", "Publicar → Landing"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"], ["media/ubicacion", "Media → Ubicación"]];
+  const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Fichas técnicas"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Interfaz"], ["publicar/web", "Publicar"], ["publicar/cliente", "Publicar → Link para tu cliente (con su mini tutorial)"], ["publicar/landing", "Publicar → Landing"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"], ["media/ubicacion", "Media → Ubicación"]];
   const LAB_DESTINO = { mejora: "mejora/esferas", "descarga-pdf": "skin/h", "tutorial-video": "tours/todos", transiciones: "proyecto/general", landing: "publicar/landing", ubicacion: "media/ubicacion", "voz-ia": "skin/h", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
   let novedades = [], novActual = null;
   const fechaCorta = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
@@ -5337,6 +5354,7 @@
     $("dlg-nov").close();
     if (novActual && novActual.previa) { avisar("Vista previa: así llevaría al usuario a " + ((DESTINOS_NOV.find(([v]) => v === d.dataset.novIr) || [])[1] || d.dataset.novIr)); return; }
     if (/^https?:\/\//.test(d.dataset.novIr)) { window.open(d.dataset.novIr, "_blank", "noopener"); return; }
+    if (d.dataset.novIr === "publicar/cliente") { probarLinkCliente(); return; }
     const [sec, sub] = d.dataset.novIr.split("/");
     if (SECCIONES.some((x) => x.id === sec)) ir(sec, sub);
   });
