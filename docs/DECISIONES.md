@@ -676,3 +676,18 @@
   no lo ven ni pueden invitar. El mini tutorial «nuevo-equipo» les sale a los de Desarrollos en Proyecto → General.
 - Prueba de Equipo ampliada: «Solo Desarrollos» desde el panel; Pro no invita y Desarrollos sí (con su tutorial); el
   colega de prueba crea la voz en el tour compartido con las letras del dueño y se le descuentan al dueño.
+
+## 23 nov 2026 · Número del lote: siglas, solo número, círculo o insignia (Laboratorio «rotulo-estilos»)
+
+- Reporte de Obed (Salinas Calicanto): «necesito mostrar únicamente el número (ej. 2) o usar siglas cortas (ej. L-12)…
+  nuevos estilos visuales como diseños circulares o insignias compactas con siglas». Amar: «hazle caso, tiene razón».
+- Panoramas → Fichas técnicas → «Rótulo en la esfera»: Texto (Completo «Lote 12 · M3», Siglas «L-12», Solo número
+  «12»; «Corto y grande» sigue en su propio Laboratorio) y Estilo (Texto, Círculo, Insignia). Se guarda en
+  proyecto.rotuloFormato y proyecto.rotuloEstilo; el servidor los quita al publicar si el dueño no tiene la función.
+- Círculo e insignia: de frente a la cámara, en el centro de lo que se ve del lote, del color de su estado (la letra
+  negra o blanca, la que se lea mejor sobre ese color); crecen con el lote hasta un tope y al alejarse no se borran
+  (mínimo 6 px de letra). Son SVG ligeros, igual en compu y celular (sin capas 3D). También salen en la Foto 360.
+  Un lote sin número (o vendido con «sin número») no lleva insignia; los deptos de un edificio conservan su nombre.
+- Mini tutorial «nuevo-rotulo-estilos» con animación y video de la actualización (marca/novedades/rotulos.mp4).
+- Prueba nueva «Número del lote»: siglas, solo número, círculo (colores por estado y letra oscura en el amarillo),
+  insignia, publicado en compu y en celular, regreso a lo de siempre, nace Solo yo y el tutorial a quien se le da.

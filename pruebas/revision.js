@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto", "nuevo-voz-idiomas", "nuevo-lotes-vendidos", "nuevo-unir-manzanas", "nuevo-equipo"];
+const GUIAS_NUEVAS = ["nuevo-rotulo-estilos", "nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto", "nuevo-voz-idiomas", "nuevo-lotes-vendidos", "nuevo-unir-manzanas", "nuevo-equipo"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -5932,6 +5932,92 @@ async function capasPesadas(p) {
         exige(!n.errs.length && !u.errs.length, "errores en el estudio: " + n.errs.concat(u.errs).join(" | ").slice(0, 200));
       } finally {
         await api(n, "api/admin/laboratorio/rotulo-corto", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
+        if (t) await t.context().close(); if (m) await m.context().close();
+        await u.context().close(); await n.context().close();
+      }
+    });
+    // Reporte de Obed (Salinas Calicanto, 23 nov 2026): «necesito mostrar únicamente el número (ej. 2) o usar siglas cortas
+    // (ej. L-12)… nuevos estilos visuales como diseños circulares o insignias compactas con siglas»
+    await paso("Número del lote (Laboratorio, nace Solo yo): siglas «L-12» o solo el número, en texto, círculo o insignia del color de su estado; en el estudio, publicado y en celular", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const tutoriales = async (p) => { const vistos = []; for (let i = 0, quieto = 0; i < 30 && quieto < 4; i++) { await p.waitForTimeout(700); if (await p.isVisible(".guia-tarjeta").catch(() => false)) { quieto = 0; vistos.push(await p.textContent(".guia-tarjeta")); await p.click('.guia-tarjeta [data-guia="seguir"]'); } else quieto++; } return vistos; };
+      const fichas = async (p) => { await p.click('#nav button:has-text("Panoramas")'); await p.waitForTimeout(300); await p.click('#subtabs button:has-text("Fichas técnicas")'); await p.waitForTimeout(1200); };
+      // rótulos de texto que se ven (compu: planchados; celular: SVG) e insignias (círculo o insignia) con su color
+      const planos = (pg) => pg.evaluate(() => [...document.querySelectorAll(".lt-p.nom, .lt-ps-p.nom")].filter((e) => e.style.display !== "none" && e.style.visibility !== "hidden" && e.getClientRects().length && e.getBoundingClientRect().width > 2).map((e) => e.textContent.trim()));
+      const insignias = (pg) => pg.evaluate(() => [...document.querySelectorAll(".lote-etq .lt-ins")].map((g) => { const f = g.querySelector("circle, rect"), t = g.querySelector("text"), r = g.getBoundingClientRect(); return { forma: f.tagName, color: f.getAttribute("fill"), letra: t.style.fill, texto: t.textContent, w: r.width, h: r.height }; }));
+      const correoU = "sin-estilos@prueba.mx", n = await pagina(DUENO), u = await pagina(correoU);
+      let t = null, m = null;
+      try {
+        await nuevoTour(n, "Rotulos Obed"); const id = await idTour(n);
+        const d = (await api(n, "api/tours/" + id)).d, esc = d.proyecto.escenaInicial || d.escenas[0].id, v = d.escenas.find((e) => e.id === esc).vista || {}, y = v.yaw || 0, p = (v.pitch || 0) + 0.25;
+        const lote = (num, dy, estado) => ({ id: "lote-" + num, tipo: "poligono", nombre: "Lote", visible: true, puntos: [[y - 0.1 + dy, p], [y + dy, p], [y + dy, p + 0.3], [y - 0.1 + dy, p + 0.3]],
+          relleno: { color: "#D5FF40", opacidad: 0.35 }, trazo: { color: "#D5FF40", grosor: 1.5, opacidad: 1 }, lote: { numero: num, manzana: "3", area: "200", precio: "", lados: [], frente: 0, estado } });
+        d.capas[esc] = (d.capas[esc] || []).concat([lote("11", -0.12, "disponible"), lote("12", 0, "apartado"), lote("13", 0.12, "vendido")]);
+        exige((await api(n, "api/tours/" + id, J("PUT", d))).s === 200, "no se pudieron poner los lotes de prueba");
+        await n.goto(ESTUDIO + "/#t=" + id); await n.reload(); await n.waitForTimeout(2500); await cerrarAnuncio(n); await cerrarGuia(n);
+        // 1) En Fichas técnicas → «Rótulo en la esfera» (el mini tutorial se revisa abajo, con una cuenta a la que se le da la función)
+        await fichas(n); await tutoriales(n);
+        exige(await n.isVisible('#lt-rotulo-fila [data-lt-rotulo="siglas"]') && await n.isVisible('#lt-rotulo-fila [data-lt-rotulo="numero"]') && await n.isVisible('#lt-rotulo-fila [data-lt-estilo="circulo"]') && await n.isVisible('#lt-rotulo-fila [data-lt-estilo="insignia"]'), "no están Siglas, Solo número, Círculo e Insignia");
+        // 2) Siglas: «L-12»
+        await n.click('[data-lt-rotulo="siglas"]'); await n.waitForTimeout(1200);
+        exige((await api(n, "api/tours/" + id)).d.proyecto.rotuloFormato === "siglas" && /L-9/.test(await n.textContent("#lt-rotulo-ejemplo")), "«Siglas» no se guardó o no enseña su ejemplo");
+        await irCapas(n); await n.waitForTimeout(1800);
+        let r = await planos(n);
+        exige(["L-11", "L-12", "L-13"].every((x) => r.includes(x)) && !r.some((x) => /Lote|m²/.test(x)), "con Siglas los lotes no dicen «L-12»: " + JSON.stringify(r));
+        // 3) Solo número
+        await fichas(n); await n.click('[data-lt-rotulo="numero"]'); await n.waitForTimeout(1200); await irCapas(n); await n.waitForTimeout(1800);
+        r = await planos(n);
+        exige(["11", "12", "13"].every((x) => r.includes(x)), "con Solo número los lotes no dicen solo «12»: " + JSON.stringify(r));
+        // 4) Círculo del color de su estado (el apartado, amarillo, con letra oscura), sin el texto planchado
+        await fichas(n); await n.click('[data-lt-estilo="circulo"]'); await n.waitForTimeout(1200);
+        exige((await api(n, "api/tours/" + id)).d.proyecto.rotuloEstilo === "circulo" && await n.isVisible("#lt-rotulo-ejemplo .lt-muestra"), "«Círculo» no se guardó o no enseña su muestra");
+        await irCapas(n); await n.waitForTimeout(1800);
+        let ins = await insignias(n);
+        const de = (tx) => ins.find((x) => x.texto === tx);
+        exige(ins.length === 3 && ins.every((x) => x.forma === "circle" && x.w > 14) && de("11").color === "#22B573" && de("12").color === "#F2A900" && de("13").color === "#E5484D" && /11, 11, 11|#0B0B0B/i.test(de("12").letra) && /255, 255, 255|#FFFFFF/i.test(de("11").letra), "los círculos no salen con su número y el color de su estado: " + JSON.stringify(ins));
+        exige(!(await planos(n)).length, "con círculo sigue saliendo el texto planchado encima");
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "rotulo-circulo.png") });
+        // 5) Insignia con siglas
+        await fichas(n); await n.click('[data-lt-rotulo="siglas"]'); await n.waitForTimeout(800); await n.click('[data-lt-estilo="insignia"]'); await n.waitForTimeout(1200); await irCapas(n); await n.waitForTimeout(1800);
+        ins = await insignias(n);
+        exige(ins.length === 3 && ins.every((x) => x.forma === "rect" && x.w > x.h) && ["L-11", "L-12", "L-13"].every((tx) => ins.some((x) => x.texto === tx)), "las insignias no salen con sus siglas: " + JSON.stringify(ins));
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "rotulo-insignia.png") });
+        // 6) Publicado: en compu y en celular
+        exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        const pub = (await (await fetch(TOURS + "/" + id + "/proyecto.json")).json()).proyecto;
+        exige(pub.rotuloFormato === "siglas" && pub.rotuloEstilo === "insignia", "el tour publicado no lleva el texto y el estilo del rótulo");
+        t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForSelector("#pv-stage canvas", { timeout: 30000 }); await t.waitForTimeout(4500);
+        const it = await insignias(t);
+        exige(it.length === 3 && ["L-11", "L-12", "L-13"].every((tx) => it.some((x) => x.texto === tx && x.forma === "rect")), "el tour publicado no trae las insignias: " + JSON.stringify(it));
+        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "rotulo-insignia-tour.png") });
+        m = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false })); await m.goto(TOURS + "/" + id + "/"); await m.waitForSelector("#pv-stage canvas", { timeout: 30000 }); await m.waitForTimeout(4500);
+        const im = await insignias(m);
+        exige(im.length === 3 && im.every((x) => x.forma === "rect"), "en celular no salen las insignias: " + JSON.stringify(im));
+        if (process.env.CAPTURAS) await m.screenshot({ path: path.join(process.env.CAPTURAS, "rotulo-insignia-cel.png") });
+        exige(!t.errs.length && !m.errs.length, "errores en el tour: " + t.errs.concat(m.errs).join(" | ").slice(0, 160));
+        // 7) «Completo» y «Texto» lo regresan como siempre
+        await fichas(n); await n.click('[data-lt-rotulo="0"]'); await n.waitForTimeout(800); await n.click('[data-lt-estilo="texto"]'); await n.waitForTimeout(1200);
+        const dp = (await api(n, "api/tours/" + id)).d.proyecto;
+        exige(!dp.rotuloFormato && !dp.rotuloEstilo, "«Completo» y «Texto» no regresaron el rótulo de siempre");
+        await irCapas(n); await n.waitForTimeout(1800);
+        exige((await planos(n)).some((x) => /^Lote 12 · M3/.test(x)) && !(await insignias(n)).length, "al regresar no volvió «Lote 12 · M3»");
+        // 8) Nace Solo yo: una cuenta normal no ve las opciones ni las publica
+        await nuevoTour(u, "Sin estilos"); const iu = await idTour(u);
+        await fichas(u); await tutoriales(u);
+        exige(!(await u.isVisible('#lt-rotulo-fila [data-lt-estilo="circulo"]')), "una cuenta normal ya ve los estilos del rótulo (debe nacer Solo yo)");
+        const du = (await api(u, "api/tours/" + iu)).d; du.proyecto.rotuloFormato = "numero"; du.proyecto.rotuloEstilo = "circulo";
+        exige((await api(u, "api/tours/" + iu, J("PUT", du))).s === 200 && (await api(u, "api/tours/" + iu + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        const pu = (await (await fetch(TOURS + "/" + iu + "/proyecto.json")).json()).proyecto;
+        exige(!pu.rotuloFormato && !pu.rotuloEstilo, "una cuenta sin la función publicó el estilo del rótulo");
+        // a quien se le da la función le sale con su mini tutorial
+        exige((await api(n, "api/admin/laboratorio/rotulo-estilos", J("PUT", { modo: "probadores", probadores: [correoU] }))).s === 200, "no se pudo dar la función a un probador");
+        await u.goto(ESTUDIO + "/#t=" + iu); await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u);
+        await fichas(u); const vistos = await tutoriales(u);
+        exige(vistos.some((x) => /cómo se ve el número de cada lote/.test(x)) && await u.isVisible('#lt-rotulo-fila [data-lt-estilo="insignia"]'), "con la función no salió la opción o su mini tutorial: " + vistos.map((x) => x.slice(0, 40)).join(" | "));
+        exige(!n.errs.length && !u.errs.length, "errores en el estudio: " + n.errs.concat(u.errs).join(" | ").slice(0, 200));
+      } finally {
+        await api(n, "api/admin/laboratorio/rotulo-estilos", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
         if (t) await t.context().close(); if (m) await m.context().close();
         await u.context().close(); await n.context().close();
       }

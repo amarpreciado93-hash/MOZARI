@@ -1207,6 +1207,7 @@
   .lote-etq .lt-nom { font-weight: var(--lt-peso, 600); }
   .lote-etq .lt-area { font-weight: 400; }
   .lote-etq .lt-lado { font-weight: 600; }
+  .lote-etq .lt-ins-t { stroke: none; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
   .lado-res { fill: none; stroke: var(--mz-lima); stroke-width: 4; stroke-linecap: round; filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.9)); }
   .punto-estado { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.25); }
   .lote-datos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -1314,6 +1315,8 @@
   .lotes-terminos { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 16px; font-size: 12px; color: var(--mz-tenue); }
   .lotes-terminos > span:first-child { align-self: center; }
   .lotes-terminos label { display: grid; gap: 4px; }
+  #lt-rotulo-ejemplo { display: inline-flex; align-items: center; gap: 8px; align-self: center; }
+  #lt-rotulo-ejemplo .lt-muestra { flex: none; font-family: var(--mz-texto-ui); }
   .lotes-terminos .entrada { width: auto; padding: 8px 10px; }
   .lotes-terminos input.entrada { width: 110px; }
   .lt-estados { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -2522,7 +2525,8 @@
         </div>
         <div class="lotes-terminos" id="lt-rotulo-fila" hidden>
           <span>Rótulo en la esfera:</span>
-          <div class="estados" role="group" aria-label="Rótulo de los lotes en la esfera"><button type="button" data-lt-rotulo="0" style="--c:var(--mz-lima)">Completo</button><button type="button" data-lt-rotulo="1" style="--c:var(--mz-lima)">Corto y grande</button></div>
+          <div class="estados" role="group" aria-label="Texto del rótulo de los lotes" id="lt-rotulo-texto"></div>
+          <div class="estados" role="group" aria-label="Estilo del rótulo de los lotes" id="lt-rotulo-estilo"></div>
           <span class="nota" id="lt-rotulo-ejemplo"></span>
         </div>
         <div class="lotes-terminos" id="lt-reglas-fila" hidden>
@@ -2935,10 +2939,31 @@
   // superficie en chico, dos renglones del mismo tamaño: «L09» y «M5». Al ser más corto, la misma regla de
   // ajuste al lote lo deja unas tres veces más grande. La superficie sigue en la ficha del lote.
   const rotuloCorto = () => { try { return P().rotuloCorto === true && (MODO === "tour" || enLab("rotulo-corto")); } catch (e) { return false; } };
+  // Texto y estilo del rótulo (Laboratorio «rotulo-estilos», reporte de Obed, 23 nov 2026: «necesito mostrar únicamente
+  // el número (ej. 2) o usar siglas cortas (ej. L-12)… nuevos estilos visuales como diseños circulares o insignias
+  // compactas con siglas»). Texto: completo («Lote 12 · M3»), siglas («L-12») o solo el número («12»).
+  // Estilo: texto sobre el lote (como siempre), círculo o insignia del color de su estado, de frente a la cámara.
+  const conEstilos = () => MODO === "tour" || enLab("rotulo-estilos");
+  const formatoRotulo = () => { try { if (rotuloCorto()) return "corto"; const f = P().rotuloFormato; return (f === "numero" || f === "siglas") && conEstilos() ? f : "completo"; } catch (e) { return "completo"; } };
+  const estiloInsignia = () => { try { const e = P().rotuloEstilo; return (e === "circulo" || e === "insignia") && conEstilos() ? e : null; } catch (e) { return null; } };
+  const letraSobre = (col) => { const m = /^#?([0-9a-f]{6})$/i.exec(String(col || "")); if (!m) return "#FFFFFF"; const x = parseInt(m[1], 16); return 0.299 * ((x >> 16) & 255) + 0.587 * ((x >> 8) & 255) + 0.114 * (x & 255) > 165 ? "#0B0B0B" : "#FFFFFF"; };
+  const siglaLote = () => { const T = terminos(); return (T.lote || "L").trim().charAt(0).toUpperCase() || "L"; };
+  // Lo que dice un lote con insignia (en una sola línea): con «Completo» va «L12 · M3» para que quepa
+  function textoInsignia(c) {
+    const l = loteDe(c), cz = rotuloCortoDe(c);
+    if (l.unidad) return nombreLote(c);
+    if (cz) return cz.join(" · ");
+    const n = String(l.numero || "").trim() || "—", mz = String(l.manzana || "").trim();
+    return siglaLote() + n + (mz ? " · " + mzCorta(mz) : "");
+  }
+  const insigniaDe = (c) => { if (loteDe(c).unidad) return null; const e = estiloInsignia(); return e ? { forma: e, texto: textoInsignia(c) } : null; };
   function rotuloCortoDe(c) {
-    const l = loteDe(c); if (l.unidad || !rotuloCorto()) return null; // los deptos de un edificio conservan su nombre
+    const l = loteDe(c); if (l.unidad) return null; // los deptos de un edificio conservan su nombre
+    const fm = formatoRotulo(); if (fm === "completo") return null;
     const T = terminos(), n = String(l.numero || "").trim(), mz = String(l.manzana || "").trim();
     if (!n && !mz) return null;
+    if (fm === "numero") return [n || "—"];
+    if (fm === "siglas") return [siglaLote() + "-" + (n || "—")];
     const km = T.corto || (T.manzana || "M").charAt(0).toUpperCase();
     return [(T.lote || "L").charAt(0).toUpperCase() + (/^\d$/.test(n) ? "0" + n : n || "—")].concat(mz ? [km.length === 1 && /^\d/.test(mz) ? km + mz : km + " " + mz] : []);
   }
@@ -4622,6 +4647,27 @@
     h += TOQUE_G(224, 23, t, 1.0) + CURSOR_G(cx, cy) + pieG(corto ? "Se lee de un vistazo" : "Antes: letra chica y mucho texto", corto);
     svg.innerHTML = h;
   }
+  // Texto y estilo del rótulo: «Lote 12 · M3» → «L-12» → círculos del color de su estado → insignias
+  function animRotuloEstilos(svg, t) {
+    const fase = t < 1.3 ? 0 : t < 2.9 ? 1 : t < 4.5 ? 2 : 3, u = sv((t - [0, 1.3, 2.9, 4.5][fase]) / 0.45);
+    const on = (k) => (k ? "#D5FF40" : "transparent"), tc = (k) => (k ? "#0B0B0B" : "#fff"), bd = (k) => (k ? undefined : "rgba(255,255,255,.35)");
+    let h = '<rect width="360" height="200" fill="#161a12"/><rect y="40" width="360" height="160" fill="#5f8a4a"/>';
+    h += BTN_G(10, 9, 62, "Completo", on(fase === 0), tc(fase === 0), bd(fase === 0)) + BTN_G(76, 9, 52, "Siglas", on(fase >= 1), tc(fase >= 1), bd(fase >= 1));
+    h += BTN_G(190, 9, 44, "Texto", on(fase < 2), tc(fase < 2), bd(fase < 2)) + BTN_G(238, 9, 52, "Círculo", on(fase === 2), tc(fase === 2), bd(fase === 2)) + BTN_G(294, 9, 58, "Insignia", on(fase === 3), tc(fase === 3), bd(fase === 3));
+    const cols = ["#22B573", "#22B573", "#F2A900", "#E5484D", "#22B573"];
+    cols.forEach((col, i) => {
+      const x = 14 + i * 67, n = 10 + i, cx = x + 31;
+      h += '<path d="M' + x + ' 64 L' + (x + 62) + ' 60 L' + (x + 64) + ' 150 L' + (x + 2) + ' 154Z" fill="' + col + '" fill-opacity=".4" stroke="#fff" stroke-width="1.4"/>';
+      if (fase === 0) h += '<text x="' + cx + '" y="106" fill="#fff" font-size="7.5" font-weight="600" text-anchor="middle">Lote ' + n + ' · M3</text>';
+      else if (fase === 1) h += '<text x="' + cx + '" y="110" fill="#fff" font-size="' + (8 + 6 * u).toFixed(1) + '" font-weight="700" text-anchor="middle">L-' + n + "</text>";
+      else if (fase === 2) h += '<g opacity="' + u.toFixed(2) + '"><circle cx="' + cx + '" cy="105" r="' + (9 + 6 * u).toFixed(1) + '" fill="' + col + '" stroke="#fff" stroke-width="1.6"/><text x="' + cx + '" y="109" fill="' + letraSobre(col) + '" font-size="10.5" font-weight="700" text-anchor="middle">' + n + "</text></g>";
+      else h += '<g opacity="' + u.toFixed(2) + '"><rect x="' + (cx - 19) + '" y="95" width="38" height="20" rx="3" fill="' + col + '" stroke="#fff" stroke-width="1.5"/><text x="' + cx + '" y="109" fill="' + letraSobre(col) + '" font-size="10" font-weight="700" text-anchor="middle">L-' + n + "</text></g>";
+    });
+    const [cx, cy] = camino([[0, 330, 190], [1.0, 102, 20], [1.4, 102, 20], [2.5, 264, 20], [3.0, 264, 20], [4.1, 323, 20], [4.6, 323, 20], [5.8, 330, 190]], t);
+    h += TOQUE_G(102, 20, t, 1.15) + TOQUE_G(264, 20, t, 2.75) + TOQUE_G(323, 20, t, 4.35) + CURSOR_G(cx, cy);
+    h += pieG(fase === 0 ? "Antes: «Lote 12 · M3» en cada lote" : fase === 1 ? "Siglas: L-12 (o solo el número)" : fase === 2 ? "Círculo del color de su estado" : "Insignia compacta con sus siglas", fase > 0);
+    svg.innerHTML = h;
+  }
   // Vista previa en celular: tocas el botón del teléfono y el tour se ve (y se oye) en 9:16
   function animPreviaCel(svg, t) {
     const abre = sv((t - 1.2) / 0.7), onda = t > 2.3, y = 42 + (1 - abre) * 14;
@@ -4932,6 +4978,8 @@
       texto: "En el tour, el aviso <b>Piloto automático</b> ahora es un botón: al tocarlo, la cámara regresa al inicio y el recorrido vuelve a empezar <b>con su audio</b>. Y mientras el piloto corre, el celular <b>no se bloquea</b>." }].filter(Boolean), () => nav.sub === "piloto" && esVisible("#pl-repetir-info"));
     if (clave === "media/planos" && enLab("planos")) guiaPlanos();
     if (clave === "media/audios" && enLab("narracion")) guiaVoz();
+    if (clave === "panoramas/lotes" && enLab("rotulo-estilos")) guiaNueva("nuevo-rotulo-estilos", () => [esVisible("#lt-rotulo-fila") && { el: "#lt-rotulo-fila", titulo: "Nuevo: cómo se ve el número de cada lote", anim: animRotuloEstilos, dur: 6,
+      texto: "En <b>Texto</b> elige <b>Siglas</b> (L-12) o <b>Solo número</b> (12). En <b>Estilo</b> ponlo en un <b>Círculo</b> o una <b>Insignia</b> del color de su estado: verde, apartado o vendido de un vistazo, siempre de frente. Luego vuelve a publicar." }].filter(Boolean), () => esVisible("#lt-rotulo-fila"));
     if (clave === "panoramas/lotes" && enLab("rotulo-corto")) guiaNueva("nuevo-rotulo-corto", () => [esVisible("#lt-rotulo-fila") && { el: "#lt-rotulo-fila", titulo: "Nuevo: rótulo corto y grande", anim: animRotuloCorto, dur: 4.2,
       texto: "Elige <b>Corto y grande</b> y cada lote dice solo <b>L09</b> y su manzana, en letra mucho más grande y centrada. Se lee de un vistazo, también desde lejos. La superficie sigue en la ficha del lote." }].filter(Boolean), () => esVisible("#lt-rotulo-fila"));
     if (clave === "panoramas/lotes" && enLab("fichas")) guiaNueva("nuevo-fichas", [{ el: "#ficha-editor", titulo: "Nuevo: la ficha del lote con tu marca",
@@ -5444,7 +5492,7 @@
   // =================== NOVEDADES ===================
   // Cada anuncio se ve una vez por cuenta (se anota en el servidor). El botón ✦ junto a BETA los vuelve a abrir.
   const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Fichas técnicas"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Interfaz"], ["publicar/web", "Publicar"], ["publicar/cliente", "Publicar → Link para tu cliente (con su mini tutorial)"], ["publicar/landing", "Publicar → Landing"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"], ["media/ubicacion", "Media → Ubicación"]];
-  const LAB_DESTINO = { equipo: "proyecto/general", mejora: "mejora/esferas", "descarga-pdf": "skin/h", "tutorial-video": "tours/todos", transiciones: "proyecto/general", landing: "publicar/landing", ubicacion: "media/ubicacion", "voz-ia": "skin/h", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
+  const LAB_DESTINO = { "rotulo-estilos": "panoramas/lotes", equipo: "proyecto/general", mejora: "mejora/esferas", "descarga-pdf": "skin/h", "tutorial-video": "tours/todos", transiciones: "proyecto/general", landing: "publicar/landing", ubicacion: "media/ubicacion", "voz-ia": "skin/h", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
   let novedades = [], novActual = null;
   const fechaCorta = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
   function htmlNovedad(n, media) {
@@ -7052,7 +7100,7 @@
       };
       const area = l.verArea ? fmtArea(l.area) : "";
       const cz = rotuloCortoDe(c);
-      const nom = l.etiqueta && !loteVacio(c) ? pieza(cz ? cz.map((x) => [x]) : [[nombreLote(c)]].concat(area ? [[area, true]] : []), "nom" + (cz ? " corto" : "")) : null;
+      const nom = l.etiqueta && !loteVacio(c) && !insigniaDe(c) ? pieza(cz ? cz.map((x) => [x]) : [[nombreLote(c)]].concat(area ? [[area, true]] : []), "nom" + (cz ? " corto" : "")) : null; // con círculo o insignia, el nombre va en ella
       const lados = c.puntos.map((_, i) => { const v = l.medidas ? fmtLado((l.lados || [])[i]) : ""; return v ? pieza([[v]], "lt-medida") : null; });
       return { cont, nom, cortos: [], lados, med: null, svg: true, corto: !!cz };
     }
@@ -7071,7 +7119,7 @@
       const cz = rotuloCortoDe(c);
       if (cz) { nom.classList.add("corto"); nom.innerHTML = cz.map(esc).join("<br>"); }
       else nom.innerHTML = esc(nombreLote(c)) + (area ? "<small>" + esc(area) + "</small>" : "");
-      const et = l.etiqueta && !loteVacio(c); // un lote sin número ni manzana (reserva ecológica) no lleva rótulo
+      const et = l.etiqueta && !loteVacio(c) && !insigniaDe(c); // un lote sin número ni manzana (reserva ecológica) no lleva rótulo; con círculo o insignia, el nombre va en ella
       // Versiones cortas para cuando el lote se ve chico al alejarse: "3 · B" y luego solo "3". El número nunca se borra.
       const cortos = [cz ? cz[0] : nombreCorto(l), l.numero || "—"].map((tx) => { const e = document.createElement("div"); e.className = "lt-p nom"; e.textContent = tx; return e; });
       if (et) { cont.appendChild(nom); cortos.forEach((e) => cont.appendChild(e)); }
@@ -7299,10 +7347,34 @@
       });
       return true;
     }
+    // Círculo o insignia del lote: de frente a la cámara, en el centro de lo que se ve del lote, del color de su estado.
+    // Crece con el lote en pantalla (hasta un tope) y al alejarte nunca se borra: a lo mucho baja a 6 px de letra.
+    function svgInsignia(c, ins, cam, rec) {
+      const l = loteDe(c), t = (+l.tamRotulo || 0.6) / 0.6;
+      const P = rec.map((p) => aPantalla(cam, p));
+      let a2 = 0; P.forEach((p, i) => { const q = P[(i + 1) % P.length]; a2 += p.x * q.y - q.x * p.y; });
+      const lado = Math.sqrt(Math.abs(a2) / 2);
+      const v = c.puntos.reduce((a, [y, p]) => { const d = dir3(y, p); return [a[0] + d[0], a[1] + d[1], a[2] + d[2]]; }, [0, 0, 0]);
+      const L = Math.hypot(v[0], v[1], v[2]) || 1, pc = aCamara(cam, Math.atan2(v[0], v[2]), Math.asin(-v[1] / L));
+      if (!(pc.z > CERCA)) return "";
+      const C = aPantalla(cam, pc), tx = String(ins.texto), k = tx.length;
+      const fs = Math.max(6, Math.min(15 * t, lado * 0.2 * t, (lado * 0.85) / Math.max(1.6, k * 0.62 + 0.9)));
+      const col = estadoDe(c).color || "#22B573", tc = letraSobre(col), w = k * fs * 0.62, sw = Math.max(1, fs * 0.12).toFixed(1), X = C.x.toFixed(1), Y = C.y.toFixed(1);
+      let f = "";
+      if (ins.forma === "circulo") {
+        const r = Math.max(fs * 0.95, (w + fs * 0.8) / 2);
+        f = '<circle cx="' + X + '" cy="' + Y + '" r="' + r.toFixed(1) + '" fill="' + esc(col) + '" stroke="#fff" stroke-width="' + sw + '"/>';
+      } else {
+        const W = w + fs * 1.1, H = fs * 1.6;
+        f = '<rect x="' + (C.x - W / 2).toFixed(1) + '" y="' + (C.y - H / 2).toFixed(1) + '" width="' + W.toFixed(1) + '" height="' + H.toFixed(1) + '" rx="' + (fs * 0.22).toFixed(1) + '" fill="' + esc(col) + '" stroke="#fff" stroke-width="' + sw + '"/>';
+      }
+      return '<g class="lt-ins lt-ins-' + ins.forma + '">' + f + '<text class="lt-ins-t" x="' + X + '" y="' + Y + '" font-size="' + fs.toFixed(1) + '" style="fill:' + tc + '">' + esc(tx) + "</text></g>";
+    }
     function etiquetasLote(n, cam, enCam, rec) {
       const c = n.c, l = loteDe(c);
       let h = "";
-      if (n.planos && rotulosPlanos(n, cam)) { n.etq.innerHTML = ""; return; }
+      const ins = l.etiqueta && !loteVacio(c) ? insigniaDe(c) : null;
+      if (n.planos && rotulosPlanos(n, cam)) { n.etq.innerHTML = ins && rec.length >= 3 && !n.el.hidden ? svgInsignia(c, ins, cam, rec) : ""; return; }
       if (rec.length >= 3 && !n.el.hidden) {
         const t = (+l.tamRotulo || 0.6) / 0.6;
         const P = rec.map((p) => aPantalla(cam, p));
@@ -7312,7 +7384,8 @@
         const v = c.puntos.reduce((a, [y, p]) => { const d = dir3(y, p); return [a[0] + d[0], a[1] + d[1], a[2] + d[2]]; }, [0, 0, 0]);
         const L = Math.hypot(v[0], v[1], v[2]) || 1, pc = aCamara(cam, Math.atan2(v[0], v[2]), Math.asin(-v[1] / L));
         const C = pc.z > CERCA ? aPantalla(cam, pc) : null;
-        if (C && l.etiqueta && !loteVacio(c)) {
+        if (ins) h += svgInsignia(c, ins, cam, rec);
+        else if (C && l.etiqueta && !loteVacio(c)) {
           // Del más completo al más corto ("Lote 3 · Mz B" → "3 · B" → "3"): el número nunca se borra al alejarse
           const cz = rotuloCortoDe(c), kz = cz ? 1.5 : 1; // corto: «L09 · M5», y la letra puede crecer más
           const opciones = [cz ? cz.join(" · ") : nombreLote(c), nombreCorto(l), l.numero || "—"], cabe = (s) => (ancho * 0.92) / Math.max(1, s.length * 0.6);
@@ -9814,12 +9887,23 @@ void main(){
       let v = [-e0[1], e0[0]]; if (v[0] * C[0] + v[1] * C[1] < 0) v = [-v[0], -v[1]]; // la parte de arriba del texto, lejos de la cámara
       const u = [v[1], -v[0]]; // así se lee derecho (no en espejo) desde la cámara
       const pu = G.map((g) => (g[0] - C[0]) * u[0] + (g[1] - C[1]) * u[1]), pv = G.map((g) => (g[0] - C[0]) * v[0] + (g[1] - C[1]) * v[1]);
-      const tx = document.createElement("canvas"), t2 = tx.getContext("2d"), rc = rotuloCortoDe(c), txt = rc ? rc[0] : nombreLote(c), area = rc ? rc[1] || "" : loteDe(c).verArea !== false ? fmtArea(c.lote.area) : "";
+      const tx = document.createElement("canvas"), t2 = tx.getContext("2d"), ins = insigniaDe(c), rc = rotuloCortoDe(c), txt = ins ? ins.texto : rc ? rc[0] : nombreLote(c), area = ins ? "" : rc ? rc[1] || "" : loteDe(c).verArea !== false ? fmtArea(c.lote.area) : "";
       const f2 = rc ? "600 64px Poppins, sans-serif" : "400 46px Poppins, sans-serif"; // corto: el segundo renglón («M5») va del mismo tamaño
       t2.font = "600 64px Poppins, sans-serif"; const w1 = t2.measureText(txt).width; t2.font = f2; const w2 = area ? t2.measureText(area).width : 0;
+      if (ins) { // círculo o insignia (Laboratorio «rotulo-estilos»): la figura del color del estado con su texto
+        t2.font = "700 64px Poppins, sans-serif"; const wt = t2.measureText(txt).width, col = estadoDe(c).color || "#22B573";
+        const circ = ins.forma === "circulo", Wf = circ ? Math.max(120, wt + 56) : wt + 70, Hf = circ ? Wf : 104;
+        tx.width = Math.ceil(Wf + 12); tx.height = Math.ceil(Hf + 12);
+        t2.fillStyle = col; t2.strokeStyle = "#fff"; t2.lineWidth = 8; t2.beginPath();
+        if (circ) t2.ellipse(tx.width / 2, tx.height / 2, Wf / 2, Hf / 2, 0, 0, Math.PI * 2);
+        else { const x = 6, y = 6, r = 14; t2.moveTo(x + r, y); t2.arcTo(x + Wf, y, x + Wf, y + Hf, r); t2.arcTo(x + Wf, y + Hf, x, y + Hf, r); t2.arcTo(x, y + Hf, x, y, r); t2.arcTo(x, y, x + Wf, y, r); t2.closePath(); }
+        t2.fill(); t2.stroke();
+        t2.fillStyle = letraSobre(col); t2.textAlign = "center"; t2.textBaseline = "middle"; t2.font = "700 64px Poppins, sans-serif"; t2.fillText(txt, tx.width / 2, tx.height / 2 + 3);
+      } else {
       tx.width = Math.ceil(Math.max(w1, w2) + 24); tx.height = area ? (rc ? 150 : 132) : 84;
       t2.textAlign = "center"; t2.fillStyle = "#fff"; t2.shadowColor = "rgba(0,0,0,.8)"; t2.shadowBlur = 8;
       t2.font = "600 64px Poppins, sans-serif"; t2.fillText(txt, tx.width / 2, 64); if (area) { t2.font = f2; t2.fillText(area, tx.width / 2, rc ? 132 : 120); }
+      }
       const r = tx.height / tx.width, extU = Math.max(...pu) - Math.min(...pu), extV = Math.max(...pv) - Math.min(...pv), t = (+c.lote.tamRotulo || 0.6) / 0.6;
       const ajuste = Math.min(0.6 * t * extU * r, 0.55 * t * extV) / tx.height;
       return { C, u, v, tx, ajuste, t };
@@ -13476,11 +13560,19 @@ void main(){
     if (document.activeElement !== $("lt-mz")) $("lt-mz").value = T.manzana;
     if (document.activeElement !== $("lt-corto")) $("lt-corto").value = T.corto;
     $("lt-ejemplo").innerHTML = "Así se ve: <b>" + esc(T.lote + " 12 · " + mzCorta("3")) + "</b>";
-    { // Rótulo corto y grande (Laboratorio «rotulo-corto»)
-      const hay = MODO === "nube" && enLab("rotulo-corto"), corto = P().rotuloCorto === true; $("lt-rotulo-fila").hidden = !hay;
-      $("lt-rotulo-fila").querySelectorAll("[data-lt-rotulo]").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.ltRotulo === "1") === corto)));
-      const ej = hay && corto ? rotuloCortoDe({ lote: { numero: "9", manzana: "3" } }) : null;
-      $("lt-rotulo-ejemplo").innerHTML = ej ? "En cada lote: <b>" + esc(ej.join(" / ")) + "</b>, en grande. La superficie queda en su ficha." : "En cada lote: <b>" + esc(T.lote + " 9 · " + mzCorta("3")) + "</b> y su superficie.";
+    { // Rótulo en la esfera: corto y grande (Laboratorio «rotulo-corto»); siglas, solo número, círculo e insignia («rotulo-estilos»)
+      const hayC = MODO === "nube" && enLab("rotulo-corto"), hayE = MODO === "nube" && enLab("rotulo-estilos");
+      $("lt-rotulo-fila").hidden = !(hayC || hayE);
+      const fm = formatoRotulo(), es = estiloInsignia() || "texto", B = (k, v, n, on) => '<button type="button" data-' + k + '="' + v + '" aria-pressed="' + on + '" style="--c:var(--mz-lima)">' + n + "</button>";
+      const textos = [["0", "Completo", "completo"]].concat(hayE ? [["siglas", "Siglas", "siglas"], ["numero", "Solo número", "numero"]] : []).concat(hayC ? [["1", "Corto y grande", "corto"]] : []);
+      $("lt-rotulo-texto").innerHTML = textos.map(([v, n, f]) => B("lt-rotulo", v, n, fm === f)).join("");
+      $("lt-rotulo-estilo").hidden = !hayE;
+      $("lt-rotulo-estilo").innerHTML = hayE ? [["texto", "Texto"], ["circulo", "Círculo"], ["insignia", "Insignia"]].map(([v, n]) => B("lt-estilo", v, n, es === v)).join("") : "";
+      const ej = { lote: { numero: "9", manzana: "3", estado: "disponible" } }, ins = insigniaDe(ej), cz = rotuloCortoDe(ej);
+      if (ins) {
+        const muestra = estadosLote().slice(0, 3).map((e, i) => { const x = 16 + i * 46, w = ins.texto.length * 7 + 10, col = esc(e.color); return ins.forma === "circulo" ? '<circle cx="' + x + '" cy="14" r="' + Math.max(11, w / 2) + '" fill="' + col + '" stroke="#fff" stroke-width="1.5"/><text x="' + x + '" y="18.5" font-size="11" font-weight="700" text-anchor="middle" fill="' + letraSobre(e.color) + '">' + esc(ins.texto) + "</text>" : '<rect x="' + (x - w / 2) + '" y="5" width="' + w + '" height="18" rx="3" fill="' + col + '" stroke="#fff" stroke-width="1.5"/><text x="' + x + '" y="18" font-size="11" font-weight="700" text-anchor="middle" fill="' + letraSobre(e.color) + '">' + esc(ins.texto) + "</text>"; }).join("");
+        $("lt-rotulo-ejemplo").innerHTML = '<svg class="lt-muestra" width="150" height="28" viewBox="0 0 150 28" aria-hidden="true">' + muestra + "</svg> Del color de su estado, siempre de frente.";
+      } else $("lt-rotulo-ejemplo").innerHTML = cz ? "En cada lote: <b>" + esc(cz.join(" / ")) + "</b>, en grande. La superficie queda en su ficha." : "En cada lote: <b>" + esc(T.lote + " 9 · " + mzCorta("3")) + "</b> y su superficie.";
     }
     pintarNombresEstados(false);
     pintarFichaEditor();
@@ -13538,10 +13630,16 @@ void main(){
     guardar(); pintarLotes(); if (motorEd) motorEd.construir(); pintarCapas();
   }
   $("lt-rotulo-fila").addEventListener("click", (ev) => {
-    const b = ev.target.closest("[data-lt-rotulo]"); if (!b) return;
-    if (b.dataset.ltRotulo === "1") P().rotuloCorto = true; else delete P().rotuloCorto;
+    const b = ev.target.closest("[data-lt-rotulo]"), e = ev.target.closest("[data-lt-estilo]"); if (!b && !e) return;
+    if (b) {
+      const v = b.dataset.ltRotulo;
+      if (v === "1") P().rotuloCorto = true; else delete P().rotuloCorto;
+      if (v === "siglas" || v === "numero") P().rotuloFormato = v; else delete P().rotuloFormato;
+    }
+    if (e) { if (e.dataset.ltEstilo === "texto") delete P().rotuloEstilo; else P().rotuloEstilo = e.dataset.ltEstilo; }
     guardar(); pintarLotes(); if (motorEd) motorEd.construir();
-    avisar(P().rotuloCorto ? "Rótulo corto y grande. Míralo en Capas y vuelve a publicar." : "Rótulo completo. Vuelve a publicar para verlo en el tour.");
+    const ej = { lote: { numero: "12", manzana: "3" } }, ins = insigniaDe(ej), cz = rotuloCortoDe(ej);
+    avisar((ins ? (ins.forma === "circulo" ? "Círculo" : "Insignia") + " con «" + ins.texto + "»" : cz ? "Cada lote dice «" + cz.join(" / ") + "»" : "Rótulo completo") + ". Míralo en Capas y vuelve a publicar.");
   });
   $("lt-preset").addEventListener("change", (ev) => { const p = presetsTerminos()[+ev.target.value]; if (!p) return; ponerTerminos({ lote: p[0], manzana: p[1], corto: p[2] }); avisar("Ahora dice: " + nombreLote({ lote: { numero: "12", manzana: "3" } }) + ". Vuelve a Publicar para verlo en el tour."); });
   ["lt-lote", "lt-mz", "lt-corto"].forEach((id) => $(id).addEventListener("input", (ev) => ponerTerminos({ [{ "lt-lote": "lote", "lt-mz": "manzana", "lt-corto": "corto" }[id]]: ev.target.value })));
