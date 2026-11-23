@@ -7168,12 +7168,40 @@
       el.style.display = ""; el.style.transform = m;
       return Math.hypot(q[3].x - q[0].x, q[3].y - q[0].y); // alto en pantalla
     }
+    // Mide los rótulos planchados de un lote (una vez; se vuelve a medir al llegar una tipografía).
+    // Cada pieza se mide VISIBLE: si en el cuadro anterior quedó oculta (fuera de la vista o atrás de la cámara)
+    // medía 0 y el rótulo se quedaba borrado hasta volver a tocar una propiedad (reporte de Diego Ponce, Diucas 2027,
+    // 23 nov 2026: «se me borran los textos… algunos de una manzana y otros de otra»). Si la capa todavía no se
+    // ve (mide 0 de verdad), no se guarda la medida y se vuelve a intentar en un momento.
+    let reintentosMedida = 0, reintentoMedida = 0;
+    function medirRotulos(R, soloNom) {
+      if (R.med) return true;
+      const mide = (e) => {
+        if (!e) return null;
+        const d = e.style.display; e.style.display = "";
+        let m;
+        if (R.svg) { const t = e.firstChild, b = t.getBBox(); m = b.width > 0 && b.height > 0 ? medirSVG(e) : [0, 0]; }
+        else m = [e.offsetWidth, e.offsetHeight];
+        e.style.display = d;
+        return m;
+      };
+      const med = { nom: mide(R.nom), cortos: soloNom || R.svg ? [] : R.cortos.map(mide), lados: soloNom ? [] : R.lados.map(mide) };
+      const vacia = (m) => m && !(m[0] > 0 && m[1] > 0);
+      if (vacia(med.nom) || med.cortos.some(vacia) || med.lados.some(vacia)) {
+        R.cont.style.display = "none";
+        if (!reintentoMedida && reintentosMedida < 40) reintentoMedida = setTimeout(() => { reintentoMedida = 0; reintentosMedida++; programar(); }, 300);
+        return false;
+      }
+      reintentosMedida = 0;
+      R.med = med;
+      return true;
+    }
     // Departamento planchado en la fachada de su edificio (con la perspectiva de la fachada)
     function rotulosFachada(n, cam) {
       const c = n.c, l = loteDe(c), R = n.planos, E = lista().find((x) => x.id === c.deManzana), g = geoFachada(E);
       if (!g || !R.nom || n.el.hidden) return false;
       R.cont.style.display = "";
-      if (!R.med) R.med = R.svg ? { nom: medirSVG(R.nom), cortos: [], lados: [] } : { nom: [R.nom.offsetWidth, R.nom.offsetHeight], cortos: [], lados: [] };
+      if (!medirRotulos(R, true)) return true;
       const [w, h] = R.med.nom, rr = rectFachada(g, +c.iManzana || 0, w, h, (+l.tamRotulo || 0.6) / 0.6);
       if (!rr) return false;
       R.cortos.forEach((e) => (e.style.display = "none")); R.lados.forEach((e) => { if (e) e.style.display = "none"; });
@@ -7190,8 +7218,7 @@
       const G = c.puntos.map(([y, p]) => aSuelo(y, p));
       if (G.some((g) => !g) || n.el.hidden) { R.cont.style.display = "none"; return false; }
       R.cont.style.display = "";
-      if (!R.med) R.med = R.svg ? { nom: R.nom ? medirSVG(R.nom) : null, cortos: [], lados: R.lados.map((e) => (e ? medirSVG(e) : null)) }
-        : { nom: R.nom ? [R.nom.offsetWidth, R.nom.offsetHeight] : null, cortos: R.cortos.map((e) => [e.offsetWidth, e.offsetHeight]), lados: R.lados.map((e) => (e ? [e.offsetWidth, e.offsetHeight] : null)) };
+      if (!medirRotulos(R)) return true;
       // Centroide y tamaño del lote en el suelo
       let A2 = 0, cx = 0, cz = 0;
       G.forEach((p, i) => { const q = G[(i + 1) % G.length], k = p[0] * q[1] - q[0] * p[1]; A2 += k; cx += (p[0] + q[0]) * k; cz += (p[1] + q[1]) * k; });

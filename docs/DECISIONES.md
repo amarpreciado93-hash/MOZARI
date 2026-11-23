@@ -652,3 +652,14 @@
   más lo tiene. Quien solo está viendo pregunta si ya se liberó sin apartarlo ({ mirar: true }).
 - Publicar en un tour compartido ya dice «Publicar cambios» y la fecha de la última publicación.
 - Prueba de Equipo ampliada: con el dueño editando el socio no publica; con el estudio del dueño en otra pestaña, sí.
+
+## 23 nov 2026 · Rótulos de lotes que se borraban en la compu (reporte de Diego Ponce, Diucas 2027)
+
+- Diego: «se me borran los textos… algunos de una manzana y otros de otra… en celular aparece todo bien, pero en web
+  vuelven a desaparecer». Causa: al terminar de cargar una tipografía los rótulos planchados se vuelven a medir; los lotes
+  que en ese momento estaban fuera de la vista (atrás de la cámara o muy al horizonte) tenían su texto oculto, medían 0
+  y el rótulo se quedaba borrado hasta volver a tocar una propiedad. Solo pasaba en compu (editor y tour publicado).
+- Ahora cada rótulo se mide visible aunque esté fuera de la vista, y si la capa todavía no se ve (mide 0 de verdad) no se
+  guarda la medida: se vuelve a intentar en un momento. Igual para los departamentos planchados en fachada.
+- Prueba nueva: 10 lotes atrás de la cámara con tipografía de Google; al girar, en el tour y en el editor, todos tienen
+  su número (antes del arreglo: 0 de 10 en el tour).

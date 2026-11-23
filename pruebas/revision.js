@@ -5465,6 +5465,54 @@ async function capasPesadas(p) {
         await u.context().close(); await n.context().close();
       }
     });
+    // Rótulos de lotes que se borraban en la compu (reporte de Diego Ponce, Diucas 2027, 23 nov 2026: «se me borran los
+    // textos… algunos de una manzana y otros de otra… en celular aparece todo bien, pero en web vuelven a desaparecer»).
+    // Al terminar de cargar una tipografía, los rótulos se vuelven a medir; los lotes que en ese momento estaban fuera de la
+    // vista (atrás de la cámara) se medían en 0 y su rótulo quedaba borrado hasta volver a tocar una propiedad.
+    await paso("Rótulos de los lotes en la compu: al girar, los lotes que estaban atrás también tienen su número (en el editor y en el tour)", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const n = await pagina(DUENO);
+      let t = null;
+      try {
+        await nuevoTour(n, "Rotulos atras"); const id = await idTour(n); await irCapas(n); await n.waitForTimeout(800); await pasarGuias(n);
+        await dibujarManzana(n, [[380, 600], [560, 600]], [[380, 720], [560, 720]]);
+        await dibujarManzana(n, [[700, 600], [1020, 600]], [[700, 780], [1020, 780]]);
+        // La copia de una manzana atrás de la cámara (lotes 51 a 60), y todos con una tipografía de Google
+        const d = (await api(n, "api/tours/" + id)).d, esf = Object.keys(d.capas)[0], L = d.capas[esf];
+        const base = L.filter((c) => c.lote && c.deManzana).slice(0, 10);
+        exige(base.length === 10, "no se dibujaron los lotes");
+        const atras = base.map((c, i) => { const x = JSON.parse(JSON.stringify(c)); x.id = "atras" + i; delete x.deManzana; delete x.iManzana; x.puntos = x.puntos.map(([y, p]) => [y + Math.PI, p]); x.lote.numero = String(51 + i); x.lote.manzana = "9"; x.nombre = "Lote " + (51 + i); return x; });
+        d.capas[esf] = L.concat(atras);
+        Object.values(d.capas).flat().forEach((c) => { if (c.lote) c.lote.fuente = "Montserrat"; });
+        exige((await api(n, "api/tours/" + id, J("PUT", d))).s === 200, "no se guardó el tour");
+        // ¿Cuántos rótulos «Lote 5x» se ven en pantalla, con tamaño?
+        const visibles = (p) => p.evaluate(() => [...document.querySelectorAll(".lt-planos .lt-p.nom")].filter((e) => {
+          if (!/^Lote 5\d|^Lote 60/.test(e.textContent.trim()) || getComputedStyle(e).display === "none" || getComputedStyle(e).visibility === "hidden") return false;
+          const r = e.getBoundingClientRect(); return r.width > 3 && r.height > 3 && r.right > 0 && r.bottom > 0 && r.left < innerWidth && r.top < innerHeight;
+        }).length);
+        const girar = async (p, x, y, veces) => { for (let k = 0; k < veces; k++) { await p.mouse.move(x, y); await p.mouse.down(); for (let i = 1; i <= 20; i++) { await p.mouse.move(x - i * 30, y); await p.waitForTimeout(16); } await p.mouse.up(); await p.waitForTimeout(300); } };
+        // Tour publicado
+        exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForTimeout(5000);
+        exige((await visibles(t)) === 0, "los lotes de atrás ya se veían al abrir (la prueba no los puso atrás)");
+        let vistos = 0;
+        for (let k = 0; k < 8 && vistos < 10; k++) { await girar(t, 1200, 300, 1); await t.waitForTimeout(700); vistos = Math.max(vistos, await visibles(t)); }
+        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "rotulos-atras-tour.png") });
+        exige(vistos >= 8, "en el tour, al girar, los lotes que estaban atrás no tienen su número: se ven " + vistos + " de 10");
+        exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
+        // Editor: recargar (la tipografía vuelve a cargar) y girar con la barra espaciadora
+        await n.reload(); await n.waitForTimeout(2500); await irCapas(n); await n.waitForTimeout(1500); await pasarGuias(n);
+        vistos = 0;
+        for (let k = 0; k < 8 && vistos < 10; k++) { await n.keyboard.down("Space"); await girar(n, 1060, 300, 1); await n.keyboard.up("Space"); await n.waitForTimeout(700); vistos = Math.max(vistos, await visibles(n)); }
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "rotulos-atras-editor.png") });
+        exige(vistos >= 8, "en el editor, al girar, los lotes que estaban atrás no tienen su número: se ven " + vistos + " de 10");
+        exige(!n.errs.length, "errores en el estudio: " + n.errs.join(" | ").slice(0, 200));
+      } finally {
+        if (t) await t.context().close();
+        await n.context().close();
+      }
+    });
     // Narración en el celular (Amar, 22 nov 2026, con una captura de Vista del Tezal en su iPhone: «se encima en todo y es
     // demasiado invasiva en su versión móvil»). En el celular la pastilla va chica y abajo, sin tapar la leyenda, los
     // botones ni la barra de esferas, en las 5 plantillas.
