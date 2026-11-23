@@ -5598,7 +5598,7 @@ async function capasPesadas(p) {
       }
     });
     // Equipo (Amar, 22 nov 2026: «¿hay forma de poder trabajar en equipo un tour que yo ya estoy trabajando?»)
-    await paso("Equipo (Laboratorio, nace Solo yo): el dueño invita por correo; la otra cuenta ve el tour en «Compartidos contigo», lo edita y publica; uno edita a la vez y el otro solo ve hasta que se libera", async () => {
+    await paso("Equipo (sale Solo Desarrollos): el dueño invita por correo; la otra cuenta ve el tour en «Compartidos contigo», lo edita, publica y crea voces con las letras del dueño; uno edita a la vez y el otro solo ve hasta que se libera", async () => {
       const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
       const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
       const SOCIO = "socio-equipo@prueba.mx", n = await pagina(DUENO), s2 = await pagina(SOCIO), otra = await pagina("sin-equipo@prueba.mx");
@@ -5673,6 +5673,54 @@ async function capasPesadas(p) {
         // 7) Borrar el tour lo quita también de «Compartidos contigo»
         exige((await api(n, "api/tours/" + id + "/equipo", J("POST", { email: SOCIO }))).s === 200 && ((await api(s2, "api/tours")).d.compartidos || []).length === 1, "no se pudo volver a invitar");
         exige((await api(n, "api/tours/" + id, { method: "DELETE" })).s === 200 && !((await api(s2, "api/tours")).d.compartidos || []).length, "al borrar el tour le sigue saliendo al socio");
+        // 8) Sale «Solo Desarrollos» (Amar, 23 nov 2026): con licencia Desarrollos sí; Pro y cuenta de prueba no
+        await n.click('#nav button:has-text("Mis Tours")'); await n.waitForTimeout(900); await n.click("#ver-cuentas"); await n.waitForTimeout(900);
+        await n.click('[data-dueno="laboratorio"]'); await n.waitForSelector('[data-lab="equipo"] [data-lab-modo="desarrollos"]', { timeout: 8000 });
+        await n.click('[data-lab="equipo"] [data-lab-modo="desarrollos"]'); await n.waitForTimeout(1500);
+        exige((await n.getAttribute('[data-lab="equipo"] [data-lab-modo="desarrollos"]', "aria-pressed")) === "true" && /Anunciarla a Desarrollos/.test(await n.textContent('[data-lab="equipo"]')), "el panel no deja Equipo en «Solo Desarrollos» o no ofrece anunciarla a Desarrollos");
+        const modoLab = async (k) => (((await api(n, "api/admin/laboratorio")).d.funciones || []).find((f) => f.clave === k) || {}).modo;
+        exige((await modoLab("equipo")) === "desarrollos", "«Solo Desarrollos» no se guardó");
+        const vozAntes = await modoLab("voz-ia"); await api(n, "api/admin/laboratorio/voz-ia", J("PUT", { modo: "todos" })); // como en producción: las voces, para todos
+        const sello = Date.now(), cDes = "des-equipo-" + sello + "@prueba.mx", cPro = "pro-equipo-" + sello + "@prueba.mx", SOC2 = "socio2-" + sello + "@prueba.mx";
+        const pDes = await pagina(cDes), pPro = await pagina(cPro), pSoc = await pagina(SOC2);
+        try {
+          await pDes.waitForTimeout(1500);
+          const cuentas = (await api(n, "api/admin/cuentas")).d.cuentas || [], uidDe = (c) => (cuentas.find((x) => x.email === c) || {}).uid;
+          for (const [c, plan] of [[cDes, "desarrollos"], [cPro, "pro"]]) exige((await api(n, "api/admin/cuentas/" + uidDe(c), J("PUT", { plan }))).s === 200, "no se pudo poner la cuenta en " + plan);
+          const lab = async (p) => (await api(p, "api/yo")).d.lab || [];
+          exige((await lab(pDes)).includes("equipo") && !(await lab(pPro)).includes("equipo") && !(await lab(pSoc)).includes("equipo"), "«Solo Desarrollos»: Equipo debe estar solo en la cuenta Desarrollos");
+          await nuevoTour(pPro, "Equipo Pro"); const idP = await idTour(pPro);
+          exige((await api(pPro, "api/tours/" + idP + "/equipo", J("POST", { email: SOC2 }))).s === 403, "una cuenta Pro pudo invitar a su equipo");
+          await pDes.reload(); await pDes.waitForTimeout(2500); await cerrarAnuncio(pDes);
+          await nuevoTour(pDes, "Equipo Desarrollos"); const idD = await idTour(pDes);
+          await pDes.click('#nav button:has-text("Proyecto")'); await pDes.waitForTimeout(600); await pDes.click('#subtabs button:has-text("General")'); await pDes.waitForTimeout(1500);
+          let vistos = []; for (let i = 0, quieto = 0; i < 20 && quieto < 4; i++) { await pDes.waitForTimeout(600); if (await pDes.isVisible(".guia-tarjeta").catch(() => false)) { quieto = 0; vistos.push(await pDes.textContent(".guia-tarjeta")); await pDes.click('.guia-tarjeta [data-guia="seguir"]'); } else quieto++; }
+          exige(vistos.some((x) => /trabaja un tour en equipo/.test(x)), "a la cuenta Desarrollos no le salió el mini tutorial de Equipo: " + vistos.map((x) => x.slice(0, 40)).join(" | "));
+          await pDes.fill("#eq-invitar input", SOC2); await pDes.click("#eq-invitar button"); await pDes.waitForTimeout(1500);
+          exige((await pDes.textContent("#p-equipo .eq-lista")).includes(SOC2), "la cuenta Desarrollos no pudo invitar");
+          await pDes.goto(ESTUDIO + "/"); await pDes.waitForTimeout(1500);
+          // 9) Voces: en el tour compartido el socio (cuenta de prueba) crea voces con las letras de la licencia del dueño
+          const vs = (await api(pSoc, "api/voz?tour=" + idD)).d;
+          exige(vs.activo && vs.tope === 12000 && vs.usadas === 0, "en el tour compartido el socio no tiene las letras de voz de la licencia del dueño: " + JSON.stringify({ activo: vs.activo, tope: vs.tope }));
+          exige((await api(pSoc, "api/voz")).d.tope === 0 && (await api(pPro, "api/voz?tour=" + idD)).d.tope === 5000, "fuera del tour compartido cada quien debe ver las letras de su propia cuenta");
+          await pSoc.goto(ESTUDIO + "/#t=" + idD); await pSoc.reload(); await pSoc.waitForTimeout(3000); await cerrarAnuncio(pSoc); await pasarGuias(pSoc);
+          await pSoc.click('#nav button:has-text("Interfaz")'); await pSoc.waitForTimeout(1500);
+          for (let i = 0; i < 8; i++) { await pSoc.waitForTimeout(500); if (await pSoc.isVisible(".guia-tarjeta").catch(() => false)) await pSoc.click('.guia-tarjeta [data-guia="seguir"]'); }
+          await pSoc.click("#sk-voz-crear"); await pSoc.waitForSelector("#dlg-voz[open] .vz-voz", { timeout: 8000 });
+          exige(!/vienen con las licencias/.test(await pSoc.textContent("#vz-saldo")), "en el tour compartido al socio le dice que las voces vienen con las licencias: " + (await pSoc.textContent("#vz-saldo")));
+          const frase = "Bienvenidos a este desarrollo, aquí cada lote tiene vista abierta.";
+          await pSoc.fill('#dlg-voz [data-vz-campo="texto"]', frase); await pSoc.waitForTimeout(200);
+          await pSoc.click('#dlg-voz [data-vz="audio"]'); await pSoc.waitForSelector("#vz-listo", { timeout: 15000 });
+          if (process.env.CAPTURAS) await pSoc.screenshot({ path: path.join(process.env.CAPTURAS, "equipo-socio-voz.png") });
+          exige((await api(pDes, "api/voz?tour=" + idD)).d.usadas === frase.length && (await api(pDes, "api/voz?tour=" + idD)).d.creadas === 1, "la voz del socio no se descontó de la licencia del dueño");
+          exige((await api(pSoc, "api/voz")).d.usadas === 0, "la voz del tour compartido se le descontó al socio");
+          let vozGuardada = ""; for (let i = 0; i < 16 && !vozGuardada; i++) { await pSoc.waitForTimeout(500); vozGuardada = ((await api(pDes, "api/tours/" + idD)).d.proyecto.vozTour || {}).archivo || ""; }
+          exige(/^archivos\/voz-/.test(vozGuardada), "la voz que creó el socio no quedó en el tour del dueño");
+          exige(!pDes.errs.length && !pPro.errs.length && !pSoc.errs.length, "errores: " + pDes.errs.concat(pPro.errs, pSoc.errs).join(" | ").slice(0, 200));
+        } finally {
+          await api(n, "api/admin/laboratorio/equipo", J("PUT", { modo: "yo", probadores: [] })); await api(n, "api/admin/laboratorio/voz-ia", J("PUT", { modo: vozAntes || "yo" }));
+          await pDes.context().close(); await pPro.context().close(); await pSoc.context().close();
+        }
         exige(!n.errs.length && !s2.errs.length, "errores en el estudio: " + n.errs.concat(s2.errs).join(" | ").slice(0, 200));
       } catch (e) {
         if (process.env.CAPTURAS) for (const [k, p] of [["dueno", n], ["socio", s2], ["otra", otra]]) await p.screenshot({ path: path.join(process.env.CAPTURAS, "equipo-falla-" + k + ".png") }).catch(() => {});

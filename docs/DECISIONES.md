@@ -663,3 +663,16 @@
   guarda la medida: se vuelve a intentar en un momento. Igual para los departamentos planchados en fachada.
 - Prueba nueva: 10 lotes atrás de la cámara con tipografía de Google; al girar, en el tour y en el editor, todos tienen
   su número (antes del arreglo: 0 de 10 en el tour).
+
+## 23 nov 2026 · Equipo sale «Solo Desarrollos» y el colega crea voces con la licencia del dueño
+
+- Amar: «necesito que le des permiso a mi colega de usar los créditos generativos para que cree voces». Causa: crear la
+  voz ya corría con la cuenta del dueño, pero la ventana preguntaba las letras con la cuenta del colega (de prueba: 0) y
+  le decía que las voces vienen con las licencias. Ahora, en un tour compartido, GET api/voz?tour= responde con la
+  licencia y las letras del dueño. Se descuentan al dueño; en sus propios tours el colega usa su propia cuenta.
+- Amar: «que ya saques esa función únicamente para Desarrollos, con nueva actualización y con mini tutorial».
+  Laboratorio: nuevo modo «Solo Desarrollos» (además de Solo yo, Probadores, Pro y Desarrollos, Todos) y su botón
+  «Anunciarla a Desarrollos» (la novedad va con público «desarrollos»). Equipo sale en ese modo; Pro y cuentas de prueba
+  no lo ven ni pueden invitar. El mini tutorial «nuevo-equipo» les sale a los de Desarrollos en Proyecto → General.
+- Prueba de Equipo ampliada: «Solo Desarrollos» desde el panel; Pro no invita y Desarrollos sí (con su tutorial); el
+  colega de prueba crea la voz en el tour compartido con las letras del dueño y se le descuentan al dueño.

@@ -5321,7 +5321,7 @@
     }
   });
   // Laboratorio: cada función nueva nace "Solo yo"; cuando convence, se da a probadores o a todos
-  const MODOS_LAB = [["yo", "Solo yo"], ["probadores", "Probadores"], ["pago", "Pro y Desarrollos"], ["todos", "Todos"]];
+  const MODOS_LAB = [["yo", "Solo yo"], ["probadores", "Probadores"], ["desarrollos", "Solo Desarrollos"], ["pago", "Pro y Desarrollos"], ["todos", "Todos"]];
   // Respaldos: copia diaria de los datos (proyectos, cuentas, planes); las fotos no cambian con las actualizaciones
   const MOTIVO_RESP = { noche: "Copia de la noche", actualizacion: "Antes de una actualización", primero: "Primer respaldo", manual: "Hecho a mano" };
   // Tours hechos con Mozari: el dueño elige qué tours publicados salen en mozari.app (con permiso de su cliente)
@@ -5411,7 +5411,7 @@
       '<p class="nota lab-intro">Herramientas nuevas en prueba. Tú siempre las ves. Cuando una te convenza, dásela a tus probadores, a Pro y Desarrollos, o a todos (también las cuentas de prueba). Si alguna falla, regrésala a «Solo yo». Ojo: lo que publiques con ellas sí lo ven tus clientes en el tour.</p>' +
       funciones.map((f) => '<div class="lab-fila" data-lab="' + esc(f.clave) + '"><div><b>' + esc(f.nombre) + " " + CHIP_LAB + "</b><span>" + esc(f.texto) + "</span></div>" +
         '<div class="estados">' + MODOS_LAB.map(([v, n]) => '<button data-lab-modo="' + v + '" aria-pressed="' + (f.modo === v) + '">' + n + "</button>").join("") + "</div>" +
-        (f.modo === "todos" || f.modo === "pago" ? '<button class="mini primario" data-lab-anunciar>' + (f.modo === "pago" ? "Anunciarla a Pro y Desarrollos" : "Anunciarla a todos") + "</button>" : "") +
+        (f.modo === "todos" || f.modo === "pago" || f.modo === "desarrollos" ? '<button class="mini primario" data-lab-anunciar>' + (f.modo === "pago" ? "Anunciarla a Pro y Desarrollos" : f.modo === "desarrollos" ? "Anunciarla a Desarrollos" : "Anunciarla a todos") + "</button>" : "") +
         (f.clave === "voz-ia" && voz ? '<div class="lab-probadores lab-voz" id="lab-voz"><span>' + (voz.llave ? "Llave de ElevenLabs conectada" : voz.prueba ? "Modo de prueba (sin llave)" : "Falta la llave de ElevenLabs") + " · " + (voz.voces.length ? [["Español", voz.voces.filter((x) => x.idioma !== "en")], ["Inglés", voz.voces.filter((x) => x.idioma === "en")]].filter(([, l]) => l.length).map(([k, l]) => k + ": " + esc(l.map((x) => x.nombre).join(", "))).join(" · ") : "sin voces elegidas") +
           " · este mes: " + voz.usoMes.toLocaleString("es-MX") + " de " + voz.topeMes.toLocaleString("es-MX") + ' letras</span><button class="mini primario" data-lab-voces' + (voz.llave ? "" : " disabled") + ">Elegir voces</button></div>" : "") +
         (f.clave === "ubicacion" ? '<label class="lab-probadores">Llave del mapa satelital (pégala tú). Sin llave, el plano sale sobre fondo oscuro.<input class="entrada" type="password" data-lab-llave autocomplete="off" placeholder="' + (mapa && mapa.hay ? "Guardada · termina en " + esc(mapa.fin) : "Pega aquí la llave") + '"><button class="mini primario" data-lab-llave-guardar>Guardar llave</button></label>' : "") +
@@ -5422,8 +5422,8 @@
     const modo = ev.target.closest("[data-lab-modo]"), guardar = ev.target.closest("[data-lab-guardar]");
     if (ev.target.closest("[data-lab-anunciar]")) { // la novedad sale medio escrita con el nombre y la descripción de la función
       const nombre = fila.querySelector("b").firstChild.textContent.trim(), texto = fila.querySelector("span:not(.chip-lab)").textContent.trim();
-      const enPago = fila.querySelector('[data-lab-modo="pago"][aria-pressed="true"]');
-      await crearNovedad({ titulo: nombre, texto, destino: LAB_DESTINO[fila.dataset.lab] || "", publico: enPago ? "pagados" : "todos" });
+      const enPago = fila.querySelector('[data-lab-modo="pago"][aria-pressed="true"]'), enDes = fila.querySelector('[data-lab-modo="desarrollos"][aria-pressed="true"]');
+      await crearNovedad({ titulo: nombre, texto, destino: LAB_DESTINO[fila.dataset.lab] || "", publico: enDes ? "desarrollos" : enPago ? "pagados" : "todos" });
       return;
     }
     if (ev.target.closest("[data-lab-voces]")) { abrirVocesDueno(); return; } // Voces con guion: elegir las voces de su cuenta de ElevenLabs
@@ -5438,13 +5438,13 @@
     const r = await fetch("api/admin/laboratorio/" + fila.dataset.lab, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(cuerpo) }).catch(() => null);
     if (!r || !r.ok) { avisar("No se pudo guardar"); return; }
     const d = await r.json();
-    avisar(guardar ? d.funcion.probadores.length + " probadores guardados" : d.funcion.modo === "todos" ? "Activada para toda la comunidad" : d.funcion.modo === "pago" ? "Activada para Pro y Desarrollos" : d.funcion.modo === "probadores" ? "Solo tú y tus probadores la ven" : "Solo tú la ves");
+    avisar(guardar ? d.funcion.probadores.length + " probadores guardados" : d.funcion.modo === "todos" ? "Activada para toda la comunidad" : d.funcion.modo === "pago" ? "Activada para Pro y Desarrollos" : d.funcion.modo === "desarrollos" ? "Activada solo para Desarrollos" : d.funcion.modo === "probadores" ? "Solo tú y tus probadores la ven" : "Solo tú la ves");
     pintarLaboratorio();
   });
   // =================== NOVEDADES ===================
   // Cada anuncio se ve una vez por cuenta (se anota en el servidor). El botón ✦ junto a BETA los vuelve a abrir.
   const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Fichas técnicas"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Interfaz"], ["publicar/web", "Publicar"], ["publicar/cliente", "Publicar → Link para tu cliente (con su mini tutorial)"], ["publicar/landing", "Publicar → Landing"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"], ["media/ubicacion", "Media → Ubicación"]];
-  const LAB_DESTINO = { mejora: "mejora/esferas", "descarga-pdf": "skin/h", "tutorial-video": "tours/todos", transiciones: "proyecto/general", landing: "publicar/landing", ubicacion: "media/ubicacion", "voz-ia": "skin/h", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
+  const LAB_DESTINO = { equipo: "proyecto/general", mejora: "mejora/esferas", "descarga-pdf": "skin/h", "tutorial-video": "tours/todos", transiciones: "proyecto/general", landing: "publicar/landing", ubicacion: "media/ubicacion", "voz-ia": "skin/h", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
   let novedades = [], novActual = null;
   const fechaCorta = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
   function htmlNovedad(n, media) {

@@ -271,8 +271,9 @@ export const LABORATORIO = {
   "link-cliente": { nombre: "Link de disponibilidad para tu cliente", texto: "Publicar → «Link para tu cliente»: un link que le mandas por WhatsApp a tu cliente (el desarrollador o su vendedor). Lo abre en su celular o compu, sin cuenta ni contraseña, ve sus lotes y los marca Disponible, Apartado o Vendido; el tour publicado cambia al momento. Solo puede cambiar el estado de los lotes de ese tour. Tú ves qué cambió y cuándo, y lo quitas cuando quieras. Con Desarrollos la página del cliente sale limpia; con otra licencia o la cuenta de prueba lleva la marca de agua «Creado por Mozari»." },
   "cotas": { nombre: "Cotas en paredes", texto: "En Capas → «Cota»: tocas el inicio y el final de un muro (en el piso) y Mozari calcula su largo con la altura de la cámara; un punto en el piso y otro arriba da la altura. Si tienes la medida del plano, la escribes y manda esa. Salen en el tour como en un plano." },
 };
-// "pago": las cuentas Pro y Desarrollos (con su plan vigente); "todos" incluye también Gratis
-const MODOS_LAB = ["yo", "probadores", "pago", "todos"];
+// "pago": las cuentas Pro y Desarrollos (con su plan vigente); "desarrollos": solo Desarrollos (pedido de Amar,
+// 23 nov 2026, para Equipo); "todos" incluye también Gratis
+const MODOS_LAB = ["yo", "probadores", "desarrollos", "pago", "todos"];
 // De dónde llegó la cuenta, para el panel (sin el identificador del clic)
 const origenPanel = (o) => (o && typeof o === "object" ? { fuente: o.fuente || "", medio: o.medio || "", campana: o.campana || "", anuncio: o.anuncio || "", correo: !!o.correo } : null);
 const LEER_CUENTAS = 350; // Panel de dueño: cuentas que se vuelven a leer por petición (el tope de una petición son 1,000 lecturas)
@@ -405,8 +406,8 @@ async function rutaCliente(request, env, url, segs) {
   return conCabeceras(error(404, "Ruta desconocida"));
 }
 async function labDe(env, yo) {
-  const cfg = await leerLab(env), correo = String(yo.email || "").toLowerCase(), pago = !planDe(yo).marca;
-  return Object.keys(cfg).filter((k) => yo.admin || cfg[k].modo === "todos" || (cfg[k].modo === "pago" && pago) || (cfg[k].modo === "probadores" && cfg[k].probadores.includes(correo)));
+  const cfg = await leerLab(env), correo = String(yo.email || "").toLowerCase(), pl = planDe(yo), pago = !pl.marca, des = pl.id === "desarrollos";
+  return Object.keys(cfg).filter((k) => yo.admin || cfg[k].modo === "todos" || (cfg[k].modo === "pago" && pago) || (cfg[k].modo === "desarrollos" && des) || (cfg[k].modo === "probadores" && cfg[k].probadores.includes(correo)));
 }
 
 // Novedades: anuncios de herramientas nuevas que cada cuenta ve UNA vez (se anota en su perfil, no en el navegador)
@@ -1142,7 +1143,15 @@ async function api(request, env, partes, yo) {
   }
   // Tutoriales guiados: cada cuenta ve el de cada herramienta una sola vez (se anota en su perfil)
   // Sonido del tour (Laboratorio «voz-ia»): las voces que hay, lo que le queda a la cuenta este mes y a ese tour
-  if (partes[1] === "voz" && partes.length === 2 && m === "GET") { const lab = await labDe(env, yo); return lab.includes("voz-ia") ? vozEstado(env, yo, plan, new URL(request.url).searchParams.get("tour"), lab.includes("voz-idiomas")) : error(403, "Esta función aún no está en tu cuenta"); }
+  if (partes[1] === "voz" && partes.length === 2 && m === "GET") {
+    // En un tour compartido (Equipo) el socio usa las letras de voz de la licencia del dueño (pedido de Amar, 23 nov 2026),
+    // igual que al crear la voz (api/tours/<id>/voz/audio ya corre con la cuenta del dueño)
+    const tour = new URL(request.url).searchParams.get("tour") || "";
+    let quien = yo, pq = plan;
+    if (ID_TOUR.test(tour) && !(await esDueno(env, uid, tour))) { const d = await duenoDeEquipo(env, yo, tour); if (d) { quien = d; pq = planDe(d); } }
+    const lab = await labDe(env, quien);
+    return lab.includes("voz-ia") ? vozEstado(env, quien, pq, tour, lab.includes("voz-idiomas")) : error(403, "Esta función aún no está en tu cuenta");
+  }
   // Ubicación en satélite: el satélite para la vista previa del mapa dentro del estudio (solo a quien tiene la función)
   if (partes[1] === "mapa" && partes.length === 2 && m === "GET") return json({ sat: (await labDe(env, yo)).includes("ubicacion") ? await satDe(env) : "" });
   if (partes[1] === "guias" && partes.length === 3 && m === "POST" && /^[a-z0-9-]{2,40}$/.test(partes[2])) {
