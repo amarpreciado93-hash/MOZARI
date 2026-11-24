@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-rotulo-estilos", "nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto", "nuevo-voz-idiomas", "nuevo-lotes-vendidos", "nuevo-unir-manzanas", "nuevo-equipo"];
+const GUIAS_NUEVAS = ["nuevo-ficha-disenos", "nuevo-landing-disenos", "nuevo-rotulo-estilos", "nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto", "nuevo-voz-idiomas", "nuevo-lotes-vendidos", "nuevo-unir-manzanas", "nuevo-equipo"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -75,10 +75,16 @@ async function pagina(correo, opciones = {}) {
   if (!sonido) await ctx.addInitScript(() => { try { localStorage.setItem("mz-musica-clasica", "1"); } catch (e) { /* sin almacenamiento */ } });
   const p = await ctx.newPage();
   p.errs = [];
-  p.on("pageerror", (e) => p.errs.push(e.message));
+  p.on("pageerror", (e) => { p.errs.push(e.message); if (process.env.PILA) console.log("PILA", e.stack && e.stack.slice(0, 600)); });
   p.on("dialog", (d) => d.accept());
   // Las librerías (esfera 360, etc.) las sirve Mozari mismo desde /lib: aquí no se interceptan
-  await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  // FUENTES=<carpeta>: las letras de Google desde una carpeta local (<familia>/<archivo>-<peso>-normal.woff2), para capturas fieles
+  if (process.env.FUENTES) {
+    const F = process.env.FUENTES, carpeta = (n) => path.join(F, n.toLowerCase().replace(/ /g, "-"));
+    await p.route(/fonts\.googleapis\.com/, (r) => { const u = new URL(r.request().url()); let css = ""; u.searchParams.getAll("family").forEach((f) => { const nom = f.split(":")[0].replace(/\+/g, " "), d = carpeta(nom); if (fs.existsSync(d)) fs.readdirSync(d).forEach((a) => { css += '@font-face{font-family:"' + nom + '";font-weight:' + ((a.match(/-(\d{3})-normal/) || [])[1] || 400) + ';src:url("https://fuentes.local/' + path.basename(d) + "/" + a + '")}'; }); }); r.fulfill({ contentType: "text/css", body: css }); });
+    await p.route(/fuentes\.local/, (r) => { const [d, a] = new URL(r.request().url()).pathname.split("/").filter(Boolean); r.fulfill({ contentType: "font/woff2", body: fs.readFileSync(path.join(F, d, a)) }); });
+  }
+  if (!process.env.FUENTES) await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
   await p.route(/cdn\.jsdelivr\.net|unpkg\.com|cdnjs\.cloudflare\.com/, (r) => r.abort()); // si algo aún los pidiera, la prueba falla
   if (correo) { await p.goto(ESTUDIO + "/entrar?dev=" + encodeURIComponent(correo)); await p.waitForTimeout(2500); await cerrarAnuncio(p); }
   return p;
@@ -4703,7 +4709,9 @@ async function capasPesadas(p) {
         await n.click('#nav button:has-text("Publicar")'); await n.waitForTimeout(500);
         exige(await n.isVisible('#subtabs button:has-text("Landing")'), "el dueño no ve Publicar → Landing");
         await n.click('#subtabs button:has-text("Landing")'); await n.waitForTimeout(2000);
-        exige(await n.waitForSelector('.guia-tarjeta:has-text("landing")', { timeout: 6000 }).then(() => true).catch(() => false), "la primera vez no salió el tutorial de la landing");
+        const hayGuia = await n.waitForSelector('.guia-tarjeta:has-text("landing")', { timeout: 6000 }).then(() => true).catch(() => false);
+        if (!hayGuia && process.env.CAPTURAS) { await n.screenshot({ path: path.join(process.env.CAPTURAS, "landing-sin-guia.png") }); console.log("    guías:", await n.evaluate(() => [document.querySelector(".guia-tarjeta") && document.querySelector(".guia-tarjeta").textContent.slice(0, 80), !!document.querySelector("dialog[open]") && document.querySelector("dialog[open]").id])); }
+        exige(hayGuia, "la primera vez no salió el tutorial de la landing");
         await pasarGuias(n);
         exige(await n.isVisible('[data-ld-plantilla="lotes"][aria-pressed="true"]'), "un tour con lotes debe arrancar con la plantilla de lotes");
         await n.check('[data-ld-si="activa"]'); await n.waitForTimeout(400);
@@ -6019,6 +6027,147 @@ async function capasPesadas(p) {
       } finally {
         await api(n, "api/admin/laboratorio/rotulo-estilos", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
         if (t) await t.context().close(); if (m) await m.context().close();
+        await u.context().close(); await n.context().close();
+      }
+    });
+    // Diseños de la landing (Amar, 23 nov 2026: «plantillas exitosas… que tú puedas escoger entre 3 o 4… que las bauticemos»)
+    await paso("Diseños de la landing (Laboratorio, nace Solo yo): Hacienda, Nativa, Litoral y Urbano; al elegir uno se ponen sus colores y letras, la vista previa cambia, se publica y se ve bien en celular", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const tutoriales = async (p) => { const vistos = []; for (let i = 0, quieto = 0; i < 30 && quieto < 4; i++) { await p.waitForTimeout(700); if (await p.isVisible(".guia-tarjeta").catch(() => false)) { quieto = 0; vistos.push(await p.textContent(".guia-tarjeta")); await p.click('.guia-tarjeta [data-guia="seguir"]'); } else quieto++; } return vistos; };
+      const irLanding = async (p) => { await p.click('#nav button:has-text("Publicar")'); await p.waitForTimeout(500); await p.click('#subtabs button:has-text("Landing")'); await p.waitForTimeout(2000); };
+      const correoU = "sin-disenos@prueba.mx", n = await pagina(DUENO), u = await pagina(correoU);
+      let c = null;
+      try {
+        await nuevoTour(n, "Disenos Landing"); const id = await idTour(n); await n.waitForTimeout(1200);
+        const d = (await api(n, "api/tours/" + id)).d, e0 = d.escenas[0].id;
+        const suelo = (x, z) => [+Math.atan2(x, z).toFixed(5), +Math.asin(1 / Math.hypot(x, 1, z)).toFixed(5)];
+        d.capas[e0] = ["disponible", "vendido", "disponible", "apartado"].map((es, i) => { const x0 = -0.6 + i * 0.3; return { id: "dl" + i, tipo: "poligono", nombre: "Lote", visible: true, puntos: [[x0, 1.2], [x0 + 0.25, 1.2], [x0 + 0.25, 1.7], [x0, 1.7]].map(([x, z]) => suelo(x, z)),
+          relleno: { color: "#22B573", opacidad: 0.35 }, trazo: { color: "#FFFFFF", grosor: 1.5, opacidad: 1 }, lote: { numero: String(i + 1), manzana: "A", estado: es, area: "200", precio: String(900000 + i * 50000), lados: ["10", "20", "10", "20"] } }; });
+        exige((await api(n, "api/tours/" + id, J("PUT", d))).s === 200, "no se guardaron los lotes");
+        await n.goto(ESTUDIO + "/#t=" + id); await n.reload(); await n.waitForTimeout(2500); await cerrarAnuncio(n);
+        await irLanding(n); await pasarGuias(n);
+        // 1) Las cuatro, con su nombre; de inicio, Hacienda (la de siempre)
+        const nombres = await n.$$eval("#ld-disenos-grupo .ld-diseno b", (l) => l.map((x) => x.textContent));
+        exige(nombres.join(",") === "Hacienda,Nativa,Litoral,Urbano" && await n.isVisible('[data-ld-diseno="hacienda"][aria-pressed="true"]'), "no salen los 4 diseños (o no arranca en Hacienda): " + nombres.join(","));
+        await n.check('[data-ld-si="activa"]'); await n.waitForTimeout(400);
+        await n.fill('[data-ld="contacto.whatsapp"]', "4771234567"); await n.waitForTimeout(800);
+        const fr = n.frameLocator("#ld-iframe");
+        const previa = () => fr.locator("html").evaluate((h) => { const cs = (s) => getComputedStyle(document.querySelector(s)), lum = (c) => { const m = c.match(/\d+(\.\d+)?/g).map(Number); return 0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2]; };
+          return { diseno: h.dataset.diseno, oscuro: h.classList.contains("oscuro"), fondo: lum(getComputedStyle(document.body).backgroundColor), h2: lum(cs("section h2").color), centrado: cs(".portada").textAlign, fotoPartida: cs(".portada > img").position, radio: cs(".btn").borderTopLeftRadius }; }, null, { timeout: 8000 });
+        // 2) Nativa: sus letras y colores en Marca y la portada partida
+        await n.click('[data-ld-diseno="nativa"]'); await n.waitForTimeout(1500);
+        let L = (await api(n, "api/tours/" + id)).d.proyecto.landing;
+        exige(L.diseno === "nativa" && L.marca.titulo === "Fraunces" && L.marca.primario === "#36452B" && (await n.inputValue('[data-ld-hex="marca.primario"]')).toUpperCase() === "#36452B", "Nativa no puso su diseño, sus letras o sus colores en Marca: " + JSON.stringify(L.marca));
+        let v = await previa();
+        exige(v.diseno === "nativa" && v.fotoPartida === "relative" && !v.oscuro, "la vista previa no cambió a Nativa: " + JSON.stringify(v));
+        // 3) Litoral: portada centrada y esquinas finas
+        await n.click('[data-ld-diseno="litoral"]'); await n.waitForTimeout(1500); v = await previa();
+        exige(v.diseno === "litoral" && v.centrado === "center" && v.radio === "6px", "la vista previa no cambió a Litoral: " + JSON.stringify(v));
+        // 4) Urbano: fondo oscuro con los títulos claros (que se lean)
+        await n.click('[data-ld-diseno="urbano"]'); await n.waitForTimeout(1500); v = await previa();
+        exige(v.diseno === "urbano" && v.oscuro && v.fondo < 60 && v.h2 > 200, "en Urbano no se leen los títulos sobre el fondo oscuro: " + JSON.stringify(v));
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "landing-disenos-editor.png") });
+        // 5) Sus colores se cambian después, sin perder el diseño
+        await n.fill('[data-ld-hex="marca.acento"]', "#D8B064"); await n.waitForTimeout(1200);
+        L = (await api(n, "api/tours/" + id)).d.proyecto.landing;
+        exige(L.diseno === "urbano" && L.marca.acento.toUpperCase() === "#D8B064", "al cambiar un color se perdió el diseño (o el color)");
+        // 6) Publicada, en compu y en celular, sin salirse de la pantalla
+        exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        for (const dz of ["urbano", "nativa", "litoral"]) {
+          if (dz !== "urbano") { await n.click('[data-ld-diseno="' + dz + '"]'); await n.waitForTimeout(1200); exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar " + dz); }
+          if (c) await c.context().close();
+          c = await pagina(null, Object.assign({}, devices["iPhone 13"])); await c.goto(TOURS + "/" + id + "/landing"); await c.waitForSelector("#sel-lote", { timeout: 15000 }); await c.waitForTimeout(800);
+          const pc = await c.evaluate(() => ({ diseno: document.documentElement.dataset.diseno, ancho: document.documentElement.scrollWidth, vista: innerWidth }));
+          exige(pc.diseno === dz && pc.ancho <= pc.vista, "la landing publicada en celular no sale con " + dz + " o se sale de la pantalla: " + JSON.stringify(pc));
+          if (process.env.CAPTURAS) await c.screenshot({ path: path.join(process.env.CAPTURAS, "landing-" + dz + "-cel.png") });
+          exige(!c.errs.length, "errores en la landing: " + c.errs.join(" | ").slice(0, 160));
+        }
+        // 7) Nace Solo yo: una cuenta normal no ve los diseños y no los publica; a quien se le da, le sale su mini tutorial
+        // (la landing en producción es de todos; aquí nace Solo yo: a esta cuenta se le da la landing, sin los diseños)
+        const labLanding = (await api(n, "api/admin/laboratorio")).d.funciones.find((f) => f.clave === "landing");
+        exige((await api(n, "api/admin/laboratorio/landing", J("PUT", { modo: "probadores", probadores: [correoU] }))).s === 200, "no se pudo dar la landing a la cuenta de prueba");
+        await nuevoTour(u, "Sin disenos"); const iu = await idTour(u);
+        await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u);
+        await irLanding(u); await tutoriales(u);
+        exige(!(await u.isVisible("#ld-disenos-grupo")), "una cuenta normal ya ve los diseños de la landing");
+        const du = (await api(u, "api/tours/" + iu)).d; du.proyecto.landing = Object.assign({}, du.proyecto.landing || {}, { activa: true, diseno: "urbano" });
+        exige((await api(u, "api/tours/" + iu, J("PUT", du))).s === 200 && (await api(u, "api/tours/" + iu + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        exige(!(((await (await fetch(TOURS + "/" + iu + "/proyecto.json")).json()).proyecto.landing || {}).diseno), "una cuenta sin la función publicó un diseño de landing");
+        exige((await api(n, "api/admin/laboratorio/landing-disenos", J("PUT", { modo: "probadores", probadores: [correoU] }))).s === 200, "no se pudo dar la función a un probador");
+        n.__labLanding = labLanding;
+        await u.goto(ESTUDIO + "/#t=" + iu); await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u);
+        await irLanding(u); const vistos = await tutoriales(u);
+        exige(vistos.some((x) => /4 diseños para tu landing/.test(x)) && await u.isVisible("#ld-disenos-grupo"), "con la función no salieron los diseños o su mini tutorial: " + vistos.map((x) => x.slice(0, 40)).join(" | "));
+        exige(!n.errs.length && !u.errs.length, "errores en el estudio: " + n.errs.concat(u.errs).join(" | ").slice(0, 200));
+      } catch (e) {
+        if (process.env.CAPTURAS) { await n.screenshot({ path: path.join(process.env.CAPTURAS, "landing-disenos-falla-n.png") }).catch(() => {}); await u.screenshot({ path: path.join(process.env.CAPTURAS, "landing-disenos-falla-u.png") }).catch(() => {}); }
+        throw e;
+      } finally {
+        await api(n, "api/admin/laboratorio/landing-disenos", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
+        await api(n, "api/admin/laboratorio/landing", J("PUT", { modo: (n.__labLanding || {}).modo || "yo", probadores: (n.__labLanding || {}).probadores || [] })).catch(() => {});
+        if (c) await c.context().close();
+        await u.context().close(); await n.context().close();
+      }
+    });
+    // Diseños de la ficha (Amar, 23 nov 2026: «unas 4 o 5 versiones exitosas de fichas técnicas… tomarlas como referencia y sobre esas editarlas»)
+    await paso("Diseños de la ficha (Laboratorio, nace Solo yo): Mirador, Hacienda, Nativa, Litoral y Urbano ponen su acomodo, colores y letra, y después se editan; en el tour se ve la elegida", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const tutoriales = async (p) => { const vistos = []; for (let i = 0, quieto = 0; i < 30 && quieto < 4; i++) { await p.waitForTimeout(700); if (await p.isVisible(".guia-tarjeta").catch(() => false)) { quieto = 0; vistos.push(await p.textContent(".guia-tarjeta")); await p.click('.guia-tarjeta [data-guia="seguir"]'); } else quieto++; } return vistos; };
+      const fichas = async (p) => { await p.click('#nav button:has-text("Panoramas")'); await p.waitForTimeout(300); await p.click('#subtabs button:has-text("Fichas técnicas")'); await p.waitForTimeout(1200); };
+      const correoU = "sin-fichas-dis@prueba.mx", n = await pagina(DUENO), u = await pagina(correoU);
+      let t = null, labFichas = null;
+      try {
+        await nuevoTour(n, "Fichas disenos"); const id = await idTour(n);
+        const d = (await api(n, "api/tours/" + id)).d, esc = d.proyecto.escenaInicial || d.escenas[0].id, v = d.escenas.find((e) => e.id === esc).vista || {}, y = v.yaw || 0, p = (v.pitch || 0) + 0.25;
+        d.capas[esc] = [{ id: "lote-7", tipo: "poligono", nombre: "Lote", visible: true, puntos: [[y - 0.12, p], [y + 0.12, p], [y + 0.12, p + 0.3], [y - 0.12, p + 0.3]], relleno: { color: "#D5FF40", opacidad: 0.35 }, trazo: { color: "#D5FF40", grosor: 1.5, opacidad: 1 },
+          lote: { numero: "7", manzana: "2", area: "240", precio: "1250000", lados: ["12", "20", "12", "20"], frente: 0, estado: "disponible" } }];
+        exige((await api(n, "api/tours/" + id, J("PUT", d))).s === 200, "no se pudo poner el lote");
+        await n.goto(ESTUDIO + "/#t=" + id); await n.reload(); await n.waitForTimeout(2500); await cerrarAnuncio(n); await cerrarGuia(n);
+        await fichas(n); await tutoriales(n);
+        const nombres = await n.$$eval("#fe-disenos-grupo .ld-diseno b", (l) => l.map((x) => x.textContent));
+        exige(nombres.join(",") === "Mirador,Hacienda,Nativa,Litoral,Urbano" && await n.isVisible('[data-fe-diseno="mirador"][aria-pressed="true"]'), "no salen los 5 diseños de la ficha (o no arranca en Mirador): " + nombres.join(","));
+        const lienzo = () => n.$eval("#fe-lienzo .ficha-d", (e) => { const lum = (c) => { const m = c.match(/\d+(\.\d+)?/g).map(Number); return 0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2]; }, cs = getComputedStyle(e), t = e.querySelector(".fd-titulo");
+          return { clase: e.className, fondo: lum(cs.backgroundColor), texto: lum(cs.color), titulo: t ? lum(getComputedStyle(t).color) : null, letra: cs.fontFamily }; });
+        const esperado = { mirador: ["fd-clasica", "#ECEAE6"], hacienda: ["fd-clasica", "#F3EEE4"], nativa: ["fd-ubicacion", "#F2EEE3"], litoral: ["fd-banda", "#FFFFFF"], urbano: ["fd-clasica", "#16191B"] };
+        for (const k of ["hacienda", "nativa", "litoral", "urbano", "mirador"]) {
+          await n.click('[data-fe-diseno="' + k + '"]'); await n.waitForTimeout(900);
+          const f = (await api(n, "api/tours/" + id)).d.proyecto.ficha || {}, l = await lienzo();
+          exige(f.plantilla === esperado[k][0].slice(3) && String(f.fondo).toUpperCase() === esperado[k][1] && l.clase.includes(esperado[k][0]) && await n.isVisible('[data-fe-diseno="' + k + '"][aria-pressed="true"]'), "el diseño «" + k + "» no puso su acomodo o sus colores: " + JSON.stringify([f.plantilla, f.fondo, l.clase]));
+          exige(Math.abs(l.fondo - l.texto) > 110, "en «" + k + "» el texto no se lee sobre el fondo: " + JSON.stringify(l));
+          if (process.env.CAPTURAS) await n.$eval("#fe-lienzo", (e) => e.scrollIntoView()).then(() => n.locator("#fe-lienzo .ficha-d").screenshot({ path: path.join(process.env.CAPTURAS, "ficha-" + k + ".png") }));
+        }
+        // sobre el diseño se edita: un color propio deja de marcar el diseño, pero conserva el acomodo
+        await n.click('[data-fe-diseno="urbano"]'); await n.waitForTimeout(900);
+        await n.$eval('#ficha-editor input[type="color"][data-fe="acento"]', (e) => { e.value = "#ff6600"; e.dispatchEvent(new Event("input", { bubbles: true })); e.dispatchEvent(new Event("change", { bubbles: true })); }); await n.waitForTimeout(1200);
+        const f2 = (await api(n, "api/tours/" + id)).d.proyecto.ficha;
+        exige(f2.acento.toLowerCase() === "#ff6600" && f2.fondo.toUpperCase() === "#16191B" && f2.plantilla === "clasica", "al cambiar el acento se perdió el diseño Urbano: " + JSON.stringify(f2));
+        // en el tour: la ficha elegida al tocar el lote
+        if (!(await n.isChecked('#ficha-editor [data-fe="activa"]'))) { await n.check('#ficha-editor [data-fe="activa"]'); await n.waitForTimeout(1200); }
+        exige((await api(n, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForSelector("#pv-stage canvas", { timeout: 30000 }); await t.waitForTimeout(4000);
+        const caja = await t.evaluate(() => { const p = [...document.querySelectorAll(".cp-lote path.cp-pol")].map((x) => x.getBoundingClientRect()).find((r) => r.width > 10); return p ? [p.x + p.width / 2, p.y + p.height / 2] : null; });
+        exige(caja, "no se ve el lote en el tour");
+        await t.mouse.click(caja[0], caja[1]); await t.waitForTimeout(1200);
+        const ft = await t.evaluate(() => { const e = document.querySelector(".pop .ficha-d"); return e ? { clase: e.className, fondo: e.style.getPropertyValue("--fd-fondo") } : null; });
+        exige(ft && ft.clase.includes("fd-clasica") && ft.fondo.toUpperCase() === "#16191B", "en el tour no sale la ficha con el diseño Urbano: " + JSON.stringify(ft));
+        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "ficha-urbano-tour.png") });
+        exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
+        // Nace Solo yo: una cuenta con la ficha pero sin los diseños no los ve; a quien se le dan, le sale su mini tutorial
+        labFichas = (await api(n, "api/admin/laboratorio")).d.funciones.find((f) => f.clave === "fichas");
+        exige((await api(n, "api/admin/laboratorio/fichas", J("PUT", { modo: "probadores", probadores: [correoU] }))).s === 200, "no se pudo dar la ficha a la cuenta de prueba");
+        await nuevoTour(u, "Sin disenos de ficha"); await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u);
+        await fichas(u); await tutoriales(u);
+        exige(await u.isVisible("#ficha-editor") && !(await u.isVisible("#fe-disenos-grupo")), "una cuenta sin la función ya ve los diseños de la ficha (o no ve la ficha)");
+        exige((await api(n, "api/admin/laboratorio/ficha-disenos", J("PUT", { modo: "probadores", probadores: [correoU] }))).s === 200, "no se pudo dar la función a un probador");
+        await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u); await fichas(u); const vistos = await tutoriales(u);
+        exige(vistos.some((x) => /5 diseños de ficha/.test(x)) && await u.isVisible("#fe-disenos-grupo"), "con la función no salieron los diseños o su mini tutorial: " + vistos.map((x) => x.slice(0, 40)).join(" | "));
+        exige(!n.errs.length && !u.errs.length, "errores en el estudio: " + n.errs.concat(u.errs).join(" | ").slice(0, 200));
+      } finally {
+        await api(n, "api/admin/laboratorio/ficha-disenos", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
+        if (labFichas) await api(n, "api/admin/laboratorio/fichas", J("PUT", { modo: labFichas.modo, probadores: labFichas.probadores || [] })).catch(() => {});
+        if (t) await t.context().close();
         await u.context().close(); await n.context().close();
       }
     });

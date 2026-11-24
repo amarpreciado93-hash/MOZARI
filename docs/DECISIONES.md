@@ -691,3 +691,25 @@
 - Mini tutorial «nuevo-rotulo-estilos» con animación y video de la actualización (marca/novedades/rotulos.mp4).
 - Prueba nueva «Número del lote»: siglas, solo número, círculo (colores por estado y letra oscura en el amarillo),
   insignia, publicado en compu y en celular, regreso a lo de siempre, nace Solo yo y el tutorial a quien se le da.
+
+## 23 nov 2026 · Diseños con nombre para la landing y la ficha (Laboratorio, nacen Solo yo)
+
+- Amar: «plantillas para las landing… muy exitosas visualmente… escoger entre 3 o 4… que las bauticemos. De la misma
+  forma las fichas técnicas, unas 4 o 5 versiones… tomarlas de referencia y sobre esas editarlas». «Primero en mi
+  Laboratorio».
+- Landing («landing-disenos»): Publicar → Landing → «Diseño»: Hacienda (la de siempre: clásica y señorial), Nativa
+  (campestre y editorial; portada partida con el texto en el color de fondo y la foto con esquinas suaves, barra
+  sólida), Litoral (costa; portada centrada a toda la pantalla, titulares delgados en mayúsculas, esquinas finas) y
+  Urbano (moderno; fondo oscuro, titulares grandes y rectos, el acento en las cifras). Cada diseño es una portada,
+  unas formas (radios) y una letra; al elegirlo se ponen sus colores y letras en Marca y desde ahí se cambian (los
+  logos no se tocan). Se guarda en landing.diseno; el servidor lo quita al publicar si el dueño no tiene la función.
+  Si el fondo de la marca es oscuro (Urbano u otro), los textos de la landing se vuelven claros solos.
+- La galería de la landing ya no deja una foto suelta al final (en compu, la grande y cuatro; en celular, en pares).
+- Ficha («ficha-disenos»): Fichas técnicas → Ficha de los lotes → «Empieza con un diseño»: Mirador (la de siempre),
+  Hacienda, Nativa (con la ubicación del lote), Litoral (banda de color) y Urbano (oscura). Cada uno pone su acomodo,
+  colores y letra; luego se edita todo. El relleno del lote y su texto central ya se leen en fondos oscuros.
+- Mini tutoriales «nuevo-landing-disenos» y «nuevo-ficha-disenos» con su animación. Pruebas nuevas: «Diseños de la
+  landing» y «Diseños de la ficha».
+- Revisión completa: 129 de 129 (en partes, porque la máquina de pruebas se reinició a la mitad). La landing del
+  desarrollo solo falla si se corre sin la prueba del link de disponibilidad antes (su tutorial sale primero).
+- Pruebas: FUENTES=<carpeta> sirve las letras de Google desde una carpeta local, para capturas fieles.

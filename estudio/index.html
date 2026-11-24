@@ -1268,11 +1268,11 @@
   .ficha-d .fd-estado { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
   .ficha-d .fd-estado i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
   .ficha-d .fd-plano { display: block; width: 100%; height: auto; margin: 4px 0; }
-  .ficha-d .fd-plano polygon { fill: color-mix(in srgb, var(--fd-acento) 14%, #fff); stroke: var(--fd-texto); stroke-width: 2.5; stroke-linejoin: round; }
+  .ficha-d .fd-plano polygon { fill: color-mix(in srgb, var(--fd-acento) 14%, var(--fd-fondo)); stroke: var(--fd-texto); stroke-width: 2.5; stroke-linejoin: round; }
   .ficha-d .fd-medida { font-size: 12px; fill: var(--fd-texto); text-anchor: middle; dominant-baseline: middle; }
   .ficha-d .fd-guia { stroke: var(--fd-texto); stroke-width: 0.9; opacity: 0.55; }
   .ficha-d .fd-guia-punto { fill: var(--fd-acento, var(--fd-texto)); }
-  .ficha-d .fd-centro { font-size: 15px; fill: var(--fd-texto); text-anchor: middle; dominant-baseline: middle; font-weight: 600; paint-order: stroke; stroke: color-mix(in srgb, var(--fd-acento) 14%, #fff); stroke-width: 4px; stroke-linejoin: round; }
+  .ficha-d .fd-centro { font-size: 15px; fill: var(--fd-texto); text-anchor: middle; dominant-baseline: middle; font-weight: 600; paint-order: stroke; stroke: color-mix(in srgb, var(--fd-acento) 14%, var(--fd-fondo)); stroke-width: 4px; stroke-linejoin: round; } /* el halo, del mismo color que el lote: se lee también en fondos oscuros */
   .ficha-d .fd-centro.chico { font-size: 12px; font-weight: 400; }
   .ficha-d .fd-datos { display: flex; justify-content: space-between; gap: 12px; font-size: 18px; }
   .ficha-d .fd-precio { display: grid; justify-items: center; gap: 2px; padding: 18px 26px 6px; }
@@ -1420,6 +1420,14 @@
   .ld-form .comp-tarjeta > p:not(.nota) { margin-top: -6px; color: var(--mz-tenue); }
   .ld-fila { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
   .ld-color { display: grid; gap: 5px; font-size: 12px; color: var(--mz-tenue); }
+  .ld-disenos { display: grid; grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); gap: 10px; }
+  .ld-diseno { display: grid; gap: 3px; align-content: start; text-align: left; padding: 8px 8px 10px; border-radius: 12px; border: 1px solid var(--mz-linea-neutra); background: transparent; color: var(--mz-blanco, #fff); cursor: pointer; font: inherit; }
+  .ld-diseno svg { width: 100%; height: auto; border-radius: 7px; display: block; margin-bottom: 5px; }
+  .ld-diseno b { font-size: 13px; font-weight: 600; }
+  .ld-diseno span { font-size: 11px; line-height: 1.35; color: var(--mz-tenue); }
+  .ld-diseno[aria-pressed="true"] { border-color: var(--mz-lima); box-shadow: inset 0 0 0 1px var(--mz-lima); }
+  .ld-diseno:hover { border-color: rgba(255, 255, 255, 0.35); }
+  .fe-disenos { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
   .ld-color div { display: flex; gap: 6px; align-items: center; }
   .ld-color input[type="color"] { width: 38px; height: 36px; padding: 0; border: 1px solid var(--mz-linea-neutra); border-radius: 9px; background: none; cursor: pointer; flex: none; }
   .ld-color .entrada { font-family: ui-monospace, Menlo, monospace; text-transform: uppercase; }
@@ -3858,6 +3866,25 @@
       pagos: { mostrar: true, planes: [{ t: "Contado", meses: 0, ajuste: -8 }, { t: "12 meses", meses: 12, ajuste: 0 }, { t: "24 meses", meses: 24, ajuste: 5 }], engMin: 20, engMax: 60, engDef: 30 },
       secciones: { lotes: true, recorrido: true, proyecto: true, galeria: true, ubicacion: true, visita: true } };
   };
+  // Diseños de la landing (Laboratorio «landing-disenos», pedido de Amar 23 nov 2026: «plantillas exitosas… que las
+  // bauticemos»). Cada uno es una forma de portada, esquinas y letra; al elegirlo se ponen sus colores y letras en Marca
+  // y desde ahí se cambian (los logos no se tocan).
+  const LD_DISENOS = [
+    { k: "hacienda", n: "Hacienda", d: "Clásica y señorial. Letra con remates y tonos de hacienda.", m: { primario: "#0E3A40", fondo: "#F3EEE4", acento: "#C6A15E", titulo: "Cormorant Garamond", texto: "Figtree" } },
+    { k: "nativa", n: "Nativa", d: "Campestre y editorial. Portada partida y esquinas suaves.", m: { primario: "#36452B", fondo: "#F2EEE3", acento: "#B86B43", titulo: "Fraunces", texto: "Manrope" } },
+    { k: "litoral", n: "Litoral", d: "Costa, luz y aire. Portada centrada y titulares delgados.", m: { primario: "#12355B", fondo: "#F6F4EF", acento: "#1F8A84", titulo: "Outfit", texto: "Inter" } },
+    { k: "urbano", n: "Urbano", d: "Moderno y nocturno. Fondo oscuro y letra grande y recta.", m: { primario: "#1B1E21", fondo: "#0F1113", acento: "#E3B65B", titulo: "Archivo", texto: "Inter" } },
+  ];
+  function miniDiseno(x) {
+    const m = x.m, F = 'font-family="' + m.titulo + ', serif"', foto = '<defs><linearGradient id="ldg-' + x.k + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9DB8C4"/><stop offset=".55" stop-color="#C9B38C"/><stop offset="1" stop-color="#5E6B45"/></linearGradient></defs>';
+    const g = "url(#ldg-" + x.k + ")";
+    let h = '<svg viewBox="0 0 120 76" aria-hidden="true">' + foto;
+    if (x.k === "hacienda") h += '<rect width="120" height="76" fill="' + g + '"/><rect width="120" height="76" fill="' + m.primario + '" opacity=".35"/><text x="9" y="50" ' + F + ' font-size="15" font-weight="500" fill="#fff">Hacienda</text><rect x="9" y="57" width="34" height="9" rx="4.5" fill="' + m.acento + '"/>';
+    else if (x.k === "nativa") h += '<rect width="120" height="76" fill="' + m.fondo + '"/><rect x="62" y="8" width="51" height="60" rx="10" fill="' + g + '"/><text x="8" y="36" ' + F + ' font-size="12.5" font-weight="500" fill="' + m.primario + '">Nativa</text><rect x="8" y="42" width="40" height="3" rx="1.5" fill="' + m.primario + '" opacity=".25"/><rect x="8" y="51" width="32" height="9" rx="4.5" fill="' + m.acento + '"/>';
+    else if (x.k === "litoral") h += '<rect width="120" height="76" fill="' + g + '"/><rect width="120" height="76" fill="' + m.primario + '" opacity=".3"/><text x="60" y="38" ' + F + ' font-size="11" font-weight="300" letter-spacing="1.6" text-anchor="middle" fill="#fff">LITORAL</text><rect x="44" y="46" width="32" height="8" rx="1.5" fill="' + m.acento + '"/>';
+    else h += '<rect width="120" height="76" fill="' + m.fondo + '"/><rect width="120" height="44" fill="' + g + '" opacity=".55"/><rect y="24" width="120" height="20" fill="' + m.fondo + '" opacity=".55"/><text x="8" y="52" ' + F + ' font-size="15" font-weight="800" fill="#fff">URBANO</text><rect x="8" y="58" width="30" height="8" rx="1" fill="' + m.acento + '"/><text x="112" y="66" font-size="8" font-weight="800" text-anchor="end" fill="' + m.acento + '">24</text>';
+    return h + "</svg>";
+  }
   const LD = () => { const d = LD_DEF(); const L = P().landing || (P().landing = d); ["marca", "portada", "proyecto", "ubicacion", "contacto", "pagos", "secciones"].forEach((k) => (L[k] = Object.assign({}, d[k], L[k] || {}))); return L; };
   const ldGet = (ruta) => ruta.split(".").reduce((o, k) => (o == null ? undefined : o[k]), LD());
   const ldSet = (ruta, v) => { const ks = ruta.split("."), ult = ks.pop(); const o = ks.reduce((x, k) => (x[k] = x[k] || {}), LD()); o[ult] = v; };
@@ -3877,6 +3904,8 @@
     const ifr = $("ld-iframe");
     if (!ifr.src) { ldListo = false; ifr.src = "landing#previa"; }
     pintarLanding(); ldEscala(); ldEnviar(true);
+    // las miniaturas de los diseños, con su letra
+    if (enLab("landing-disenos")) [...new Set(LD_DISENOS.map((x) => x.m.titulo))].forEach(cargarFuente); // el SVG se vuelve a dibujar solo al llegar la letra
     if (!toursNube) cargarToursNube().then(() => nav.sec + "/" + nav.sub === "publicar/landing" && pintarLanding());
   }
   // País del WhatsApp de la landing (reporte de Javier, Colombia, 18 nov 2026: todo número salía con +52 de México).
@@ -3898,6 +3927,7 @@
       (conMarcaPrueba() ? '<p class="nota" id="ld-marca-nota">En tu plan actual la landing sale con la marca de agua de Mozari, como tu tour. Con tu licencia sale limpia, con tu marca.</p>' : "") +
       '<div class="fe-grupo"><b>Plantilla</b><div class="estados" role="group" aria-label="Plantilla">' + [["lotes", "Desarrollo con lotes"], ["propiedad", "Propiedad o casa"]].map(([k, n]) => '<button type="button" data-ld-plantilla="' + k + '" aria-pressed="' + (L.plantilla === k) + '" style="--c:var(--mz-lima)">' + n + "</button>").join("") + "</div>" +
       '<span class="fe-sub">' + (L.plantilla === "lotes" ? "Con el plano maestro, la lista de " + esc(terminos().lote.toLowerCase()) + "s, su precio y la calculadora de pagos. Este tour tiene " + lotes + " " + esc(terminos().lote.toLowerCase()) + (lotes === 1 ? "" : "s") + "." : "Para una casa o un departamento: su plano, su precio con la calculadora de pagos y sus espacios.") + "</span></div>" +
+      (enLab("landing-disenos") ? '<div class="fe-grupo" id="ld-disenos-grupo"><b>Diseño</b><div class="ld-disenos" role="group" aria-label="Diseño de la landing">' + LD_DISENOS.map((x) => '<button type="button" class="ld-diseno" data-ld-diseno="' + x.k + '" aria-pressed="' + ((L.diseno || "hacienda") === x.k) + '">' + miniDiseno(x) + "<b>" + x.n + "</b><span>" + x.d + "</span></button>").join("") + '</div><span class="fe-sub">Al elegir uno se ponen sus colores y letras en Marca; ahí los cambias por los de tu cliente.</span></div>' : "") +
       (L.activa && t.publicado ? '<div class="ld-link"><div class="pub-caja"><code>' + esc(linkLanding()) + '</code><button class="btn-sec" type="button" data-ld-accion="copiar">Copiar link</button></div><div class="comp-acc"><a class="btn-sec" href="' + esc(linkLanding()) + '" target="_blank" rel="noopener">Abrir ↗</a><button class="btn-prim" type="button" data-ld-accion="publicar">Publicar cambios</button></div><span class="fe-sub">Lo que cambies aquí sale en el link al publicar, junto con el tour.</span></div>'
         : L.activa ? '<div class="ld-link"><span class="fe-sub">Publica el tour para tener el link de tu landing.</span><div class="comp-acc"><button class="btn-prim" type="button" data-ld-accion="publicar">Publicar ahora</button></div></div>' : "") + "</section>";
     h += '<section class="comp-tarjeta"><h3>Marca</h3><p>Lo de tu manual de identidad: logos, colores en HEX y letras.</p>' +
@@ -3963,6 +3993,13 @@
     const ver = ev.target.closest("[data-ld-ver]");
     if (ver) { const m = $("ld-marco"); m.dataset.ver = ver.dataset.ldVer; document.querySelectorAll("[data-ld-ver]").forEach((b) => b.setAttribute("aria-pressed", String(b === ver))); ldEscala(); return; }
     const pl = ev.target.closest("[data-ld-plantilla]"); if (pl) { LD().plantilla = pl.dataset.ldPlantilla; guardar(); pintarLanding(); ldEnviar(true); return; }
+    const dz = ev.target.closest("[data-ld-diseno]");
+    if (dz) {
+      const x = LD_DISENOS.find((d) => d.k === dz.dataset.ldDiseno); if (!x) return;
+      const L = LD(); L.diseno = x.k; Object.assign(L.marca, x.m);
+      guardar(); pintarLanding(); ldEnviar(true); avisar("Diseño «" + x.n + "». Sus colores y letras quedaron en Marca: cámbialos por los de tu cliente.");
+      return;
+    }
     const sub = ev.target.closest("[data-ld-subir]"); if (sub) { ldSubir(sub.dataset.ldSubir); return; }
     const qui = ev.target.closest("[data-ld-quitar]"); if (qui) { ldSet(qui.dataset.ldQuitar, ""); guardar(); pintarLanding(); ldEnviar(true); return; }
     const qp = ev.target.closest("[data-ld-quitar-plan]"); if (qp) { LD().pagos.planes.splice(+qp.dataset.ldQuitarPlan, 1); guardar(); pintarLanding(); ldEnviar(true); return; }
@@ -4647,6 +4684,34 @@
     h += TOQUE_G(224, 23, t, 1.0) + CURSOR_G(cx, cy) + pieG(corto ? "Se lee de un vistazo" : "Antes: letra chica y mucho texto", corto);
     svg.innerHTML = h;
   }
+  // Diseños de la ficha: se toca cada tarjeta y la ficha cambia de acomodo, colores y letra
+  function animFichaDisenos(svg, t) {
+    t = Math.max(0, t); // el primer cuadro puede llegar con un tiempo un poquito negativo
+    const i = Math.min(4, Math.floor(t / 1.5)), x = FICHA_DISENOS[i], u = sv((t - i * 1.5) / 0.4), cel = (k) => [10 + (k % 3) * 42, 12 + Math.floor(k / 3) * 46];
+    let h = '<rect width="360" height="200" fill="#161a12"/>';
+    FICHA_DISENOS.forEach((d, k) => { const [x0, y0] = cel(k), on = k === i; h += '<g transform="translate(' + x0 + " " + y0 + ')"><rect width="38" height="40" rx="5" fill="transparent" stroke="' + (on ? "#D5FF40" : "rgba(255,255,255,.25)") + '" stroke-width="' + (on ? 2 : 1) + '"/><g transform="translate(3 3) scale(.267)">' + miniFicha(d).replace(/^<svg[^>]*>|<\/svg>$/g, "") + '</g><text x="3" y="37" font-size="5.5" font-weight="600" fill="#fff">' + d.n + "</text></g>"; });
+    h += '<g transform="translate(150 12)" opacity="' + (0.35 + 0.65 * u).toFixed(2) + '"><g transform="scale(1.6)">' + miniFicha(x).replace(/^<svg[^>]*>|<\/svg>$/g, "") + "</g></g>";
+    const P = [[0, 330, 190]]; FICHA_DISENOS.forEach((d, k) => { const [x0, y0] = cel(k); P.push([k * 1.5 + 0.05, x0 + 19, y0 + 18], [k * 1.5 + 0.35, x0 + 19, y0 + 18]); });
+    const [cx, cy] = camino(P, t);
+    FICHA_DISENOS.forEach((d, k) => { const [x0, y0] = cel(k); h += TOQUE_G(x0 + 19, y0 + 18, t, k * 1.5 + 0.1); });
+    h += CURSOR_G(cx, cy) + pieG("«" + x.n + "»: " + x.d.replace(/\.$/, "").toLowerCase(), true);
+    svg.innerHTML = h;
+  }
+  // Diseños de la landing: se toca cada tarjeta y la página cambia de portada, letra y colores
+  function animLandingDisenos(svg, t) {
+    t = Math.max(0, t); // el primer cuadro puede llegar con un tiempo un poquito negativo
+    const i = Math.min(3, Math.floor(t / 1.5)), x = LD_DISENOS[i], m = x.m, u = sv((t - i * 1.5) / 0.4);
+    let h = '<rect width="360" height="200" fill="#161a12"/>';
+    LD_DISENOS.forEach((d, k) => { const on = k === i; h += '<g transform="translate(' + (10 + (k % 2) * 62) + " " + (12 + Math.floor(k / 2) * 52) + ')"><rect width="56" height="44" rx="6" fill="transparent" stroke="' + (on ? "#D5FF40" : "rgba(255,255,255,.25)") + '" stroke-width="' + (on ? 2 : 1) + '"/><g transform="translate(4 4) scale(.4)">' + miniDiseno(d).replace(/^<svg[^>]*>|<\/svg>$/g, "") + '</g><text x="4" y="40" font-size="6.5" font-weight="600" fill="#fff">' + d.n + "</text></g>"; });
+    // la página
+    h += '<g transform="translate(140 10)" opacity="' + (0.35 + 0.65 * u).toFixed(2) + '"><rect width="210" height="164" rx="8" fill="' + m.fondo + '" stroke="rgba(255,255,255,.2)"/><g transform="translate(4 4) scale(1.68)">' + miniDiseno(x).replace(/^<svg[^>]*>|<\/svg>$/g, "") + "</g>";
+    h += '<rect x="12" y="138" width="80" height="5" rx="2.5" fill="' + (x.k === "urbano" ? "#fff" : m.primario) + '" opacity=".55"/><rect x="12" y="148" width="120" height="4" rx="2" fill="' + (x.k === "urbano" ? "#fff" : m.primario) + '" opacity=".3"/><rect x="150" y="138" width="48" height="16" rx="' + (x.k === "urbano" ? 1 : x.k === "litoral" ? 2 : 8) + '" fill="' + m.acento + '"/></g>';
+    const P = [[0, 330, 190]]; LD_DISENOS.forEach((d, k) => { const cx = 38 + (k % 2) * 62, cy = 34 + Math.floor(k / 2) * 52; P.push([k * 1.5 + 0.05, cx, cy], [k * 1.5 + 0.35, cx, cy]); });
+    const [cx, cy] = camino(P, t);
+    LD_DISENOS.forEach((d, k) => { h += TOQUE_G(38 + (k % 2) * 62, 34 + Math.floor(k / 2) * 52, t, k * 1.5 + 0.1); });
+    h += CURSOR_G(cx, cy) + pieG("«" + x.n + "»: " + x.d.split(".")[0].toLowerCase(), true);
+    svg.innerHTML = h;
+  }
   // Texto y estilo del rótulo: «Lote 12 · M3» → «L-12» → círculos del color de su estado → insignias
   function animRotuloEstilos(svg, t) {
     const fase = t < 1.3 ? 0 : t < 2.9 ? 1 : t < 4.5 ? 2 : 3, u = sv((t - [0, 1.3, 2.9, 4.5][fase]) / 0.45);
@@ -4948,6 +5013,8 @@
     if (clave === "panoramas/capas") guiaCapasNuevas();
     if (clave === "proyecto/musica") guiaNueva("nuevo-sonido", () => [esVisible("#m-preguntar-fila") && { el: "#m-preguntar-fila", titulo: "Nuevo: ¿activar sonido?",
       texto: "Los navegadores no dejan sonar un tour hasta que el visitante toca la pantalla. Ahora, al abrirlo le preguntamos <b>Activar sonido</b> o <b>Sin sonido</b>, con los colores de tu tour, y la música y las voces arrancan con su respuesta." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "musica");
+    if (clave === "publicar/landing" && enLab("landing-disenos")) guiaNueva("nuevo-landing-disenos", () => [esVisible("#ld-disenos-grupo") && { el: "#ld-disenos-grupo", titulo: "Nuevo: 4 diseños para tu landing", anim: animLandingDisenos, dur: 6.4,
+      texto: "Empieza con un diseño probado: <b>Hacienda</b>, <b>Nativa</b>, <b>Litoral</b> o <b>Urbano</b>. Cada uno trae su portada, sus formas y sus letras. Luego pon en <b>Marca</b> los colores y el logo de tu cliente." }].filter(Boolean), () => esVisible("#ld-disenos-grupo"));
     if (clave === "publicar/landing" && enLab("landing")) guiaNueva("nuevo-landing", () => [esVisible("#ld-form .comp-tarjeta") && { el: "#ld-form .comp-tarjeta", titulo: "Nuevo: la landing de tu desarrollo", anim: animLanding, dur: 5.8,
       texto: "Una página para mandar por WhatsApp o poner en tus anuncios. Sube tu <b>logo</b> y tu <b>plano maestro</b>, pon los <b>colores y letras</b> de tu marca y tu <b>WhatsApp</b>. Los lotes, sus precios, las fotos y los lugares cercanos salen solos del tour. A la derecha la ves como en el celular." }].filter(Boolean), () => nav.sub === "landing" && esVisible("#ld-form .comp-tarjeta"));
     if (clave.startsWith("skin/") && vozIdiomas()) guiaNueva("nuevo-voz-idiomas", () => [esVisible("#sk-voz-grupo") && { el: "#sk-voz-grupo", titulo: "Nuevo: la voz en inglés y español", anim: animVozIdiomas, dur: 4.6,
@@ -4978,6 +5045,8 @@
       texto: "En el tour, el aviso <b>Piloto automático</b> ahora es un botón: al tocarlo, la cámara regresa al inicio y el recorrido vuelve a empezar <b>con su audio</b>. Y mientras el piloto corre, el celular <b>no se bloquea</b>." }].filter(Boolean), () => nav.sub === "piloto" && esVisible("#pl-repetir-info"));
     if (clave === "media/planos" && enLab("planos")) guiaPlanos();
     if (clave === "media/audios" && enLab("narracion")) guiaVoz();
+    if (clave === "panoramas/lotes" && enLab("ficha-disenos") && enLab("fichas")) guiaNueva("nuevo-ficha-disenos", () => [esVisible("#fe-disenos-grupo") && { el: "#fe-disenos-grupo", titulo: "Nuevo: 5 diseños de ficha", anim: animFichaDisenos, dur: 7.6,
+      texto: "Toca <b>Mirador</b>, <b>Hacienda</b>, <b>Nativa</b>, <b>Litoral</b> o <b>Urbano</b> y tu ficha toma su acomodo, sus colores y su letra. Después cambia el logo, los colores y los textos por los de tu desarrollo." }].filter(Boolean), () => esVisible("#fe-disenos-grupo"));
     if (clave === "panoramas/lotes" && enLab("rotulo-estilos")) guiaNueva("nuevo-rotulo-estilos", () => [esVisible("#lt-rotulo-fila") && { el: "#lt-rotulo-fila", titulo: "Nuevo: cómo se ve el número de cada lote", anim: animRotuloEstilos, dur: 6,
       texto: "En <b>Texto</b> elige <b>Siglas</b> (L-12) o <b>Solo número</b> (12). En <b>Estilo</b> ponlo en un <b>Círculo</b> o una <b>Insignia</b> del color de su estado: verde, apartado o vendido de un vistazo, siempre de frente. Luego vuelve a publicar." }].filter(Boolean), () => esVisible("#lt-rotulo-fila"));
     if (clave === "panoramas/lotes" && enLab("rotulo-corto")) guiaNueva("nuevo-rotulo-corto", () => [esVisible("#lt-rotulo-fila") && { el: "#lt-rotulo-fila", titulo: "Nuevo: rótulo corto y grande", anim: animRotuloCorto, dur: 4.2,
@@ -5492,7 +5561,7 @@
   // =================== NOVEDADES ===================
   // Cada anuncio se ve una vez por cuenta (se anota en el servidor). El botón ✦ junto a BETA los vuelve a abrir.
   const DESTINOS_NOV = [["", "Solo cerrar"], ["panoramas/capas", "Panoramas → Capas"], ["panoramas/lotes", "Panoramas → Fichas técnicas"], ["panoramas/masterplan", "Panoramas → Masterplan"], ["panoramas/terreno", "Panoramas → Terreno"], ["panoramas/mapa", "Panoramas → Mapa"], ["panoramas/piloto", "Panoramas → Piloto automático"], ["skin/h", "Interfaz"], ["publicar/web", "Publicar"], ["publicar/cliente", "Publicar → Link para tu cliente (con su mini tutorial)"], ["publicar/landing", "Publicar → Landing"], ["proyecto/general", "Proyecto"], ["media/fotos", "Media"], ["media/ubicacion", "Media → Ubicación"]];
-  const LAB_DESTINO = { "rotulo-estilos": "panoramas/lotes", equipo: "proyecto/general", mejora: "mejora/esferas", "descarga-pdf": "skin/h", "tutorial-video": "tours/todos", transiciones: "proyecto/general", landing: "publicar/landing", ubicacion: "media/ubicacion", "voz-ia": "skin/h", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
+  const LAB_DESTINO = { "ficha-disenos": "panoramas/lotes", "landing-disenos": "publicar/landing", "rotulo-estilos": "panoramas/lotes", equipo: "proyecto/general", mejora: "mejora/esferas", "descarga-pdf": "skin/h", "tutorial-video": "tours/todos", transiciones: "proyecto/general", landing: "publicar/landing", ubicacion: "media/ubicacion", "voz-ia": "skin/h", "manzana-curvas": "panoramas/capas", "manzana-desfase": "panoramas/capas", fichas: "panoramas/lotes", referencia: "panoramas/capas", "lotes-pdf": "panoramas/capas", "carga-logo": "skin/h" };
   let novedades = [], novActual = null;
   const fechaCorta = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
   function htmlNovedad(n, media) {
@@ -13431,6 +13500,7 @@ void main(){
     caja.innerHTML = '<div class="fe-cab"><div><h2>Ficha de los lotes ' + CHIP_LAB + '</h2><p class="nota">Lo que ve tu cliente al tocar un lote, con la marca del desarrollo.</p></div>' +
       '<label class="fe-activa"><input type="checkbox" data-fe="activa"' + (f.activa ? " checked" : "") + "> Usar esta ficha en el tour</label></div>" +
       '<div class="fe-cuerpo"><div class="fe-controles">' +
+      (enLab("ficha-disenos") ? '<div class="fe-grupo" id="fe-disenos-grupo"><b>Empieza con un diseño</b><div class="ld-disenos fe-disenos" role="group" aria-label="Diseños de la ficha">' + FICHA_DISENOS.map((x) => '<button type="button" class="ld-diseno" data-fe-diseno="' + x.k + '" aria-pressed="' + (fichaDisenoActual(f) === x.k) + '">' + miniFicha(x) + "<b>" + x.n + "</b><span>" + x.d + "</span></button>").join("") + '</div><span class="fe-sub">Pone su acomodo, sus colores y su letra. Luego cambia abajo lo que quieras: logo, colores, letra y textos.</span></div>' : "") +
       '<div class="fe-grupo"><b>Diseño</b><div class="estados">' + FICHA_PLANTILLAS.filter(([v]) => v !== "tecnica" || enLab("interiorismo") || f.plantilla === v).map(([v, n]) => '<button data-fe-plantilla="' + v + '" aria-pressed="' + (f.plantilla === v) + '">' + n + "</button>").join("") + "</div></div>" +
       '<div class="fe-grupo"><b>Marca</b><div class="estados">' + [["skin", "Logo de la Interfaz"], ["propio", "Otro logo"], ["texto", "Solo nombre"]].map(([v, n]) => '<button data-fe-logo="' + v + '" aria-pressed="' + (f.logo === v) + '">' + n + "</button>").join("") + "</div>" +
         (f.logo === "skin" && !logoSkin ? '<span class="nota">Tu Interfaz todavía no tiene logo. Súbelo aquí:</span>' : "") +
@@ -13476,6 +13546,13 @@ void main(){
   const repintarFicha = () => { const f = fichaConf(), x = lotesUnicos().find((y) => y.k === fichaMuestra), l = $("fe-lienzo"); if (l && x) l.innerHTML = fichaDisenada(x.m[0].c, f); };
   $("ficha-editor").addEventListener("click", (ev) => {
     const pl = ev.target.closest("[data-fe-plantilla]"); if (pl) { setFicha("plantilla", pl.dataset.fePlantilla); pintarFichaEditor(); return; }
+    const fd = ev.target.closest("[data-fe-diseno]");
+    if (fd) {
+      const x = FICHA_DISENOS.find((d) => d.k === fd.dataset.feDiseno); if (!x) return;
+      P().ficha = Object.assign(fichaConf(), x.f); guardar(); pintarFichaEditor();
+      avisar("Ficha «" + x.n + "». Cambia abajo el logo, los colores o la letra." + (fichaConf().activa ? "" : " Prende «Usar esta ficha en el tour» para que tus clientes la vean."));
+      return;
+    }
     const lg = ev.target.closest("[data-fe-logo]"); if (lg) { setFicha("logo", lg.dataset.feLogo); pintarFichaEditor(); return; }
     if (ev.target.closest("[data-fe-quitar2]")) { setFicha("logo2", ""); pintarFichaEditor(); return; }
     if (ev.target.closest("[data-ft-mas-tipo]")) {
@@ -14734,6 +14811,29 @@ void main(){
   const tipoUni = (l) => (l && l.tipo ? tiposUni().find((t) => t.id === l.tipo) || null : null);
   const DATOS_TIPO = ["Recámaras", "Baños", "Cajones", "Lavado"];
   const fichaConf = () => Object.assign({}, FICHA_DEF, P().ficha);
+  // Diseños de la ficha (Laboratorio «ficha-disenos», pedido de Amar 23 nov 2026: «unas 4 o 5 versiones exitosas de fichas
+  // técnicas… tomarlas como referencia y sobre esas editarlas»). Se llaman como los diseños de la landing para que
+  // hagan juego; cada uno pone su acomodo, sus colores y su letra, y después todo se cambia abajo.
+  const FICHA_DISENOS = [
+    { k: "mirador", n: "Mirador", d: "Sobria, en tonos arena.", f: { plantilla: "clasica", fondo: "#ECEAE6", texto: "#2B2B2B", acento: "#8A5A3C", fuente: "" } },
+    { k: "hacienda", n: "Hacienda", d: "Señorial, con letra de remates.", f: { plantilla: "clasica", fondo: "#F3EEE4", texto: "#1F3436", acento: "#A9833F", fuente: "Cormorant Garamond" } },
+    { k: "nativa", n: "Nativa", d: "Campestre, con la ubicación del lote.", f: { plantilla: "ubicacion", fondo: "#F2EEE3", texto: "#2F3A25", acento: "#B86B43", fuente: "Fraunces" } },
+    { k: "litoral", n: "Litoral", d: "Fresca, con banda de color.", f: { plantilla: "banda", fondo: "#FFFFFF", texto: "#12355B", acento: "#1F8A84", fuente: "Outfit" } },
+    { k: "urbano", n: "Urbano", d: "Nocturna, para lo moderno.", f: { plantilla: "clasica", fondo: "#16191B", texto: "#F1EFEA", acento: "#E3B65B", fuente: "Archivo" } },
+  ];
+  const fichaDisenoActual = (f) => (FICHA_DISENOS.find((x) => ["plantilla", "fondo", "texto", "acento", "fuente"].every((k) => String(f[k] || "").toUpperCase() === String(x.f[k] || "").toUpperCase())) || {}).k || "";
+  function miniFicha(x) {
+    const f = x.f, F = f.fuente ? ' font-family="' + f.fuente + ', sans-serif"' : "", lote = '<polygon points="34,30 86,26 90,58 30,62" fill="' + f.acento + '" fill-opacity=".16" stroke="' + f.texto + '" stroke-width="1.4"/>';
+    let h = '<svg viewBox="0 0 120 92" aria-hidden="true"><rect width="120" height="92" fill="' + f.fondo + '"/>';
+    if (f.plantilla === "banda") h += '<rect width="120" height="16" fill="' + f.acento + '"/><text x="60" y="11" font-size="6.5" font-weight="700" text-anchor="middle" fill="' + letraSobre(f.acento) + '"' + F + ">DESARROLLO</text>" + lote.replace(/(\d+),(\d+)/g, (m, a, b) => a + "," + (+b + 2)) + '<text x="10" y="76" font-size="9" font-weight="700" fill="' + f.texto + '"' + F + '>Lote #12</text><rect x="10" y="80" width="44" height="4" rx="1" fill="' + f.texto + '" opacity=".35"/>';
+    else {
+      h += '<rect x="10" y="7" width="26" height="12" rx="2" fill="' + f.texto + '" opacity=".18"/><rect x="45" y="6" width="1" height="14" fill="' + f.texto + '" opacity=".45"/><text x="80" y="17" font-size="10" font-weight="600" text-anchor="middle" fill="' + f.acento + '"' + F + ">Lote 12</text>";
+      h += '<rect y="23" width="' + (f.plantilla === "ubicacion" ? 120 : 120) + '" height="46" fill="' + f.texto + '" opacity=".04"/>' + lote.replace(/(\d+),(\d+)/g, (m, a, b) => a + "," + (+b + 2));
+      h += '<rect x="34" y="74" width="52" height="11" fill="' + f.acento + '" opacity=".18"/><text x="60" y="82.5" font-size="7.5" font-weight="800" text-anchor="middle" fill="' + f.texto + '"' + F + ">$1,250,000</text>";
+      if (f.plantilla === "ubicacion") h += '<rect x="92" y="72" width="22" height="16" rx="2" fill="none" stroke="' + f.texto + '" stroke-opacity=".4"/><rect x="99" y="77" width="6" height="5" fill="' + f.acento + '"/>';
+    }
+    return h + "</svg>";
+  }
   // El lote visto desde arriba, con su frente abajo, sus medidas por lado y su superficie al centro
   function dibujoLote(c, f, ancho, alto) {
     const l = loteDe(c), Q = c.puntos.map(([y, p]) => aPlano(y, p));
