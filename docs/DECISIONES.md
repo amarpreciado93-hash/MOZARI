@@ -713,3 +713,35 @@
 - Revisión completa: 129 de 129 (en partes, porque la máquina de pruebas se reinició a la mitad). La landing del
   desarrollo solo falla si se corre sin la prueba del link de disponibilidad antes (su tutorial sale primero).
 - Pruebas: FUENTES=<carpeta> sirve las letras de Google desde una carpeta local, para capturas fieles.
+
+## 25 nov 2026 · Superficie bajo el círculo, fichas «Plano» y «Terreno» (reporte de Obed, Desarrollos) y «Día y noche»
+
+- Obed: «al activar la opción de círculo… ya lo esconde el Superficie (m²); debería dar opción si mostrarla o no». Ahora el
+  círculo y la insignia llevan abajo la superficie del lote (en el estudio, en el tour publicado, en celular y en la Foto 360).
+  En Fichas técnicas → «Rótulo en la esfera», junto al estilo, sale «Con superficie / Sin superficie» (de inicio, con).
+  También respeta el interruptor «Superficie» de cada lote en Capas. Va con la función «Número del lote» (Desarrollos).
+- Obed mandó una referencia de ficha (blanca, «Lote 45» grande con su estado, el lote sobre cuadrícula con sus cotas,
+  una fila Área · Frente · Fondo y el botón a todo lo ancho). Amar: «agrega esa ficha técnica a Mozari, tiene razón».
+  Es el sexto diseño de ficha, «Plano» (plantilla «Plano con cuadrícula»): letra Inter, azul marino, frente y fondo
+  calculados de las medidas del lote (lotes de 4 lados o de calle; si no se puede, va la manzana), precio y botón.
+- Amar mandó un anuncio de terreno (foto grande, sello circular, «Venta por:» y «Superficie:» en una caja): «agrégala
+  como plantilla de terreno». Es el séptimo diseño, «Terreno» (plantilla «Foto de terreno»): la foto que se sube en la
+  ficha (o la de la esfera del lote, o el dibujo del lote), el nombre del lugar, el sello con el estado, precio y superficie.
+- Los dos van dentro de «Diseños de la ficha» (Laboratorio, Solo yo; su mini tutorial ahora dice 7 diseños). Sin la
+  función, el servidor publica la ficha con la plantilla Clásica.
+- Día y noche (Laboratorio «dia-noche», nace Solo yo). Amar: «hace como un efecto de timelapse… creas una misma esfera en
+  la misma posición, pero de noche, de atardecer y así, y va teniendo una transición». No existía en Mozari; se hizo.
+  Las otras horas se suben como esferas normales y en Capas (sin nada elegido) → «Día y noche» se agregan a la principal
+  (hasta 3), con su nombre y un giro para que empaten (al mover el giro se ven las dos encimadas). En el tour no salen
+  como esferas aparte: se pintan encima de la principal con su misma vista y se funden despacio; los lotes y puntos se
+  quedan. Arriba sale «Día · Atardecer · Noche» y el botón del paso del día; la primera vez que se llega a esa esfera
+  arranca solo (se puede apagar). En celular solo quedan vivas la hora que se ve y la siguiente. Amar pidió que lo usen
+  Pro y Desarrollos: se abre con «Pro y Desarrollos» y su Actualización cuando él lo pruebe.
+- Pruebas: «Número del lote» revisa la superficie bajo los círculos y el «Sin superficie»; «Diseños de la ficha» revisa
+  Plano y Terreno (con foto subida); «Día y noche» revisa el estudio (agregar, ver, girar, paso del día), el tour publicado
+  (arranca solo, no salen aparte, el lote se queda, botones), el celular y que sin la función se publique como antes.
+- Vendedores. Amar: «un creador de links para la cuenta de… mi vendedora… dale autoridad total». En su panel → Links,
+  «También crean links» guarda los correos de sus vendedores (config/vendedores.json). Esas cuentas ven en Mis Tours el
+  botón «Links de regalo y descuento» (también en celular) y hacen todo lo de los links: crear de regalo o descuento,
+  copiar, apagar y prender. Nada más del panel (cuentas, laboratorio, reportes, vendedores dan 403). Cada link guarda
+  quién lo creó y el dueño lo ve («lo creó …»). Quitar el correo le quita el acceso. Prueba nueva «Vendedores».

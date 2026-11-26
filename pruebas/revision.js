@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-ficha-disenos", "nuevo-landing-disenos", "nuevo-rotulo-estilos", "nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto", "nuevo-voz-idiomas", "nuevo-lotes-vendidos", "nuevo-unir-manzanas", "nuevo-equipo"];
+const GUIAS_NUEVAS = ["nuevo-ficha-disenos", "nuevo-landing-disenos", "nuevo-rotulo-estilos", "nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto", "nuevo-voz-idiomas", "nuevo-lotes-vendidos", "nuevo-unir-manzanas", "nuevo-equipo", "nuevo-dia-noche"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -5953,7 +5953,7 @@ async function capasPesadas(p) {
       const fichas = async (p) => { await p.click('#nav button:has-text("Panoramas")'); await p.waitForTimeout(300); await p.click('#subtabs button:has-text("Fichas técnicas")'); await p.waitForTimeout(1200); };
       // rótulos de texto que se ven (compu: planchados; celular: SVG) e insignias (círculo o insignia) con su color
       const planos = (pg) => pg.evaluate(() => [...document.querySelectorAll(".lt-p.nom, .lt-ps-p.nom")].filter((e) => e.style.display !== "none" && e.style.visibility !== "hidden" && e.getClientRects().length && e.getBoundingClientRect().width > 2).map((e) => e.textContent.trim()));
-      const insignias = (pg) => pg.evaluate(() => [...document.querySelectorAll(".lote-etq .lt-ins")].map((g) => { const f = g.querySelector("circle, rect"), t = g.querySelector("text"), r = g.getBoundingClientRect(); return { forma: f.tagName, color: f.getAttribute("fill"), letra: t.style.fill, texto: t.textContent, w: r.width, h: r.height }; }));
+      const insignias = (pg) => pg.evaluate(() => [...document.querySelectorAll(".lote-etq .lt-ins")].map((g) => { const f = g.querySelector("circle, rect"), t = g.querySelector(".lt-ins-t"), a = g.querySelector(".lt-area"), r = f.getBoundingClientRect(); return { forma: f.tagName, color: f.getAttribute("fill"), letra: t.style.fill, texto: t.textContent, area: a ? a.textContent : "", w: r.width, h: r.height }; }));
       const correoU = "sin-estilos@prueba.mx", n = await pagina(DUENO), u = await pagina(correoU);
       let t = null, m = null;
       try {
@@ -5985,7 +5985,16 @@ async function capasPesadas(p) {
         const de = (tx) => ins.find((x) => x.texto === tx);
         exige(ins.length === 3 && ins.every((x) => x.forma === "circle" && x.w > 14) && de("11").color === "#22B573" && de("12").color === "#F2A900" && de("13").color === "#E5484D" && /11, 11, 11|#0B0B0B/i.test(de("12").letra) && /255, 255, 255|#FFFFFF/i.test(de("11").letra), "los círculos no salen con su número y el color de su estado: " + JSON.stringify(ins));
         exige(!(await planos(n)).length, "con círculo sigue saliendo el texto planchado encima");
+        // con círculo la superficie no se pierde: va abajo (reporte de Obed, 25 nov 2026) y se puede quitar
+        exige(ins.every((x) => x.area === "200 m²"), "con círculo se perdió la superficie: " + JSON.stringify(ins));
         if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "rotulo-circulo.png") });
+        await fichas(n); exige(await n.isVisible('[data-lt-area="0"]') && await n.isVisible('[data-lt-area="1"][aria-pressed="true"]'), "no está «Con superficie / Sin superficie» junto al círculo");
+        await n.click('[data-lt-area="0"]'); await n.waitForTimeout(1200);
+        exige((await api(n, "api/tours/" + id)).d.proyecto.rotuloArea === false, "«Sin superficie» no se guardó");
+        await irCapas(n); await n.waitForTimeout(1800); ins = await insignias(n);
+        exige(ins.length === 3 && ins.every((x) => !x.area), "con «Sin superficie» sigue saliendo: " + JSON.stringify(ins));
+        await fichas(n); await n.click('[data-lt-area="1"]'); await n.waitForTimeout(1200);
+        exige((await api(n, "api/tours/" + id)).d.proyecto.rotuloArea === undefined, "«Con superficie» no regresó");
         // 5) Insignia con siglas
         await fichas(n); await n.click('[data-lt-rotulo="siglas"]'); await n.waitForTimeout(800); await n.click('[data-lt-estilo="insignia"]'); await n.waitForTimeout(1200); await irCapas(n); await n.waitForTimeout(1800);
         ins = await insignias(n);
@@ -5997,7 +6006,7 @@ async function capasPesadas(p) {
         exige(pub.rotuloFormato === "siglas" && pub.rotuloEstilo === "insignia", "el tour publicado no lleva el texto y el estilo del rótulo");
         t = await pagina(null); await t.goto(TOURS + "/" + id + "/"); await t.waitForSelector("#pv-stage canvas", { timeout: 30000 }); await t.waitForTimeout(4500);
         const it = await insignias(t);
-        exige(it.length === 3 && ["L-11", "L-12", "L-13"].every((tx) => it.some((x) => x.texto === tx && x.forma === "rect")), "el tour publicado no trae las insignias: " + JSON.stringify(it));
+        exige(it.length === 3 && ["L-11", "L-12", "L-13"].every((tx) => it.some((x) => x.texto === tx && x.forma === "rect" && x.area === "200 m²")), "el tour publicado no trae las insignias con su superficie: " + JSON.stringify(it));
         if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "rotulo-insignia-tour.png") });
         m = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false })); await m.goto(TOURS + "/" + id + "/"); await m.waitForSelector("#pv-stage canvas", { timeout: 30000 }); await m.waitForTimeout(4500);
         const im = await insignias(m);
@@ -6111,7 +6120,7 @@ async function capasPesadas(p) {
       }
     });
     // Diseños de la ficha (Amar, 23 nov 2026: «unas 4 o 5 versiones exitosas de fichas técnicas… tomarlas como referencia y sobre esas editarlas»)
-    await paso("Diseños de la ficha (Laboratorio, nace Solo yo): Mirador, Hacienda, Nativa, Litoral y Urbano ponen su acomodo, colores y letra, y después se editan; en el tour se ve la elegida", async () => {
+    await paso("Diseños de la ficha (Laboratorio, nace Solo yo): Mirador, Hacienda, Nativa, Litoral, Urbano, Plano (la de Obed) y Terreno ponen su acomodo, colores y letra, y después se editan; en el tour se ve la elegida", async () => {
       const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
       const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
       const tutoriales = async (p) => { const vistos = []; for (let i = 0, quieto = 0; i < 30 && quieto < 4; i++) { await p.waitForTimeout(700); if (await p.isVisible(".guia-tarjeta").catch(() => false)) { quieto = 0; vistos.push(await p.textContent(".guia-tarjeta")); await p.click('.guia-tarjeta [data-guia="seguir"]'); } else quieto++; } return vistos; };
@@ -6127,14 +6136,31 @@ async function capasPesadas(p) {
         await n.goto(ESTUDIO + "/#t=" + id); await n.reload(); await n.waitForTimeout(2500); await cerrarAnuncio(n); await cerrarGuia(n);
         await fichas(n); await tutoriales(n);
         const nombres = await n.$$eval("#fe-disenos-grupo .ld-diseno b", (l) => l.map((x) => x.textContent));
-        exige(nombres.join(",") === "Mirador,Hacienda,Nativa,Litoral,Urbano" && await n.isVisible('[data-fe-diseno="mirador"][aria-pressed="true"]'), "no salen los 5 diseños de la ficha (o no arranca en Mirador): " + nombres.join(","));
+        exige(nombres.join(",") === "Mirador,Hacienda,Nativa,Litoral,Urbano,Plano,Terreno" && await n.isVisible('[data-fe-diseno="mirador"][aria-pressed="true"]'), "no salen los 7 diseños de la ficha (o no arranca en Mirador): " + nombres.join(","));
         const lienzo = () => n.$eval("#fe-lienzo .ficha-d", (e) => { const lum = (c) => { const m = c.match(/\d+(\.\d+)?/g).map(Number); return 0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2]; }, cs = getComputedStyle(e), t = e.querySelector(".fd-titulo");
           return { clase: e.className, fondo: lum(cs.backgroundColor), texto: lum(cs.color), titulo: t ? lum(getComputedStyle(t).color) : null, letra: cs.fontFamily }; });
-        const esperado = { mirador: ["fd-clasica", "#ECEAE6"], hacienda: ["fd-clasica", "#F3EEE4"], nativa: ["fd-ubicacion", "#F2EEE3"], litoral: ["fd-banda", "#FFFFFF"], urbano: ["fd-clasica", "#16191B"] };
-        for (const k of ["hacienda", "nativa", "litoral", "urbano", "mirador"]) {
+        const esperado = { mirador: ["fd-clasica", "#ECEAE6", "clasica"], hacienda: ["fd-clasica", "#F3EEE4", "clasica"], nativa: ["fd-ubicacion", "#F2EEE3", "ubicacion"], litoral: ["fd-banda", "#FFFFFF", "banda"], urbano: ["fd-clasica", "#16191B", "clasica"], plano: ["fd-plano-f", "#FFFFFF", "plano"], terreno: ["fd-terreno-f", "#EFEFEF", "terreno"] };
+        for (const k of ["hacienda", "nativa", "litoral", "urbano", "plano", "terreno", "mirador"]) {
           await n.click('[data-fe-diseno="' + k + '"]'); await n.waitForTimeout(900);
           const f = (await api(n, "api/tours/" + id)).d.proyecto.ficha || {}, l = await lienzo();
-          exige(f.plantilla === esperado[k][0].slice(3) && String(f.fondo).toUpperCase() === esperado[k][1] && l.clase.includes(esperado[k][0]) && await n.isVisible('[data-fe-diseno="' + k + '"][aria-pressed="true"]'), "el diseño «" + k + "» no puso su acomodo o sus colores: " + JSON.stringify([f.plantilla, f.fondo, l.clase]));
+          if (k === "plano") { // Área · Frente · Fondo, el lote sobre cuadrícula y el nombre del lote grande
+            const dp = await n.$eval("#fe-lienzo .ficha-d", (e) => ({ datos: [...e.querySelectorAll(".fp-datos > div")].map((x) => x.textContent.replace(/\s+/g, " ").trim()), plano: !!e.querySelector(".fp-plano svg.fd-plano"), rejilla: getComputedStyle(e.querySelector(".fp-plano")).backgroundImage.includes("linear-gradient"), titulo: e.querySelector(".fd-titulo").textContent, estado: (e.querySelector(".fp-estado") || {}).textContent, ancho: e.scrollWidth <= e.clientWidth + 1 }));
+            exige(dp.datos.join(" | ") === "Área:240 m² | Frente:12 m | Fondo:20 m" && dp.plano && dp.rejilla && dp.titulo === "Lote 7" && dp.estado === "Disponible" && dp.ancho, "la ficha «Plano» no trae Área · Frente · Fondo, el plano con cuadrícula o su título: " + JSON.stringify(dp));
+          }
+          if (k === "terreno") { // foto arriba (la miniatura de la esfera o el plano), el lugar en grande y el bloque con precio y superficie; con su foto propia
+            const ver = () => n.$eval("#fe-lienzo .ficha-d", (e) => ({ foto: !!e.querySelector(".ft-foto img, .ft-foto .fd-plano"), img: (e.querySelector(".ft-foto img") || {}).src || "", precio: (e.querySelector(".ft-precio") || {}).textContent, sup: (e.querySelector(".ft-sup") || {}).textContent, sello: !!e.querySelector(".ft-sello textPath"), titulo: (e.querySelector(".fd-titulo") || {}).textContent, ancho: e.scrollWidth <= e.clientWidth + 1 }));
+            let dt = await ver();
+            exige(dt.foto && /Venta por:\s*\$1,250,000/.test(dt.precio) && /Superficie:\s*240 m²/.test(dt.sup) && dt.sello && dt.titulo && dt.ancho, "la ficha «Terreno» no trae su foto, el precio, la superficie o el sello: " + JSON.stringify(dt));
+            const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAEklEQVR4nGPgyt/8Hx9mGBkKACvRisEGqcWiAAAAAElFTkSuQmCC", "base64");
+            const fotoT = path.join(__dirname, "..", "estudio", "portada-dron.webp");
+            await n.setInputFiles("#fe-foto", fs.existsSync(fotoT) ? { name: "terreno.webp", mimeType: "image/webp", buffer: fs.readFileSync(fotoT) } : { name: "terreno.png", mimeType: "image/png", buffer: png });
+            await n.waitForFunction(() => /foto-ficha/.test((document.querySelector("#fe-lienzo .ft-foto img") || {}).src || ""), null, { timeout: 8000 }).catch(() => {});
+            dt = await ver();
+            let fotoG = ""; for (let i = 0; i < 10 && !/foto-ficha/.test(fotoG); i++) { await n.waitForTimeout(600); fotoG = ((await api(n, "api/tours/" + id)).d.proyecto.ficha || {}).foto || ""; }
+            exige(/foto-ficha/.test(dt.img) && /foto-ficha/.test(fotoG), "la foto del terreno no se subió o no sale arriba: " + JSON.stringify([dt, fotoG]));
+            if (process.env.CAPTURAS) { await n.waitForTimeout(800); await n.locator("#fe-lienzo .ficha-d").screenshot({ path: path.join(process.env.CAPTURAS, "ficha-terreno-foto.png") }); }
+          }
+          exige(f.plantilla === esperado[k][2] && String(f.fondo).toUpperCase() === esperado[k][1] && l.clase.includes(esperado[k][0]) && await n.isVisible('[data-fe-diseno="' + k + '"][aria-pressed="true"]'), "el diseño «" + k + "» no puso su acomodo o sus colores: " + JSON.stringify([f.plantilla, f.fondo, l.clase]));
           exige(Math.abs(l.fondo - l.texto) > 110, "en «" + k + "» el texto no se lee sobre el fondo: " + JSON.stringify(l));
           if (process.env.CAPTURAS) await n.$eval("#fe-lienzo", (e) => e.scrollIntoView()).then(() => n.locator("#fe-lienzo .ficha-d").screenshot({ path: path.join(process.env.CAPTURAS, "ficha-" + k + ".png") }));
         }
@@ -6162,13 +6188,182 @@ async function capasPesadas(p) {
         exige(await u.isVisible("#ficha-editor") && !(await u.isVisible("#fe-disenos-grupo")), "una cuenta sin la función ya ve los diseños de la ficha (o no ve la ficha)");
         exige((await api(n, "api/admin/laboratorio/ficha-disenos", J("PUT", { modo: "probadores", probadores: [correoU] }))).s === 200, "no se pudo dar la función a un probador");
         await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u); await fichas(u); const vistos = await tutoriales(u);
-        exige(vistos.some((x) => /5 diseños de ficha/.test(x)) && await u.isVisible("#fe-disenos-grupo"), "con la función no salieron los diseños o su mini tutorial: " + vistos.map((x) => x.slice(0, 40)).join(" | "));
+        exige(vistos.some((x) => /7 diseños de ficha/.test(x)) && await u.isVisible("#fe-disenos-grupo"), "con la función no salieron los diseños o su mini tutorial: " + vistos.map((x) => x.slice(0, 40)).join(" | "));
         exige(!n.errs.length && !u.errs.length, "errores en el estudio: " + n.errs.concat(u.errs).join(" | ").slice(0, 200));
       } finally {
         await api(n, "api/admin/laboratorio/ficha-disenos", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
         if (labFichas) await api(n, "api/admin/laboratorio/fichas", J("PUT", { modo: labFichas.modo, probadores: labFichas.probadores || [] })).catch(() => {});
         if (t) await t.context().close();
         await u.context().close(); await n.context().close();
+      }
+    });
+    // Día y noche (Amar, 25 nov 2026: «hace como un efecto de timelapse… creas una misma esfera en la misma posición, pero de
+    // noche, de atardecer y así, y va teniendo una transición»). Las otras horas son esferas del tour que se pintan encima
+    // de la principal y se funden; en el tour no salen aparte y los lotes se quedan.
+    await paso("Día y noche (Laboratorio, nace Solo yo): la misma vista al atardecer y de noche se funde como timelapse, con giro para empatar; en el tour no salen aparte y los lotes se quedan", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const { PNG } = require(LIB.pngjs);
+      // El color del cielo en un punto (arriba a la izquierda, lejos de la barra y de los lotes)
+      const cielo = async (pg, sel) => {
+        const r = await pg.$eval(sel, (el) => { const b = el.getBoundingClientRect(); return [b.x + b.width * 0.3, b.y + b.height * 0.24]; });
+        const im = PNG.sync.read(await pg.screenshot({ clip: { x: Math.round(r[0]) - 3, y: Math.round(r[1]) - 3, width: 6, height: 6 } }));
+        const s = [0, 0, 0], n = im.data.length / 4; for (let i = 0; i < im.data.length; i += 4) { s[0] += im.data[i]; s[1] += im.data[i + 1]; s[2] += im.data[i + 2]; }
+        return s.map((x) => Math.round(x / n));
+      };
+      const COL = { dia: [119, 170, 187], tarde: [238, 153, 85], noche: [17, 34, 51] }, dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+      const cual = (c) => Object.keys(COL).reduce((m, k) => (dist(c, COL[k]) < dist(c, COL[m]) ? k : m), "dia");
+      const es = async (pg, sel, k, msg) => { let c = null; for (let i = 0; i < 12; i++) { c = await cielo(pg, sel); if (dist(c, COL[k]) < 40) return; await pg.waitForTimeout(300); } throw new Error(msg + " (cielo " + c.join(",") + ")"); };
+      // La secuencia de horas que se ven durante `ms`
+      const secuencia = async (pg, sel, ms) => { const l = []; for (const t0 = Date.now(); Date.now() - t0 < ms;) { const k = cual(await cielo(pg, sel)); if (l[l.length - 1] !== k) l.push(k); await pg.waitForTimeout(250); } return l; };
+      const tutoriales = async (p) => { const vistos = []; for (let i = 0, quieto = 0; i < 30 && quieto < 4; i++) { await p.waitForTimeout(700); if (await p.isVisible(".guia-tarjeta").catch(() => false)) { quieto = 0; vistos.push(await p.textContent(".guia-tarjeta")); await p.click('.guia-tarjeta [data-guia="seguir"]').catch(() => p.keyboard.press("Escape")); } else quieto++; } return vistos; };
+      const correoU = "dia-noche@prueba.mx", n = await pagina(DUENO), u = await pagina(correoU);
+      const extras = [];
+      try {
+        await nuevoTour(u, "Mirador dia y noche"); const id = await idTour(u);
+        await otraEsfera(u, "Foto tarde", "#e95", "#764"); await otraEsfera(u, "Foto noche", "#123", "#232"); await u.waitForTimeout(1500);
+        let d = (await api(u, "api/tours/" + id)).d; const [A, B, C] = d.escenas.map((e) => e.id);
+        const v = d.escenas[0].vista || {}, y = v.yaw || 0, pp = (v.pitch || 0) + 0.25;
+        d.proyecto.escenaInicial = A;
+        d.capas[A] = [{ id: "lote-3", tipo: "poligono", nombre: "Lote", visible: true, puntos: [[y - 0.12, pp], [y + 0.12, pp], [y + 0.12, pp + 0.3], [y - 0.12, pp + 0.3]], relleno: { color: "#D5FF40", opacidad: 0.35 }, trazo: { color: "#D5FF40", grosor: 1.5, opacidad: 1 },
+          lote: { numero: "3", manzana: "1", area: "200", precio: "", lados: [], frente: 0, estado: "disponible" } }];
+        exige((await api(u, "api/tours/" + id, J("PUT", d))).s === 200, "no se pudo poner el lote");
+        // Sin la función no sale el grupo
+        await u.goto(ESTUDIO + "/#t=" + id); await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u); await irCapas(u); await tutoriales(u);
+        exige(!(await u.$("#dn-grupo")), "una cuenta sin la función ya ve «Día y noche»");
+        // Con la función (probador): el grupo y su mini tutorial
+        exige((await api(n, "api/admin/laboratorio/dia-noche", J("PUT", { modo: "probadores", probadores: [correoU] }))).s === 200, "no se pudo dar la función a un probador");
+        await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u); await irCapas(u);
+        const vistos = await tutoriales(u);
+        exige(vistos.some((x) => /día y noche/i.test(x) && /timelapse/.test(x)), "no salió el mini tutorial de día y noche: " + vistos.map((x) => x.slice(0, 40)).join(" | "));
+        exige(await u.isVisible("#dn-grupo"), "con la función no sale «Día y noche» en la esfera");
+        await es(u, "#ed-stage", "dia", "el estudio no abrió la esfera de día");
+        // Agregar las dos horas: Atardecer (Foto tarde) y Noche (Foto noche); al agregarla se ve
+        await u.click("[data-dn-agregar]"); await u.waitForTimeout(400);
+        await es(u, "#ed-stage", "tarde", "al agregar la hora no se vio el atardecer");
+        await u.click("[data-dn-agregar]"); await u.waitForTimeout(400);
+        await es(u, "#ed-stage", "noche", "al agregar la segunda hora no se vio la noche");
+        const nombres = await u.$$eval("[data-dn-nombre]", (l) => l.map((x) => x.value));
+        exige(nombres.join(",") === "Atardecer,Noche", "las horas no se llamaron Atardecer y Noche: " + nombres.join(","));
+        exige(await u.isVisible('[data-dn-ver="1"][aria-pressed="true"]'), "el botón Ver no marca la hora que se ve");
+        // Ver Día
+        await u.click('[data-dn-ver="-1"]'); await es(u, "#ed-stage", "dia", "«Ver» de la esfera principal no regresó al día");
+        // Girar: mientras se mueve se ven las dos encimadas; al soltar se queda la noche y se guarda el giro
+        await u.$eval('[data-dn-giro="1"]', (el) => { el.value = "12"; el.dispatchEvent(new Event("input", { bubbles: true })); });
+        await u.waitForTimeout(700);
+        const medio = await cielo(u, "#ed-stage"), mezcla = COL.dia.map((x, i) => (x + COL.noche[i]) / 2);
+        exige(dist(medio, mezcla) < 40, "al girar no se ven las dos encimadas a la mitad (cielo " + medio.join(",") + ")");
+        await u.$eval('[data-dn-giro="1"]', (el) => el.dispatchEvent(new Event("change", { bubbles: true })));
+        await es(u, "#ed-stage", "noche", "al soltar el giro no se quedó la noche");
+        exige((await u.$$eval(".dn-giro output", (l) => l.map((x) => x.textContent))).includes("12.0°"), "el giro no dice 12.0°");
+        // Ver el paso del día: día → atardecer → noche
+        await u.click("[data-dn-probar]");
+        const sq = await secuencia(u, "#ed-stage", 11000);
+        exige(/^(noche>)?dia>tarde>noche$/.test(sq.join(">")), "«Ver el paso del día» no fue de día a atardecer a noche: " + sq.join(" > "));
+        if (process.env.CAPTURAS) await u.screenshot({ path: path.join(process.env.CAPTURAS, "dia-noche-estudio.png") });
+        await u.waitForTimeout(2500);
+        d = (await api(u, "api/tours/" + id)).d; const e0 = d.escenas.find((e) => e.id === A);
+        exige(e0.momentos && e0.momentos.length === 2 && e0.momentos[0].id === B && e0.momentos[1].id === C && e0.momentos[1].giro === 12 && e0.momentoBase === "Día", "no se guardaron las horas: " + JSON.stringify(e0.momentos || null));
+        // En la lista: la esfera de la noche dice de quién es
+        await u.click('#subtabs button:has-text("Lista")'); await u.waitForTimeout(800);
+        const chips = await u.textContent("#pano-lista");
+        exige(/Noche de campo/.test(chips) && /Atardecer de campo/.test(chips) && /Día y noche/.test(chips), "en Panoramas no dice qué esfera es de otra hora");
+        // La esfera de la noche, abierta en el estudio, dice de quién es
+        await u.click('#pano-lista [data-abrir="' + C + '"]'); await u.waitForTimeout(2000); await tutoriales(u);
+        exige(/Esta esfera es\s*Noche\s*de\s*campo/.test(await u.textContent("#dn-grupo").catch(() => "")), "la esfera de la noche no dice que es la noche de la principal");
+        exige(!u.errs.length, "errores en el estudio: " + u.errs.join(" | ").slice(0, 200));
+        // Publicado: con la función, las horas viajan; el tour arranca solo el paso del día y no las muestra como esferas
+        exige((await api(u, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar");
+        const pj = await (await fetch(TOURS + "/" + id + "/proyecto.json")).json();
+        exige(pj.proyecto.diaNoche === true && pj.escenas[0].momentos.length === 2, "no se publicó con día y noche");
+        const t = await pagina(null); extras.push(t);
+        await t.goto(TOURS + "/" + id + "/"); await t.waitForSelector("#pv-stage canvas", { timeout: 30000 }); await t.waitForTimeout(800);
+        exige(await t.isVisible(".dn-tour"), "en el tour no sale la barra de día y noche");
+        const etq = await t.$$eval(".dn-tour .dn-op", (l) => l.map((x) => x.textContent.trim()));
+        exige(etq.join(",") === "Día,Atardecer,Noche", "la barra no dice Día, Atardecer y Noche: " + etq.join(","));
+        const ui = await t.textContent("#pv-ui");
+        exige(!/Foto tarde|Foto noche/.test(ui), "las esferas de otra hora salen como esferas aparte en el tour");
+        await es(t, "#pv-stage", "dia", "el tour no abrió de día");
+        const sqT = await secuencia(t, "#pv-stage", 13000);
+        exige(sqT.join(">") === "dia>tarde>noche", "el paso del día no arrancó solo de día a atardecer a noche: " + sqT.join(" > "));
+        exige(await t.isVisible('.dn-tour [data-dn="2"][aria-pressed="true"]') && !(await t.$(".dn-tour.corre")), "al terminar no marca Noche (o sigue corriendo)");
+        exige(await t.evaluate(() => [...document.querySelectorAll(".cp-lote path.cp-pol")].some((x) => x.getBoundingClientRect().width > 10)), "de noche ya no se ve el lote");
+        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "dia-noche-tour.png") });
+        await t.click('.dn-tour [data-dn="0"]'); await es(t, "#pv-stage", "dia", "tocar Día no regresó al día");
+        await t.click('.dn-tour [data-dn="1"]'); await es(t, "#pv-stage", "tarde", "tocar Atardecer no lo puso");
+        exige(!t.errs.length, "errores en el tour: " + t.errs.join(" | ").slice(0, 160));
+        // En celular: la barra cabe y no se encima con la interfaz
+        const c = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false })); extras.push(c);
+        await c.goto(TOURS + "/" + id + "/"); await c.waitForSelector("#pv-stage canvas", { timeout: 30000 }); await c.waitForTimeout(2500);
+        const choca = await c.evaluate(() => {
+          const b = document.querySelector(".dn-tour"); if (!b || b.hidden) return "no sale";
+          const r = b.getBoundingClientRect(); if (r.left < 0 || r.right > innerWidth || r.top < 0) return "se sale: " + JSON.stringify(r);
+          const otro = [...document.querySelectorAll("#pv-ui button, #pv-ui a, #pv-ui .sk-nombre, #pv-ui .sk-logo, #pv-ui h1, #pv-ui h2")].filter((x) => !b.contains(x) && x.getClientRects().length && getComputedStyle(x).visibility !== "hidden" && +getComputedStyle(x).opacity > 0.05)
+            .find((x) => { const q = x.getBoundingClientRect(); return q.width && q.height && q.left < r.right && q.right > r.left && q.top < r.bottom && q.bottom > r.top; });
+          return otro ? "se encima con " + (otro.className || otro.tagName) : "";
+        });
+        exige(!choca, "en celular la barra de día y noche " + choca);
+        if (process.env.CAPTURAS) await c.screenshot({ path: path.join(process.env.CAPTURAS, "dia-noche-celular.png") });
+        exige(!c.errs.length, "errores en el tour del celular: " + c.errs.join(" | ").slice(0, 160));
+        // Sin la función: al publicar, las esferas de otra hora vuelven a ser esferas normales y no hay barra
+        exige((await api(n, "api/admin/laboratorio/dia-noche", J("PUT", { modo: "yo", probadores: [] }))).s === 200, "no se pudo quitar la función");
+        exige((await api(u, "api/tours/" + id + "/publicar", { method: "POST" })).s === 200, "no se pudo volver a publicar");
+        const pj2 = await (await fetch(TOURS + "/" + id + "/proyecto.json")).json();
+        exige(pj2.proyecto.diaNoche === false && !pj2.escenas[0].momentos, "sin la función se publicaron las horas");
+        await t.goto(TOURS + "/" + id + "/"); await t.waitForSelector("#pv-stage canvas", { timeout: 30000 }); await t.waitForTimeout(3500);
+        exige(!(await t.isVisible(".dn-tour")), "sin la función sigue saliendo la barra");
+        exige(!n.errs.length, "errores en el estudio del dueño: " + n.errs.join(" | ").slice(0, 200));
+      } finally {
+        await api(n, "api/admin/laboratorio/dia-noche", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
+        for (const x of extras) await x.context().close().catch(() => {});
+        await u.context().close(); await n.context().close();
+      }
+    });
+    // Vendedores (Amar, 25 nov 2026: «un creador de links para la cuenta de… mi vendedora… dale autoridad total»)
+    await paso("Vendedores: el dueño agrega el correo de su vendedora; ella crea, ve y apaga links de regalo y descuento (y nada más del panel); el dueño ve quién creó cada uno", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const cV = "vendedora@prueba.mx", cC = "cliente-de-vendedora@prueba.mx", n = await pagina(DUENO), v = await pagina(cV), cl = await pagina(cC);
+      try {
+        await v.waitForTimeout(1500);
+        exige(!(await v.$("#ver-links")) && (await api(v, "api/admin/cupones")).s === 403, "una cuenta normal ya puede ver los links");
+        // El dueño la agrega en su panel → Links
+        await n.click("#ver-cuentas"); await n.waitForSelector('#cuentas [data-dueno="links"]', { timeout: 30000 }); await n.click('#cuentas [data-dueno="links"]'); await n.waitForSelector("#ln-vend", { timeout: 8000 });
+        await n.fill("#ln-vend", cV); await n.click("#ln-vend-agregar");
+        await n.waitForSelector('.links-vend:has-text("' + cV + '")', { timeout: 8000 });
+        // Ella: botón «Links de regalo y descuento», sin el resto del panel
+        await v.reload(); await v.waitForTimeout(2500); await cerrarAnuncio(v);
+        exige(await v.isVisible("#ver-links") && !(await v.$("#ver-cuentas")), "la vendedora no ve su botón de links (o ve el panel de dueño)");
+        await v.click("#ver-links"); await v.waitForSelector("#ln-crear", { timeout: 10000 });
+        exige(!(await v.$("#cuentas .rep-tabs")) && !(await v.$("#ln-vend")), "la vendedora ve otras partes del panel");
+        await v.fill("#ln-n", "2"); await v.selectOption("#ln-tipo", "des-100"); await v.fill("#ln-nota", "Cliente Juan"); await v.click("#ln-crear");
+        await v.waitForSelector('.links-lote:has-text("Cliente Juan")', { timeout: 10000 });
+        await v.selectOption("#ln-tipo", "todo-30"); await v.fill("#ln-n", "1"); await v.fill("#ln-nota", "Cliente Ana"); await v.click("#ln-crear");
+        await v.waitForSelector('.links-lote:has-text("Cliente Ana")', { timeout: 10000 });
+        const mios = ((await api(v, "api/admin/cupones")).d.cupones || []).filter((c) => /Cliente (Juan|Ana)/.test(c.nota));
+        exige(mios.length === 3 && mios.every((c) => c.por === cV), "los links de la vendedora no dicen que los creó ella: " + JSON.stringify(mios.map((c) => c.por)));
+        // Los apaga y prende como el dueño
+        const ana = mios.find((c) => c.nota === "Cliente Ana");
+        exige((await api(v, "api/admin/cupones/" + ana.codigo, J("PUT", { activo: false }))).s === 200, "la vendedora no puede apagar un link");
+        await api(v, "api/admin/cupones/" + ana.codigo, J("PUT", { activo: true }));
+        // Nada más del panel
+        for (const r of ["api/admin/cuentas", "api/admin/laboratorio", "api/admin/vendedores", "api/admin/reportes"]) exige((await api(v, r)).s === 403, "la vendedora entra a " + r);
+        exige((await api(v, "api/admin/vendedores", J("PUT", { vendedores: [cV, "otro@prueba.mx"] }))).s === 403, "la vendedora puede agregar vendedores");
+        // Su cliente lo canjea
+        const juan = mios.find((c) => c.nota === "Cliente Juan");
+        const r = await api(cl, "api/pagos/canjear", J("POST", { cupon: juan.codigo, plan: "desarrollos" }));
+        exige(r.s === 200 && (await api(cl, "api/yo")).d.plan.id === "desarrollos", "el cliente no pudo usar el link de la vendedora: " + r.s);
+        // El dueño ve quién creó cada uno
+        await n.click('#cuentas [data-dueno="links"]'); await n.waitForSelector('.links-lote:has-text("Cliente Juan")', { timeout: 10000 });
+        exige(/lo creó vendedora@prueba\.mx/.test(await n.textContent('.links-lote:has-text("Cliente Juan")')) && /1 de 2 usados/.test(await n.textContent('.links-lote:has-text("Cliente Juan")')), "el dueño no ve que el link lo creó la vendedora (o que ya se usó)");
+        if (process.env.CAPTURAS) { await v.click("#ver-links"); await v.click("#ver-links"); await v.waitForSelector('.links-lote:has-text("Cliente Juan")', { timeout: 10000 }); await v.screenshot({ path: path.join(process.env.CAPTURAS, "vendedora-links.png") }); }
+        // Quitarla le quita el acceso
+        await n.click('[data-ln-vend-quitar="' + cV + '"]'); await n.waitForTimeout(1200);
+        exige((await api(v, "api/admin/cupones")).s === 403, "al quitarla sigue entrando a los links");
+        exige(!n.errs.length && !v.errs.length, "errores: " + n.errs.concat(v.errs).join(" | ").slice(0, 200));
+      } finally {
+        await api(n, "api/admin/vendedores", J("PUT", { vendedores: [] })).catch(() => {});
+        await cl.context().close(); await v.context().close(); await n.context().close();
       }
     });
     await paso("Sin errores de JavaScript en el estudio", async () => { exige(!a.errs.length && !g.errs.length, (a.errs.concat(g.errs)).join(" | ").slice(0, 200)); });

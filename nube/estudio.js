@@ -253,7 +253,7 @@ export const LABORATORIO = {
   "tipografias": { nombre: "Tus tipografías", texto: "En cualquier selector de Tipografía (textos, rótulos de los lotes y ficha): «Subir tu tipografía» en TTF, OTF o WOFF (hasta 5 MB). Se guarda en el proyecto y sale igual en el tour publicado, en el .zip y en la foto 360." },
   "landing": { nombre: "Landing del desarrollo", texto: "Publicar → Landing: una página de venta con la marca del proyecto (logos, colores y letras de su manual), portada, plano maestro (se amplía con los dedos), lotes con su precio y calculadora de pagos, recorrido 360, galería, ubicación y WhatsApp con el lote elegido. Se ve en celular y compu y se publica con el tour en su link /landing." },
   "landing-disenos": { nombre: "Diseños de la landing", texto: "Publicar → Landing → «Diseño»: cuatro diseños probados para empezar, cada uno con su portada, formas y letras: Hacienda (clásica y señorial), Nativa (campestre y editorial, portada partida), Litoral (costa, portada centrada y titulares delgados) y Urbano (moderno, fondo oscuro y letra grande). Al elegir uno se ponen sus colores y letras en Marca y ahí se cambian por los del cliente." },
-  "ficha-disenos": { nombre: "Diseños de la ficha", texto: "Panoramas → Fichas técnicas → Ficha de los lotes → «Empieza con un diseño»: cinco fichas probadas (Mirador, Hacienda, Nativa, Litoral y Urbano) con su acomodo, sus colores y su letra; se toma una de referencia y luego se cambian el logo, los colores, la letra y los textos." },
+  "ficha-disenos": { nombre: "Diseños de la ficha", texto: "Panoramas → Fichas técnicas → Ficha de los lotes → «Empieza con un diseño»: siete fichas probadas (Mirador, Hacienda, Nativa, Litoral, Urbano, Plano —con cuadrícula, cotas y Área · Frente · Fondo— y Terreno —con foto, precio y superficie en grande—) con su acomodo, sus colores y su letra; se toma una de referencia y luego se cambian el logo, los colores, la letra y los textos." },
   "bienvenida": { nombre: "Pantalla de bienvenida", texto: "Proyecto → General: el tour abre con tu logo, el nombre y un botón sobre la esfera girando despacio. Al tocarlo empieza el recorrido con su música y su piloto automático, sin la pregunta de «Activar sonido». Se aplica al volver a publicar." },
   "tutorial-video": { nombre: "Tutorial en video", texto: "En Mis Tours y en Panoramas (mientras el tour no tiene esferas) sale la tarjeta «Tutorial paso a paso»: abre el video de cómo armar un tour, dentro de Mozari, con un aviso de que se grabó antes de las últimas actualizaciones." },
   "mejora": { nombre: "Mejora de esferas", texto: "Ventana «Mejora», junto a Mis Tours: la edición de tus esferas. Ajustes de imagen (brillo, contraste, saturación, sombras, altas luces, temperatura y detalle) que se ven al momento y se guardan al instante; «Quitar el tripié» (el piso visto desde arriba) y «Borrar objetos» en cualquier parte de la esfera, con corrector puntual y tampón de clonar. Sale así en el tour publicado y en el .zip; la foto original no se pierde. Se usa en la compu." },
@@ -273,6 +273,7 @@ export const LABORATORIO = {
   "voz-idiomas": { nombre: "Voz en inglés y español", texto: "Interfaz → «Sonido del tour»: la voz en español y otra en inglés, cada una con sus voces (escribes el texto en cada idioma). En el tour, la pastilla de la voz trae ES | EN: cada visitante la oye en el idioma de su celular o compu y la cambia con un toque. Se ve al volver a publicar." },
   "link-cliente": { nombre: "Link de disponibilidad para tu cliente", texto: "Publicar → «Link para tu cliente»: un link que le mandas por WhatsApp a tu cliente (el desarrollador o su vendedor). Lo abre en su celular o compu, sin cuenta ni contraseña, ve sus lotes y los marca Disponible, Apartado o Vendido; el tour publicado cambia al momento. Solo puede cambiar el estado de los lotes de ese tour. Tú ves qué cambió y cuándo, y lo quitas cuando quieras. Con Desarrollos la página del cliente sale limpia; con otra licencia o la cuenta de prueba lleva la marca de agua «Creado por Mozari»." },
   "cotas": { nombre: "Cotas en paredes", texto: "En Capas → «Cota»: tocas el inicio y el final de un muro (en el piso) y Mozari calcula su largo con la altura de la cámara; un punto en el piso y otro arriba da la altura. Si tienes la medida del plano, la escribes y manda esa. Salen en el tour como en un plano." },
+  "dia-noche": { nombre: "Día y noche", texto: "En Capas, sin nada elegido: «Día y noche». Subes la misma vista tomada desde el mismo punto al atardecer y de noche (como otras esferas) y las agregas a la principal, con un giro para que empaten. En el tour salen «Día · Atardecer · Noche» y el paso del día: se funden despacio, como un timelapse, con los lotes y puntos encima. Esas esferas no salen aparte en el tour." },
 };
 // "pago": las cuentas Pro y Desarrollos (con su plan vigente); "desarrollos": solo Desarrollos (pedido de Amar,
 // 23 nov 2026, para Equipo); "todos" incluye también Gratis
@@ -773,8 +774,24 @@ async function ventasCsv(request, env) {
   return new Response(csv + "\n", { headers: { "content-type": "text/csv; charset=utf-8", "cache-control": "no-store" } });
 }
 
+// Vendedores (Amar, 25 nov 2026: «un creador de links para la cuenta de… mi vendedora… dale autoridad total»).
+// Las cuentas de esta lista usan los «Links de regalo y descuento» igual que el dueño (crear, ver y apagar), y nada más
+// del panel. Cada link anota quién lo creó. La lista la cambia solo el dueño: config/vendedores.json = ["correo", …].
+const CLAVE_VENDEDORES = "config/vendedores.json";
+async function vendedores(env) { const o = await env.R2.get(CLAVE_VENDEDORES); const l = o ? await o.json().catch(() => []) : []; return Array.isArray(l) ? l.map((x) => String(x).toLowerCase()).filter(Boolean) : []; }
+const esVendedor = async (env, yo) => !!yo.email && (await vendedores(env)).includes(String(yo.email).toLowerCase());
 async function admin(request, env, partes, yo) {
   const m = request.method;
+  if (!yo.admin && partes[2] !== "cupones") return error(403, "Solo el dueño de Mozari"); // un vendedor solo entra a los links
+  if (partes[2] === "vendedores" && partes.length === 3) {
+    if (m === "GET") return json({ vendedores: await vendedores(env) });
+    if (m === "PUT") {
+      const c = await request.json().catch(() => ({})), l = [...new Set((Array.isArray(c.vendedores) ? c.vendedores : []).map((x) => String(x).trim().toLowerCase()).filter((x) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x)))].slice(0, 20);
+      await env.R2.put(CLAVE_VENDEDORES, JSON.stringify(l), { httpMetadata: { contentType: "application/json" } });
+      return json({ vendedores: l });
+    }
+    return error(405, "Método no permitido");
+  }
   if (partes[2] === "galeria" && partes.length === 3) return apiGaleria(request, env, partes);
   // Estadísticas: todos los tours (resumen) y el detalle de uno
   if (partes[2] === "estadisticas" && m === "GET") {
@@ -1014,7 +1031,7 @@ async function admin(request, env, partes, yo) {
       while (cupones.length < cantidad) {
         const r = crypto.getRandomValues(new Uint8Array(6)), codigo = (pct >= 100 ? "MZ-" : "AL-") + [...r].map((x) => LETRAS[x % LETRAS.length]).join("");
         if (await env.R2.head(cuponClave(codigo))) continue;
-        const cupon = { codigo, pct, planes, max: 1, vence, usos: 0, usadoPor: [], activo: true, nota, lote, creado };
+        const cupon = { codigo, pct, planes, max: 1, vence, usos: 0, usadoPor: [], activo: true, nota, lote, creado, por: String(yo.email || "").toLowerCase() };
         if (meses) cupon.meses = meses;
         await env.R2.put(cuponClave(codigo), JSON.stringify(cupon), { httpMetadata: { contentType: "application/json" } });
         cupones.push(cupon);
@@ -1130,7 +1147,7 @@ async function admin(request, env, partes, yo) {
 
 async function api(request, env, partes, yo) {
   const m = request.method, uid = yo.uid, plan = planDe(yo);
-  if (partes[1] === "yo" && m === "GET") return json({ email: yo.email, nombre: yo.nombre, foto: yo.foto, admin: !!yo.admin, plan, lab: await labDe(env, yo), guias: yo.guiasVistas || [], bienvenida: !!yo.bienvenida });
+  if (partes[1] === "yo" && m === "GET") return json({ email: yo.email, nombre: yo.nombre, foto: yo.foto, admin: !!yo.admin, vendedor: !yo.admin && await esVendedor(env, yo), plan, lab: await labDe(env, yo), guias: yo.guiasVistas || [], bienvenida: !!yo.bienvenida });
   // Desde el celular: «Mándame el link a mi correo» para abrir Mozari en la compu (una vez cada 10 minutos)
   if (partes[1] === "yo" && partes[2] === "link-compu" && partes.length === 3 && m === "POST") {
     const clave = "cuentas/" + yo.uid + "/perfil.json", o = await env.R2.get(clave); if (!o) return error(404, "Sin cuenta");
@@ -1165,7 +1182,7 @@ async function api(request, env, partes, yo) {
   }
   if (partes[1] === "pagos") return apiPagos(request, env, partes, yo);
   if (partes[1] === "reportes" && partes.length === 2 && m === "POST") return crearReporte(request, env, yo, plan);
-  if (partes[1] === "admin") return yo.admin ? admin(request, env, partes, yo) : error(403, "Solo el dueño de Mozari");
+  if (partes[1] === "admin") return yo.admin || (partes[2] === "cupones" && await esVendedor(env, yo)) ? admin(request, env, partes, yo) : error(403, "Solo el dueño de Mozari");
   if (partes[1] === "novedades") return apiNovedades(request, env, partes, yo, plan);
 
   if (partes[1] === "uso" && m === "GET") return json(Object.assign({ plan }, await usoDe(env, uid, true)));
@@ -1474,6 +1491,9 @@ async function apiTour(request, env, partes, yo, id, miembro) {
     // Acabado fino (Laboratorio): los retoques a la interfaz del tour publicado
     p.proyecto.acabado = lab.includes("acabado");
     p.proyecto.transiciones = lab.includes("transiciones");
+    // Día y noche (Laboratorio «dia-noche»): sin la función, las esferas de otra hora salen como esferas normales
+    p.proyecto.diaNoche = lab.includes("dia-noche");
+    if (!p.proyecto.diaNoche && Array.isArray(p.escenas)) p.escenas.forEach((e) => { if (e && typeof e === "object") { delete e.momentos; delete e.momentoBase; delete e.momentosAuto; } });
     // Botón para descargar un PDF (Laboratorio): sale solo si su dueño tiene la función
     p.proyecto.descargaPdf = lab.includes("descarga-pdf");
     // Landing del desarrollo (Laboratorio): solo se publica si su dueño tiene la función
@@ -1481,7 +1501,9 @@ async function apiTour(request, env, partes, yo, id, miembro) {
     else if (!lab.includes("landing-disenos") && p.proyecto.landing && typeof p.proyecto.landing === "object") delete p.proyecto.landing.diseno;
     // Rótulo corto y grande (Laboratorio): solo se publica si su dueño tiene la función
     if (!lab.includes("rotulo-corto")) delete p.proyecto.rotuloCorto;
-    if (!lab.includes("rotulo-estilos")) { delete p.proyecto.rotuloFormato; delete p.proyecto.rotuloEstilo; }
+    if (!lab.includes("rotulo-estilos")) { delete p.proyecto.rotuloFormato; delete p.proyecto.rotuloEstilo; delete p.proyecto.rotuloArea; }
+    // Fichas «Plano» y «Terreno» (Laboratorio «ficha-disenos»): sin la función, la ficha sale con la plantilla Clásica
+    if (!lab.includes("ficha-disenos") && p.proyecto.ficha && typeof p.proyecto.ficha === "object" && ["plano", "terreno"].includes(p.proyecto.ficha.plantilla)) p.proyecto.ficha.plantilla = "clasica";
     // Lotes vendidos sin número ni ficha (Laboratorio «lotes-vendidos»): sin la función, todos los estados se ven como siempre
     if (!lab.includes("lotes-vendidos") && Array.isArray(p.lotesEstados)) p.lotesEstados = p.lotesEstados.map((e) => { if (!e || typeof e !== "object") return e; const x = Object.assign({}, e); delete x.sinNumero; delete x.sinToque; delete x.sinRelleno; return x; });
     // Ubicación en satélite (Laboratorio): el mapa /mapa solo se publica si su dueño tiene la función

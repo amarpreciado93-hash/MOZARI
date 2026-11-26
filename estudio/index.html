@@ -222,6 +222,11 @@
   .links-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; padding: 14px 16px; border-bottom: 1px solid var(--mz-linea-neutra); }
   .links-form label { display: grid; gap: 4px; font-size: 11px; color: var(--mz-tenue); }
   .links-form input, .links-form select { font: 13px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 10px; padding: 8px 10px; }
+  .links-vend { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--mz-linea-neutra); font-size: 12px; color: var(--mz-tenue); }
+  .links-vend input { font: 13px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 10px; padding: 7px 10px; width: 230px; }
+  .links-vend .chip-dato { color: var(--mz-texto); }
+  .ln-vend-quitar { background: none; border: 0; color: var(--mz-tenue); cursor: pointer; font-size: 14px; padding: 0 0 0 4px; }
+  .ln-vend-quitar:hover { color: var(--mz-aviso); }
   .links-lote { padding: 12px 16px; border-bottom: 1px solid var(--mz-linea-neutra); display: grid; gap: 8px; }
   .links-lote > b { font-size: 13px; }
   .links-lote > b small { font-weight: 400; color: var(--mz-tenue); margin-left: 6px; }
@@ -767,6 +772,22 @@
   .nr-fila textarea:focus { outline: none; border-color: var(--mz-lima); }
   @media (max-width: 900px) { .nr-fila { grid-template-columns: 96px minmax(0, 1fr); } .nr-fila > img { width: 96px; } .nr-fila textarea { grid-column: 1 / -1; } }
   /* Narración por espacio: en el tour (la pastilla de arriba al centro) */
+  /* Día y noche (Laboratorio «dia-noche»): las horas de la esfera y el paso del día */
+  .dn-tour { position: absolute; z-index: 31; left: 50%; top: 80px; transform: translateX(-50%); pointer-events: auto; display: flex; align-items: center; gap: 2px; width: max-content; max-width: calc(100% - 24px); padding: 4px; box-sizing: border-box; border-radius: var(--sk-radio, 14px); background: rgba(11, 11, 11, 0.74); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: #fff; font-family: var(--mz-texto-ui); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28); }
+  .dn-tour[hidden] { display: none; }
+  .dn-tour button { all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: var(--sk-radio-item, 10px); font-size: 13px; font-weight: 500; line-height: 1; color: rgba(255, 255, 255, 0.78); white-space: nowrap; transition: background-color 0.25s, color 0.25s; }
+  .dn-tour button:hover { color: #fff; background: rgba(255, 255, 255, 0.09); }
+  .dn-tour button:focus-visible { outline: 2px solid var(--sk-acento, #fff); outline-offset: 1px; }
+  .dn-tour svg { width: 16px; height: 16px; flex: none; }
+  .dn-tour .dn-op[aria-pressed="true"] { background: var(--sk-acento, #fff); color: var(--sk-sobre, #0b0b0b); }
+  .dn-tour .dn-play { width: 34px; padding: 0; justify-content: center; color: #fff; }
+  .dn-tour .dn-play svg { width: 14px; height: 14px; }
+  .dn-tour.corre .dn-play { color: var(--sk-acento, #fff); }
+  .nr:not([hidden]) ~ .dn-tour { top: 136px; }
+  .sk--v .dn-tour, .sk--v .nr:not([hidden]) ~ .dn-tour { top: calc(env(safe-area-inset-top, 0px) + 66px); padding: 3px; }
+  .sk--v .dn-tour button { height: 32px; padding: 0 10px; font-size: 12px; gap: 5px; }
+  .sk--v .dn-tour .dn-play { width: 32px; padding: 0; }
+  .sk--v .dn-tour svg { width: 14px; height: 14px; }
   .nr { position: absolute; z-index: 31; left: 50%; top: 80px; transform: translateX(-50%); pointer-events: auto; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; align-items: center; width: max-content; max-width: min(540px, calc(100% - 32px)); padding: 7px 18px 9px 7px; border-radius: 24px; background: rgba(11, 11, 11, 0.78); color: #fff; font-family: var(--mz-texto-ui); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28); overflow: hidden; }
   .nr-play { grid-row: 1 / span 2; width: 36px; height: 36px; border-radius: 50%; border: 0; padding: 0; display: grid; place-items: center; cursor: pointer; background: var(--sk-acento, #D5FF40); color: var(--sk-sobre, #0B0B0B); }
   .nr-play svg { width: 16px; height: 16px; }
@@ -968,6 +989,17 @@
   .orden .mini { padding: 6px 0; font-size: 11px; }
   .acciones { display: flex; gap: 6px; flex-wrap: wrap; }
   .vacio { padding: 18px 14px; font-size: 12px; color: var(--mz-tenue); line-height: 1.5; margin: 0; }
+  /* Día y noche (Laboratorio): el grupo de la esfera en el estudio */
+  .dn-grupo { padding-top: 14px; border-top: 1px solid var(--mz-linea-neutra); }
+  .dn-grupo .campo { grid-template-columns: minmax(0, 1fr); gap: 5px; }
+  .dn-grupo .nota { margin: 0; }
+  .dn-ver-fila { display: flex; gap: 6px; align-items: center; }
+  .dn-ver-fila input { flex: 1; min-width: 0; }
+  .dn-ver-fila .mini[aria-pressed="true"] { background: var(--mz-lima); color: var(--mz-tinta); border-color: var(--mz-lima); }
+  .dn-fila { display: grid; gap: 8px; padding: 10px; border-radius: 10px; background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); }
+  .dn-giro { display: flex; gap: 8px; align-items: center; }
+  .dn-giro input { flex: 1; min-width: 0; accent-color: var(--mz-lima); }
+  .dn-giro output { width: 48px; text-align: right; font-variant-numeric: tabular-nums; color: var(--mz-texto); }
 
   /* Recorrido del piloto automático */
   .recorrido { list-style: none; margin: 0; padding: 10px; overflow-y: auto; flex: 1; display: grid; align-content: start; gap: 8px; }
@@ -1287,6 +1319,50 @@
   .ficha-d .fd-ubic polygon.este { fill: var(--fd-acento); stroke: var(--fd-acento); }
   .ficha-d .fd-cta { display: block; margin: 4px 26px 24px; text-align: center; text-decoration: none; font-weight: 600; font-size: 14px; padding: 12px 16px; border-radius: 999px; background: var(--fd-acento); color: var(--fd-sobre); }
   .ficha-d.fd-banda { padding-bottom: 6px; }
+  /* Ficha «Plano» (pedido de Obed, 25 nov 2026): blanca, el lote sobre cuadrícula, Área · Frente · Fondo y el botón a todo lo ancho */
+  .ficha-d.fd-plano-f { padding-bottom: 4px; }
+  /* Ficha «Terreno» (Amar, 25 nov 2026): foto arriba, el lugar en grande y el bloque de color con precio y superficie */
+  .ficha-d.fd-terreno-f { overflow: hidden; }
+  .ficha-d .ft-foto { height: 250px; background: color-mix(in srgb, var(--fd-texto) 10%, var(--fd-fondo)); }
+  .ficha-d .ft-foto img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .ficha-d .ft-sin-foto { height: 100%; display: grid; place-items: center; padding: 10px 40px; box-sizing: border-box; }
+  .ficha-d .ft-sin-foto .fd-plano { max-height: 100%; }
+  .ficha-d .ft-base { display: grid; grid-template-columns: 1fr 1.08fr; gap: 14px; padding: 0 18px 22px 22px; }
+  .ficha-d .ft-izq { display: grid; align-content: start; gap: 6px; padding-top: 18px; min-width: 0; }
+  .ficha-d .ft-marca .fd-logo { max-height: 40px; max-width: 150px; }
+  .ficha-d .ft-lote { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.7; }
+  .ficha-d.fd-terreno-f .fd-titulo { font-size: 28px; font-weight: 800; line-height: 1.05; color: var(--fd-acento); text-align: left; overflow-wrap: anywhere; }
+  .ficha-d .ft-sub { font-size: 13px; font-weight: 600; }
+  .ficha-d.fd-terreno-f .fd-cta { margin: 8px 0 0; justify-self: start; padding: 9px 18px; font-size: 14px; }
+  .ficha-d .ft-caja { position: relative; margin-top: -54px; border-radius: 16px; overflow: visible; background: var(--fd-acento); color: var(--fd-sobre); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18); }
+  .ficha-d .ft-sello { position: absolute; width: 92px; height: 92px; right: 2px; top: -46px; overflow: visible; }
+  .ficha-d .ft-sello text { paint-order: stroke; stroke: rgba(0, 0, 0, 0.35); stroke-width: 2px; stroke-linejoin: round; }
+  .ficha-d .ft-precio { display: grid; gap: 2px; padding: 22px 16px 16px; }
+  .ficha-d .ft-precio small, .ficha-d .ft-sup small { font-size: 14px; text-transform: uppercase; letter-spacing: 0.02em; }
+  .ficha-d .ft-sup small { text-transform: none; }
+  .ficha-d .ft-precio b { font-size: 24px; font-weight: 800; line-height: 1.08; overflow-wrap: anywhere; }
+  .ficha-d .ft-sup { display: grid; justify-items: center; gap: 2px; padding: 14px 12px 18px; border-radius: 0 0 16px 16px; background: color-mix(in srgb, #000 12%, var(--fd-acento)); }
+  .ficha-d .ft-sup b { font-size: 26px; font-weight: 600; }
+  .ficha-d .fp-cab { padding: 28px 28px 0; min-height: 22px; }
+  .ficha-d .fp-cab .fd-logo { max-height: 44px; max-width: 60%; }
+  .ficha-d .fp-desarrollo { font-size: 15px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fd-acento); }
+  .ficha-d .fp-tit { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 8px 28px 4px; }
+  .ficha-d.fd-plano-f .fd-titulo { font-size: 40px; font-weight: 800; color: var(--fd-texto); text-align: left; letter-spacing: -0.01em; }
+  .ficha-d .fp-estado { font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 999px; background: color-mix(in srgb, var(--c) 28%, #fff); color: color-mix(in srgb, var(--c) 70%, #000); }
+  .ficha-d .fp-plano { margin: 6px 28px 0; background-image: linear-gradient(to right, color-mix(in srgb, var(--fd-texto) 9%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--fd-texto) 9%, transparent) 1px, transparent 1px); background-size: 20px 20px; }
+  .ficha-d.fd-plano-f .fd-plano polygon { fill: transparent; stroke: var(--fd-acento); stroke-width: 2.2; }
+  .ficha-d.fd-plano-f .fd-medida { fill: var(--fd-acento); }
+  .ficha-d.fd-plano-f .fd-centro { stroke: var(--fd-fondo); }
+  .ficha-d .fp-datos { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin: 14px 28px 0; padding: 14px 0; border-top: 1px solid color-mix(in srgb, var(--fd-texto) 18%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--fd-texto) 18%, transparent); text-align: center; }
+  .ficha-d .fp-datos > div { display: grid; gap: 2px; }
+  .ficha-d .fp-datos > div + div { border-left: 1px solid color-mix(in srgb, var(--fd-texto) 18%, transparent); }
+  .ficha-d .fp-datos span { font-size: 14px; opacity: 0.85; }
+  .ficha-d .fp-datos b { font-size: 21px; font-weight: 500; }
+  .ficha-d .fp-precio { display: flex; justify-content: space-between; align-items: baseline; margin: 12px 28px 0; }
+  .ficha-d .fp-precio span { font-size: 14px; opacity: 0.85; }
+  .ficha-d .fp-precio b { font-size: 26px; font-weight: 800; color: var(--fd-acento); }
+  .ficha-d.fd-plano-f .fd-textos { padding: 14px 28px 4px; }
+  .ficha-d.fd-plano-f .fd-cta { margin: 16px 28px 24px; border-radius: 10px; padding: 15px 16px; font-size: 16px; font-weight: 500; }
   .ficha-d .fd-banda { display: inline-block; margin: 34px 0 6px; padding: 14px 40px 14px 26px; border-radius: 0 40px 40px 0; background: var(--fd-acento); color: var(--fd-sobre); font-size: 26px; font-weight: 700; }
   .ficha-d.fd-banda .fd-plano { padding: 0 26px; box-sizing: border-box; }
   .ficha-d.fd-banda .fd-titulo { color: var(--fd-texto); font-weight: 800; font-size: 32px; margin: 4px 0 6px; }
@@ -2535,6 +2611,7 @@
           <span>Rótulo en la esfera:</span>
           <div class="estados" role="group" aria-label="Texto del rótulo de los lotes" id="lt-rotulo-texto"></div>
           <div class="estados" role="group" aria-label="Estilo del rótulo de los lotes" id="lt-rotulo-estilo"></div>
+          <div class="estados" role="group" aria-label="Superficie bajo el círculo o la insignia" id="lt-rotulo-area" hidden></div>
           <span class="nota" id="lt-rotulo-ejemplo"></span>
         </div>
         <div class="lotes-terminos" id="lt-reglas-fila" hidden>
@@ -2965,6 +3042,10 @@
     return siglaLote() + n + (mz ? " · " + mzCorta(mz) : "");
   }
   const insigniaDe = (c) => { if (loteDe(c).unidad) return null; const e = estiloInsignia(); return e ? { forma: e, texto: textoInsignia(c) } : null; };
+  // Superficie bajo el círculo o la insignia (reporte de Obed, 25 nov 2026: «al activar el círculo ya esconde la
+  // Superficie (m²); debería dar opción de mostrarla o no»). Sale si el tour no eligió «Sin superficie» y el lote
+  // tiene prendida su Superficie en Capas.
+  const areaInsignia = (c) => { try { const l = loteDe(c); return P().rotuloArea !== false && l.verArea !== false ? fmtArea(l.area) : ""; } catch (e) { return ""; } };
   function rotuloCortoDe(c) {
     const l = loteDe(c); if (l.unidad) return null; // los deptos de un edificio conservan su nombre
     const fm = formatoRotulo(); if (fm === "completo") return null;
@@ -3332,6 +3413,16 @@
   normalizar();
   const escena = (id) => est.escenas.find((e) => e.id === id);
   const nombreDe = (id) => (escena(id) ? escena(id).nombre : "—");
+  // Día y noche (Laboratorio «dia-noche», Amar 25 nov 2026: «hace como un efecto de timelapse… creas una misma esfera en
+  // la misma posición, pero de noche, de atardecer y así, y va teniendo una transición»). La esfera principal guarda
+  // escena.momentos = [{ id, nombre, giro }] (otras esferas del tour, tomadas desde el mismo punto) y el nombre de la suya
+  // en escena.momentoBase («Día»). En el tour esas esferas no salen aparte: se pintan encima de la principal y se funden.
+  const DN_MAX = 3;
+  const diaNocheOn = () => (MODO === "tour" ? est.proyecto.diaNoche === true : enLab("dia-noche"));
+  const momentosDe = (id) => { const e = escena(id); return diaNocheOn() && e && Array.isArray(e.momentos) ? e.momentos.filter((m) => m && m.id && m.id !== id && meta[m.id] && escena(m.id)).slice(0, DN_MAX) : []; };
+  const baseDeMomento = (id) => { if (!diaNocheOn()) return null; const b = est.escenas.find((e) => e.id !== id && momentosDe(e.id).some((m) => m.id === id)); return b ? b.id : null; };
+  // Las esferas que se ven como esferas en el tour (las de otra hora van dentro de su principal)
+  const escenasTour = () => (diaNocheOn() ? est.escenas.filter((e) => !baseDeMomento(e.id)) : est.escenas);
   const VACIA_IMG = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 10"><rect width="16" height="10" fill="#171916"/></svg>');
   // Archivos del tour (imágenes, logo, música): en la nube se guardan como "archivos/…" dentro del tour;
   // las fotos viejas incrustadas (data:) se siguen viendo igual.
@@ -4626,6 +4717,30 @@
     h += TOQUE_G(235, 128, t, toca) + (t < toca + 0.5 || t > 3.6 ? CURSOR_G(cx, cy) : "") + pieG(t > 2.9 ? "Llegó a la siguiente esfera, sin cortes" : t > toca ? "La vista avanza hacia el punto…" : "Tu cliente toca un punto", t > 2.9);
     svg.innerHTML = h;
   }
+  // Día y noche: la misma vista se funde de día a atardecer y a noche; los lotes se quedan encima
+  function animDiaNoche(svg, t) {
+    const a = sv((t - 1.3) / 1.7), b = sv((t - 4.0) / 1.7);
+    const mez = (c1, c2, u) => "#" + [1, 3, 5].map((i) => Math.round(parseInt(c1.substr(i, 2), 16) * (1 - u) + parseInt(c2.substr(i, 2), 16) * u).toString(16).padStart(2, "0")).join("");
+    const tri = (c0, c1, c2) => (b > 0 ? mez(c1, c2, b) : mez(c0, c1, a));
+    const k = b > 0.5 ? 2 : a > 0.5 ? 1 : 0;
+    let h = '<rect width="360" height="200" fill="#1a2014"/><clipPath id="dn-v"><rect x="40" y="12" width="280" height="160" rx="12"/></clipPath><g clip-path="url(#dn-v)">';
+    h += '<rect x="40" y="12" width="280" height="96" fill="' + tri("#86B4D6", "#E8955A", "#141C36") + '"/>';
+    const sy = 46 + 50 * a + 30 * b; // el sol baja y se esconde
+    h += '<circle cx="250" cy="' + sy.toFixed(1) + '" r="13" fill="' + mez("#FFE9A6", "#FFB15C", a) + '" opacity="' + (1 - b).toFixed(2) + '"/>';
+    h += '<path d="M92 40a10 10 0 1 0 12 12a8 8 0 0 1-12-12z" fill="#EDEFF7" opacity="' + b.toFixed(2) + '"/>';
+    h += '<path d="M40 108 Q120 92 200 104 T320 98 V172 H40Z" fill="' + tri("#6A8F4E", "#7A6440", "#18241A") + '"/>';
+    h += '<path d="M40 136 L320 122" stroke="' + tri("#D9D2C0", "#CDB89A", "#3A3F3A") + '" stroke-width="5"/>';
+    // lotes: no cambian
+    [[96, 142], [150, 139], [204, 136]].forEach(([x, y]) => { h += '<path d="M' + x + " " + y + "l48 -3 l6 22 l-50 3z" + '" fill="rgba(213,255,64,.38)" stroke="#fff" stroke-width="1.6"/>'; });
+    if (b > 0) [[118, 150], [172, 147], [226, 144], [268, 118], [70, 120]].forEach(([x, y]) => { h += '<circle cx="' + x + '" cy="' + y + '" r="2.4" fill="#FFD27A" opacity="' + b.toFixed(2) + '"/>'; });
+    h += "</g>";
+    // la barra del tour
+    const et = ["Día", "Atardecer", "Noche"], xs = [140, 192, 251], an = [36, 62, 50];
+    h += '<rect x="96" y="20" width="184" height="24" rx="8" fill="rgba(11,11,11,.78)"/><path d="M106 27v10l8-5z" fill="#fff"/>';
+    et.forEach((n, i) => { if (i === k) h += '<rect x="' + (xs[i] - an[i] / 2) + '" y="23" width="' + an[i] + '" height="18" rx="6" fill="#fff"/>'; h += '<text x="' + xs[i] + '" y="36" font-size="10" font-weight="600" text-anchor="middle" fill="' + (i === k ? "#0b0b0b" : "rgba(255,255,255,.8)") + '">' + n + "</text>"; });
+    h += pieG(k === 2 ? "Tus lotes se quedan encima" : k === 1 ? "Se funde despacio, como un timelapse" : "La misma vista, de día…", k === 2);
+    svg.innerHTML = h;
+  }
   // Bienvenida: logo, nombre y un botón sobre la esfera; un toque entra, suena la música y arranca el piloto
   function animBienvenida(svg, t) {
     const toca = 2.0, fuera = sv((t - toca) / 0.7), gira = t * 14;
@@ -4687,7 +4802,7 @@
   // Diseños de la ficha: se toca cada tarjeta y la ficha cambia de acomodo, colores y letra
   function animFichaDisenos(svg, t) {
     t = Math.max(0, t); // el primer cuadro puede llegar con un tiempo un poquito negativo
-    const i = Math.min(4, Math.floor(t / 1.5)), x = FICHA_DISENOS[i], u = sv((t - i * 1.5) / 0.4), cel = (k) => [10 + (k % 3) * 42, 12 + Math.floor(k / 3) * 46];
+    const i = Math.min(FICHA_DISENOS.length - 1, Math.floor(t / 1.5)), x = FICHA_DISENOS[i], u = sv((t - i * 1.5) / 0.4), cel = (k) => [10 + (k % 3) * 42, 12 + Math.floor(k / 3) * 46];
     let h = '<rect width="360" height="200" fill="#161a12"/>';
     FICHA_DISENOS.forEach((d, k) => { const [x0, y0] = cel(k), on = k === i; h += '<g transform="translate(' + x0 + " " + y0 + ')"><rect width="38" height="40" rx="5" fill="transparent" stroke="' + (on ? "#D5FF40" : "rgba(255,255,255,.25)") + '" stroke-width="' + (on ? 2 : 1) + '"/><g transform="translate(3 3) scale(.267)">' + miniFicha(d).replace(/^<svg[^>]*>|<\/svg>$/g, "") + '</g><text x="3" y="37" font-size="5.5" font-weight="600" fill="#fff">' + d.n + "</text></g>"; });
     h += '<g transform="translate(150 12)" opacity="' + (0.35 + 0.65 * u).toFixed(2) + '"><g transform="scale(1.6)">' + miniFicha(x).replace(/^<svg[^>]*>|<\/svg>$/g, "") + "</g></g>";
@@ -5045,8 +5160,8 @@
       texto: "En el tour, el aviso <b>Piloto automático</b> ahora es un botón: al tocarlo, la cámara regresa al inicio y el recorrido vuelve a empezar <b>con su audio</b>. Y mientras el piloto corre, el celular <b>no se bloquea</b>." }].filter(Boolean), () => nav.sub === "piloto" && esVisible("#pl-repetir-info"));
     if (clave === "media/planos" && enLab("planos")) guiaPlanos();
     if (clave === "media/audios" && enLab("narracion")) guiaVoz();
-    if (clave === "panoramas/lotes" && enLab("ficha-disenos") && enLab("fichas")) guiaNueva("nuevo-ficha-disenos", () => [esVisible("#fe-disenos-grupo") && { el: "#fe-disenos-grupo", titulo: "Nuevo: 5 diseños de ficha", anim: animFichaDisenos, dur: 7.6,
-      texto: "Toca <b>Mirador</b>, <b>Hacienda</b>, <b>Nativa</b>, <b>Litoral</b> o <b>Urbano</b> y tu ficha toma su acomodo, sus colores y su letra. Después cambia el logo, los colores y los textos por los de tu desarrollo." }].filter(Boolean), () => esVisible("#fe-disenos-grupo"));
+    if (clave === "panoramas/lotes" && enLab("ficha-disenos") && enLab("fichas")) guiaNueva("nuevo-ficha-disenos", () => [esVisible("#fe-disenos-grupo") && { el: "#fe-disenos-grupo", titulo: "Nuevo: 7 diseños de ficha", anim: animFichaDisenos, dur: 10.6,
+      texto: "Toca <b>Mirador</b>, <b>Hacienda</b>, <b>Nativa</b>, <b>Litoral</b>, <b>Urbano</b>, <b>Plano</b> o <b>Terreno</b> y tu ficha toma su acomodo, sus colores y su letra. Después cambia el logo, los colores y los textos por los de tu desarrollo." }].filter(Boolean), () => esVisible("#fe-disenos-grupo"));
     if (clave === "panoramas/lotes" && enLab("rotulo-estilos")) guiaNueva("nuevo-rotulo-estilos", () => [esVisible("#lt-rotulo-fila") && { el: "#lt-rotulo-fila", titulo: "Nuevo: cómo se ve el número de cada lote", anim: animRotuloEstilos, dur: 6,
       texto: "En <b>Texto</b> elige <b>Siglas</b> (L-12) o <b>Solo número</b> (12). En <b>Estilo</b> ponlo en un <b>Círculo</b> o una <b>Insignia</b> del color de su estado: verde, apartado o vendido de un vistazo, siempre de frente. Luego vuelve a publicar." }].filter(Boolean), () => esVisible("#lt-rotulo-fila"));
     if (clave === "panoramas/lotes" && enLab("rotulo-corto")) guiaNueva("nuevo-rotulo-corto", () => [esVisible("#lt-rotulo-fila") && { el: "#lt-rotulo-fila", titulo: "Nuevo: rótulo corto y grande", anim: animRotuloCorto, dur: 4.2,
@@ -5378,7 +5493,7 @@
       : '<div style="display:flex;gap:8px;flex-wrap:wrap">' + (PLAN.id === "pro" || PLAN.vence ? '<button class="btn-sec" data-comprar="desarrollos">Subir a Desarrollos</button>' : "") + '<button class="btn-sec" data-comprar="espacio">+10 GB</button></div>';
     caja.innerHTML = '<div><b>' + (PLAN.id === "gratis" ? "Cuenta de prueba" : "Licencia " + esc(PLAN.nombre)) + "</b><span>" + partes.join(" · ") + "</span>" + aviso + (PLAN.bytes !== null ? '<span class="uso-barra"><span class="uso-lleno" style="width:' + pct.toFixed(1) + '%"></span></span>' : "") + "</div>" +
       boton +
-      (NUBE.admin ? '<button class="btn-sec" id="ver-cuentas">Panel de dueño</button>' : "");
+      (NUBE.admin ? '<button class="btn-sec" id="ver-cuentas">Panel de dueño</button>' : NUBE.vendedor ? '<button class="btn-sec" id="ver-links">Links de regalo y descuento</button>' : "");
     if (!u) fetch("api/uso", { cache: "no-store" }).then((r) => r.json()).then((d) => { usoNube = d; pintarPlan(); }).catch(() => {});
   }
   // Panel del dueño: todas las cuentas y su plan (para dar acceso a tus alumnos)
@@ -5397,31 +5512,56 @@
     const en30 = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
     const lotes = []; cupones.forEach((c) => { const k = c.lote || c.codigo; let l = lotes.find((x) => x.k === k); if (!l) lotes.push((l = { k, c: [] })); l.c.push(c); });
     const queEs = (c) => (c.pct >= 100 ? "Regalo: " : c.pct + "% en ") + c.planes.map((p) => (p === "espacio" ? "+10 GB" : PLANES_TXT[p])).join(" y ") + (c.pct >= 100 ? (c.meses === 12 ? " por 1 año" : " para siempre") : "");
-    caja.innerHTML = '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) +
+    // Vendedores (Amar, 25 nov 2026): ven solo esta parte del panel, con todo lo de los links
+    const vend = !NUBE.admin, yoCorreo = String(NUBE.email || "").toLowerCase(), quien = (c) => (c.por && c.por !== yoCorreo ? " · lo creó " + c.por : "");
+    let vends = [];
+    if (!vend) { const rv = await fetch("api/admin/vendedores", { cache: "no-store" }).catch(() => null); vends = rv && rv.ok ? (await rv.json()).vendedores || [] : []; }
+    caja.innerHTML = (vend ? '<p class="cuentas-titulo"><b>Links de regalo y descuento</b> · Cada link sirve una sola vez: mándale uno a cada cliente.</p>' : '<p class="cuentas-titulo"><b>Panel de dueño</b> · Solo tú ves esto.</p>' + TABS_DUENO(0) +
+      '<div class="links-vend"><span>También crean links:</span>' + vends.map((v) => '<span class="chip-dato">' + esc(v) + ' <button class="ln-vend-quitar" data-ln-vend-quitar="' + esc(v) + '" aria-label="Quitar a ' + esc(v) + '">×</button></span>').join("") +
+      '<input type="email" id="ln-vend" placeholder="correo de tu vendedor" maxlength="80"><button class="mini" id="ln-vend-agregar">Agregar</button></div>') +
       '<div class="links-form"><label>Cuántos<input type="number" id="ln-n" min="1" max="100" value="10" style="width:70px"></label>' +
       '<label>Qué incluyen<select id="ln-tipo">' + Object.entries(TIPOS_LINK).map(([k, [n]]) => '<option value="' + k + '">' + n + "</option>").join("") + "</select></label>" +
       '<label>La licencia dura<select id="ln-dura"><option value="0">Para siempre</option><option value="12">1 año</option></select></label>' +
       '<label>El link sirve hasta<input type="date" id="ln-vence" value="' + en30 + '"></label>' +
-      '<label>Para quién (nota)<input type="text" id="ln-nota" maxlength="60" placeholder="Alumnos octubre"></label>' +
+      '<label>Para quién (nota)<input type="text" id="ln-nota" maxlength="60" placeholder="' + (vend ? "Nombre del cliente" : "Alumnos octubre") + '"></label>' +
       '<button class="btn-prim" id="ln-crear">Crear links</button></div>' +
       (lotes.length ? lotes.map((l) => {
         const c0 = l.c[0], usados = l.c.filter((c) => c.usos).length;
-        return '<div class="links-lote"><b>' + esc(c0.nota || queEs(c0)) + "<small>" + esc(queEs(c0)) + " · " + usados + " de " + l.c.length + " usados" + (c0.vence ? " · vence el " + fechaLarga(c0.vence) : "") + '</small></b>' +
+        return '<div class="links-lote"><b>' + esc(c0.nota || queEs(c0)) + "<small>" + esc(queEs(c0)) + " · " + usados + " de " + l.c.length + " usados" + (c0.vence ? " · vence el " + fechaLarga(c0.vence) : "") + esc(quien(c0)) + '</small></b>' +
           l.c.map((c) => '<div class="link-fila' + (c.activo ? "" : " apagado") + '"><code>' + esc(c.codigo) + '</code><span class="estado' + (c.usos ? " usado" : "") + '">' + (c.usos ? "Usado por " + esc((c.usadoPorCorreo || [])[0] || "") : c.activo ? "Libre" : "Desactivado") + "</span>" +
             (c.usos ? "<span></span>" : '<button class="mini" data-ln-copiar="' + esc(c.codigo) + '">Copiar link</button>') +
             (c.usos ? "<span></span>" : '<button class="mini" data-ln-activo="' + esc(c.codigo) + '" data-v="' + (c.activo ? "0" : "1") + '">' + (c.activo ? "Desactivar" : "Activar") + "</button>") + "</div>").join("") +
           (l.c.some((c) => !c.usos && c.activo) ? '<div><button class="mini" data-ln-copiar-todos="' + esc(l.k) + '">Copiar todos los libres</button></div>' : "") + "</div>";
       }).join("") : '<p class="nota" style="padding:16px">Aún no has creado links. Cada link sirve una sola vez: mándale uno a cada alumno. Lo que escribas en «Para quién» sale después en Cuentas, para saber de quién es cada licencia de regalo.</p>');
     caja._cupones = cupones;
+    caja._vendedores = vends;
+  }
+  async function guardarVendedores(l) {
+    const r = await fetch("api/admin/vendedores", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ vendedores: l }) }).catch(() => null);
+    if (!r || !r.ok) { avisar("No se pudo guardar"); return false; }
+    return true;
   }
   document.addEventListener("click", async (ev) => {
+    if (ev.target.id === "ver-links") {
+      let c = $("cuentas"); if (c && !c.hidden) { c.hidden = true; return; }
+      if (!c) { c = document.createElement("div"); c.id = "cuentas"; c.className = "cuentas"; $("mi-plan").after(c); }
+      c.hidden = false; pintarLinks(); return;
+    }
+    if (ev.target.id === "ln-vend-agregar") {
+      const v = String($("ln-vend").value || "").trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { avisar("Escribe el correo de su cuenta de Mozari"); return; }
+      if (await guardarVendedores([...new Set(($("cuentas")._vendedores || []).concat([v]))])) { avisar(v + " ya puede crear links"); pintarLinks(); }
+      return;
+    }
+    const vq = ev.target.closest("[data-ln-vend-quitar]");
+    if (vq) { if (await guardarVendedores(($("cuentas")._vendedores || []).filter((x) => x !== vq.dataset.lnVendQuitar))) { avisar("Ya no puede crear links"); pintarLinks(); } return; }
     if (ev.target.id === "ln-crear") {
       const [, pct, planes] = TIPOS_LINK[$("ln-tipo").value], b = ev.target;
       b.disabled = true; b.textContent = "Creando…";
       const r = await fetch("api/admin/cupones", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cantidad: +$("ln-n").value, pct, planes, vence: $("ln-vence").value, nota: $("ln-nota").value, meses: +$("ln-dura").value }) }).catch(() => null);
       const d = r ? await r.json().catch(() => ({})) : {};
       if (!r || !r.ok) { avisar(d.error || "No se pudieron crear"); b.disabled = false; b.textContent = "Crear links"; return; }
-      avisar(d.cupones.length + " links listos"); pintarLinks(); return;
+      avisar(d.cupones.length === 1 ? "Link listo" : d.cupones.length + " links listos"); pintarLinks(); return;
     }
     const cp = ev.target.closest("[data-ln-copiar]");
     if (cp) { try { await navigator.clipboard.writeText(linkDe(cp.dataset.lnCopiar)); avisar("Link copiado"); } catch (e) { avisar(linkDe(cp.dataset.lnCopiar)); } return; }
@@ -6299,6 +6439,13 @@
       $("mv-compu").hidden = true;
       pintarCuentas();
     }
+    // La vendedora también crea links desde el celular
+    else if (NUBE.vendedor && matchMedia("(max-width: 960px)").matches) {
+      const dn = document.createElement("section");
+      dn.className = "mv-dueno"; dn.innerHTML = '<div class="cuentas" id="cuentas"></div>';
+      document.querySelector(".movil .logo-m").after(dn);
+      pintarLinks();
+    }
     // Disponibilidad desde el celular (Laboratorio «lotes-movil»): solo licencias de pago
     if (enLab("lotes-movil") && (NUBE.admin || (PLAN && PLAN.id === "desarrollos")) && matchMedia("(max-width: 960px)").matches) setTimeout(lotesMovil, 0);
     // Desde el cel: se manda el link para abrirlo en la compu (WhatsApp, correo…) o se copia
@@ -6929,9 +7076,10 @@
     const escenasM = {};
     let actual = null;
 
-    function escenaM(id) {
-      if (escenasM[id]) return escenasM[id];
+    // Las piezas de una esfera y sus niveles (también para los momentos de «Día y noche», que se pintan encima)
+    function fuenteM(id) {
       const d = meta[id], b = R(id);
+      if (!d || !d.niveles) return null;
       // Si una pieza falla (red del cel), se vuelve a pedir en 1.5 s y no en 10 s
       const source = Marzipano.ImageUrlSource.fromString(b + "{z}/{f}/{y}/{x}.jpg", { cubeMapPreviewUrl: b + "preview.jpg", retryDelay: 1500 });
       // En el celular la memoria es poca: se usa hasta 2048 px por cara (se ve nítido en esa pantalla)
@@ -6939,6 +7087,11 @@
       const tope = editable ? (MOVIL ? TOPE_MOVIL : Infinity) : topeCara(d.niveles);
       const niveles = d.niveles.filter((l, i) => i === 0 || l.size <= tope);
       const geometry = new Marzipano.CubeGeometry(niveles.length > 1 ? niveles : d.niveles.slice(0, 2));
+      return { d, source, geometry, niveles };
+    }
+    function escenaM(id) {
+      if (escenasM[id]) return escenasM[id];
+      const { d, source, geometry, niveles } = fuenteM(id);
       const cara = Math.min(d.cara, niveles[niveles.length - 1].size);
       // Zoom: Marzipano limita el acercamiento a 1 pixel de la foto por pixel real de pantalla. En celulares
       // (pantallas de 3x) eso casi no dejaba hacer zoom. Se permite acercar hasta ~2x más (como Kuula/3DVista).
@@ -7429,15 +7582,17 @@
       const C = aPantalla(cam, pc), tx = String(ins.texto), k = tx.length;
       const fs = Math.max(6, Math.min(15 * t, lado * 0.2 * t, (lado * 0.85) / Math.max(1.6, k * 0.62 + 0.9)));
       const col = estadoDe(c).color || "#22B573", tc = letraSobre(col), w = k * fs * 0.62, sw = Math.max(1, fs * 0.12).toFixed(1), X = C.x.toFixed(1), Y = C.y.toFixed(1);
-      let f = "";
+      let f = "", medio = 0;
       if (ins.forma === "circulo") {
-        const r = Math.max(fs * 0.95, (w + fs * 0.8) / 2);
+        const r = Math.max(fs * 0.95, (w + fs * 0.8) / 2); medio = r;
         f = '<circle cx="' + X + '" cy="' + Y + '" r="' + r.toFixed(1) + '" fill="' + esc(col) + '" stroke="#fff" stroke-width="' + sw + '"/>';
       } else {
-        const W = w + fs * 1.1, H = fs * 1.6;
+        const W = w + fs * 1.1, H = fs * 1.6; medio = H / 2;
         f = '<rect x="' + (C.x - W / 2).toFixed(1) + '" y="' + (C.y - H / 2).toFixed(1) + '" width="' + W.toFixed(1) + '" height="' + H.toFixed(1) + '" rx="' + (fs * 0.22).toFixed(1) + '" fill="' + esc(col) + '" stroke="#fff" stroke-width="' + sw + '"/>';
       }
-      return '<g class="lt-ins lt-ins-' + ins.forma + '">' + f + '<text class="lt-ins-t" x="' + X + '" y="' + Y + '" font-size="' + fs.toFixed(1) + '" style="fill:' + tc + '">' + esc(tx) + "</text></g>";
+      const ar = areaInsignia(c), fa = Math.max(6, fs * 0.72);
+      const pie = ar ? '<text class="lt-area" x="' + X + '" y="' + (C.y + medio + fa * 0.85).toFixed(1) + '" font-size="' + fa.toFixed(1) + '">' + esc(ar) + "</text>" : "";
+      return '<g class="lt-ins lt-ins-' + ins.forma + '">' + f + '<text class="lt-ins-t" x="' + X + '" y="' + Y + '" font-size="' + fs.toFixed(1) + '" style="fill:' + tc + '">' + esc(tx) + "</text>" + pie + "</g>";
     }
     function etiquetasLote(n, cam, enCam, rec) {
       const c = n.c, l = loteDe(c);
@@ -8016,7 +8171,8 @@
       const fundir = () => {
         if (hecho || turno !== turnoCambio) return; hecho = true;
         marca("funde");
-        actual = escenaM(id); fondoParejo(actual);
+        const antes = actual;
+        actual = escenaM(id); fondoParejo(actual); dnCambio(antes, actual);
         const vf = Object.assign({}, vista || vistaDe(id)), nv = actual.view;
         try { nv.setSize({ width: ancho, height: alto }); } catch (e) { /* ya lo trae */ } // la vista nueva aún no está en pantalla: sin su tamaño no sabe dónde cae cada punto
         nv.setParameters(vf);
@@ -8049,6 +8205,42 @@
       requestAnimationFrame(paso);
     }
 
+    // =================== DÍA Y NOCHE (Laboratorio «dia-noche») ===================
+    // Cada momento (atardecer, noche…) es otra esfera tomada desde el mismo punto. No se cambia de esfera: se pinta
+    // ENCIMA de la actual como otra capa de Marzipano y se funde, así los lotes, textos y puntos siguen en su lugar.
+    // Cada capa tiene su propia vista, que copia la de la esfera (más un giro, si el dron no quedó viendo igual).
+    // A lo más quedan vivas la que se ve y la siguiente (la que se va precargando): el celular no se queda sin memoria.
+    let dnTurno = 0;
+    const dnDe = (e) => e.dn || (e.dn = { capas: new Map(), vis: null, fin: null });
+    function dnCapa(e, mid) {
+      const dn = dnDe(e);
+      if (dn.capas.has(mid)) return dn.capas.get(mid);
+      const f = fuenteM(mid); if (!f) return null;
+      const ov = new Marzipano.RectilinearView({ yaw: 0, pitch: 0, fov: 1.2 }), sc = e.scene, v0 = sc._view;
+      let l = null;
+      try { sc._view = ov; l = sc.createLayer({ source: f.source, geometry: f.geometry, pinFirstLevel: true, textureStoreOpts: { previouslyVisibleCacheSize: MOVIL ? 4 : 16 }, layerOpts: { effects: { opacity: 0 } } }); } catch (x) { l = null; } finally { sc._view = v0; }
+      if (!l) return null;
+      l.__aj = ajParam(ajVivo(f.d));
+      l.__giro = ((momentosDe(e.id).find((m) => m.id === mid) || {}).giro || 0) * Math.PI / 180;
+      l.__sync = () => { const v = e.view; ov.setParameters({ yaw: v.yaw() + l.__giro, pitch: v.pitch(), roll: v.roll(), fov: v.fov() }); };
+      e.view.addEventListener("change", l.__sync); l.__sync();
+      dn.capas.set(mid, l);
+      return l;
+    }
+    function dnQuitar(e, mid) {
+      const l = e.dn && e.dn.capas.get(mid); if (!l) return;
+      e.dn.capas.delete(mid);
+      try { e.view.removeEventListener("change", l.__sync); e.scene.destroyLayer(l); } catch (x) { /* ya no estaba */ }
+    }
+    // Deja vivas solo la que se ve, las de `guardar` y las que aún se están yendo (si no, brincaría la imagen)
+    const dnSoltar = (e, guardar, todo) => { if (e && e.dn) [...e.dn.capas.entries()].forEach(([mid, l]) => { if (todo || (mid !== e.dn.vis && !(guardar || []).includes(mid) && !(((l.effects() || {}).opacity || 0) > 0))) dnQuitar(e, mid); }); };
+    const dnLimpiar = (e) => { if (!e || !e.dn) return; e.dn.fin = null; e.dn.vis = null; dnSoltar(e, null, true); };
+    // Al cambiar de esfera: la nueva llega de día; la anterior suelta sus momentos cuando ya terminó de irse
+    function dnCambio(antes, nueva) {
+      if (antes === nueva) return;
+      ++dnTurno; dnLimpiar(nueva);
+      if (antes && antes.dn && antes.dn.capas.size) setTimeout(() => { if (actual !== antes) dnLimpiar(antes); }, 1800);
+    }
     const motor = {
       modo: editable ? "capas" : "ver", elegida: null, dibujo: null, ruta: null, rutaActivo: -1,
       get actual() { return actual; },
@@ -8059,7 +8251,7 @@
         const antes = actual, dur = transicion ?? 600;
         let foto = "";
         if (antes && antes.id !== id) { try { foto = viewer.stage().takeSnapshot({ quality: 75 }); } catch (e) { foto = ""; } }
-        actual = escenaM(id); fondoParejo(actual);
+        actual = escenaM(id); fondoParejo(actual); dnCambio(antes, actual);
         actual.view.setParameters(vista || vistaDe(id)); // arranca en su vista de inicio, o de frente si se llega por un hotspot
         const turno = ++turnoCambio;
         if (cortina) { cortina.remove(); cortina = null; }
@@ -8090,6 +8282,39 @@
         if (opciones.alMostrar) opciones.alMostrar(id);
       },
       nitido: (ms) => nitido(ms),
+      // Día y noche: funde la esfera actual hacia uno de sus momentos (o de regreso a ella con null o su propio id).
+      // `op` (0 a 1) lo deja a medias, para emparejar el giro viendo las dos a la vez en el estudio.
+      momento(mid, ms, op) {
+        const e = actual; if (!e) return Promise.resolve(false);
+        const dn = dnDe(e), turno = ++dnTurno, meta2 = mid && mid !== e.id ? mid : null, opa = op == null ? 1 : Math.max(0, Math.min(1, op));
+        if (dn.fin) { dn.fin(); dn.fin = null; } // la que venía a medias se termina de golpe
+        const ant = dn.vis ? dn.capas.get(dn.vis) : null, obj = meta2 ? dnCapa(e, meta2) : null;
+        if (meta2 && !obj) return Promise.resolve(false);
+        if (obj === ant && (!obj || Math.abs(((obj.effects() || {}).opacity ?? 1) - opa) < 0.001)) return Promise.resolve(true);
+        const capas = e.scene.listLayers(), arriba = !!obj && (obj === ant || !ant || capas.indexOf(obj) > capas.indexOf(ant));
+        const capa = arriba ? obj : ant, de = (capa.effects() || {}).opacity ?? (arriba ? 0 : 1), a = arriba ? opa : 0;
+        if (!arriba && obj) obj.mergeEffects({ opacity: 1 }); // queda debajo: se pone y la de encima se va
+        dn.vis = meta2;
+        const acabar = () => { capa.mergeEffects({ opacity: a }); if (arriba && ant && ant !== obj) ant.mergeEffects({ opacity: 0 }); };
+        dn.fin = acabar;
+        const dur = Math.max(0, ms ?? 900);
+        if (!dur) { acabar(); dn.fin = null; return Promise.resolve(true); }
+        return new Promise((fin) => {
+          const t0 = performance.now();
+          const paso = () => {
+            if (turno !== dnTurno || actual !== e) { fin(false); return; }
+            const u = Math.min(1, (performance.now() - t0) / dur), s = u * u * (3 - 2 * u);
+            capa.mergeEffects({ opacity: de + (a - de) * s });
+            if (u < 1) { requestAnimationFrame(paso); return; }
+            acabar(); dn.fin = null; fin(true);
+          };
+          requestAnimationFrame(paso);
+        });
+      },
+      // Cuál se ve (null: la esfera misma) y cuáles se van precargando (capas invisibles que ya piden sus piezas)
+      momentoVisible: () => (actual && actual.dn ? actual.dn.vis : null),
+      momentosPrecargar(ids) { const e = actual; if (!e) return; (ids || []).forEach((mid) => { if (mid && mid !== e.id) dnCapa(e, mid); }); dnSoltar(e, ids); },
+      momentoGiro(mid, grados) { const e = actual, l = e && e.dn && e.dn.capas.get(mid); if (!l) return; l.__giro = (+grados || 0) * Math.PI / 180; l.__sync(); },
       // Ir por un hotspot: la vista avanza hacia él mientras la siguiente esfera ya se está bajando
       viajar(id, vista, hacia) {
         const prep = opciones.alPreparar ? opciones.alPreparar(id) : null;
@@ -8103,7 +8328,7 @@
         const fundir = () => {
           const ant = actual;
           ++turnoCambio; if (cortina) { cortina.remove(); cortina = null; }
-          actual = escenaM(id); fondoParejo(actual);
+          actual = escenaM(id); fondoParejo(actual); dnCambio(ant, actual);
           const vf = Object.assign({}, vista || vistaDe(id));
           actual.view.setParameters(Object.assign({}, vf, { fov: vf.fov * 1.12 }));
           capasEl.classList.add("entrando");
@@ -8255,7 +8480,7 @@
         '<div class="chips"><span class="chip-dato">' + mp(d.origen.ancho, d.origen.alto) + "</span>" +
         '<span class="chip-dato' + (hs === 0 || hs > MAX_HS ? " aviso" : "") + '">' + hs + (hs === 1 ? " salida" : " salidas") + "</span>" +
         '<span class="chip-dato">' + pol + (pol === 1 ? " polígono" : " polígonos") + "</span>" +
-        '<span class="chip-dato' + (pl ? " ok" : "") + '">Piloto ' + (pl ? "activo" : "apagado") + "</span></div></div></div>";
+        '<span class="chip-dato' + (pl ? " ok" : "") + '">Piloto ' + (pl ? "activo" : "apagado") + "</span>" + chipDiaNoche(e.id) + "</div></div></div>";
     }).join("") +
       (MODO === "nube"
         ? '<label class="hueco subir" id="subir-zona"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg><b>Subir esferas</b><span class="nota">Arrastra aquí tus JPG 360 (2:1) o haz clic. Mozari las prepara para la web en tu computadora.</span><input type="file" id="subir-archivo" accept="image/jpeg,image/png,image/webp" multiple hidden></label>' +
@@ -9956,18 +10181,21 @@ void main(){
       let v = [-e0[1], e0[0]]; if (v[0] * C[0] + v[1] * C[1] < 0) v = [-v[0], -v[1]]; // la parte de arriba del texto, lejos de la cámara
       const u = [v[1], -v[0]]; // así se lee derecho (no en espejo) desde la cámara
       const pu = G.map((g) => (g[0] - C[0]) * u[0] + (g[1] - C[1]) * u[1]), pv = G.map((g) => (g[0] - C[0]) * v[0] + (g[1] - C[1]) * v[1]);
-      const tx = document.createElement("canvas"), t2 = tx.getContext("2d"), ins = insigniaDe(c), rc = rotuloCortoDe(c), txt = ins ? ins.texto : rc ? rc[0] : nombreLote(c), area = ins ? "" : rc ? rc[1] || "" : loteDe(c).verArea !== false ? fmtArea(c.lote.area) : "";
+      const tx = document.createElement("canvas"), t2 = tx.getContext("2d"), ins = insigniaDe(c), rc = rotuloCortoDe(c), txt = ins ? ins.texto : rc ? rc[0] : nombreLote(c), area = ins ? areaInsignia(c) : rc ? rc[1] || "" : loteDe(c).verArea !== false ? fmtArea(c.lote.area) : "";
       const f2 = rc ? "600 64px Poppins, sans-serif" : "400 46px Poppins, sans-serif"; // corto: el segundo renglón («M5») va del mismo tamaño
       t2.font = "600 64px Poppins, sans-serif"; const w1 = t2.measureText(txt).width; t2.font = f2; const w2 = area ? t2.measureText(area).width : 0;
       if (ins) { // círculo o insignia (Laboratorio «rotulo-estilos»): la figura del color del estado con su texto
         t2.font = "700 64px Poppins, sans-serif"; const wt = t2.measureText(txt).width, col = estadoDe(c).color || "#22B573";
         const circ = ins.forma === "circulo", Wf = circ ? Math.max(120, wt + 56) : wt + 70, Hf = circ ? Wf : 104;
-        tx.width = Math.ceil(Wf + 12); tx.height = Math.ceil(Hf + 12);
+        t2.font = "500 46px Poppins, sans-serif"; const wa = area ? t2.measureText(area).width : 0;
+        tx.width = Math.ceil(Math.max(Wf, wa) + 12); tx.height = Math.ceil(Hf + 12 + (area ? 62 : 0));
+        const ox = (tx.width - Wf - 12) / 2;
         t2.fillStyle = col; t2.strokeStyle = "#fff"; t2.lineWidth = 8; t2.beginPath();
-        if (circ) t2.ellipse(tx.width / 2, tx.height / 2, Wf / 2, Hf / 2, 0, 0, Math.PI * 2);
-        else { const x = 6, y = 6, r = 14; t2.moveTo(x + r, y); t2.arcTo(x + Wf, y, x + Wf, y + Hf, r); t2.arcTo(x + Wf, y + Hf, x, y + Hf, r); t2.arcTo(x, y + Hf, x, y, r); t2.arcTo(x, y, x + Wf, y, r); t2.closePath(); }
+        if (circ) t2.ellipse(tx.width / 2, (Hf + 12) / 2, Wf / 2, Hf / 2, 0, 0, Math.PI * 2);
+        else { const x = 6 + ox, y = 6, r = 14; t2.moveTo(x + r, y); t2.arcTo(x + Wf, y, x + Wf, y + Hf, r); t2.arcTo(x + Wf, y + Hf, x, y + Hf, r); t2.arcTo(x, y + Hf, x, y, r); t2.arcTo(x, y, x + Wf, y, r); t2.closePath(); }
         t2.fill(); t2.stroke();
-        t2.fillStyle = letraSobre(col); t2.textAlign = "center"; t2.textBaseline = "middle"; t2.font = "700 64px Poppins, sans-serif"; t2.fillText(txt, tx.width / 2, tx.height / 2 + 3);
+        t2.fillStyle = letraSobre(col); t2.textAlign = "center"; t2.textBaseline = "middle"; t2.font = "700 64px Poppins, sans-serif"; t2.fillText(txt, tx.width / 2, (Hf + 12) / 2 + 3);
+        if (area) { t2.fillStyle = "#fff"; t2.shadowColor = "rgba(0,0,0,.8)"; t2.shadowBlur = 8; t2.font = "500 46px Poppins, sans-serif"; t2.fillText(area, tx.width / 2, Hf + 12 + 32); t2.shadowBlur = 0; }
       } else {
       tx.width = Math.ceil(Math.max(w1, w2) + 24); tx.height = area ? (rc ? 150 : 132) : 84;
       t2.textAlign = "center"; t2.fillStyle = "#fff"; t2.shadowColor = "rgba(0,0,0,.8)"; t2.shadowBlur = 8;
@@ -12744,11 +12972,119 @@ void main(){
     $("izq-capas").classList.add("anima"); pintarAgregar();
     setTimeout(() => $("izq-capas").classList.remove("anima"), 250);
   });
+  // =================== DÍA Y NOCHE EN EL ESTUDIO (Laboratorio «dia-noche») ===================
+  // Sin capa elegida, el panel de la derecha muestra el grupo de la esfera: qué otras esferas son esta misma vista a otra
+  // hora, cómo se llama cada una y el giro para que empaten (el dron casi nunca queda viendo exactamente igual).
+  let dnProbar = 0;
+  // En la lista de Panoramas: «Noche de Vista aérea» o «Día y noche» (la principal)
+  function chipDiaNoche(id) { const b = baseDeMomento(id); if (b) { const m = momentosDe(b).find((x) => x.id === id) || {}; return '<span class="chip-dato ok">' + esc((m.nombre || "Noche") + " de " + nombreDe(b)) + "</span>"; } return momentosDe(id).length ? '<span class="chip-dato ok">Día y noche</span>' : ""; }
+  const dnEsc = () => (motorEd && motorEd.actual ? escena(motorEd.actual.id) : null);
+  // Una esfera que ya tiene sus horas, o que ya es la hora de otra, no puede ser hora de esta
+  function dnLibres(id, propia) {
+    const e = escena(id), oc = new Set(), ms = (e && Array.isArray(e.momentos) ? e.momentos : []);
+    est.escenas.forEach((x) => { if (x.id !== id && Array.isArray(x.momentos) && x.momentos.length) { oc.add(x.id); x.momentos.forEach((m) => m && oc.add(m.id)); } });
+    return est.escenas.filter((x) => x.id !== id && x.id !== P().escenaInicial && !oc.has(x.id) && (x.id === propia || !ms.some((m) => m && m.id === x.id)));
+  }
+  const dnMarcarVer = (mid) => { const e = dnEsc(); $("props").querySelectorAll("[data-dn-ver]").forEach((b) => { const i = +b.dataset.dnVer, m = i >= 0 && e && e.momentos && e.momentos[i]; b.setAttribute("aria-pressed", String(m ? m.id === mid : !mid)); }); };
+  const dnVer = (mid, ms) => { if (!motorEd) return; dnMarcarVer(mid); return motorEd.momento(mid, ms ?? 800); };
+  async function probarDiaNoche(e) {
+    const g = ++dnProbar, lista = listaMomentos(e.id); if (lista.length < 2 || !motorEd) return;
+    const sigue = () => g === dnProbar && motorEd.actual && motorEd.actual.id === e.id;
+    await dnVer(null, 700);
+    for (let k = 1; k < lista.length; k++) {
+      await new Promise((r) => setTimeout(r, DN_QUIETO)); if (!sigue()) return;
+      await dnVer(lista[k].id, DN_FUNDE); if (!sigue()) return;
+    }
+  }
+  const pasosDiaNoche = () => [{ el: "#dn-grupo", titulo: "Nuevo: día y noche", anim: animDiaNoche, dur: 7.2,
+    texto: "¿Tomaste la misma vista de día, al atardecer y de noche, desde el mismo punto? Sube las otras como esferas y agrégalas aquí. En el tour se funden despacio, <b>como un timelapse</b>, y tus lotes y puntos se quedan encima." }];
+  function grupoDiaNoche() {
+    if (!enLab("dia-noche") || !motorEd || !motorEd.actual) return "";
+    const id = motorEd.actual.id, e = escena(id); if (!e) return "";
+    let h = '<div class="grupo dn-grupo" id="dn-grupo"><b>Día y noche <button class="guia-ayuda" data-guia-ayuda="dia-noche" title="Ver cómo se usa">?</button></b>';
+    const base = baseDeMomento(id);
+    if (base) {
+      const m = momentosDe(base).find((x) => x.id === id) || {};
+      return h + '<p class="nota">Esta esfera es <b>' + esc(m.nombre || "Noche") + "</b> de <b>" + esc(nombreDe(base)) + '</b>. En el tour no sale aparte: se ve encima de esa esfera, con sus lotes y puntos.</p><div class="acciones"><button class="mini" data-dn-abrir="' + esc(base) + '">Ir a ' + esc(nombreDe(base)) + "</button></div></div>";
+    }
+    const ms = Array.isArray(e.momentos) ? e.momentos.filter((m) => m && escena(m.id)) : [];
+    if (!ms.length) {
+      return h + '<p class="nota">¿Tomaste esta misma vista a otra hora, desde el mismo punto? Súbela como otra esfera y agrégala aquí. En el tour se funden despacio, como un timelapse, con los lotes y puntos de esta esfera encima.</p>' +
+        (dnLibres(id).length ? '<div class="acciones"><button class="mini" data-dn-agregar>+ Agregar otra hora</button></div>' : '<p class="nota">Primero sube la esfera de la otra hora en Panoramas.</p>') + "</div>";
+    }
+    const vis = motorEd.momentoVisible();
+    h += '<datalist id="dn-nombres">' + ["Día", "Amanecer", "Atardecer", "Noche"].map((n) => '<option value="' + n + '">').join("") + "</datalist>";
+    h += campo("Esta esfera se llama", '<span class="dn-ver-fila"><input type="text" maxlength="20" list="dn-nombres" data-dn-base value="' + esc(e.momentoBase || "Día") + '"><button class="mini" data-dn-ver="-1" aria-pressed="' + !vis + '">Ver</button></span>');
+    e.momentos.forEach((m, i) => {
+      if (!m || !escena(m.id)) return;
+      h += '<div class="dn-fila">' +
+        campo("Otra hora", '<span class="dn-ver-fila"><input type="text" maxlength="20" list="dn-nombres" data-dn-nombre="' + i + '" value="' + esc(m.nombre || "") + '" placeholder="Noche"><button class="mini" data-dn-ver="' + i + '" aria-pressed="' + (vis === m.id) + '">Ver</button></span>') +
+        campo("Esfera", '<select data-dn-esfera="' + i + '">' + dnLibres(id, m.id).map((x) => '<option value="' + esc(x.id) + '"' + (x.id === m.id ? " selected" : "") + ">" + esc(x.nombre) + "</option>").join("") + "</select>") +
+        campo("Girar para que empate", '<span class="dn-giro"><input type="range" min="-180" max="180" step="0.5" data-dn-giro="' + i + '" value="' + (+m.giro || 0) + '" aria-label="Girar ' + esc(m.nombre || "") + '"><output>' + (+m.giro || 0).toFixed(1) + "°</output></span>") +
+        '<div class="acciones"><button class="mini peligro" data-dn-quitar="' + i + '">Quitar esta hora</button></div></div>';
+    });
+    h += '<p class="nota">Al mover <b>Girar</b> se ven las dos encimadas: gíralo hasta que los caminos y las casas empaten.</p>';
+    h += '<div class="acciones">' + (ms.length < DN_MAX && dnLibres(id).length ? '<button class="mini" data-dn-agregar>+ Agregar otra hora</button>' : "") + '<button class="mini" data-dn-probar>▶ Ver el paso del día</button></div>';
+    h += '<label class="interruptor"><b>En el tour empieza solo al llegar</b><input type="checkbox" class="toggle" data-dn-auto' + (e.momentosAuto === false ? "" : " checked") + "></label>";
+    return h + "</div>";
+  }
+  $("props").addEventListener("click", (ev) => {
+    const e = dnEsc(), t = ev.target; if (!e || !t.closest) return;
+    if (t.closest('[data-guia-ayuda="dia-noche"]')) { mostrarGuia("ayuda-dia-noche", pasosDiaNoche(), { repetir: true }); return; }
+    const ab = t.closest("[data-dn-abrir]"); if (ab) { abrirEditor(ab.dataset.dnAbrir, nav.sub); return; }
+    if (t.closest("[data-dn-agregar]")) {
+      const l = dnLibres(e.id)[0]; if (!l) return;
+      const usados = (e.momentos || []).map((m) => m && m.nombre), nombre = ["Atardecer", "Noche", "Amanecer"].find((n) => !usados.includes(n)) || "Noche";
+      e.momentos = (Array.isArray(e.momentos) ? e.momentos.filter(Boolean) : []).concat([{ id: l.id, nombre, giro: 0 }]);
+      if (!e.momentoBase) e.momentoBase = "Día";
+      guardar(); pintarProps(); dnProbar++; dnVer(l.id); return;
+    }
+    const q = t.closest("[data-dn-quitar]");
+    if (q) {
+      const i = +q.dataset.dnQuitar, m = e.momentos && e.momentos[i]; if (!m) return;
+      dnProbar++; if (motorEd.momentoVisible() === m.id) motorEd.momento(null, 0);
+      e.momentos.splice(i, 1);
+      if (!e.momentos.length) { delete e.momentos; delete e.momentoBase; delete e.momentosAuto; }
+      guardar(); pintarProps(); return;
+    }
+    const v = t.closest("[data-dn-ver]");
+    if (v) { const i = +v.dataset.dnVer, m = i >= 0 && e.momentos && e.momentos[i]; dnProbar++; dnVer(m ? m.id : null); return; }
+    if (t.closest("[data-dn-probar]")) probarDiaNoche(e);
+  });
+  $("props").addEventListener("input", (ev) => {
+    const e = dnEsc(), t = ev.target; if (!e || !t.dataset) return;
+    if (t.dataset.dnGiro !== undefined) {
+      const m = e.momentos && e.momentos[+t.dataset.dnGiro]; if (!m) return;
+      m.giro = Math.max(-180, Math.min(180, +t.value || 0)); t.nextElementSibling.textContent = m.giro.toFixed(1) + "°";
+      // Mientras se gira se ven las dos encimadas (la de otra hora a la mitad)
+      if (!t.__comparando) { t.__comparando = true; dnProbar++; motorEd.momento(null, 0); motorEd.momento(m.id, 0, 0.5); dnMarcarVer(m.id); }
+      motorEd.momentoGiro(m.id, m.giro);
+      return;
+    }
+    if (t.dataset.dnNombre !== undefined) { const m = e.momentos && e.momentos[+t.dataset.dnNombre]; if (m) { m.nombre = t.value.slice(0, 20); guardar(); } return; }
+    if (t.dataset.dnBase !== undefined) { e.momentoBase = t.value.slice(0, 20); guardar(); }
+  });
+  $("props").addEventListener("change", (ev) => {
+    const e = dnEsc(), t = ev.target; if (!e || !t.dataset) return;
+    if (t.dataset.dnGiro !== undefined) { const m = e.momentos && e.momentos[+t.dataset.dnGiro]; t.__comparando = false; guardar(); if (m) dnVer(m.id, 500); return; }
+    if (t.dataset.dnEsfera !== undefined) {
+      const m = e.momentos && e.momentos[+t.dataset.dnEsfera]; if (!m || !escena(t.value)) return;
+      dnProbar++; if (motorEd.momentoVisible() === m.id) motorEd.momento(null, 0);
+      m.id = t.value; m.giro = 0; guardar(); pintarProps(); dnVer(m.id); return;
+    }
+    if (t.dataset.dnAuto !== undefined) { if (t.checked) delete e.momentosAuto; else e.momentosAuto = false; guardar(); }
+  });
   function pintarProps() {
     const cont = $("props");
     const c = motorEd && motorEd.elegida && buscar(motorEd.elegida);
     pintarModoMz();
-    if (!c) { $("props-titulo").textContent = "Propiedades"; cont.innerHTML = '<p class="vacio">Selecciona una capa en la lista o sobre la esfera para editarla.</p>' + (PORTA && enLab("copiar-capas") ? '<div class="acciones"><button class="mini" data-acc="pegar">Pegar ' + (PORTA.n1 === 1 ? "la capa copiada" : PORTA.n1 + " capas copiadas") + " (" + TECLA + '+V)</button></div>' : ""); acordeonProps(cont, null); return; }
+    if (!c) {
+      $("props-titulo").textContent = "Propiedades";
+      cont.innerHTML = '<p class="vacio">Selecciona una capa en la lista o sobre la esfera para editarla.</p>' + (PORTA && enLab("copiar-capas") ? '<div class="acciones"><button class="mini" data-acc="pegar">Pegar ' + (PORTA.n1 === 1 ? "la capa copiada" : PORTA.n1 + " capas copiadas") + " (" + TECLA + '+V)</button></div>' : "") + grupoDiaNoche();
+      acordeonProps(cont, null);
+      if ($("dn-grupo")) guiaNueva("nuevo-dia-noche", () => (esVisible("#dn-grupo") ? pasosDiaNoche() : []), () => esVisible("#dn-grupo"));
+      return;
+    }
     $("props-titulo").textContent = c.lote ? nombreLote(c) : c.edificio ? "Edificio " + (c.edificio.torre || "") : c.manzana || c.mzPlano ? terminos().manzana + " " + ((c.manzana || c.mzPlano).mz || "") : c.cota ? c.nombre || "Cota" : c.camino ? "Ruta" : c.tipo === "interes" ? "Punto de interés" : { poligono: "Polígono", texto: "Texto", hotspot: "Hotspot", imagen: "Imagen en 3D" }[c.tipo];
     const multi = seleccionadas().length > 1 ? seleccionadas() : null;
     if (multi) $("props-titulo").textContent = multi.length + (c.lote ? " lotes" : " capas") + " seleccionados";
@@ -13501,14 +13837,15 @@ void main(){
       '<label class="fe-activa"><input type="checkbox" data-fe="activa"' + (f.activa ? " checked" : "") + "> Usar esta ficha en el tour</label></div>" +
       '<div class="fe-cuerpo"><div class="fe-controles">' +
       (enLab("ficha-disenos") ? '<div class="fe-grupo" id="fe-disenos-grupo"><b>Empieza con un diseño</b><div class="ld-disenos fe-disenos" role="group" aria-label="Diseños de la ficha">' + FICHA_DISENOS.map((x) => '<button type="button" class="ld-diseno" data-fe-diseno="' + x.k + '" aria-pressed="' + (fichaDisenoActual(f) === x.k) + '">' + miniFicha(x) + "<b>" + x.n + "</b><span>" + x.d + "</span></button>").join("") + '</div><span class="fe-sub">Pone su acomodo, sus colores y su letra. Luego cambia abajo lo que quieras: logo, colores, letra y textos.</span></div>' : "") +
-      '<div class="fe-grupo"><b>Diseño</b><div class="estados">' + FICHA_PLANTILLAS.filter(([v]) => v !== "tecnica" || enLab("interiorismo") || f.plantilla === v).map(([v, n]) => '<button data-fe-plantilla="' + v + '" aria-pressed="' + (f.plantilla === v) + '">' + n + "</button>").join("") + "</div></div>" +
+      '<div class="fe-grupo"><b>Diseño</b><div class="estados">' + FICHA_PLANTILLAS.filter(([v]) => (v !== "tecnica" || enLab("interiorismo") || f.plantilla === v) && (!["plano", "terreno"].includes(v) || enLab("ficha-disenos") || f.plantilla === v)).map(([v, n]) => '<button data-fe-plantilla="' + v + '" aria-pressed="' + (f.plantilla === v) + '">' + n + "</button>").join("") + "</div></div>" +
       '<div class="fe-grupo"><b>Marca</b><div class="estados">' + [["skin", "Logo de la Interfaz"], ["propio", "Otro logo"], ["texto", "Solo nombre"]].map(([v, n]) => '<button data-fe-logo="' + v + '" aria-pressed="' + (f.logo === v) + '">' + n + "</button>").join("") + "</div>" +
         (f.logo === "skin" && !logoSkin ? '<span class="nota">Tu Interfaz todavía no tiene logo. Súbelo aquí:</span>' : "") +
         (f.logo === "propio" || (f.logo === "skin" && !logoSkin) ? '<label class="btn-sec fe-subir">' + (f.logo === "propio" && f.logoImg ? "Cambiar logo" : "Subir logo del desarrollo (PNG o SVG)") + '<input type="file" id="fe-logo" accept="image/png,image/svg+xml,image/jpeg,image/webp" hidden></label>' : "") +
         '<span class="fe-sub">Segundo logo al pie (opcional): la inmobiliaria, la constructora…</span>' +
         '<div class="fe-logo2">' + (f.logo2 ? '<img src="' + esc(urlArchivo(f.logo2)) + '" alt="Segundo logo"><button class="mini" data-fe-quitar2>Quitar</button>' : "") +
         '<label class="btn-sec fe-subir">' + (f.logo2 ? "Cambiar" : "Subir segundo logo") + '<input type="file" id="fe-logo2" accept="image/png,image/svg+xml,image/jpeg,image/webp" hidden></label></div>' +
-        '<label class="fe-campo">Nombre del desarrollo<input class="entrada" data-fe="titulo" maxlength="60" value="' + esc(f.titulo) + '" placeholder="' + esc(P().nombre || "") + '"></label></div>' +
+        '<label class="fe-campo">Nombre del desarrollo<input class="entrada" data-fe="titulo" maxlength="60" value="' + esc(f.titulo) + '" placeholder="' + esc(P().nombre || "") + '"></label>' +
+        (f.plantilla === "terreno" ? '<span class="fe-sub">Foto del terreno (si no subes una, va la miniatura de la esfera del lote). En Textos: Título 1 es el lugar en grande y Texto 1, la frase de abajo.</span><div class="fe-logo2">' + (f.foto ? '<img src="' + esc(urlArchivo(f.foto)) + '" alt="Foto del terreno"><button class="mini" data-fe-quitar-foto>Quitar</button>' : "") + '<label class="btn-sec fe-subir">' + (f.foto ? "Cambiar foto" : "Subir foto del terreno") + '<input type="file" id="fe-foto" accept="image/jpeg,image/png,image/webp" hidden></label></div>' : "") + "</div>" +
       '<div class="fe-grupo"><b>Colores y letra</b><div class="fe-colores">' + color("fondo", "Fondo") + color("texto", "Texto") + color("acento", "Acento") + "</div>" +
         '<label class="fe-campo">Tipografía<select class="entrada" data-fe="fuente">' + opcionesFuente(f.fuente || "") + "</select></label></div>" +
       (tecnica ? '<div class="fe-grupo"><b>Qué muestra</b><div class="fe-sis">' + si("plano", "Dibujo del lote si el tipo no tiene plano") + si("superficie", "Superficies") + si("precio", "Precio y planes de pago") + si("boton", "Botón de contacto") + "</div></div>" + editorTecnica(f)
@@ -13555,6 +13892,7 @@ void main(){
     }
     const lg = ev.target.closest("[data-fe-logo]"); if (lg) { setFicha("logo", lg.dataset.feLogo); pintarFichaEditor(); return; }
     if (ev.target.closest("[data-fe-quitar2]")) { setFicha("logo2", ""); pintarFichaEditor(); return; }
+    if (ev.target.closest("[data-fe-quitar-foto]")) { setFicha("foto", ""); pintarFichaEditor(); return; }
     if (ev.target.closest("[data-ft-mas-tipo]")) {
       const n = tiposUni().length, letra = String.fromCharCode(65 + (n % 26));
       tiposUni().push({ id: "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), nombre: letra, plano: "", int: "", ext: "", datos: DATOS_TIPO.map((k) => [k, ""]), esfera: "" });
@@ -13606,6 +13944,20 @@ void main(){
       return;
     }
     if (ev.target.dataset && ev.target.dataset.ftT === "esfera") { const t = tipoEditado(ev.target); if (t) { t.esfera = ev.target.value; guardar(); repintarFicha(); } return; }
+    if (ev.target.id === "fe-foto") {
+      const file = ev.target.files && ev.target.files[0]; if (!file) return;
+      const img = new Image();
+      img.onload = async () => {
+        const s = Math.min(1, 1600 / Math.max(img.naturalWidth || 1600, 1)), cv = document.createElement("canvas");
+        cv.width = Math.round((img.naturalWidth || 1600) * s); cv.height = Math.round((img.naturalHeight || 1000) * s);
+        cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(img.src);
+        try { setFicha("foto", await medio(cv, "image/jpeg", 0.86, "foto-ficha")); } catch (err) { avisar(err.message); return; }
+        pintarFichaEditor(); avisar("Foto del terreno lista");
+      };
+      img.onerror = () => avisar("No se pudo leer ese archivo");
+      img.src = URL.createObjectURL(file);
+      return;
+    }
     if (ev.target.id === "fe-logo" || ev.target.id === "fe-logo2") {
       const segundo = ev.target.id === "fe-logo2";
       const file = ev.target.files && ev.target.files[0]; if (!file) return;
@@ -13645,10 +13997,12 @@ void main(){
       $("lt-rotulo-texto").innerHTML = textos.map(([v, n, f]) => B("lt-rotulo", v, n, fm === f)).join("");
       $("lt-rotulo-estilo").hidden = !hayE;
       $("lt-rotulo-estilo").innerHTML = hayE ? [["texto", "Texto"], ["circulo", "Círculo"], ["insignia", "Insignia"]].map(([v, n]) => B("lt-estilo", v, n, es === v)).join("") : "";
+      const conArea = P().rotuloArea !== false; $("lt-rotulo-area").hidden = !(hayE && es !== "texto");
+      $("lt-rotulo-area").innerHTML = hayE && es !== "texto" ? [["1", "Con superficie", conArea], ["0", "Sin superficie", !conArea]].map(([v, n, on]) => B("lt-area", v, n, on)).join("") : "";
       const ej = { lote: { numero: "9", manzana: "3", estado: "disponible" } }, ins = insigniaDe(ej), cz = rotuloCortoDe(ej);
       if (ins) {
         const muestra = estadosLote().slice(0, 3).map((e, i) => { const x = 16 + i * 46, w = ins.texto.length * 7 + 10, col = esc(e.color); return ins.forma === "circulo" ? '<circle cx="' + x + '" cy="14" r="' + Math.max(11, w / 2) + '" fill="' + col + '" stroke="#fff" stroke-width="1.5"/><text x="' + x + '" y="18.5" font-size="11" font-weight="700" text-anchor="middle" fill="' + letraSobre(e.color) + '">' + esc(ins.texto) + "</text>" : '<rect x="' + (x - w / 2) + '" y="5" width="' + w + '" height="18" rx="3" fill="' + col + '" stroke="#fff" stroke-width="1.5"/><text x="' + x + '" y="18" font-size="11" font-weight="700" text-anchor="middle" fill="' + letraSobre(e.color) + '">' + esc(ins.texto) + "</text>"; }).join("");
-        $("lt-rotulo-ejemplo").innerHTML = '<svg class="lt-muestra" width="150" height="28" viewBox="0 0 150 28" aria-hidden="true">' + muestra + "</svg> Del color de su estado, siempre de frente.";
+        $("lt-rotulo-ejemplo").innerHTML = '<svg class="lt-muestra" width="150" height="28" viewBox="0 0 150 28" aria-hidden="true">' + muestra + "</svg> Del color de su estado, siempre de frente" + (conArea ? ", con su superficie abajo." : ".");
       } else $("lt-rotulo-ejemplo").innerHTML = cz ? "En cada lote: <b>" + esc(cz.join(" / ")) + "</b>, en grande. La superficie queda en su ficha." : "En cada lote: <b>" + esc(T.lote + " 9 · " + mzCorta("3")) + "</b> y su superficie.";
     }
     pintarNombresEstados(false);
@@ -13707,6 +14061,8 @@ void main(){
     guardar(); pintarLotes(); if (motorEd) motorEd.construir(); pintarCapas();
   }
   $("lt-rotulo-fila").addEventListener("click", (ev) => {
+    const ba = ev.target.closest("[data-lt-area]");
+    if (ba) { if (ba.dataset.ltArea === "0") P().rotuloArea = false; else delete P().rotuloArea; guardar(); pintarLotes(); if (motorEd) motorEd.construir(); avisar(ba.dataset.ltArea === "0" ? "Sin superficie bajo el círculo. Vuelve a publicar." : "La superficie va abajo del círculo. Vuelve a publicar."); return; }
     const b = ev.target.closest("[data-lt-rotulo]"), e = ev.target.closest("[data-lt-estilo]"); if (!b && !e) return;
     if (b) {
       const v = b.dataset.ltRotulo;
@@ -14470,7 +14826,7 @@ void main(){
     ui.style.setProperty("--sk-radio-img", Math.max(0, sk.radio - 8) + "px");
     const btn = (k, etq, cls) => '<button class="sk-btn ' + cls + '" data-sk="' + k + '" aria-label="' + etq + '">' + ICO_SK[k] + "</button>";
     const c = {
-      sk, vertical, fino, escenas: est.escenas,
+      sk, vertical, fino, escenas: escenasTour(),
       logo: sk.logo.tipo === "propio" && sk.logo.img ? '<span class="sk-logo"><img src="' + esc(urlArchivo(sk.logo.img)) + '" alt=""></span>' : sk.logo.tipo === "mozari" ? '<span class="sk-logo"><svg viewBox="0 0 613 613" aria-hidden="true"><use href="#iso"/></svg></span>' : "",
       botones: (cls) => (sk.botones.musica && o.hayMusica ? btn("musica", "Silenciar música", cls) : "") + (sk.botones.zoom && !vertical ? btn("menos", "Alejar", cls) + btn("mas", "Acercar", cls) : "") + (sk.botones.limpiar ? btn("limpiar", "Ocultar puntos y lotes", cls) : "") + (sk.botones.pantalla ? btn("pantalla", "Pantalla completa", cls) : ""),
       cerrar: (cls) => (o.cerrable ? btn("cerrar", "Cerrar vista previa", cls) : ""),
@@ -14511,7 +14867,7 @@ void main(){
       if (pie) pie.insertAdjacentHTML("beforeend", h.replace('class="sk-credito"', 'class="sk-credito en-panel"')); else ui.insertAdjacentHTML("beforeend", h);
     }
     let actualId = null;
-    const ids = est.escenas.map((e) => e.id);
+    const ids = escenasTour().map((e) => e.id);
     const irRel = (d) => { if (!actualId || !o.motor()) return; const i = ids.indexOf(actualId); o.motor().mostrar(ids[(i + d + ids.length) % ids.length]); };
     ui.onclick = (ev) => {
       if (ev.target.closest("[data-piloto]") && o.alPiloto) { o.alPiloto(); return; }
@@ -14786,11 +15142,82 @@ void main(){
       if (VOZ.id === id && VOZ.estado !== "nada") pintarVoz(); else vozEscena(id);
     } };
   }
+  // =================== DÍA Y NOCHE EN EL TOUR ===================
+  // «Día · Atardecer · Noche» arriba al centro (como la narración) y el paso del día: la esfera se va fundiendo de una
+  // hora a la otra, despacio, como un timelapse. La primera vez que se llega a esa esfera arranca solo (si no se apagó).
+  const DN_FUNDE = 2800, DN_QUIETO = 1500, DN_TOQUE = 1100;
+  const ICO_DN = {
+    sol: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>',
+    ocaso: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M7 16a5 5 0 0 1 10 0M3 16h18M6 20h12M12 4v3M4.6 8.6l1.6 1.6M19.4 8.6l-1.6 1.6"/></svg>',
+    luna: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>',
+    play: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>',
+    pausa: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5.5" width="4" height="13" rx="1"/><rect x="13.5" y="5.5" width="4" height="13" rx="1"/></svg>',
+  };
+  const icoMomento = (n) => (/noche|night|luna|nocturn/i.test(n) ? ICO_DN.luna : /atardec|ocaso|tarde|sunset|amanec|alba|aurora|sunrise|crep|dorad/i.test(n) ? ICO_DN.ocaso : ICO_DN.sol);
+  const listaMomentos = (id) => { const e = escena(id), ms = momentosDe(id); return ms.length ? [{ id, nombre: (e.momentoBase || "").trim() || "Día" }].concat(ms.map((m) => ({ id: m.id, nombre: (m.nombre || "").trim() || "Noche" }))) : []; };
+  // El estado vive fuera de la barra: si la interfaz se vuelve a pintar (girar el celular), sigue donde iba
+  const DN = { caja: null, id: null, lista: [], k: 0, gen: 0, corre: false, vistas: new Set() };
+  function barraDiaNoche(ui, motorDe, enPausa) {
+    if (!diaNocheOn() || !est.escenas.some((e) => momentosDe(e.id).length)) return { escena() {} };
+    const c = document.createElement("div"); c.className = "dn-tour"; c.hidden = true; c.setAttribute("role", "group"); c.setAttribute("aria-label", "Hora del día");
+    ["pointerdown", "wheel", "touchstart"].forEach((x) => c.addEventListener(x, (ev) => ev.stopPropagation(), { passive: true }));
+    ui.appendChild(c); DN.caja = c;
+    const pintar = () => {
+      const b = DN.caja; if (!b) return;
+      b.hidden = DN.lista.length < 2; if (b.hidden) return;
+      b.classList.toggle("corre", DN.corre);
+      b.innerHTML = '<button class="dn-play" type="button" data-dn-play aria-label="' + (DN.corre ? "Detener el paso del día" : "Ver el paso del día") + '" title="' + (DN.corre ? "Detener" : "Ver el paso del día") + '">' + (DN.corre ? ICO_DN.pausa : ICO_DN.play) + "</button>" +
+        DN.lista.map((m, k) => '<button class="dn-op" type="button" data-dn="' + k + '" aria-pressed="' + (k === DN.k) + '">' + icoMomento(m.nombre) + "<span>" + esc(m.nombre) + "</span></button>").join("");
+    };
+    // Funde hacia la hora k; deja precargando la siguiente y suelta las que ya no se ven
+    const ir = (k, ms) => {
+      DN.k = k; pintar();
+      const m = motorDe(); if (!m) return Promise.resolve(false);
+      const sig = DN.lista[k + 1] ? [DN.lista[k + 1].id] : [];
+      const p = m.momento(k ? DN.lista[k].id : null, ms); m.momentosPrecargar(sig);
+      return p.then((ok) => { if (ok && motorDe() === m) m.momentosPrecargar(sig); return ok; });
+    };
+    const espera = (ms, g) => new Promise((ok) => setTimeout(() => ok(g === DN.gen), ms));
+    async function pasoDelDia() {
+      const g = ++DN.gen; DN.corre = true; pintar();
+      if (DN.k !== 0) { await ir(0, DN_TOQUE); if (g !== DN.gen) return; }
+      for (let k = 1; k < DN.lista.length; k++) {
+        if (!(await espera(DN_QUIETO, g))) return;
+        await ir(k, DN_FUNDE); if (g !== DN.gen) return;
+      }
+      DN.corre = false; pintar();
+    }
+    const parar = () => { DN.gen++; if (DN.corre) { DN.corre = false; pintar(); } };
+    c.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      if (ev.target.closest("[data-dn-play]")) { if (DN.corre) parar(); else pasoDelDia(); return; }
+      const b = ev.target.closest("[data-dn]"); if (!b) return;
+      parar(); ir(+b.dataset.dn, DN_TOQUE);
+    });
+    return {
+      escena(id) {
+        const m = motorDe();
+        if (DN.id === id && DN.lista.length) { // misma esfera (se volvió a pintar la interfaz): sigue donde iba
+          const vis = m && m.momentoVisible(); DN.k = Math.max(0, DN.lista.findIndex((x) => (vis ? x.id === vis : x.id === id))); pintar(); return;
+        }
+        DN.gen++; DN.corre = false; DN.id = id; DN.k = 0; DN.lista = listaMomentos(id);
+        pintar();
+        if (!DN.lista.length) return;
+        const g = DN.gen, e = escena(id);
+        setTimeout(() => { if (g === DN.gen && DN.id === id && motorDe()) motorDe().momentosPrecargar([DN.lista[1].id]); }, 600);
+        if (e.momentosAuto === false || DN.vistas.has(id)) return;
+        // La primera vez arranca solo, cuando ya se ve nítida (y no detrás de la pantalla de bienvenida)
+        let n = 0;
+        const intento = () => { if (g !== DN.gen || DN.id !== id) return; if (enPausa && enPausa() && ++n < 600) { setTimeout(intento, 700); return; } DN.vistas.add(id); pasoDelDia(); };
+        setTimeout(intento, 2200);
+      },
+    };
+  }
   function callarVoz() { vozTour.pause(); musicaPorVoz(false); VOZ.id = null; VOZ.estado = "nada"; VOZ.oidas.clear(); VOZ.caja = null; }
   // Une un motor con su skin y su piloto automático (vista previa y editor de skin)
   // Siguiente esfera de la presentación: sigue el orden de Panoramas, se salta las marcadas y al final vuelve al inicio (o se detiene)
   function siguientePresentacion(id) {
-    const l = est.escenas, i = l.findIndex((e) => e.id === id), pr = P().presentacion || {};
+    const l = escenasTour(), i = l.findIndex((e) => e.id === id), pr = P().presentacion || {};
     for (let k = 1; k <= l.length; k++) {
       const j = i + k;
       if (j >= l.length && pr.alTerminar === "detener") return null;
@@ -14802,10 +15229,10 @@ void main(){
   // =================== FICHA DISEÑADA (Laboratorio) ===================
   // Una ficha con la marca del cliente: su logo, colores y tipografía, el dibujo del lote con sus medidas,
   // superficie, manzana, precio, textos y (en un diseño) la ubicación del lote en el desarrollo.
-  const FICHA_DEF = { activa: false, plantilla: "clasica", logo: "skin", logoImg: "", logo2: "", titulo: "", fondo: "#ECEAE6", texto: "#2B2B2B", acento: "#8A5A3C", fuente: "",
+  const FICHA_DEF = { activa: false, plantilla: "clasica", logo: "skin", logoImg: "", logo2: "", foto: "", titulo: "", fondo: "#ECEAE6", texto: "#2B2B2B", acento: "#8A5A3C", fuente: "",
     plano: true, medidas: true, superficie: true, precio: true, ubicacion: true, boton: true, textoA: "", textoB: "", tituloA: "", tituloB: "",
     planes: [], extraT: "", extraM: "", notas: "" };
-  const FICHA_PLANTILLAS = [["clasica", "Clásica"], ["ubicacion", "Con ubicación"], ["banda", "Banda de color"], ["tecnica", "Técnica (departamentos)"]];
+  const FICHA_PLANTILLAS = [["clasica", "Clásica"], ["ubicacion", "Con ubicación"], ["banda", "Banda de color"], ["plano", "Plano con cuadrícula"], ["terreno", "Foto de terreno"], ["tecnica", "Técnica (departamentos)"]];
   // Tipos de unidad (Laboratorio: interiorismo): A, B, Loft… con su plano, superficies, datos y su recorrido 360
   const tiposUni = () => (Array.isArray(P().tipos) ? P().tipos : (P().tipos = []));
   const tipoUni = (l) => (l && l.tipo ? tiposUni().find((t) => t.id === l.tipo) || null : null);
@@ -14820,12 +15247,31 @@ void main(){
     { k: "nativa", n: "Nativa", d: "Campestre, con la ubicación del lote.", f: { plantilla: "ubicacion", fondo: "#F2EEE3", texto: "#2F3A25", acento: "#B86B43", fuente: "Fraunces" } },
     { k: "litoral", n: "Litoral", d: "Fresca, con banda de color.", f: { plantilla: "banda", fondo: "#FFFFFF", texto: "#12355B", acento: "#1F8A84", fuente: "Outfit" } },
     { k: "urbano", n: "Urbano", d: "Nocturna, para lo moderno.", f: { plantilla: "clasica", fondo: "#16191B", texto: "#F1EFEA", acento: "#E3B65B", fuente: "Archivo" } },
+    // Pedido de Obed (Desarrollos, 25 nov 2026), con su referencia: blanca, el lote sobre cuadrícula con sus cotas,
+    // «Lote 45» grande con su estado, una fila Área · Frente · Fondo y el botón de contacto a todo lo ancho
+    { k: "plano", n: "Plano", d: "Blanca, con cuadrícula y cotas.", f: { plantilla: "plano", fondo: "#FFFFFF", texto: "#2B2F36", acento: "#12284C", fuente: "Inter" } },
+    // Pedido de Amar (25 nov 2026, con un anuncio de terreno de referencia): la foto del terreno arriba, el nombre del lugar
+    // grande, y un bloque de color con «Venta por» y «Superficie» en grande, con un sello redondo
+    { k: "terreno", n: "Terreno", d: "Con foto, precio y superficie en grande.", f: { plantilla: "terreno", fondo: "#EFEFEF", texto: "#2B2B2B", acento: "#D9443A", fuente: "Manrope" } },
   ];
   const fichaDisenoActual = (f) => (FICHA_DISENOS.find((x) => ["plantilla", "fondo", "texto", "acento", "fuente"].every((k) => String(f[k] || "").toUpperCase() === String(x.f[k] || "").toUpperCase())) || {}).k || "";
   function miniFicha(x) {
     const f = x.f, F = f.fuente ? ' font-family="' + f.fuente + ', sans-serif"' : "", lote = '<polygon points="34,30 86,26 90,58 30,62" fill="' + f.acento + '" fill-opacity=".16" stroke="' + f.texto + '" stroke-width="1.4"/>';
     let h = '<svg viewBox="0 0 120 92" aria-hidden="true"><rect width="120" height="92" fill="' + f.fondo + '"/>';
-    if (f.plantilla === "banda") h += '<rect width="120" height="16" fill="' + f.acento + '"/><text x="60" y="11" font-size="6.5" font-weight="700" text-anchor="middle" fill="' + letraSobre(f.acento) + '"' + F + ">DESARROLLO</text>" + lote.replace(/(\d+),(\d+)/g, (m, a, b) => a + "," + (+b + 2)) + '<text x="10" y="76" font-size="9" font-weight="700" fill="' + f.texto + '"' + F + '>Lote #12</text><rect x="10" y="80" width="44" height="4" rx="1" fill="' + f.texto + '" opacity=".35"/>';
+    if (f.plantilla === "terreno") {
+      h += '<defs><linearGradient id="mt-cielo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5B9BE0"/><stop offset=".55" stop-color="#BFD9F2"/><stop offset=".56" stop-color="#8FA36A"/><stop offset="1" stop-color="#A88F70"/></linearGradient></defs><rect x="6" y="5" width="108" height="48" rx="5" fill="url(#mt-cielo)"/><path d="M6 32 Q30 20 52 30 T114 28 V40 H6Z" fill="#6E8455" opacity=".8"/>' +
+        '<rect x="62" y="44" width="48" height="40" rx="4" fill="' + f.acento + '"/><rect x="62" y="64" width="48" height="20" rx="4" fill="#000" opacity=".12"/><text x="66" y="51" font-size="3.6" fill="' + letraSobre(f.acento) + '"' + F + '>VENTA POR:</text><text x="66" y="59" font-size="6.6" font-weight="800" fill="' + letraSobre(f.acento) + '"' + F + '>$1,250,000</text><text x="86" y="73" font-size="3.6" text-anchor="middle" fill="' + letraSobre(f.acento) + '"' + F + '>Superficie:</text><text x="86" y="80" font-size="6.6" font-weight="600" text-anchor="middle" fill="' + letraSobre(f.acento) + '"' + F + ">240 m²</text>" +
+        '<circle cx="104" cy="44" r="7" fill="#fff"/><path d="M104 40.4l1.1 2.3 2.5.3-1.8 1.7.5 2.5-2.3-1.2-2.3 1.2.5-2.5-1.8-1.7 2.5-.3z" fill="' + f.acento + '"/>' +
+        '<text x="10" y="66" font-size="8.6" font-weight="800" fill="' + f.acento + '"' + F + '>Lote 12</text><text x="10" y="73" font-size="3.8" fill="' + f.texto + '"' + F + '>Terreno con vista</text><rect x="10" y="77" width="30" height="6" rx="3" fill="' + f.acento + '"/>';
+    } else if (f.plantilla === "plano") {
+      let g = ""; for (let gx = 36; gx <= 86; gx += 6) g += '<line x1="' + gx + '" y1="24" x2="' + gx + '" y2="58" stroke="' + f.texto + '" stroke-opacity=".12" stroke-width=".5"/>';
+      for (let gy = 24; gy <= 58; gy += 6) g += '<line x1="36" y1="' + gy + '" x2="86" y2="' + gy + '" stroke="' + f.texto + '" stroke-opacity=".12" stroke-width=".5"/>';
+      h += '<text x="10" y="10" font-size="4.6" font-weight="700" letter-spacing=".3" fill="' + f.acento + '"' + F + '>DESARROLLO</text><text x="10" y="20" font-size="9" font-weight="800" fill="' + f.texto + '"' + F + '>Lote 12</text><rect x="50" y="13.5" width="22" height="7" rx="3.5" fill="#22B573" fill-opacity=".25"/><text x="61" y="18.6" font-size="3.8" font-weight="600" text-anchor="middle" fill="#1d7a4b">Disponible</text>' + g +
+        '<rect x="50" y="27" width="22" height="28" fill="none" stroke="' + f.acento + '" stroke-width="1.2"/><line x1="50" y1="25" x2="72" y2="25" stroke="' + f.acento + '" stroke-width=".5"/><line x1="46" y1="27" x2="46" y2="55" stroke="' + f.acento + '" stroke-width=".5"/>' +
+        '<line x1="10" y1="62" x2="110" y2="62" stroke="' + f.texto + '" stroke-opacity=".2"/><line x1="43" y1="64" x2="43" y2="72" stroke="' + f.texto + '" stroke-opacity=".2"/><line x1="77" y1="64" x2="77" y2="72" stroke="' + f.texto + '" stroke-opacity=".2"/>' +
+        [26, 60, 94].map((x, i) => '<text x="' + x + '" y="70" font-size="5" text-anchor="middle" fill="' + f.texto + '"' + F + ">" + ["160 m²", "8 m", "20 m"][i] + "</text>").join("") +
+        '<rect x="10" y="77" width="100" height="10" rx="2.5" fill="' + f.acento + '"/><text x="60" y="83.8" font-size="4.6" font-weight="600" text-anchor="middle" fill="' + letraSobre(f.acento) + '"' + F + ">Agendar visita</text>";
+    } else if (f.plantilla === "banda") h += '<rect width="120" height="16" fill="' + f.acento + '"/><text x="60" y="11" font-size="6.5" font-weight="700" text-anchor="middle" fill="' + letraSobre(f.acento) + '"' + F + ">DESARROLLO</text>" + lote.replace(/(\d+),(\d+)/g, (m, a, b) => a + "," + (+b + 2)) + '<text x="10" y="76" font-size="9" font-weight="700" fill="' + f.texto + '"' + F + '>Lote #12</text><rect x="10" y="80" width="44" height="4" rx="1" fill="' + f.texto + '" opacity=".35"/>';
     else {
       h += '<rect x="10" y="7" width="26" height="12" rx="2" fill="' + f.texto + '" opacity=".18"/><rect x="45" y="6" width="1" height="14" fill="' + f.texto + '" opacity=".45"/><text x="80" y="17" font-size="10" font-weight="600" text-anchor="middle" fill="' + f.acento + '"' + F + ">Lote 12</text>";
       h += '<rect y="23" width="' + (f.plantilla === "ubicacion" ? 120 : 120) + '" height="46" fill="' + f.texto + '" opacity=".04"/>' + lote.replace(/(\d+),(\d+)/g, (m, a, b) => a + "," + (+b + 2));
@@ -14833,6 +15279,16 @@ void main(){
       if (f.plantilla === "ubicacion") h += '<rect x="92" y="72" width="22" height="16" rx="2" fill="none" stroke="' + f.texto + '" stroke-opacity=".4"/><rect x="99" y="77" width="6" height="5" fill="' + f.acento + '"/>';
     }
     return h + "</svg>";
+  }
+  // Frente y fondo del lote en metros (ficha «Plano»): el frente es su lado de calle (o el marcado como frente)
+  // y el fondo, el promedio de los dos lados que salen de él. Solo en lotes de 4 lados o de calle; si no, nada.
+  function frenteFondo(c) {
+    const l = loteDe(c), n = c.puntos.length, L = (l.lados || []).map((x) => (String(x ?? "").trim() ? numES(x) : null));
+    if (n < 3 || L.length < n || L.slice(0, n).some((x) => !(x > 0))) return null;
+    if (c.frenteN >= 2 && !l.frenteManual) { const k = Math.min(c.frenteN, n) - 1; if (k < 1 || k >= n - 1) return null; return { frente: L.slice(0, k).reduce((a, b) => a + b, 0), fondo: (L[k] + L[n - 1]) / 2 }; }
+    if (n !== 4) return null;
+    const fi = Math.min(+l.frente || 0, n - 1);
+    return { frente: L[fi], fondo: (L[(fi + 1) % n] + L[(fi + n - 1) % n]) / 2 };
   }
   // El lote visto desde arriba, con su frente abajo, sus medidas por lado y su superficie al centro
   function dibujoLote(c, f, ancho, alto) {
@@ -14967,7 +15423,29 @@ void main(){
     const plano = f.plano ? dibujoLote(c, f, 420, 300) : "";
     const textos = (f.textoA || f.textoB) ? '<div class="fd-textos">' + (f.textoA ? "<div>" + (f.tituloA ? "<h4>" + esc(f.tituloA) + "</h4>" : "") + parrafos(f.textoA) + "</div>" : "") + (f.textoB ? "<div>" + (f.tituloB ? "<h4>" + esc(f.tituloB) + "</h4>" : "") + parrafos(f.textoB) + "</div>" : "") + "</div>" : "";
     let cuerpo;
-    if (f.plantilla === "banda") {
+    if (f.plantilla === "terreno") {
+      // La foto: la que suba el dueño; si no, la miniatura de la esfera donde está el lote; si tampoco, el plano del lote
+      const idEsc = Object.keys(est.capas || {}).find((id) => (est.capas[id] || []).includes(c)), esc0 = idEsc && escena(idEsc);
+      const foto = f.foto ? urlArchivo(f.foto) : esc0 && esc0.thumb ? urlArchivo(esc0.thumb) : "";
+      const lugar = f.tituloA || titulo || nombreLote(c), sub = String(f.textoA || "").split(/\n+/).find((x) => x.trim()) || "";
+      const sello = "★ " + (e.nombre || "") + " · " + (titulo || T.lote + " " + (l.numero || "")) + " ·";
+      const anillo = '<svg class="ft-sello" viewBox="0 0 120 120" aria-hidden="true"><defs><path id="ft-arco" d="M60 60 m-46 0 a46 46 0 1 1 92 0 a46 46 0 1 1 -92 0"/></defs><circle cx="60" cy="60" r="27" fill="#fff"/><path d="M60 47l4 8.2 9 1.3-6.5 6.3 1.5 9-8-4.2-8 4.2 1.5-9-6.5-6.3 9-1.3z" fill="var(--fd-acento)"/><text font-size="10.5" font-weight="700" letter-spacing="2.2" fill="#fff"><textPath href="#ft-arco">' + esc(sello.toUpperCase()) + "</textPath></text></svg>";
+      cuerpo = '<div class="ft-foto">' + (foto ? '<img src="' + esc(foto) + '" alt="' + esc(lugar) + '">' : plano ? '<div class="ft-sin-foto">' + plano + "</div>" : "") + "</div>" +
+        '<div class="ft-base"><div class="ft-izq">' + (logoSrc ? '<div class="ft-marca">' + marca + "</div>" : "") +
+        '<span class="ft-lote">' + esc(nombreLote(c)) + '</span><h3 class="fd-titulo">' + esc(lugar) + "</h3>" + (sub ? '<p class="ft-sub">' + esc(sub) + "</p>" : "") + boton + "</div>" +
+        '<div class="ft-caja">' + anillo + '<div class="ft-precio"><small>' + (e.id === "vendido" ? esc(e.nombre) : "Venta por:") + "</small><b>" + (f.precio && precio ? esc(precio) : "") + "</b></div>" +
+        (f.superficie && fmtArea(l.area) ? '<div class="ft-sup"><small>Superficie:</small><b>' + esc(fmtArea(l.area)) + "</b></div>" : "") + "</div></div>" + pie2;
+    } else if (f.plantilla === "plano") {
+      const ff = f.medidas !== false ? frenteFondo(c) : null, celdas = [];
+      if (f.superficie && fmtArea(l.area)) celdas.push(["Área", fmtArea(l.area)]);
+      if (ff) celdas.push(["Frente", fmtLado(ff.frente)], ["Fondo", fmtLado(ff.fondo)]);
+      if (celdas.length < 3 && l.manzana) celdas.push([T.manzana, String(l.manzana)]);
+      cuerpo = '<div class="fp-cab">' + (logoSrc ? marca : '<b class="fp-desarrollo">' + esc(titulo) + "</b>") + "</div>" +
+        '<div class="fp-tit"><h3 class="fd-titulo">' + esc(T.lote) + " " + esc(l.numero || "—") + '</h3><span class="fp-estado" style="--c:' + e.color + '">' + esc(e.nombre) + "</span></div>" +
+        (plano ? '<div class="fp-plano">' + plano + "</div>" : "") +
+        (celdas.length ? '<div class="fp-datos">' + celdas.map(([k, v]) => "<div><span>" + esc(k) + ":</span><b>" + esc(v) + "</b></div>").join("") + "</div>" : "") +
+        (f.precio && precio ? '<div class="fp-precio"><span>Precio</span><b>' + esc(precio) + "</b></div>" : "") + textos + boton + pie2;
+    } else if (f.plantilla === "banda") {
       cuerpo = '<div class="fd-banda">' + esc(titulo) + "</div>" + plano + '<h3 class="fd-titulo">' + esc(T.lote) + " #" + esc(l.numero || "—") + "</h3>" + estado +
         (f.superficie && fmtArea(l.area) ? '<div class="fd-fila"><span>Superficie</span></div><div class="fd-valor">' + esc(fmtArea(l.area)) + "</div>" : "") +
         '<div class="fd-fila dos"><span>' + (precio && f.precio ? "Precio" : "") + "</span><span>" + esc(T.manzana) + "</span></div>" +
@@ -14981,7 +15459,7 @@ void main(){
         (f.precio && precio ? '<div class="fd-precio"><small>Precio:</small><b>' + esc(precio) + "</b></div>" : "") +
         (f.plantilla === "ubicacion" ? '<div class="fd-textos">' + (f.textoA ? "<div>" + (f.tituloA ? "<h4>" + esc(f.tituloA) + "</h4>" : "") + parrafos(f.textoA) + "</div>" : "<div></div>") + (ubic || f.textoB ? "<div>" + "<h4>" + esc(f.tituloB || "Ubicación") + "</h4>" + ubic + parrafos(f.textoB) + "</div>" : "") + "</div>" : textos) + boton + pie2;
     }
-    return '<div class="pop-caja ficha-d fd-' + f.plantilla + '" role="dialog" aria-label="' + esc(nombreLote(c)) + '" style="--fd-fondo:' + f.fondo + ";--fd-texto:" + f.texto + ";--fd-acento:" + f.acento + ";--fd-sobre:" + textoSobre(f.acento) + (f.fuente ? ";--fd-fuente:'" + f.fuente + "'" : "") + '"><button class="pop-x" aria-label="Cerrar">×</button>' + cuerpo + "</div>";
+    return '<div class="pop-caja ficha-d fd-' + (f.plantilla === "plano" ? "plano-f" : f.plantilla === "terreno" ? "terreno-f" : f.plantilla) + '" role="dialog" aria-label="' + esc(nombreLote(c)) + '" style="--fd-fondo:' + f.fondo + ";--fd-texto:" + f.texto + ";--fd-acento:" + f.acento + ";--fd-sobre:" + textoSobre(f.acento) + (f.fuente ? ";--fd-fuente:'" + f.fuente + "'" : "") + '"><button class="pop-x" aria-label="Cerrar">×</button>' + cuerpo + "</div>";
   }
   // Ficha del lote en el tour: estado, superficie, medidas, precio y botón de contacto
   function fichaLote(c) {
@@ -15115,6 +15593,7 @@ void main(){
     let motor = null, piloto = null, api = null, actualId = null, pilotoFin = false;
     // Pantalla de bienvenida: mientras está, nada arranca (piloto, narración, presentación) y la esfera gira despacio
     let enEspera = !!o.esperar, vozRef = null, giro = 0, fovBase = null;
+    DN.gen++; DN.vistas = new Set(); DN.id = null; DN.lista = []; DN.corre = false; // cada vista previa empieza de cero
     const despierto = o.sinPresentacion ? null : pantallaDespierta();
     const despierta = () => { if (!despierto) return; const pr = P().presentacion; despierto.poner(!!((piloto && !pilotoFin) || (pr && pr.activa))); };
     // Modo presentación: si nadie toca el tour, pasa solo a la siguiente esfera
@@ -15208,10 +15687,10 @@ void main(){
       stage.style.setProperty("--hs-color", est.skin.acento);
       stage.style.setProperty("--hs-sobre", textoSobre(est.skin.acento));
       api = renderSkin(ui, Object.assign({}, o, { orientacion, motor: () => motor, alPiloto: repetirPiloto }));
-      const mini = miniPlano(ui, () => motor), voz = o.narrar ? pastillaVoz(ui) : { escena() {} };
-      const e0 = api.escena, v0 = api.vista; // el plano con radar y la narración siguen a la esfera
+      const mini = miniPlano(ui, () => motor), voz = o.narrar ? pastillaVoz(ui) : { escena() {} }, dn = barraDiaNoche(ui, () => motor, () => enEspera);
+      const e0 = api.escena, v0 = api.vista; // el plano con radar, la narración y el día y noche siguen a la esfera
       vozRef = voz;
-      api.escena = (id) => { e0(id); mini.escena(id); if (!enEspera) voz.escena(id); }; api.vista = (v) => { v0(v); mini.vista(v); };
+      api.escena = (id) => { e0(id); mini.escena(id); if (!enEspera) voz.escena(id); dn.escena(id); }; api.vista = (v) => { v0(v); mini.vista(v); };
       if (actualId) api.escena(actualId); if (motor) api.vista(motor.view()); };
     pintar(o.orientacion);
     motor = crearMotor(stage, {
@@ -15223,7 +15702,7 @@ void main(){
       alMoverVista: () => api && motor && api.vista(motor.view()),
       alAccion: accion,
     });
-    motor.mostrar(o.inicio || P().escenaInicial, 0);
+    { const ini = o.inicio || P().escenaInicial; motor.mostrar(baseDeMomento(ini) || ini, 0); } // una esfera de otra hora abre en su principal
     return {
       actual: () => actualId,
       yawGrados: () => (motor && motor.actual ? (((motor.actual.view.yaw() * 180) / Math.PI) % 360 + 360) % 360 : 0),
@@ -16189,7 +16668,7 @@ void main(){
     }
     const encolar = (urls) => { urls.forEach((u) => { if (!hechas.has(u) && !cola.includes(u)) cola.push(u); }); siguiente(); };
     const vecinas = (id) => {
-      const ids = salidas(id).map((h) => h.destino).filter(escena);
+      const ids = momentosDe(id).map((m) => m.id).concat(salidas(id).map((h) => h.destino).filter(escena)); // Día y noche: sus otras horas primero
       const i = est.escenas.findIndex((e) => e.id === id), sig = est.escenas[i + 1];
       if (sig && !ids.includes(sig.id)) ids.push(sig.id);
       return ids;
