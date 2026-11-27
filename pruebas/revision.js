@@ -3284,7 +3284,9 @@ async function capasPesadas(p) {
       exige(inicio.pais && inicio.pais !== "MX" ? inicio.sugerido === "paypal" : inicio.sugerido === "stripe" && inicio.elegido === "true", "en México no sale «Tarjeta» elegida de inicio (fuera, PayPal): " + JSON.stringify(inicio));
       await u.click('[data-dp-metodo="stripe"]'); await u.waitForTimeout(300);
       const txt = await u.textContent("[data-dp-pagar]");
-      exige(/Pagar \$(990|59 USD) con tarjeta/.test(txt), "el botón no cobra la licencia con tarjeta ($990 en México o $59 USD fuera): " + txt);
+      // Con la promoción de la beta (hasta el 1 dic 2026) cobra 30% menos: $693 o $41 USD
+      const enPromo = Date.now() < Date.parse("2026-12-02T06:00:00Z");
+      exige((enPromo ? /Pagar \$(693|41 USD) con tarjeta/ : /Pagar \$(990|59 USD) con tarjeta/).test(txt), "el botón no cobra la licencia con tarjeta (" + (enPromo ? "$693 en México o $41 USD fuera, con la promoción" : "$990 en México o $59 USD fuera") + "): " + txt);
       exige(/Stripe/.test(await u.textContent(".dp-nota")), "la nota no dice que es con Stripe");
       if (process.env.CAPTURAS) await u.screenshot({ path: path.join(process.env.CAPTURAS, "pago-stripe.png") });
       await u.click("[data-dp-pagar]"); await u.waitForTimeout(6000);
@@ -3303,6 +3305,39 @@ async function capasPesadas(p) {
       exige(/PayPal no aceptó/.test(pp.txt) && /otra forma de pago en PayPal/.test(pp.boton) && pp.cerrar, "cuando PayPal rechaza la tarjeta no se ofrece regresar a PayPal: " + JSON.stringify(pp).slice(0, 200));
       exige(!u.errs.length, "errores en el estudio: " + u.errs.join(" | ").slice(0, 200));
       await u.context().close();
+    });
+    // Pedido de Amar (27 nov 2026): «estamos al 30% de descuento hasta el 1 de diciembre… que literalmente cambien los precios».
+    // El servidor cobra 30% menos en Pro y Desarrollos (no en el espacio) y la quita solo al pasar la fecha. El escaparate
+    // lleva la barra y los precios tachados; el pago en el estudio muestra el precio de lista tachado y el aviso.
+    await paso("Promoción de la beta: 30% menos en Pro y Desarrollos hasta el 1 de diciembre (cobro, escaparate y pago)", async () => {
+      const enPromo = Date.now() < Date.parse("2026-12-02T06:00:00Z");
+      const u = await pagina("promo-" + Date.now() + "@prueba.mx"); await nuevoTour(u, "Promo beta");
+      const pr = await u.evaluate(() => fetch("api/pagos/precios", { cache: "no-store" }).then((r) => r.json()));
+      if (enPromo) {
+        exige(pr.mxn.pro === 693 && pr.mxn.desarrollos === 3493 && pr.usd.pro === 41 && pr.usd.desarrollos === 209 && pr.mxn.espacio === 390, "el servidor no cobra 30% menos: " + JSON.stringify({ mxn: pr.mxn, usd: pr.usd }));
+        exige(pr.promo && pr.promo.pct === 30 && pr.promo.mxn.pro === 990 && pr.promo.mxn.desarrollos === 4990, "el servidor no avisa de la promoción ni el precio de lista: " + JSON.stringify(pr.promo));
+      } else exige(pr.mxn.pro === 990 && !pr.promo, "pasó la fecha y la promoción sigue: " + JSON.stringify(pr));
+      await u.evaluate(() => { const b = document.querySelector('[data-comprar="pro"]'); if (b) b.click(); }); await u.waitForTimeout(1500);
+      await u.click('[data-dp-metodo="mercadopago"]').catch(() => {}); await u.waitForTimeout(300);
+      const dlg = await u.evaluate(() => ({ promo: !!document.getElementById("dp-promo"), precios: [...document.querySelectorAll("#dp-cuerpo .dp-precio")].map((e) => e.innerHTML), boton: (document.querySelector("[data-dp-pagar]") || {}).textContent || "" }));
+      if (process.env.CAPTURAS) await u.screenshot({ path: path.join(process.env.CAPTURAS, "pago-promo.png") });
+      if (enPromo) {
+        exige(dlg.promo && dlg.precios.some((h) => /<s>\$990<\/s>\$693/.test(h)) && dlg.precios.some((h) => /<s>\$4,990<\/s>\$3,493/.test(h)), "el pago no muestra el precio de lista tachado y el aviso de la promoción: " + JSON.stringify(dlg));
+        exige(/Pagar \$693 con Mercado Pago/.test(dlg.boton), "el botón no cobra el precio con la promoción: " + dlg.boton);
+      }
+      exige(!u.errs.length, "errores en el estudio: " + u.errs.join(" | ").slice(0, 200));
+      await u.context().close();
+      // El escaparate: la barra de arriba y los precios con la promoción; al pasar el 1 de diciembre regresa solo
+      const e = await pagina(null); await e.goto(ESTUDIO + "/"); await e.waitForTimeout(1500);
+      const ver = () => e.evaluate(() => ({ barra: !!document.getElementById("promo-barra") && getComputedStyle(document.getElementById("promo-barra")).display !== "none", precios: [...document.querySelectorAll("#planes .precio")].filter((x) => getComputedStyle(x).display !== "none").map((x) => x.textContent.replace(/\s+/g, " ").trim()) }));
+      const hoy = await ver();
+      if (process.env.CAPTURAS) await e.screenshot({ path: path.join(process.env.CAPTURAS, "escaparate-promo.png") });
+      if (enPromo) exige(hoy.barra && hoy.precios.some((t) => /\$41\s*\$59/.test(t)) && hoy.precios.some((t) => /\$209\s*\$299/.test(t)), "el escaparate no muestra la promoción: " + JSON.stringify(hoy));
+      await e.context().close();
+      const d = await pagina(null); await d.clock.install({ time: new Date("2026-12-02T06:00:05Z") }); await d.goto(ESTUDIO + "/"); await d.waitForTimeout(1500);
+      const ver2 = await d.evaluate(() => ({ barra: getComputedStyle(document.getElementById("promo-barra")).display !== "none", precios: [...document.querySelectorAll("#planes .precio")].filter((x) => getComputedStyle(x).display !== "none").map((x) => x.textContent.replace(/\s+/g, " ").trim()) }));
+      exige(!ver2.barra && ver2.precios.some((t) => /^\$59\s*USD/.test(t)) && !ver2.precios.some((t) => /\$41/.test(t)), "después del 1 de diciembre el escaparate sigue con la promoción: " + JSON.stringify(ver2));
+      await d.context().close();
     });
     // Pedido de un usuario (nov 2026): además de cambiarles el nombre, agregar más estados. Nace en el Laboratorio.
     await paso("Más estados de lote: «+ Estado» agrega uno propio, se usa en un lote, sale en el tour y se quita sin perder lotes", async () => {

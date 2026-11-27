@@ -23,16 +23,23 @@ export const ESPACIO_PAQUETE = 10 * GB;
 // tras la comisión de PayPal (~4.45% + 0.30 USD + IVA) y el cambio a pesos (~3.5%), quede lo mismo que en México.
 export const COBROS_USD = { pro: 59, desarrollos: 299, espacio: 25 };
 export const PERIODOS = { unico: { nombre: "pago único", meses: 0 }, mes: { nombre: "1 mes", meses: 1 }, anio: { nombre: "1 año", meses: 12 } };
-// Lo que paga hoy una cuenta por una licencia (si ya tiene Pro, para subir a Desarrollos paga la diferencia)
-export function montoLicencia(cuenta, plan, moneda) {
+// Promoción de la beta (pedido de Amar, 27 nov 2026): 30% menos en Pro y Desarrollos hasta el 1 de diciembre
+// (fin del día, hora de la Ciudad de México). Al pasar la fecha los precios regresan solos.
+export const PROMO = { pct: 30, planes: ["pro", "desarrollos"], hasta: "2026-12-02T06:00:00Z", texto: "30% de descuento de la beta hasta el 1 de diciembre" };
+export const promoActiva = (plan, ahora) => !!PROMO && (!plan || PROMO.planes.includes(plan)) && (ahora ? new Date(ahora) : new Date()) < new Date(PROMO.hasta);
+export const conPromo = (monto, plan) => (monto && promoActiva(plan) ? Math.max(1, Math.round(monto * (1 - PROMO.pct / 100))) : monto);
+
+// Lo que paga hoy una cuenta por una licencia (si ya tiene Pro, para subir a Desarrollos paga la diferencia).
+// Con la promoción activa ya va con su descuento; sinPromo da el precio de lista (para tacharlo y para los cupones).
+export function montoLicencia(cuenta, plan, moneda, sinPromo) {
   const tabla = moneda === "USD" ? COBROS_USD : { pro: COBROS.pro.unico, desarrollos: COBROS.desarrollos.unico, espacio: COBROS.espacio.unico };
   if (plan === "espacio") return tabla.espacio;
   const base = tabla[plan];
   if (!base) return null;
   const actual = planDe(cuenta);
   if (actual.id === plan && !actual.vence) return null;              // ya la tiene
-  if (plan === "desarrollos" && actual.id === "pro" && !actual.vence) return base - tabla.pro;
-  return base;
+  const lista = plan === "desarrollos" && actual.id === "pro" && !actual.vence ? base - tabla.pro : base;
+  return sinPromo ? lista : conPromo(lista, plan);
 }
 
 // Suma meses a una fecha (si cae en un día que no existe, se va al último del mes)

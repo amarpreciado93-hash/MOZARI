@@ -777,3 +777,18 @@
   (tope de la prueba de 1.2 a 1.25 MB; sin compactar pasa de 1.4 MB) y porque el mini tutorial del «Link para tu cliente»
   tapaba el botón de Modo privado (las pruebas ahora lo pasan). La cuarta («Anuncios → web», correos) fue de tiempo.
   Las cuatro pasan al volver a correrlas.
+
+## 27 nov 2026 · Promoción de la beta: 30% menos en Pro y Desarrollos hasta el 1 de diciembre
+
+- Amar: «necesitamos meter un anuncio en la página que estamos al 30% de descuento hasta el 1 de diciembre y que
+  literalmente cambien los precios de las licencias un 30% más abajo… hicimos una publicidad pero la gente no lo puede
+  comprar al 30%». El servidor cobra 30% menos en Pro y Desarrollos (no en el espacio extra) por Mercado Pago, tarjeta
+  y PayPal: Pro $693 MXN / $41 USD (antes $990 / $59), Desarrollos $3,493 / $209 (antes $4,990 / $299); subir de Pro a
+  Desarrollos también va con 30% menos. Termina sola el 1 de diciembre a las 23:59 (hora de la Ciudad de México).
+- Un cupón de descuento no se suma a la promoción: se cobra el precio más barato de los dos. Los links de regalo
+  siguen igual. El pago guarda «promo: 30» y el precio de lista.
+- mozari.app: barra negra arriba («30% de descuento en Pro y Desarrollos durante la beta, hasta el 1 de diciembre»),
+  precios nuevos con el de antes tachado y la nota en pesos. Al pasar la fecha la página regresa sola a los precios.
+- En el estudio, el pago muestra el precio de lista tachado y el aviso en verde.
+- Pruebas: nueva «Promoción de la beta» (lo que cobra el servidor, el pago en el estudio, el escaparate y que después
+  del 1 de diciembre regresa); «Pagar con tarjeta» espera el precio con la promoción mientras dure.

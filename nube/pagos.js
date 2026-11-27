@@ -20,7 +20,7 @@
 
 import { json, error } from "./comun.js";
 import { perfil } from "./sesion.js";
-import { PLANES, COBROS, COBROS_USD, PERIODOS, sumarMeses, montoLicencia, ESPACIO_PAQUETE } from "./planes.js";
+import { PLANES, COBROS, COBROS_USD, PERIODOS, sumarMeses, montoLicencia, ESPACIO_PAQUETE, PROMO, promoActiva } from "./planes.js";
 import { contador, enviar, correoCompra } from "./correos.js";
 
 const MP = "https://api.mercadopago.com";
@@ -191,6 +191,8 @@ function motivoCupon(cupon, plan, uid) {
   return "";
 }
 const conDescuento = (monto, pct, moneda) => Math.max(1, Math.round(monto * (1 - pct / 100)));
+// Un cupón de descuento no se suma a la promoción de la beta: se cobra lo que salga más barato
+const precioConCupon = (cuenta, plan, moneda, pct) => { const lista = montoLicencia(cuenta, plan, moneda, true), hoy = montoLicencia(cuenta, plan, moneda); return lista ? Math.min(conDescuento(lista, pct, moneda), hoy) : lista; };
 
 const resumen = (o) => ({ ref: o.ref, plan: o.plan, periodo: o.periodo, monto: o.monto, estado: o.estado, vence: o.vence || null, reintentar: o.reintentar || undefined, motivo: o.motivo || undefined });
 
@@ -203,7 +205,9 @@ export async function apiPagos(request, env, partes, yo) {
     const metodos = { mercadopago: !!env.MP_ACCESS_TOKEN || simulado(env), paypal: !!(env.PAYPAL_CLIENT_ID && env.PAYPAL_SECRET) || ppSimulado(env), stripe: !!env.STRIPE_SECRET_KEY || stSimulado(env) };
     // En México se sugiere «Tarjeta» (Stripe): en nov 2026 Mercado Pago rechazaba por antifraude muchas tarjetas de débito
     // que Stripe sí acepta. Mercado Pago sigue a un clic para OXXO, transferencia o saldo de Mercado Pago.
-    return json({ pais, sugerido: pais && pais !== "MX" ? "paypal" : metodos.stripe ? "stripe" : "mercadopago", mxn: precios("MXN"), usd: precios("USD"), metodos });
+    const lista = (mon) => ({ pro: montoLicencia(yo, "pro", mon, true), desarrollos: montoLicencia(yo, "desarrollos", mon, true), espacio: montoLicencia(yo, "espacio", mon, true) });
+    const promo = promoActiva() ? { pct: PROMO.pct, planes: PROMO.planes, hasta: PROMO.hasta, texto: PROMO.texto, mxn: lista("MXN"), usd: lista("USD") } : null;
+    return json({ pais, sugerido: pais && pais !== "MX" ? "paypal" : metodos.stripe ? "stripe" : "mercadopago", mxn: precios("MXN"), usd: precios("USD"), promo, metodos });
   }
 
   // Revisa un cupón y devuelve los precios con descuento para esta cuenta
@@ -211,7 +215,7 @@ export async function apiPagos(request, env, partes, yo) {
     const cupon = await leerCupon(env, url.searchParams.get("codigo"));
     const motivo = motivoCupon(cupon, "", yo.uid);
     if (motivo) return error(400, motivo);
-    const precios = (mon) => Object.fromEntries(["pro", "desarrollos", "espacio"].map((p) => { const b = montoLicencia(yo, p, mon); return [p, b && cupon.planes.includes(p) ? conDescuento(b, cupon.pct, mon) : null]; }));
+    const precios = (mon) => Object.fromEntries(["pro", "desarrollos", "espacio"].map((p) => { const b = montoLicencia(yo, p, mon); return [p, b && cupon.planes.includes(p) ? precioConCupon(yo, p, mon, cupon.pct) : null]; }));
     return json({ codigo: cupon.codigo, pct: cupon.pct, planes: cupon.planes, mxn: precios("MXN"), usd: precios("USD") });
   }
 
@@ -246,9 +250,10 @@ export async function apiPagos(request, env, partes, yo) {
       const motivo = motivoCupon(cupon, c.plan, yo.uid);
       if (motivo) return error(400, motivo);
       if (cupon.pct >= 100) return error(400, "Este link activa tu licencia sin pagar: usa Activar");
-      montoHoy = conDescuento(lista, cupon.pct, moneda);
+      montoHoy = precioConCupon(yo, c.plan, moneda, cupon.pct);
     }
-    const conCupon = cupon ? { cupon: cupon.codigo, descuento: cupon.pct, montoLista: lista } : {};
+    const listaSinPromo = montoLicencia(yo, c.plan, moneda, true), enPromo = !cupon || montoHoy === lista ? lista < listaSinPromo : false;
+    const conCupon = Object.assign(cupon ? { cupon: cupon.codigo, descuento: cupon.pct, montoLista: listaSinPromo } : {}, enPromo ? { promo: PROMO.pct, montoLista: listaSinPromo } : {});
     const ref = "mz-" + Date.now().toString(36) + crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
     if (conStripe) {
       if (!env.STRIPE_SECRET_KEY && !stSimulado(env)) return error(503, "El pago con tarjeta aún no está activo. Usa Mercado Pago o PayPal.");

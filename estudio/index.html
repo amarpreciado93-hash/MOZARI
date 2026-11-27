@@ -219,6 +219,8 @@
   .dp-cupon.ok b { color: var(--mz-lima); font-weight: 600; }
   .dp-link { background: none; border: 0; padding: 0; color: var(--mz-tenue); text-decoration: underline; font: 12px var(--mz-texto-ui); cursor: pointer; }
   .dp-precio s { font-size: 13px; font-weight: 400; color: var(--mz-tenue); margin-right: 4px; }
+  .dp-promo { margin: 0; padding: 9px 12px; border-radius: 12px; background: var(--mz-lima); color: var(--mz-negro); font-size: 13px; text-align: center; }
+  .dp-promo b { font-weight: 700; }
   .links-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; padding: 14px 16px; border-bottom: 1px solid var(--mz-linea-neutra); }
   .links-form label { display: grid; gap: 4px; font-size: 11px; color: var(--mz-tenue); }
   .links-form input, .links-form select { font: 13px var(--mz-texto-ui); color: var(--mz-texto); background: var(--mz-negro); border: 1px solid var(--mz-linea-neutra); border-radius: 10px; padding: 8px 10px; }
@@ -6378,13 +6380,19 @@
     desarrollos: ["Todo lo de Pro", "Hosting incluido: 50 GB", "Lotificación sin marca: manzanas, lotes, terreno y masterplan"],
   };
   const yaPro = () => PLAN && PLAN.id === "pro" && !PLAN.vence;
-  const precioHoy = (id) => { const t = tablaPago(); return id === "desarrollos" && yaPro() ? t.desarrollos - t.pro : t[id]; };
+  // Promoción de la beta (pedido de Amar, 27 nov 2026): 30% menos en Pro y Desarrollos hasta el 1 de diciembre (fin del
+  // día, hora de la Ciudad de México). Quien cobra es el servidor, que la quita solo al pasar la fecha; aquí se muestra.
+  const PROMO_BETA = { pct: 30, hasta: Date.parse("2026-12-02T06:00:00Z") };
+  const enPromo = (id) => id !== "espacio" && (preciosPago && "promo" in preciosPago ? !!preciosPago.promo : Date.now() < PROMO_BETA.hasta);
+  const precioLista = (id) => { const t = tablaPago(); return id === "desarrollos" && yaPro() ? t.desarrollos - t.pro : t[id]; };
+  const precioHoy = (id) => { const l = precioLista(id); return enPromo(id) ? Math.max(1, Math.round(l * (1 - PROMO_BETA.pct / 100))) : l; };
   const pago = { plan: "pro", metodo: "mercadopago", cupon: "" };
   let cuponPago = null, cuponAbierto = false; // cupón revisado por el servidor: { codigo, pct, planes, mxn, usd }
   const conCupon = (id) => cuponPago && cuponPago.planes.includes(id) ? (enUSD() ? cuponPago.usd : cuponPago.mxn)[id] : null;
   const precioFinal = (id) => { const c = conCupon(id); return c !== null && c !== undefined ? c : precioHoy(id); };
   const regalo = () => cuponPago && cuponPago.pct >= 100;
-  const etiquetaPrecio = (id) => conCupon(id) !== null && conCupon(id) !== undefined && !regalo() ? "<s>" + pesos(precioHoy(id)) + "</s>" + pesos(conCupon(id)) : regalo() && cuponPago.planes.includes(id) ? "Gratis" : pesos(precioHoy(id));
+  const etiquetaPrecio = (id) => { if (regalo() && cuponPago.planes.includes(id)) return "Gratis"; const f = precioFinal(id), l = precioLista(id); return f < l ? "<s>" + pesos(l) + "</s>" + pesos(f) : pesos(f); };
+  const avisoPromo = () => (enPromo("pro") && !(regalo() && cuponPago.planes.includes(pago.plan)) ? '<p class="dp-promo" id="dp-promo"><b>' + PROMO_BETA.pct + "% de descuento</b> de la beta hasta el 1 de diciembre</p>" : "");
   function bloqueCupon() {
     if (cuponPago) return '<div class="dp-cupon ok"><span>Cupón <b>' + esc(cuponPago.codigo) + "</b> · " + (regalo() ? "licencia de regalo" : cuponPago.pct + "% de descuento") + '</span><button class="dp-link" data-dp-cupon-quitar>Quitar</button></div>';
     if (!cuponAbierto) return '<div class="dp-cupon"><button class="dp-link" data-dp-cupon-abrir>¿Tienes un cupón?</button></div>';
@@ -6421,7 +6429,7 @@
     const opciones = ["pro", "desarrollos"].filter((id) => !(id === "pro" && yaPro()));
     if (!opciones.includes(pago.plan)) pago.plan = opciones[0];
     $("dp-cuerpo").innerHTML = '<button class="dp-cerrar" data-dp-cerrar aria-label="Cerrar">×</button>' +
-      '<div><h2 id="dp-titulo">' + (yaPro() ? "Sube a Desarrollos" : "Tu licencia Mozari") + '</h2><p>Pagas una sola vez y es tuya: sin mensualidades y con el hosting de tus tours incluido.</p></div>' +
+      '<div><h2 id="dp-titulo">' + (yaPro() ? "Sube a Desarrollos" : "Tu licencia Mozari") + '</h2><p>Pagas una sola vez y es tuya: sin mensualidades y con el hosting de tus tours incluido.</p></div>' + avisoPromo() +
       '<div class="dp-planes"' + (opciones.length === 1 ? ' style="grid-template-columns:1fr"' : "") + ">" + opciones.map((id) =>
         '<button class="dp-plan" data-dp-plan="' + id + '" aria-pressed="' + (pago.plan === id) + '"><b>' + PLANES_TXT[id] + "</b>" +
         '<span class="dp-precio">' + etiquetaPrecio(id) + " <small>" + (regalo() && cuponPago.planes.includes(id) ? "con tu link" : id === "desarrollos" && yaPro() ? "pagas la diferencia" : "pago único") + "</small></span>" +
