@@ -45,9 +45,8 @@
   .promo-barra b { font-weight: 600; }
   .promo-barra u { text-underline-offset: 3px; margin-left: 6px; }
   .promo-plan { margin: 0; font-size: 13px; font-weight: 500; }
-  .sin-promo { display: none; }
-  .promo-fin .con-promo { display: none; }
-  .promo-fin .sin-promo { display: revert; }
+  html:not(.promo-fin) .sin-promo { display: none !important; }
+  html.promo-fin .con-promo { display: none !important; }
   nav.links a { text-decoration: none; }
   nav.links a:hover { color: var(--texto); }
   .btn { display: inline-flex; align-items: center; gap: 10px; border-radius: 999px; padding: 13px 24px; font: 500 15px Poppins, sans-serif; text-decoration: none; cursor: pointer; border: 0; white-space: nowrap; transition: background 0.15s, transform 0.15s; }

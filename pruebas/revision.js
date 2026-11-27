@@ -3332,7 +3332,7 @@ async function capasPesadas(p) {
       const ver = () => e.evaluate(() => ({ barra: !!document.getElementById("promo-barra") && getComputedStyle(document.getElementById("promo-barra")).display !== "none", precios: [...document.querySelectorAll("#planes .precio")].filter((x) => getComputedStyle(x).display !== "none").map((x) => x.textContent.replace(/\s+/g, " ").trim()) }));
       const hoy = await ver();
       if (process.env.CAPTURAS) await e.screenshot({ path: path.join(process.env.CAPTURAS, "escaparate-promo.png") });
-      if (enPromo) exige(hoy.barra && hoy.precios.some((t) => /\$41\s*\$59/.test(t)) && hoy.precios.some((t) => /\$209\s*\$299/.test(t)), "el escaparate no muestra la promoción: " + JSON.stringify(hoy));
+      if (enPromo) exige(hoy.barra && hoy.precios.some((t) => /\$41\s*\$59/.test(t)) && hoy.precios.some((t) => /\$209\s*\$299/.test(t)) && !hoy.precios.some((t) => /^\$(59|299)\s*USD/.test(t)), "el escaparate no muestra la promoción (o salen también los precios de antes): " + JSON.stringify(hoy));
       await e.context().close();
       const d = await pagina(null); await d.clock.install({ time: new Date("2026-12-02T06:00:05Z") }); await d.goto(ESTUDIO + "/"); await d.waitForTimeout(1500);
       const ver2 = await d.evaluate(() => ({ barra: getComputedStyle(document.getElementById("promo-barra")).display !== "none", precios: [...document.querySelectorAll("#planes .precio")].filter((x) => getComputedStyle(x).display !== "none").map((x) => x.textContent.replace(/\s+/g, " ").trim()) }));
