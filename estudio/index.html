@@ -682,6 +682,15 @@
   .lista li.sobre { box-shadow: 0 -2px 0 var(--mz-lima); }
   .lista li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .lista li.carpeta { grid-template-columns: 16px 18px minmax(0, 1fr) 28px; padding-left: 4px; }
+  .lista.con-candado li { grid-template-columns: 18px minmax(0, 1fr) 24px 28px; }
+  .lista.con-candado li.carpeta { grid-template-columns: 16px 18px minmax(0, 1fr) 24px 28px; }
+  .lista .candado { width: 24px; opacity: 0; }
+  .lista li:hover .candado, .lista li[aria-selected="true"] .candado, .lista .candado:focus-visible { opacity: 0.7; }
+  .lista .candado.puesto { opacity: 1; color: var(--mz-lima); }
+  .lista .candado svg { width: 15px; height: 15px; }
+  @media (hover: none) { .lista .candado { opacity: 0.55; } }
+  .cp-sel.fija { stroke-dasharray: 6 5; }
+  .asas.fija .asa-marco { stroke-dasharray: 6 5; }
   .lista li.carpeta small { margin-left: 8px; color: var(--mz-tenue); font-size: 11px; }
   .lista li.hijo { margin-left: 22px; border-left: 1px solid var(--mz-linea-neutra); border-radius: 0 9px 9px 0; }
   .carp-flecha { width: 16px; height: 22px; padding: 0; display: grid; place-items: center; background: none; border: 0; color: var(--mz-tenue); cursor: pointer; }
@@ -4796,6 +4805,29 @@
     h += pieG(k === 2 ? "Tus lotes se quedan encima" : k === 1 ? "Se funde despacio, como un timelapse" : "La misma vista, de día…", k === 2);
     svg.innerHTML = h;
   }
+  // Candado en las capas: en la lista se toca el candado y la capa ya no se mueve aunque se arrastre en la esfera
+  const pasosCandado = () => [{ el: "#lista .candado", titulo: "Nuevo: candado en las capas", anim: animCandado, dur: 5.2,
+    texto: "Toca el <b>candado</b> junto al ojo y esa capa ya no se mueve ni se deforma por error al trabajar en la esfera, como en Photoshop. Se quita con el mismo botón. En una manzana cuida también sus lotes." }];
+  function animCandado(svg, t) {
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="150" y="0" width="210" height="96" fill="#7FA9C9"/><path d="M150 96 Q255 84 360 98 V200 H150Z" fill="#6A8F4E"/>';
+    h += '<rect x="10" y="14" width="132" height="172" rx="10" fill="#141414" stroke="#2b2b2b"/><text x="20" y="34" fill="#fff" font-size="10" font-weight="700">Capas</text>';
+    const puesto = t > 1.5;
+    [["Lote 1", 0], ["Texto", 1], ["Hotspot", 2]].forEach(([n, i]) => {
+      const y = 46 + i * 30, sel = i === 0;
+      h += '<rect x="16" y="' + y + '" width="120" height="24" rx="6" fill="' + (sel ? "rgba(213,255,64,.14)" : "none") + '" stroke="' + (sel ? "#D5FF40" : "none") + '"/><text x="26" y="' + (y + 16) + '" fill="#fff" font-size="9">' + n + "</text>";
+      const lock = sel && puesto, cx = 104, cy = y + 12;
+      h += '<g stroke="' + (lock ? "#D5FF40" : "rgba(255,255,255,.45)") + '" stroke-width="1.4" fill="none"><rect x="' + (cx - 5) + '" y="' + (cy - 1) + '" width="10" height="7" rx="1.5"/><path d="M' + (cx - 3) + " " + (cy - 1) + "v-2.5a3 3 0 0 1 " + (lock ? "6 0v2.5" : "5.6-1.4") + '"/></g>';
+      h += '<g stroke="rgba(255,255,255,.45)" stroke-width="1.3" fill="none"><ellipse cx="124" cy="' + cy + '" rx="6" ry="3.5"/><circle cx="124" cy="' + cy + '" r="1.4"/></g>';
+    });
+    // el lote en la esfera: se intenta arrastrar y no se mueve
+    const tira = t > 2.6 && t < 4.4, sacude = tira ? Math.sin(t * 40) * 2 : 0;
+    h += '<path d="M' + (205 + sacude) + ' 128 L' + (285 + sacude) + ' 122 L' + (300 + sacude) + ' 168 L' + (215 + sacude) + ' 176Z" fill="rgba(34,181,115,.45)" stroke="#fff" stroke-width="1.5"' + (puesto ? ' stroke-dasharray="5 4"' : "") + "/>";
+    if (t < 1.6) h += CURSOR_G(104 - 30 * (1 - sv(t / 1.2)), 64 + 40 * (1 - sv(t / 1.2)));
+    else if (t < 2.6) h += CURSOR_G(104 + 140 * sv((t - 1.6) / 0.9), 58 + 92 * sv((t - 1.6) / 0.9));
+    else if (tira) { const u = sv((t - 2.8) / 1.2); h += '<path d="M250 150 L' + (250 + 50 * u) + " " + (150 - 26 * u) + '" stroke="#fff" stroke-width="1.5" stroke-dasharray="3 3"/>' + CURSOR_G(250 + 50 * u, 150 - 26 * u); }
+    h += pieG(t > 4.4 ? "Con candado no se mueve por error" : t > 1.5 ? "Aunque lo arrastres, se queda" : "Toca el candado de la capa", t > 4.4);
+    svg.innerHTML = h;
+  }
   // Hotspot de regreso: se arrastra una esfera, se elige el hotspot, y en la otra esfera (2:1) se pone el regreso con lupa
   const pasosRegreso = () => [{ el: "#panos-tira", titulo: "Nuevo: hotspot de regreso", anim: animRegreso, dur: 7.4,
     texto: "Arrastra una esfera de esta tira a la que tienes abierta. Elige el hotspot y deja marcado <b>Crear hotspot de regreso</b>. Luego mueve el punto en la otra esfera: la <b>lupa</b> te deja ponerlo exacto. Dale <b>Añadir</b>." }];
@@ -5205,6 +5237,7 @@
   function guiasDeSeccion(clave) {
     if (MODO !== "nube") return;
     if (clave === "panoramas/capas") guiaCapasNuevas();
+    if (clave === "panoramas/capas" && enLab("candado")) guiaNueva("nuevo-candado", () => (esVisible("#lista .candado") || document.querySelector("#lista .candado") ? pasosCandado() : []), () => nav.sub === "capas" && !!document.querySelector("#lista .candado"));
     if (clave === "panoramas/capas" && enLab("hotspot-regreso")) guiaNueva("nuevo-regreso", () => (esVisible("#panos-tira") && est.escenas.length > 1 ? pasosRegreso() : []), () => nav.sub === "capas" && esVisible("#panos-tira"));
     if (clave === "proyecto/musica") guiaNueva("nuevo-sonido", () => [esVisible("#m-preguntar-fila") && { el: "#m-preguntar-fila", titulo: "Nuevo: ¿activar sonido?",
       texto: "Los navegadores no dejan sonar un tour hasta que el visitante toca la pantalla. Ahora, al abrirlo le preguntamos <b>Activar sonido</b> o <b>Sin sonido</b>, con los colores de tu tour, y la música y las voces arrancan con su respuesta." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "musica");
@@ -7795,7 +7828,8 @@
             n.svg.appendChild(sel);
             const ancla = !!(opciones.verticeAncla && opciones.verticeAncla(c)); // en «Curvas» la esquina solo se ve: se agarran las manijas rojas
             motor._verts = { id: c.id, l: [] };
-            c.puntos.forEach((pt, i) => {
+            if (fija(c)) sel.classList.add("fija"); // con candado: solo el contorno, sin esquinas que agarrar
+            else c.puntos.forEach((pt, i) => {
               if (enCam[i].z <= CERCA) return;
               const s = aPantalla(cam, enCam[i]);
               const v = document.createElementNS(SVGNS, "circle");
@@ -7839,7 +7873,7 @@
       extra.innerHTML = "";
       // Asas propias de una capa (las líneas de una manzana): las da el editor
       if (editable && motor.modo === "capas" && !motor.dibujo && motor.elegida && opciones.asasExtra) {
-        const ce = lista().find((x) => x.id === motor.elegida), A = ce && opciones.asasExtra(ce);
+        const ce = lista().find((x) => x.id === motor.elegida), A = ce && !fija(ce) && opciones.asasExtra(ce);
         if (A) {
           const scr = (pt) => { const q = aCamara(cam, pt[0], pt[1]); return q.z > CERCA ? aPantalla(cam, q) : null; };
           A.lineas.forEach((ln) => {
@@ -7878,7 +7912,8 @@
         const linea = document.createElementNS(SVGNS, "path");
         linea.setAttribute("class", "asa-marco"); linea.setAttribute("d", "M" + arriba.x.toFixed(1) + " " + arriba.y.toFixed(1) + "L" + giro.x.toFixed(1) + " " + giro.y.toFixed(1));
         g.appendChild(linea);
-        [["rotar", giro, "circle"], ["escala", q.c, "rect"], ["ancho", q.der, "rect"], ["alto", q.abajo, "rect"]].filter(([h]) => ne.c.tipo !== "imagen" || h === "rotar" || h === "escala").forEach(([h, p, forma]) => {
+        if (fija(ne.c)) g.classList.add("fija"); // con candado: el marco sin asas
+        [["rotar", giro, "circle"], ["escala", q.c, "rect"], ["ancho", q.der, "rect"], ["alto", q.abajo, "rect"]].filter(([h]) => !fija(ne.c) && (ne.c.tipo !== "imagen" || h === "rotar" || h === "escala")).forEach(([h, p, forma]) => {
           if (!es3d(ne.c) && h !== "escala") return;
           const e = document.createElementNS(SVGNS, forma);
           e.setAttribute("class", "asa asa-" + h);
@@ -7970,6 +8005,8 @@
 
     // Arrastrar capas y vértices (solo en Capas)
     let arrastre = null;
+    // Candado (Laboratorio «candado»): una capa con candado se puede elegir, pero no se mueve ni se deforma por error
+    const fija = (c) => !!(c && opciones.bloqueada && opciones.bloqueada(c));
     const limitarPitch = (p) => Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, p));
     function tomar(ev, c, modo, indice) {
       if (!editable || motor.modo !== "capas" || motor.dibujo) return;
@@ -7977,7 +8014,8 @@
       const sumar = ev.shiftKey || ev.metaKey || ev.ctrlKey;
       if (sumar) { opciones.alSeleccionar(c.id, "sumar"); return; } // varias a la vez, sin mover
       if (motor.elegida !== c.id || (opciones.enSeleccion && opciones.enSeleccion(c.id))) opciones.alSeleccionar(c.id);
-      if (c.deManzana) return; // sus lados los manda la manzana
+      if (c.deManzana && !fija(c)) return; // sus lados los manda la manzana
+      if (fija(c)) { if (opciones.alBloqueada) opciones.alBloqueada(c); return; }
       const inicio = coordsEn(ev);
       if (!inicio) return;
       arrastre = { c, modo, indice, inicio, x: ev.clientX, y: ev.clientY, movido: false, base: c.tipo === "poligono" ? c.puntos.map((p) => p.slice()) : [[c.yaw, c.pitch]] };
@@ -8001,6 +8039,7 @@
       const h = ev.target.closest("[data-h]"), n = h && nodos.get(motor.elegida);
       if (!n) return;
       ev.stopPropagation(); ev.preventDefault();
+      if (fija(n.c)) { if (opciones.alBloqueada) opciones.alBloqueada(n.c); return; }
       const r = stage.getBoundingClientRect();
       asa = { h: h.getAttribute("data-h"), c: n.c, n, x0: ev.clientX - r.left, y0: ev.clientY - r.top, tam: n.c.tipo === "texto" || n.c.tipo === "imagen" ? n.c.tamano : tamHs(n.c), t: t3(n.c), movido: false };
     });
@@ -8140,6 +8179,7 @@
     function empezarExtra(ev, c, idx) {
       const h = motor._asasExtra && motor._asasExtra[idx]; if (!h || !c) return;
       ev.stopPropagation(); ev.preventDefault();
+      if (fija(c)) { if (opciones.alBloqueada) opciones.alBloqueada(c); return; }
       const h2 = opciones.tomarAsaExtra ? opciones.tomarAsaExtra(c, h) : h; // "+" crea un nodo y lo arrastra
       arrastre = { c, modo: "extra", h: h2, x: ev.clientX, y: ev.clientY, movido: false };
       programar();
@@ -9985,6 +10025,8 @@ void main(){
         editable: true,
         alSeleccionar: (cid, modo) => seleccionar(cid, modo),
         enSeleccion: (cid) => seleccion.size > 1 && seleccion.has(cid),
+        bloqueada: (c) => conCandado(c),
+        alBloqueada: () => avisoCandado(),
         alCambiar: () => cambio(),
         alSoltar: (c) => { if (c.edificio) { repartirEdificio(c); cambio(); return; } if (c.manzana) { repartirManzana(c); cambio(); return; } if (c.mzPlano) { soltarPlano(c); cambio(); return; } if (c.vinculo) propagar(c, motorEd.actual.id); },
         alArrastrar: (c) => { if (c.edificio) repartirEdificio(c); if (c.manzana) repartirManzana(c); if (c.mzPlano) arrastrarPlano(c); },
@@ -12932,6 +12974,14 @@ void main(){
   };
   const OJO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   const OJO_NO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 4.4-1.1"/></svg>';
+  // Candado (Laboratorio «candado», pedido de Amar 27 nov 2026): como en Photoshop o Affinity, una capa con candado
+  // no se mueve ni se deforma por error. Se puede elegir y cambiar en Propiedades; no se arrastra ni se borra con la tecla.
+  // El candado de una manzana cuida también sus lotes.
+  const CANDADO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></svg>';
+  const CANDADO_NO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 6.6-1.6"/></svg>';
+  const conCandado = (c) => !!c && enLab("candado") && !!(c.bloqueada || (c.deManzana && (buscar(c.deManzana) || {}).bloqueada));
+  let avisoCandadoT = 0;
+  const avisoCandado = () => { if (Date.now() - avisoCandadoT < 2500) return; avisoCandadoT = Date.now(); avisar("Esta capa tiene candado. Quítalo en la lista de capas para moverla."); };
   const ICO_VINC = '<svg class="vinc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-label="En todas las esferas del terreno"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>';
   // Edición limpia (Laboratorio «limpio»): ver más abajo, junto a Propiedades
   // Todo abierto de inicio; el usuario cierra lo que no usa y se recuerda (por tipo de capa). «mz-props-plano» = sin renglones (pruebas)
@@ -12946,6 +12996,7 @@ void main(){
   function pintarCapas() {
     if (!motorEd) return;
     const ul = $("lista"), l = cs();
+    ul.classList.toggle("con-candado", enLab("candado"));
     if (acorLimpio()) {
       const pano = motorEd.actual && motorEd.actual.id;
       if (!l.length && !motorEd.dibujo && AGR.vacio !== pano) { AGR.vacio = pano; AGR.abierto = true; }
@@ -12955,7 +13006,7 @@ void main(){
     if (!l.length) { ul.innerHTML = '<li class="vacio" role="presentation">Este panorama no tiene capas. ' + (acorLimpio() ? "Toca «+ Agregar» para poner un lote, un polígono, un texto o un hotspot." : "Agrega un polígono, un texto o un hotspot.") + "</li>"; return; }
     const fila = (c, o = {}) => '<li role="option" draggable="' + !o.hijo + '" data-id="' + c.id + '" aria-selected="' + (c.id === motorEd.elegida || (seleccion.size > 1 && seleccion.has(c.id))) + '" class="' + [c.visible ? "" : "oculta", o.carpeta ? "carpeta" : "", o.abierta ? "abierta" : "", o.hijo ? "hijo" : ""].join(" ").trim() + '">' +
       (o.carpeta ? '<button class="carp-flecha" data-carpeta="' + c.id + '" aria-expanded="' + !!o.abierta + '" aria-label="' + (o.abierta ? "Cerrar" : "Abrir") + ' la carpeta de lotes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>' : "") +
-      (c.lote ? ICONOS.lote : c.manzana || c.mzPlano ? ICONOS.manzana : c.cota ? ICONOS.cota : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.tipo === "interes" ? (piDe(c).nombre || "Punto de interés") + (piDe(c).dato ? " · " + piDe(c).dato : "") : c.nombre)) + (c.vinculo ? ICO_VINC : "") + (o.carpeta ? "<small>" + (c.manzana && c.manzana.union && partesMz(c).length > 1 ? "parte " + (partesMz(c).indexOf(c) + 1) + " · " : "") + o.n + " " + (o.n === 1 ? terminos().lote : plural(terminos().lote)).toLowerCase() + "</small>" : "") + '</span><button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>";
+      (c.lote ? ICONOS.lote : c.manzana || c.mzPlano ? ICONOS.manzana : c.cota ? ICONOS.cota : c.camino ? ICONOS.camino : ICONOS[c.tipo]) + "<span>" + (c.lote ? '<i class="punto-estado" style="background:' + estadoDe(c).color + '"></i>' + esc(nombreLote(c)) : esc(c.tipo === "interes" ? (piDe(c).nombre || "Punto de interés") + (piDe(c).dato ? " · " + piDe(c).dato : "") : c.nombre)) + (c.vinculo ? ICO_VINC : "") + (o.carpeta ? "<small>" + (c.manzana && c.manzana.union && partesMz(c).length > 1 ? "parte " + (partesMz(c).indexOf(c) + 1) + " · " : "") + o.n + " " + (o.n === 1 ? terminos().lote : plural(terminos().lote)).toLowerCase() + "</small>" : "") + '</span>' + (enLab("candado") ? '<button class="ojo candado' + (c.bloqueada ? " puesto" : "") + '" data-candado="' + c.id + '" aria-pressed="' + !!c.bloqueada + '" aria-label="' + (c.bloqueada ? "Quitar el candado a " : "Poner candado a ") + esc(c.nombre) + '" title="' + (c.bloqueada ? "Quitar candado" : "Poner candado: no se mueve por error") + '">' + (c.bloqueada ? CANDADO : CANDADO_NO) + "</button>" : "") + '<button class="ojo" data-ojo="' + c.id + '" aria-label="' + (c.visible ? "Ocultar " : "Mostrar ") + esc(c.nombre) + '">' + (c.visible ? OJO : OJO_NO) + "</button></li>";
     if (!enCarpetas()) { ul.innerHTML = l.slice().reverse().map((c) => fila(c)).join(""); return; }
     // Carpetas (Laboratorio «carpetas», pedido de Amar 10 nov 2026): cada manzana guarda sus lotes, como un grupo de
     // Photoshop. Cerrada de inicio; se abre con su flechita o sola al elegir uno de sus lotes en la esfera.
@@ -12979,6 +13030,13 @@ void main(){
   $("lista").addEventListener("click", (ev) => {
     const carp = ev.target.closest("[data-carpeta]");
     if (carp) { const id = carp.dataset.carpeta; if (CARPETAS.has(id)) CARPETAS.delete(id); else CARPETAS.add(id); guardarCarpetas(); pintarCapas(); return; }
+    const cand = ev.target.closest("[data-candado]");
+    if (cand) {
+      const c = buscar(cand.dataset.candado); if (!c) return;
+      c.bloqueada = !c.bloqueada; if (!c.bloqueada) delete c.bloqueada;
+      cambio(); if (motorEd) motorEd.render();
+      avisar(c.bloqueada ? "Candado puesto: «" + (c.nombre || "capa") + "» ya no se mueve por error" : "Candado quitado"); return;
+    }
     const ojo = ev.target.closest("[data-ojo]");
     if (ojo) {
       const c = buscar(ojo.dataset.ojo); c.visible = !c.visible;
@@ -13920,16 +13978,19 @@ void main(){
   function eliminar() {
     const varios = seleccionadas();
     if (varios.length > 1) {
-      const quitar = varios.filter((x) => !x.deManzana), quedan = varios.length - quitar.length;
+      const fijas = varios.filter((x) => conCandado(x)).length;
+      const quitar = varios.filter((x) => !x.deManzana && !conCandado(x)), quedan = varios.length - quitar.length - fijas;
+      if (!quitar.length && fijas) { avisar(fijas === 1 ? "Esa capa tiene candado: quítalo para borrarla." : "Esas capas tienen candado: quítalo para borrarlas."); return; }
       const ids = new Set(quitar.map((x) => x.id));
       quitar.forEach((x) => { if (x.vinculo && (x.manzana || x.mzPlano)) quitarCopias(x.vinculo, motorEd.actual.id); });
       est.capas[motorEd.actual.id] = cs().filter((x) => !ids.has(x.id) && !(x.deManzana && ids.has(x.deManzana)));
       seleccion = new Set(); motorEd.elegida = null; cambio();
-      avisar(quitar.length + " capas eliminadas" + (quedan ? ". Los lotes de una manzana se quitan desde la manzana." : ""));
+      avisar(quitar.length + " capas eliminadas" + (fijas ? ". " + (fijas === 1 ? "Una tiene candado y se quedó." : fijas + " tienen candado y se quedaron.") : "") + (quedan ? ". Los lotes de una manzana se quitan desde la manzana." : ""));
       return;
     }
     const l = cs(), i = l.findIndex((c) => c.id === motorEd.elegida);
     if (i < 0) return;
+    if (conCandado(l[i])) { avisar("Esta capa tiene candado: quítalo en la lista para borrarla."); return; }
     const v = l[i].vinculo;
     if (l[i].deManzana) { avisar("Este lote es parte de una manzana. Quita lotes desde la manzana."); return; }
     if (l[i].edificio) { const id = l[i].id; est.capas[motorEd.actual.id] = l.filter((x) => x.id !== id && x.deManzana !== id); motorEd.elegida = null; cambio(); avisar("Edificio y sus departamentos eliminados"); return; }

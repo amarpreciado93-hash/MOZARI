@@ -792,3 +792,16 @@
 - En el estudio, el pago muestra el precio de lista tachado y el aviso en verde.
 - Pruebas: nueva «Promoción de la beta» (lo que cobra el servidor, el pago en el estudio, el escaparate y que después
   del 1 de diciembre regresa); «Pagar con tarjeta» espera el precio con la promoción mientras dure.
+
+## 27 nov 2026 · Candado en las capas (Laboratorio «candado», nace Solo yo)
+
+- Amar: «necesitamos meter un candado en las capas para que no se muevan por error como en Photoshop y Affinity».
+  En Capas, junto al ojo de cada capa sale el candado (sin poner se ve tenue al pasar el mouse; puesto, en verde).
+  Una capa con candado se puede elegir y cambiar en Propiedades, pero al arrastrarla en la esfera no se mueve, no
+  salen sus esquinas ni sus asas (rotar, escala, curvas, nodos de manzana) y no se borra con la tecla ni con Eliminar;
+  avisa «Esta capa tiene candado». El candado de una manzana cuida también sus lotes. Se guarda en el tour
+  (bloqueada: true) y no cambia nada en el tour publicado. Mini tutorial «Nuevo: candado en las capas».
+- Prueba nueva «Candado en las capas»: sin la función no sale; con candado el polígono no se mueve al arrastrarlo,
+  no salen sus esquinas y no se borra con la tecla; sin candado vuelve a moverse.
+- Revisión completa: todas las pruebas pasan (se corrió por partes porque la nube se reinició a medias).
+  «Anuncios → web» a veces fallaba porque el registro de correos tarda; ahora la prueba espera el segundo correo.

@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-ficha-disenos", "nuevo-landing-disenos", "nuevo-rotulo-estilos", "nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto", "nuevo-voz-idiomas", "nuevo-lotes-vendidos", "nuevo-unir-manzanas", "nuevo-equipo", "nuevo-dia-noche", "nuevo-regreso"];
+const GUIAS_NUEVAS = ["nuevo-candado", "nuevo-ficha-disenos", "nuevo-landing-disenos", "nuevo-rotulo-estilos", "nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto", "nuevo-voz-idiomas", "nuevo-lotes-vendidos", "nuevo-unir-manzanas", "nuevo-equipo", "nuevo-dia-noche", "nuevo-regreso"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -3116,7 +3116,8 @@ async function capasPesadas(p) {
       const aj = await fetch(ESTUDIO + "/prospecto", { method: "POST", headers: { "content-type": "application/json", origin: "https://otro.sitio" }, body: JSON.stringify({ correo: robot }) });
       exige(aj.status === 403 && !correosA(robot).length, "aceptó un pedido desde otra página: " + aj.status);
       exige((await pide(c, { correo: e2, tiempo: 5000 })).s === 200, "no aceptó un segundo correo");
-      const c2 = linkDe(correosA(e2)[0] || "");
+      // el registro del servidor de pruebas a veces se escribe medio segundo después (en la revisión completa fallaba por eso)
+      let c2 = { link: null }; for (let i = 0; i < 16 && !c2.link; i++) { c2 = linkDe(correosA(e2)[0] || ""); if (!c2.link) await c.waitForTimeout(500); }
       exige(c2.link && c2.link !== c1.link, "el segundo correo no trae su propio link");
       exige(!c.errs.length, "errores en la portada del celular: " + c.errs.join(" | ").slice(0, 160));
       await c.context().close();
@@ -6467,6 +6468,62 @@ async function capasPesadas(p) {
     });
     // Hotspot de regreso (Amar, 26 nov 2026: «crear un hotspot de retorno… te abre tu imagen equirectangular con un punto…
     // quisiera que este punto también tenga una lupa»). Vidrio líquido, nada que se parezca a 3DVista.
+    // Pedido de Amar (27 nov 2026): «meter un candado en las capas para que no se muevan por error como en Photoshop y
+    // Affinity». En la lista de Capas, junto al ojo. Con candado la capa se elige, pero no se arrastra, no salen sus
+    // esquinas y no se borra con la tecla. Sin la función no sale. Nace Solo yo con su mini tutorial.
+    await paso("Candado en las capas (Laboratorio, nace Solo yo): con candado la capa no se mueve ni se borra por error; sin candado sí", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const correoU = "candado@prueba.mx", n = await pagina(DUENO), u = await pagina(correoU);
+      try {
+        await nuevoTour(u, "Candado"); const id = await idTour(u);
+        let d = (await api(u, "api/tours/" + id)).d; const esc = d.proyecto.escenaInicial || d.escenas[0].id, v = (d.escenas.find((e) => e.id === esc) || {}).vista || {}, y = v.yaw || 0, p = (v.pitch || 0) + 0.05;
+        d.capas[esc] = [{ id: "pol-candado", tipo: "poligono", nombre: "Área común", visible: true, puntos: [[y - 0.22, p - 0.12], [y + 0.22, p - 0.12], [y + 0.22, p + 0.12], [y - 0.22, p + 0.12]],
+          relleno: { color: "#D5FF40", opacidad: 0.35 }, trazo: { color: "#FFFFFF", grosor: 2, opacidad: 1 }, rollover: { activo: false, relleno: { color: "#D5FF40", opacidad: 0.6 }, trazo: { color: "#FFFFFF", grosor: 3, opacidad: 1 } } }];
+        exige((await api(u, "api/tours/" + id, J("PUT", d))).s === 200, "no se pudo poner el polígono de prueba");
+        const puntos = async () => JSON.stringify((((await api(u, "api/tours/" + id)).d.capas[esc] || []).find((c) => c.id === "pol-candado") || {}).puntos);
+        const capa = async () => (((await api(u, "api/tours/" + id)).d.capas[esc] || []).find((c) => c.id === "pol-candado")) || null;
+        const arrastrar = async () => {
+          await u.click('#lista li[data-id="pol-candado"]'); await u.waitForTimeout(500);
+          const b = await u.$$eval("#ed-stage path.cp-pol", (l) => l.map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2, r.width * r.height]; }).sort((a, c) => c[2] - a[2])[0]);
+          exige(b && b[2] > 400, "no se ve el polígono en la esfera");
+          await u.mouse.move(b[0], b[1]); await u.mouse.down();
+          for (let i = 1; i <= 10; i++) { await u.mouse.move(b[0] + i * 9, b[1] + i * 4); await u.waitForTimeout(16); }
+          await u.mouse.up(); await u.waitForTimeout(2500);
+        };
+        await u.goto(ESTUDIO + "/#t=" + id); await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u); await irCapas(u); await pasarGuias(u);
+        exige(!(await u.$("#lista .candado")), "sin la función ya sale el candado");
+        exige((await api(n, "api/admin/laboratorio/candado", J("PUT", { modo: "probadores", probadores: [correoU] }))).s === 200, "no se pudo dar la función");
+        await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u); await irCapas(u);
+        // El mini tutorial sale la primera vez
+        let guia = "";
+        for (let i = 0; i < 12 && !/candado/i.test(guia); i++) { await u.waitForTimeout(700); if (await u.isVisible(".guia-tarjeta").catch(() => false)) { guia = await u.textContent(".guia-tarjeta"); if (!/candado/i.test(guia)) { await u.click('.guia-tarjeta [data-guia="seguir"]').catch(() => {}); guia = ""; } } }
+        exige(/Nuevo: candado en las capas/.test(guia), "no salió el mini tutorial del candado: " + guia.slice(0, 80));
+        await pasarGuias(u);
+        exige(await u.$('#lista [data-candado="pol-candado"]'), "no sale el candado junto al ojo de la capa");
+        await u.click('#lista [data-candado="pol-candado"]'); await u.waitForTimeout(2500);
+        exige((await capa()).bloqueada === true, "el candado no se guardó en la capa");
+        exige(await u.$eval('#lista [data-candado="pol-candado"]', (b) => b.classList.contains("puesto") && b.getAttribute("aria-pressed") === "true"), "el candado no se ve puesto en la lista");
+        const antes = await puntos();
+        await arrastrar();
+        const esquinas = await u.$$eval("#ed-stage .cp-vert", (l) => l.length);
+        if (process.env.CAPTURAS) await u.screenshot({ path: path.join(process.env.CAPTURAS, "candado.png") });
+        exige((await puntos()) === antes, "con candado el polígono se movió al arrastrarlo");
+        exige(esquinas === 0, "con candado siguen saliendo las esquinas para deformarlo: " + esquinas);
+        exige(/tiene candado/.test(await u.textContent("body")), "no avisa que la capa tiene candado");
+        await u.keyboard.press("Delete"); await u.waitForTimeout(2000);
+        exige(await capa(), "con candado la capa se borró con la tecla");
+        // Sin candado vuelve a moverse
+        await u.click('#lista [data-candado="pol-candado"]'); await u.waitForTimeout(2500);
+        exige(!(await capa()).bloqueada, "el candado no se quitó");
+        await arrastrar();
+        exige((await puntos()) !== antes, "sin candado el polígono ya no se mueve");
+        exige(!u.errs.length && !n.errs.length, "errores: " + u.errs.concat(n.errs).join(" | ").slice(0, 200));
+      } finally {
+        await api(n, "api/admin/laboratorio/candado", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
+        await u.context().close(); await n.context().close();
+      }
+    });
     await paso("Hotspot de regreso (Laboratorio, nace Solo yo): al soltar una esfera sale la ventanita de vidrio; el regreso se pone en la otra esfera 2:1 con lupa; sin marcar, no hay regreso", async () => {
       const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
       const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
