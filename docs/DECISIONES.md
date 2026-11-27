@@ -745,3 +745,35 @@
   botón «Links de regalo y descuento» (también en celular) y hacen todo lo de los links: crear de regalo o descuento,
   copiar, apagar y prender. Nada más del panel (cuentas, laboratorio, reportes, vendedores dan 403). Cada link guarda
   quién lo creó y el dueño lo ve («lo creó …»). Quitar el correo le quita el acceso. Prueba nueva «Vendedores».
+
+## 26 nov 2026 · Hotspot de regreso (Laboratorio «hotspot-regreso», nace Solo yo)
+
+- Amar: «en 3DVista… puedes crear un hotspot de retorno… te abre tu imagen equirectangular con un punto en el centro…
+  quisiera que este punto también tenga una lupa… que no se parezca, irme por el Liquid Glass». Mandó 3 referencias.
+- Al soltar una esfera de la tira sobre la esfera abierta (Capas) sale una ventanita de vidrio líquido (desenfoque y
+  brillo) en el punto donde se soltó: los estilos de hotspot (Clásico, Regresar, Puerta, Información; con «iconos», el
+  botón de cuadrícula muestra los animados de Esfera, Puntos y Dron) y «Crear hotspot de regreso» (marcado).
+- Con regreso: se abre la otra esfera completa en 2:1 (del nivel ligero, con sus ajustes de imagen) en una ventana de
+  vidrio. El punto empieza donde ya estaba el regreso o donde lo calcula Mozari (atrás, o exacto en el mismo terreno). Se
+  arrastra (o se toca la foto) y sale una lupa de 3.2× con mira; también se mueve con las flechas (Shift, de 10 en 10).
+  «Añadir» deja el regreso ahí con el mismo hotspot que la ida. Sin regreso: solo la ida. Esc o Cancelar: no cambia nada.
+- Sin la función todo sigue como antes (ida y vuelta sin preguntar). Mini tutorial «Nuevo: hotspot de regreso».
+- Prueba nueva «Hotspot de regreso».
+
+## 27 nov 2026 · Rollover en polígonos sin acción (reporte de un usuario) y todas las monedas
+
+- Reporte: «no funciona la función rollover». Su tour tenía un polígono normal (sin lote ni acción) con Rollover. En el
+  tour solo se buscaban debajo del mouse los polígonos que abren algo, así que ese nunca se iluminaba. Ahora un polígono
+  con Rollover se ilumina al pasar el mouse; en celular, al tocarlo (tocar fuera lo apaga). No pone la mano ni abre nada.
+  «Invisible hasta pasar el mouse» aparece solo al pasar encima. Los lotes y los que tienen acción siguen igual.
+- Amar: «¿en las monedas se puede usar la de Honduras?… agrega todas las monedas existentes». En Fichas técnicas →
+  «Moneda de los precios» están todas las monedas vigentes del mundo (153): primero América Latina (con Honduras,
+  Nicaragua, Panamá, Paraguay, Venezuela, Brasil, Cuba), Euro y Canadá; luego las demás por país. El símbolo lo da el
+  navegador (L, R$, ¥, £, ₹…); la que no tiene símbolo sale con su clave («AED 4,850,000»). Igual en el tour, las fichas
+  y la landing. Al escribir el precio con su símbolo (L 1,000, R$ 1.000, AED 5000) se entiende igual.
+- Pruebas: nueva «Rollover en un polígono sin acción» (mouse, «Invisible», celular, que no abra nada); la de la landing
+  revisa lempiras, reales, una moneda sin símbolo y que estén todas.
+- Revisión completa 27 nov: 129 de 133 a la primera. Tres caían en cadena porque el tour descargado pesa un poco más
+  (tope de la prueba de 1.2 a 1.25 MB; sin compactar pasa de 1.4 MB) y porque el mini tutorial del «Link para tu cliente»
+  tapaba el botón de Modo privado (las pruebas ahora lo pasan). La cuarta («Anuncios → web», correos) fue de tiempo.
+  Las cuatro pasan al volver a correrlas.

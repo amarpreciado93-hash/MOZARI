@@ -581,6 +581,56 @@
   .drop-fantasma { position: absolute; left: 0; top: 0; z-index: 10; pointer-events: none; display: grid; justify-items: center; gap: 8px; }
   .drop-fantasma i { width: 40px; height: 40px; border-radius: 50%; background: var(--mz-lima); box-shadow: 0 0 0 7px rgba(213, 255, 64, 0.25), 0 6px 18px rgba(0, 0, 0, 0.5); display: grid; place-items: center; color: var(--mz-tinta); }
   .drop-fantasma i svg { width: 18px; height: 18px; }
+  /* Hotspot de regreso (Laboratorio): vidrio líquido, como pidió Amar (nada que se parezca a 3DVista) */
+  .lg { position: relative; color: #fff; background: linear-gradient(155deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.1) 38%, rgba(18, 20, 18, 0.34) 100%); -webkit-backdrop-filter: blur(22px) saturate(175%); backdrop-filter: blur(22px) saturate(175%); border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 1px rgba(255, 255, 255, 0.12), 0 22px 60px rgba(0, 0, 0, 0.42); }
+  .lg::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(120% 60% at 18% 0%, rgba(255, 255, 255, 0.28), transparent 55%); }
+  .rt-pop { position: absolute; z-index: 30; width: 340px; padding: 14px; border-radius: 24px; display: grid; gap: 12px; font-family: var(--mz-texto-ui); }
+  .rt-cab, .rt-mcab { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .rt-cab b { font: 600 13px var(--mz-texto-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+  .rt-x { all: unset; cursor: pointer; width: 28px; height: 28px; flex: none; display: grid; place-items: center; border-radius: 50%; font-size: 18px; line-height: 1; background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.22); }
+  .rt-x:hover { background: rgba(255, 255, 255, 0.26); }
+  .rt-fila { position: relative; display: flex; gap: 8px; align-items: stretch; }
+  .rt-ops { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; max-height: 170px; overflow: auto; padding: 6px; border-radius: 18px; background: rgba(0, 0, 0, 0.18); border: 1px solid rgba(255, 255, 255, 0.14); }
+  .rt-op { all: unset; cursor: pointer; width: 50px; height: 50px; display: grid; place-items: center; border-radius: 14px; transition: background-color 0.2s; }
+  .rt-op:hover { background: rgba(255, 255, 255, 0.12); }
+  .rt-op[aria-checked="true"] { background: rgba(255, 255, 255, 0.22); box-shadow: inset 0 0 0 1.5px var(--mz-lima); }
+  .rt-hs { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: rgba(11, 11, 11, 0.55); border: 2px solid #fff; color: #fff; box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.18); }
+  .rt-hs svg { width: 18px; height: 18px; }
+  .rt-hs.anim { background: #0b0b0b; border: 0; box-shadow: none; color: #fff; --a: var(--mz-lima); --linea: #fff; }
+  .rt-hs.anim svg { width: 36px; height: 36px; }
+  .rt-mas { all: unset; cursor: pointer; width: 64px; flex: none; display: grid; place-items: center; border-radius: 18px; background: rgba(0, 0, 0, 0.18); border: 1px solid rgba(255, 255, 255, 0.14); color: rgba(255, 255, 255, 0.85); }
+  .rt-mas svg { width: 30px; height: 30px; }
+  .rt-mas[aria-pressed="true"], .rt-mas:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+  .rt-check { position: relative; display: flex; align-items: center; gap: 10px; cursor: pointer; font: 500 13px var(--mz-texto-ui); user-select: none; }
+  .rt-check input { position: absolute; opacity: 0; pointer-events: none; }
+  .rt-check i { width: 20px; height: 20px; flex: none; border-radius: 7px; border: 1.5px solid rgba(255, 255, 255, 0.6); background: rgba(0, 0, 0, 0.2); display: grid; place-items: center; }
+  .rt-check input:checked + i { background: var(--mz-lima); border-color: var(--mz-lima); }
+  .rt-check input:checked + i::after { content: ""; width: 9px; height: 5px; border: solid #0b0b0b; border-width: 0 0 2.2px 2.2px; transform: translateY(-1px) rotate(-45deg); }
+  .rt-check input:focus-visible + i { outline: 2px solid #fff; outline-offset: 2px; }
+  .rt-acc { position: relative; display: flex; gap: 8px; justify-content: flex-end; }
+  .rt-btn { all: unset; cursor: pointer; padding: 9px 16px; border-radius: 999px; font: 600 13px var(--mz-texto-ui); background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.24); }
+  .rt-btn:hover { background: rgba(255, 255, 255, 0.24); }
+  .rt-btn.prim { background: var(--mz-lima); color: #0b0b0b; border-color: var(--mz-lima); box-shadow: 0 6px 18px rgba(213, 255, 64, 0.28); }
+  .rt-btn:disabled { opacity: 0.45; cursor: default; }
+  .rt-btn:focus-visible, .rt-op:focus-visible, .rt-mas:focus-visible, .rt-x:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .rt-fondo { position: fixed; inset: 0; z-index: 900; display: grid; place-items: center; padding: 24px; background: rgba(8, 9, 8, 0.32); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .rt-modal { width: min(1120px, 100%, calc((100vh - 190px) * 2 + 36px)); padding: 18px; border-radius: 30px; display: grid; gap: 14px; font-family: var(--mz-texto-ui); }
+  .rt-mcab b { display: block; font: 600 18px var(--mz-texto-ui); }
+  .rt-mcab span { font-size: 13px; color: rgba(255, 255, 255, 0.78); }
+  .rt-mcab em { font-style: normal; color: #fff; font-weight: 600; }
+  .rt-foto { position: relative; aspect-ratio: 2 / 1; border-radius: 18px; overflow: hidden; background: rgba(0, 0, 0, 0.35); cursor: crosshair; touch-action: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18); }
+  .rt-foto canvas#rt-canvas { display: block; width: 100%; height: 100%; }
+  .rt-cargando { position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; color: rgba(255, 255, 255, 0.8); }
+  .rt-pin { position: absolute; z-index: 2; transform: translate(-50%, -50%); pointer-events: none; transition: transform 0.15s; outline: none; }
+  .rt-foto.moviendo .rt-pin { transform: translate(-50%, -50%) scale(1.12); }
+  .rt-pin .rt-hs { box-shadow: 0 0 0 6px rgba(213, 255, 64, 0.45), 0 4px 14px rgba(0, 0, 0, 0.5); }
+  .rt-fondo:not(.lista) .rt-pin { opacity: 0.4; }
+  .rt-lupa { position: absolute; z-index: 3; width: 170px; height: 170px; border-radius: 50%; overflow: hidden; pointer-events: none; border: 3px solid rgba(255, 255, 255, 0.85); box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.2); }
+  .rt-lupa canvas { width: 100%; height: 100%; display: block; }
+  .rt-lupa i { position: absolute; inset: 0; background: linear-gradient(#D5FF40, #D5FF40) center / 2px 26px no-repeat, linear-gradient(#D5FF40, #D5FF40) center / 26px 2px no-repeat; }
+  .rt-lupa i::after { content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid #fff; }
+  .rt-nombre { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); padding: 6px 14px; border-radius: 999px; font: 600 12px var(--mz-texto-ui); letter-spacing: 0.08em; text-transform: uppercase; background: rgba(11, 11, 11, 0.45); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); pointer-events: none; }
+  .rt-pie { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; color: rgba(255, 255, 255, 0.8); }
   .drop-fantasma b { font: 500 11px var(--mz-texto-ui); background: var(--mz-vidrio); border: 1px solid var(--mz-linea); padding: 5px 11px; border-radius: 999px; white-space: nowrap; }
   .ed-panel { background: var(--mz-superficie); border-right: 1px solid var(--mz-linea-neutra); display: flex; flex-direction: column; min-height: 0; }
   .ed-panel.der { border-right: 0; border-left: 1px solid var(--mz-linea-neutra); }
@@ -1047,7 +1097,7 @@
   .cp-pol.cp-camino.hov, .cp-pol.cp-manzana.hov { fill: none; }
   /* En el tour los polígonos dejan pasar el arrastre a la esfera; el toque se resuelve al soltar */
   .capas:not(.editable) .cp-pol, .capas:not(.editable) .cp-camino-toque { pointer-events: none; }
-  .capas.tocable .cp-pol.con-accion { pointer-events: all; }
+  .capas.tocable .cp-pol.con-accion, .capas.tocable.ilumina .cp-pol.con-rollover { pointer-events: all; }
   .capas.tocable .cp-pol.con-accion.cp-camino, .capas.tocable .cp-pol.con-accion.cp-manzana, .capas.tocable .cp-camino-toque { pointer-events: visibleStroke; }
   .sobre-lote, .sobre-lote * { cursor: pointer !important; }
   .editable .cp-pol, .editable .cp-texto, .editable .hs-boton { cursor: move; }
@@ -3000,10 +3050,13 @@
   const fmtArea = (v) => { if (!String(v || "").trim()) return ""; const n = numES(v); return n === null ? String(v) : fmtNum(n) + " m²"; };
   const fmtLado = (v) => { if (!String(v || "").trim()) return ""; const n = numES(v); return n === null ? String(v) : fmtNum(n) + " m"; };
   // Moneda de los precios de los lotes (la elige el dueño del tour según su país)
-  const MONEDAS = [["MXN", "México · MXN"], ["USD", "Dólar · USD"], ["COP", "Colombia · COP"], ["CLP", "Chile · CLP"], ["PEN", "Perú · PEN"], ["ARS", "Argentina · ARS"], ["GTQ", "Guatemala · GTQ"], ["CRC", "Costa Rica · CRC"], ["DOP", "Rep. Dominicana · DOP"], ["BOB", "Bolivia · BOB"], ["UYU", "Uruguay · UYU"], ["EUR", "Euro · EUR"]];
+  // Pedido de Amar (27 nov 2026): «agrega todas las monedas existentes». Primero las de América Latina; luego todas las del mundo
+  // (ISO 4217 vigentes) por nombre. El símbolo sale del navegador (Intl); si una moneda no tiene símbolo, va solo su clave.
+  const MONEDAS = [["MXN", "México · MXN"], ["USD", "Dólar (EE. UU., Ecuador, El Salvador, Panamá) · USD"], ["COP", "Colombia · COP"], ["CLP", "Chile · CLP"], ["PEN", "Perú · PEN"], ["ARS", "Argentina · ARS"], ["GTQ", "Guatemala · GTQ"], ["HNL", "Honduras · HNL"], ["NIO", "Nicaragua · NIO"], ["CRC", "Costa Rica · CRC"], ["PAB", "Panamá · PAB"], ["DOP", "Rep. Dominicana · DOP"], ["BOB", "Bolivia · BOB"], ["PYG", "Paraguay · PYG"], ["UYU", "Uruguay · UYU"], ["VES", "Venezuela · VES"], ["BRL", "Brasil · BRL"], ["CUP", "Cuba · CUP"], ["EUR", "Euro (España y la Unión Europea) · EUR"], ["CAD", "Canadá · CAD"]].concat([["AFN", "Afganistán · AFN"], ["ALL", "Albania · ALL"], ["DZD", "Argelia · DZD"], ["AOA", "Angola · AOA"], ["SAR", "Arabia Saudita · SAR"], ["AMD", "Armenia · AMD"], ["AWG", "Aruba · AWG"], ["AUD", "Australia · AUD"], ["AZN", "Azerbaiyán · AZN"], ["BSD", "Bahamas · BSD"], ["BHD", "Baréin · BHD"], ["BDT", "Bangladés · BDT"], ["BBD", "Barbados · BBD"], ["BZD", "Belice · BZD"], ["BMD", "Bermudas · BMD"], ["BYN", "Bielorrusia · BYN"], ["BAM", "Bosnia y Herzegovina · BAM"], ["BWP", "Botsuana · BWP"], ["BND", "Brunéi · BND"], ["BIF", "Burundi · BIF"], ["BTN", "Bután · BTN"], ["CVE", "Cabo Verde · CVE"], ["KHR", "Camboya · KHR"], ["XCD", "Caribe Oriental · XCD"], ["QAR", "Catar · QAR"], ["CZK", "Chequia · CZK"], ["CNY", "China · CNY"], ["KMF", "Comoras · KMF"], ["CDF", "Congo (R. D.) · CDF"], ["KPW", "Corea del Norte · KPW"], ["KRW", "Corea del Sur · KRW"], ["XCG", "Curazao y Sint Maarten · XCG"], ["DKK", "Dinamarca · DKK"], ["EGP", "Egipto · EGP"], ["AED", "Emiratos Árabes Unidos · AED"], ["ERN", "Eritrea · ERN"], ["SZL", "Esuatini · SZL"], ["ETB", "Etiopía · ETB"], ["PHP", "Filipinas · PHP"], ["FJD", "Fiyi · FJD"], ["XAF", "Franco CFA de África Central · XAF"], ["XOF", "Franco CFA de África Occidental · XOF"], ["XPF", "Franco CFP (Polinesia Francesa) · XPF"], ["GMD", "Gambia · GMD"], ["GEL", "Georgia · GEL"], ["GHS", "Ghana · GHS"], ["GIP", "Gibraltar · GIP"], ["GNF", "Guinea · GNF"], ["GYD", "Guyana · GYD"], ["HTG", "Haití · HTG"], ["HKD", "Hong Kong · HKD"], ["HUF", "Hungría · HUF"], ["INR", "India · INR"], ["IDR", "Indonesia · IDR"], ["IQD", "Irak · IQD"], ["IRR", "Irán · IRR"], ["KYD", "Islas Caimán · KYD"], ["FKP", "Islas Malvinas · FKP"], ["SBD", "Islas Salomón · SBD"], ["ISK", "Islandia · ISK"], ["ILS", "Israel · ILS"], ["JMD", "Jamaica · JMD"], ["JPY", "Japón · JPY"], ["JOD", "Jordania · JOD"], ["KZT", "Kazajistán · KZT"], ["KES", "Kenia · KES"], ["KGS", "Kirguistán · KGS"], ["KWD", "Kuwait · KWD"], ["LAK", "Laos · LAK"], ["LSL", "Lesoto · LSL"], ["LBP", "Líbano · LBP"], ["LRD", "Liberia · LRD"], ["LYD", "Libia · LYD"], ["MOP", "Macao · MOP"], ["MKD", "Macedonia del Norte · MKD"], ["MGA", "Madagascar · MGA"], ["MYR", "Malasia · MYR"], ["MWK", "Malaui · MWK"], ["MVR", "Maldivas · MVR"], ["MAD", "Marruecos · MAD"], ["MUR", "Mauricio · MUR"], ["MRU", "Mauritania · MRU"], ["MDL", "Moldavia · MDL"], ["MNT", "Mongolia · MNT"], ["MZN", "Mozambique · MZN"], ["MMK", "Myanmar · MMK"], ["NAD", "Namibia · NAD"], ["NPR", "Nepal · NPR"], ["NGN", "Nigeria · NGN"], ["NOK", "Noruega · NOK"], ["NZD", "Nueva Zelanda · NZD"], ["OMR", "Omán · OMR"], ["PKR", "Pakistán · PKR"], ["PGK", "Papúa Nueva Guinea · PGK"], ["PLN", "Polonia · PLN"], ["GBP", "Reino Unido · GBP"], ["RON", "Rumania · RON"], ["RUB", "Rusia · RUB"], ["RWF", "Ruanda · RWF"], ["WST", "Samoa · WST"], ["SHP", "Santa Elena · SHP"], ["STN", "Santo Tomé y Príncipe · STN"], ["RSD", "Serbia · RSD"], ["SCR", "Seychelles · SCR"], ["SLE", "Sierra Leona · SLE"], ["SGD", "Singapur · SGD"], ["SYP", "Siria · SYP"], ["SOS", "Somalia · SOS"], ["LKR", "Sri Lanka · LKR"], ["ZAR", "Sudáfrica · ZAR"], ["SDG", "Sudán · SDG"], ["SSP", "Sudán del Sur · SSP"], ["SEK", "Suecia · SEK"], ["CHF", "Suiza · CHF"], ["SRD", "Surinam · SRD"], ["THB", "Tailandia · THB"], ["TWD", "Taiwán · TWD"], ["TZS", "Tanzania · TZS"], ["TJS", "Tayikistán · TJS"], ["TOP", "Tonga · TOP"], ["TTD", "Trinidad y Tobago · TTD"], ["TND", "Túnez · TND"], ["TMT", "Turkmenistán · TMT"], ["TRY", "Turquía · TRY"], ["UAH", "Ucrania · UAH"], ["UGX", "Uganda · UGX"], ["UZS", "Uzbekistán · UZS"], ["VUV", "Vanuatu · VUV"], ["VND", "Vietnam · VND"], ["YER", "Yemen · YER"], ["DJF", "Yibuti · DJF"], ["ZMW", "Zambia · ZMW"], ["ZWG", "Zimbabue · ZWG"]].sort((a, b) => a[1].localeCompare(b[1], "es")));
   const monedaTour = () => { try { return (est && est.proyecto && est.proyecto.moneda) || "MXN"; } catch (e) { return "MXN"; } };
-  const SIMBOLO = { EUR: "€", PEN: "S/", GTQ: "Q", CRC: "₡", BOB: "Bs " };
-  const fmtPrecio = (v) => { if (!String(v || "").trim()) return ""; const n = numES(String(v).replace(/^[$€]|^S\/|^Q|^₡/, "")); if (n === null) return String(v); const m = monedaTour(); return (SIMBOLO[m] || "$") + n.toLocaleString("es-MX", { maximumFractionDigits: 0 }) + " " + m; };
+  const SIMBOLO = { EUR: "€", PEN: "S/", GTQ: "Q", HNL: "L ", CRC: "₡", BOB: "Bs " };
+  const simboloDe = (m) => { if (SIMBOLO[m] != null) return SIMBOLO[m]; try { const s = new Intl.NumberFormat("es-MX", { style: "currency", currency: m, currencyDisplay: "narrowSymbol" }).formatToParts(0).find((x) => x.type === "currency").value; return s === m ? "" : /[\p{L}.]$/u.test(s) ? s + " " : s; } catch (e) { return "$"; } };
+  const fmtPrecio = (v) => { if (!String(v || "").trim()) return ""; const n = numES(String(v).replace(/^\s*(?:[^\p{L}\p{N}\s.,-]{1,3}|\p{L}{1,4}\.?[$\/]?)\s?(?=\d)/u, "")); if (n === null) return String(v); const m = monedaTour(); return simboloDe(m) + n.toLocaleString("es-MX", { maximumFractionDigits: 0 }) + " " + m; };
   // Cómo se dice en cada país: lote, solar, predio, sitio…; manzana, bloque…; y su abreviatura (por defecto "M")
   const TERMINOS_DEF = { lote: "Lote", manzana: "Manzana", corto: "M" };
   const TERMINOS_PRESETS = [["Lote", "Manzana", "M", "México"], ["Lote", "Manzana", "Mz", ""], ["Solar", "Manzana", "Mz", ""], ["Predio", "Bloque", "B", ""], ["Sitio", "Manzana", "Mz", ""], ["Terreno", "Sección", "S", ""], ["Parcela", "Bloque", "B", ""]];
@@ -4741,6 +4794,30 @@
     h += pieG(k === 2 ? "Tus lotes se quedan encima" : k === 1 ? "Se funde despacio, como un timelapse" : "La misma vista, de día…", k === 2);
     svg.innerHTML = h;
   }
+  // Hotspot de regreso: se arrastra una esfera, se elige el hotspot, y en la otra esfera (2:1) se pone el regreso con lupa
+  const pasosRegreso = () => [{ el: "#panos-tira", titulo: "Nuevo: hotspot de regreso", anim: animRegreso, dur: 7.4,
+    texto: "Arrastra una esfera de esta tira a la que tienes abierta. Elige el hotspot y deja marcado <b>Crear hotspot de regreso</b>. Luego mueve el punto en la otra esfera: la <b>lupa</b> te deja ponerlo exacto. Dale <b>Añadir</b>." }];
+  function animRegreso(svg, t) {
+    let h = '<rect width="360" height="200" fill="#1a2014"/><rect x="0" y="0" width="360" height="92" fill="#7FA9C9"/><path d="M0 92 Q180 76 360 94 V200 H0Z" fill="#6A8F4E"/>';
+    h += '<rect x="10" y="20" width="44" height="160" rx="8" fill="rgba(11,11,11,.7)"/>' + [0, 1, 2].map((i) => '<rect x="16" y="' + (28 + i * 50) + '" width="32" height="40" rx="5" fill="' + ["#7FA9C9", "#C9A27F", "#8FB07A"][i] + '"/>').join("");
+    const u = sv((t - 0.4) / 1.1), x = 32 + (190 - 32) * u, y = 98 + (110 - 98) * u;
+    if (t < 1.6) h += '<rect x="' + (x - 16) + '" y="' + (y - 20) + '" width="32" height="40" rx="5" fill="#C9A27F" opacity=".85"/>' + CURSOR_G(x + 6, y + 8);
+    if (t >= 1.6 && t < 3.4) {
+      h += '<g><rect x="120" y="118" width="150" height="66" rx="16" fill="rgba(255,255,255,.22)" stroke="rgba(255,255,255,.55)"/>' + [0, 1, 2].map((i) => '<circle cx="' + (144 + i * 30) + '" cy="138" r="9" fill="rgba(11,11,11,.55)" stroke="#fff" stroke-width="' + (i === 0 ? 2.5 : 1.5) + '"/>').join("") +
+        '<rect x="232" y="128" width="26" height="22" rx="5" fill="none" stroke="#fff" stroke-width="1.2"/><rect x="132" y="158" width="10" height="10" rx="3" fill="#D5FF40"/><text x="148" y="167" fill="#fff" font-size="9" font-weight="600">Crear hotspot de regreso</text></g>';
+      h += '<circle cx="190" cy="110" r="9" fill="rgba(11,11,11,.55)" stroke="#fff" stroke-width="2"/>' + CURSOR_G(150, 142);
+    }
+    if (t >= 3.4) {
+      const v = sv((t - 3.8) / 1.6), px = 120 + (232 - 120) * v, py = 104 - 10 * v;
+      h += '<rect x="20" y="16" width="320" height="168" rx="18" fill="rgba(255,255,255,.2)" stroke="rgba(255,255,255,.55)"/><rect x="32" y="40" width="296" height="120" rx="10" fill="#86B4D6"/><path d="M32 100 Q180 88 328 102 V160 H32Z" fill="#7A9A58"/>' +
+        '<text x="34" y="32" fill="#fff" font-size="10" font-weight="700">Hotspot de regreso</text>';
+      h += '<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1) + '" r="8" fill="rgba(11,11,11,.55)" stroke="#fff" stroke-width="2"/>';
+      if (t < 6) h += '<g transform="translate(' + (px - 30).toFixed(1) + ' ' + (py - 72).toFixed(1) + ')"><circle cx="30" cy="30" r="28" fill="#7A9A58" stroke="#fff" stroke-width="2.5"/><rect x="18" y="20" width="24" height="14" fill="#E8E1D2"/><path d="M30 18v24M18 30h24" stroke="#D5FF40" stroke-width="1.5"/></g>' + CURSOR_G(px + 4, py + 6);
+      h += BTN_G(270, 166, 50, "Añadir", t > 6.2 ? "#e6ff7a" : "#D5FF40", "#0b0b0b");
+    }
+    h += pieG(t >= 3.4 ? (t > 6.2 ? "El regreso queda justo ahí" : "Mueve el punto; la lupa te ayuda") : t >= 1.6 ? "Elige el hotspot y el regreso" : "Arrastra una esfera a la otra", t > 6.2);
+    svg.innerHTML = h;
+  }
   // Bienvenida: logo, nombre y un botón sobre la esfera; un toque entra, suena la música y arranca el piloto
   function animBienvenida(svg, t) {
     const toca = 2.0, fuera = sv((t - toca) / 0.7), gira = t * 14;
@@ -5126,6 +5203,7 @@
   function guiasDeSeccion(clave) {
     if (MODO !== "nube") return;
     if (clave === "panoramas/capas") guiaCapasNuevas();
+    if (clave === "panoramas/capas" && enLab("hotspot-regreso")) guiaNueva("nuevo-regreso", () => (esVisible("#panos-tira") && est.escenas.length > 1 ? pasosRegreso() : []), () => nav.sub === "capas" && esVisible("#panos-tira"));
     if (clave === "proyecto/musica") guiaNueva("nuevo-sonido", () => [esVisible("#m-preguntar-fila") && { el: "#m-preguntar-fila", titulo: "Nuevo: ¿activar sonido?",
       texto: "Los navegadores no dejan sonar un tour hasta que el visitante toca la pantalla. Ahora, al abrirlo le preguntamos <b>Activar sonido</b> o <b>Sin sonido</b>, con los colores de tu tour, y la música y las voces arrancan con su respuesta." }].filter(Boolean), () => nav.sec === "proyecto" && nav.sub === "musica");
     if (clave === "publicar/landing" && enLab("landing-disenos")) guiaNueva("nuevo-landing-disenos", () => [esVisible("#ld-disenos-grupo") && { el: "#ld-disenos-grupo", titulo: "Nuevo: 4 diseños para tu landing", anim: animLandingDisenos, dur: 6.4,
@@ -7049,29 +7127,30 @@
     // En el tour los lotes no frenan el giro: arrastrar encima de ellos mueve la esfera y solo un toque
     // (sin arrastrar) abre el lote. Los polígonos no reciben el dedo; al soltar se busca cuál quedó debajo.
     if (!editable) {
-      const golpe = (x, y) => {
-        capasEl.classList.add("tocable"); const el = document.elementFromPoint(x, y); capasEl.classList.remove("tocable");
+      const golpe = (x, y, iluminar) => { // iluminar: también los que solo tienen rollover (se iluminan pero no hacen nada)
+        capasEl.classList.add("tocable"); if (iluminar) capasEl.classList.add("ilumina"); const el = document.elementFromPoint(x, y); capasEl.classList.remove("tocable", "ilumina");
         if (!el || !capasEl.contains(el)) return null;
         const p = el.classList.contains("cp-camino-toque") ? el.parentNode.querySelector(".cp-pol") : el;
-        return p && p.classList.contains("cp-pol") && p.classList.contains("con-accion") ? p : null;
+        return p && p.classList.contains("cp-pol") && (p.classList.contains("con-accion") || (iluminar && p.classList.contains("con-rollover"))) ? p : null;
       };
       const propio = (t) => capasEl.contains(t) || extra.contains(t) || !stage.contains(t); // botones, textos y puntos siguen con su propio clic
       let ini = null, hov = null, rafH = 0;
-      const marcar = (p) => { if (p === hov) return; if (hov) hov.classList.remove("hov"); hov = p; if (p) p.classList.add("hov"); stage.classList.toggle("sobre-lote", !!p); };
+      const marcar = (p) => { if (p === hov) return; if (hov) hov.classList.remove("hov"); hov = p; if (p) p.classList.add("hov"); stage.classList.toggle("sobre-lote", !!p && p.classList.contains("con-accion")); };
       stage.addEventListener("pointerdown", (ev) => { ini = ev.isPrimary && !propio(ev.target) ? { x: ev.clientX, y: ev.clientY, id: ev.pointerId } : null; }, true);
       stage.addEventListener("pointerup", (ev) => {
         const s = ini; ini = null;
         if (!s || ev.pointerId !== s.id || Math.hypot(ev.clientX - s.x, ev.clientY - s.y) > 10) return;
         const p = golpe(ev.clientX, ev.clientY); if (p) p.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        else if (ev.pointerType !== "mouse") marcar(golpe(ev.clientX, ev.clientY, true)); // en celular, tocar un polígono con solo rollover lo ilumina (tocar fuera lo apaga)
       }, true);
       stage.addEventListener("pointercancel", () => { ini = null; }, true);
       // Con mouse: el lote se ilumina y la mano aparece al pasar encima, como antes
       stage.addEventListener("pointermove", (ev) => {
         if (ev.pointerType !== "mouse" || rafH) return;
         const x = ev.clientX, y = ev.clientY, quieto = !ev.buttons && !propio(ev.target);
-        rafH = requestAnimationFrame(() => { rafH = 0; marcar(quieto ? golpe(x, y) : null); });
+        rafH = requestAnimationFrame(() => { rafH = 0; marcar(quieto ? golpe(x, y, true) : null); });
       });
-      stage.addEventListener("pointerleave", () => marcar(null));
+      stage.addEventListener("pointerleave", (ev) => { if (ev.pointerType === "mouse") marcar(null); }); // con el dedo, al soltar también hay pointerleave: no apaga lo que se acaba de tocar
     }
     const escenasM = {};
     let actual = null;
@@ -7232,6 +7311,9 @@
           }
           nodos.set(c.id, { el, c, svg, path, etq, planos, toque, cota });
           if (!editable && accionDe(c) !== "ninguna" && loteTocable(c)) { path.classList.add("con-accion"); path.addEventListener("click", (ev) => { ev.stopPropagation(); ejecutar(c); }); }
+          // Reporte (27 nov 2026, «no funciona la función rollover»): un polígono con rollover y sin acción («Nada») nunca se
+          // iluminaba, porque al pasar el mouse solo se buscaban los que hacen algo al tocarlos. Ahora se ilumina; al tocarlo no hace nada.
+          else if (!editable && !c.lote && !c.manzana && !c.mzPlano && !c.camino && !c.edificio && c.rollover && c.rollover.activo) path.classList.add("con-rollover");
         } else if (c.tipo === "interes") {
           construirInteres(el, c, editable);
           el.querySelector(".pi-dot").addEventListener("pointerdown", (ev) => tomar(ev, c, "mover"));
@@ -11732,12 +11814,15 @@ void main(){
     const destino = panoArrastrado, k = motorEd.coords(ev);
     $("ed-lienzo").classList.remove("soltando"); $("drop-fantasma").hidden = true;
     panoArrastrado = null;
-    if (k) conectar(motorEd.actual.id, destino, k);
+    if (!k) return;
+    if (enLab("hotspot-regreso")) { const r = $("ed-lienzo").getBoundingClientRect(); popRegreso(motorEd.actual.id, destino, k, ev.clientX - r.left, ev.clientY - r.top); return; }
+    conectar(motorEd.actual.id, destino, k);
   });
   // Crea (o mueve) el hotspot de ida donde se soltó y el de regreso en la otra esfera.
   // El regreso queda atrás (yaw + 180°); en esferas del mismo terreno se calcula exacto.
-  function conectar(origen, destino, k) {
+  function conectar(origen, destino, k, opc) {
     if (origen === destino) return;
+    opc = opc || {};
     const A = est.capas[origen], B = (est.capas[destino] = est.capas[destino] || []);
     const nuevo = (dest, yaw, pitch) => ({ id: nuevoId(), tipo: "hotspot", nombre: "Hotspot → " + nombreDe(dest), visible: true, yaw: +yaw.toFixed(4), pitch: +pitch.toFixed(4), destino: dest, accion: "panorama", llegada: "frente" });
     let ida = A.find((c) => accionDe(c) === "panorama" && c.destino === destino);
@@ -11745,17 +11830,155 @@ void main(){
     const yaEstaba = !!(ida && vuelta);
     if (ida) { ida.yaw = +k.yaw.toFixed(4); ida.pitch = +k.pitch.toFixed(4); ida.llegada = "frente"; }
     else { ida = nuevo(destino, k.yaw, k.pitch); A.push(ida); }
+    // Hotspot de regreso (Laboratorio «hotspot-regreso»): el estilo elegido y el regreso donde lo pusiste tú (o ninguno)
+    const ponEstilo = (c) => { if (!opc.estilo) return; if (opc.estilo.animado) { c.animado = opc.estilo.animado; delete c.estilo; } else { c.estilo = opc.estilo.estilo || "clasico"; delete c.animado; } };
+    ponEstilo(ida);
+    if (opc.sinRegreso) {
+      motorEd.elegida = ida.id; cambio(); pintarTira();
+      avisar("Conectado " + nombreDe(origen) + " → " + nombreDe(destino) + ", sin regreso"); return;
+    }
+    if (opc.regreso && vuelta) { vuelta.yaw = +opc.regreso.yaw.toFixed(4); vuelta.pitch = +opc.regreso.pitch.toFixed(4); }
     if (!vuelta) {
-      let yaw = normYaw(k.yaw + Math.PI);
+      let yaw = normYaw(k.yaw + Math.PI), pitch = k.pitch;
       const exacto = trLista(origen) && trLista(destino) && transferir([0, Math.PI / 2 - 1e-4], origen, destino);
       if (exacto) yaw = exacto[0];
-      vuelta = nuevo(origen, yaw, k.pitch);
+      if (opc.regreso) { yaw = opc.regreso.yaw; pitch = opc.regreso.pitch; }
+      vuelta = nuevo(origen, yaw, pitch);
       B.push(vuelta);
     } else if (!vuelta.llegada) vuelta.llegada = "frente";
+    if (opc.regreso) ponEstilo(vuelta);
     ida.par = vuelta.id; vuelta.par = ida.id;
     motorEd.elegida = ida.id;
     cambio(); pintarTira();
     avisar(yaEstaba ? "Conexión movida" : "Conectado " + nombreDe(origen) + " ⇄ " + nombreDe(destino) + ". Doble clic en el hotspot para entrar.");
+  }
+  // =================== HOTSPOT DE REGRESO (Laboratorio «hotspot-regreso») ===================
+  // Amar, 26 nov 2026 (como lo hace 3DVista, pero con nuestra cara, en vidrio): al soltar una esfera sobre otra sale una
+  // ventanita para elegir el hotspot y «Crear hotspot de regreso». Si va, se abre la otra esfera completa (2:1) con un
+  // punto que se arrastra a donde debe quedar el regreso, con una lupa para ponerlo exacto. «Añadir» lo deja ahí.
+  const REG = { pop: null, modal: null };
+  const rtCerrar = () => { if (REG.pop) { REG.pop.remove(); REG.pop = null; } if (REG.modal) { REG.modal.remove(); REG.modal = null; } document.removeEventListener("keydown", rtTecla, true); };
+  function rtTecla(ev) {
+    if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); rtCerrar(); return; }
+    if (REG.modal && REG.modal._mover && /^Arrow/.test(ev.key)) { ev.preventDefault(); ev.stopPropagation(); const d = ev.shiftKey ? 10 : 1; REG.modal._mover(ev.key === "ArrowLeft" ? -d : ev.key === "ArrowRight" ? d : 0, ev.key === "ArrowUp" ? -d : ev.key === "ArrowDown" ? d : 0); }
+    if (REG.modal && ev.key === "Enter" && REG.modal._listo) { ev.preventDefault(); REG.modal._listo(); }
+  }
+  // La otra esfera como foto 2:1, del nivel ligero (rápido) y con sus ajustes de imagen
+  async function equiLigera(id, W) {
+    const d = meta[id]; if (!d || !d.niveles) throw new Error("sin esfera");
+    let z = 1; d.niveles.forEach((nv, i) => { if (i && nv.size <= 1536) z = i; });
+    const nv = d.niveles[Math.min(z, d.niveles.length - 1)], S = nv.size, ts = nv.tileSize, n = Math.ceil(S / ts), H = W / 2;
+    const caras = await Promise.all([0, 1, 2, 3, 4, 5].map(async (ci) => {
+      const cv = document.createElement("canvas"); cv.width = S; cv.height = S; const x = cv.getContext("2d");
+      await Promise.all(Array.from({ length: n * n }, (_, k) => new Promise((ok) => { const ty = Math.floor(k / n), tx = k % n, img = new Image(); img.crossOrigin = "anonymous"; img.onload = () => { x.drawImage(img, tx * ts, ty * ts); ok(); }; img.onerror = () => ok(); img.src = R(id) + d.niveles.indexOf(nv) + "/" + "bdflru"[ci] + "/" + ty + "/" + tx + ".jpg"; })));
+      return x.getImageData(0, 0, S, S).data;
+    }));
+    const out = document.createElement("canvas"); out.width = W; out.height = H; const ox = out.getContext("2d"), fnAj = ajVivo(d) ? prepararAjustes(ajVivo(d)) : null;
+    const muestra = (cara, u, v, o, dst) => { const c = caras[cara], fx = Math.min(S - 1, Math.max(0, ((u + 1) / 2) * S)) | 0, fy = Math.min(S - 1, Math.max(0, ((v + 1) / 2) * S)) | 0, i = (fy * S + fx) * 4; dst[o] = c[i]; dst[o + 1] = c[i + 1]; dst[o + 2] = c[i + 2]; dst[o + 3] = 255; };
+    for (let y0 = 0; y0 < H; y0 += 128) {
+      const h = Math.min(128, H - y0), img = ox.createImageData(W, h), dd = img.data;
+      for (let yy = 0; yy < h; yy++) {
+        const p = (0.5 - (y0 + yy + 0.5) / H) * Math.PI, cp = Math.cos(p), sp = Math.sin(p);
+        for (let xx = 0; xx < W; xx++) {
+          const yaw = ((xx + 0.5) / W - 0.5) * 2 * Math.PI, dx = Math.sin(yaw) * cp, dy = sp, dz = Math.cos(yaw) * cp, ax = Math.abs(dx), ay = Math.abs(dy), az = Math.abs(dz), o = (yy * W + xx) * 4;
+          if (az >= ax && az >= ay) { if (dz < 0) muestra(0, -dx / az, -dy / az, o, dd); else muestra(2, dx / az, -dy / az, o, dd); }
+          else if (ay >= ax) { if (dy < 0) muestra(1, dx / ay, -dz / ay, o, dd); else muestra(5, dx / ay, dz / ay, o, dd); }
+          else if (dx < 0) muestra(3, dz / ax, -dy / ax, o, dd); else muestra(4, -dz / ax, -dy / ax, o, dd);
+        }
+      }
+      if (fnAj) fnAj(dd, W, h);
+      ox.putImageData(img, 0, y0);
+      await new Promise((ok) => setTimeout(ok, 0));
+    }
+    return out;
+  }
+  // Los hotspots que se pueden elegir: los estilos de siempre y (con «iconos») los animados
+  const rtMuestra = (op) => '<span class="rt-hs' + (op.animado ? " anim" : "") + '">' + (op.animado ? svgAnim(op.animado) : op.estilo && ESTILOS_HS[op.estilo] && ESTILOS_HS[op.estilo].ico ? ESTILOS_HS[op.estilo].ico : ICO_ACCION.panorama) + "</span>";
+  function popRegreso(origen, destino, k, x, y) {
+    rtCerrar();
+    const lienzo = $("ed-lienzo"), W = lienzo.clientWidth, H = lienzo.clientHeight;
+    const ops = Object.keys(ESTILOS_HS).map((e) => ({ estilo: e, n: ESTILOS_HS[e].nombre }));
+    const anims = enLab("iconos") ? ANIMADOS.filter((a) => ["esfera", "puntos", "dron"].includes(a.f)).map((a) => ({ animado: a.id, n: a.n })) : [];
+    if (anims.length) cssAnimados();
+    let sel = ops[0], regreso = true, todos = false;
+    const p = document.createElement("div"); p.className = "rt-pop lg"; p.setAttribute("role", "dialog"); p.setAttribute("aria-label", "Conectar con " + nombreDe(destino));
+    const pintar = () => {
+      p.innerHTML = '<div class="rt-cab"><b>' + esc(nombreDe(origen)) + " → " + esc(nombreDe(destino)) + '</b><button class="rt-x" type="button" data-rt-cancelar aria-label="Cancelar">×</button></div>' +
+        '<div class="rt-fila"><div class="rt-ops" role="radiogroup" aria-label="Hotspot">' + (todos ? ops.concat(anims) : ops).map((o, i) => '<button type="button" role="radio" class="rt-op" data-rt-op="' + i + '" aria-checked="' + (o === sel) + '" title="' + esc(o.n) + '">' + rtMuestra(o) + "</button>").join("") + "</div>" +
+        (anims.length ? '<button type="button" class="rt-mas" data-rt-mas aria-pressed="' + todos + '" title="' + (todos ? "Menos hotspots" : "Más hotspots") + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M9.2 3.5v17M14.8 3.5v17M3.5 9.2h17M3.5 14.8h17"/></svg></button>' : "") + "</div>" +
+        '<label class="rt-check"><input type="checkbox" data-rt-regreso' + (regreso ? " checked" : "") + '><i></i><span>Crear hotspot de regreso</span></label>' +
+        '<div class="rt-acc"><button type="button" class="rt-btn" data-rt-cancelar>Cancelar</button><button type="button" class="rt-btn prim" data-rt-sigue>' + (regreso ? "Siguiente" : "Conectar") + "</button></div>";
+    };
+    pintar();
+    lienzo.appendChild(p); REG.pop = p;
+    const bw = p.offsetWidth, bh = p.offsetHeight;
+    p.style.left = Math.max(12, Math.min(W - bw - 12, x - bw / 2)) + "px"; p.style.top = Math.max(12, Math.min(H - bh - 12, y + 26)) + "px";
+    ["pointerdown", "wheel"].forEach((t) => p.addEventListener(t, (ev) => ev.stopPropagation()));
+    document.addEventListener("keydown", rtTecla, true);
+    p.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      const o = ev.target.closest("[data-rt-op]"); if (o) { sel = (todos ? ops.concat(anims) : ops)[+o.dataset.rtOp]; pintar(); return; }
+      if (ev.target.closest("[data-rt-mas]")) { todos = !todos; pintar(); return; }
+      if (ev.target.closest("[data-rt-cancelar]")) { rtCerrar(); return; }
+      if (ev.target.closest("[data-rt-sigue]")) {
+        const estilo = sel.animado ? { animado: sel.animado } : { estilo: sel.estilo };
+        if (!regreso) { rtCerrar(); conectar(origen, destino, k, { estilo, sinRegreso: true }); return; }
+        if (REG.pop) { REG.pop.remove(); REG.pop = null; }
+        modalRegreso(origen, destino, k, estilo);
+      }
+    });
+    p.addEventListener("change", (ev) => { if (ev.target.matches("[data-rt-regreso]")) { regreso = ev.target.checked; pintar(); } });
+  }
+  async function modalRegreso(origen, destino, k, estilo) {
+    // Dónde empieza el punto: donde ya estaba el regreso, o el cálculo de siempre (atrás, o exacto en el mismo terreno)
+    const B = est.capas[destino] || [], ya = B.find((c) => accionDe(c) === "panorama" && c.destino === origen);
+    let ini = ya ? { yaw: ya.yaw, pitch: ya.pitch } : { yaw: normYaw(k.yaw + Math.PI), pitch: k.pitch };
+    if (!ya) { const ex = trLista(origen) && trLista(destino) && transferir([0, Math.PI / 2 - 1e-4], origen, destino); if (ex) ini = { yaw: ex[0], pitch: k.pitch }; }
+    const m = document.createElement("div"); m.className = "rt-fondo"; REG.modal = m; document.addEventListener("keydown", rtTecla, true);
+    m.innerHTML = '<div class="rt-modal lg" role="dialog" aria-modal="true" aria-label="Hotspot de regreso">' +
+      '<div class="rt-mcab"><div><b>Hotspot de regreso</b><span>En <em>' + esc(nombreDe(destino)) + "</em>, ponlo donde se ve <em>" + esc(nombreDe(origen)) + '</em></span></div><button class="rt-x" type="button" data-rt-cancelar aria-label="Cerrar">×</button></div>' +
+      '<div class="rt-foto" id="rt-foto"><canvas id="rt-canvas" aria-label="Esfera ' + esc(nombreDe(destino)) + ' completa"></canvas><div class="rt-cargando">Armando la esfera…</div>' +
+      '<div class="rt-pin" id="rt-pin" tabindex="0" role="slider" aria-label="Posición del hotspot de regreso">' + rtMuestra(estilo) + "</div>" +
+      '<div class="rt-lupa" id="rt-lupa" hidden><canvas width="360" height="360"></canvas><i></i></div>' +
+      '<span class="rt-nombre">' + esc(nombreDe(destino)) + "</span></div>" +
+      '<div class="rt-pie"><span>Arrastra el punto. La lupa te deja ponerlo exacto.</span><div class="rt-acc"><button type="button" class="rt-btn" data-rt-cancelar>Cancelar</button><button type="button" class="rt-btn prim" data-rt-anadir disabled>Añadir</button></div></div></div>';
+    document.body.appendChild(m);
+    const foto = m.querySelector("#rt-foto"), cv = m.querySelector("#rt-canvas"), pin = m.querySelector("#rt-pin"), lupa = m.querySelector("#rt-lupa"), lx = lupa.querySelector("canvas").getContext("2d");
+    let eq = null, pos = { x: ((ini.yaw / (2 * Math.PI) + 0.5) % 1 + 1) % 1, y: Math.max(0.02, Math.min(0.98, ini.pitch / Math.PI + 0.5)) };
+    const colocar = () => { pin.style.left = pos.x * 100 + "%"; pin.style.top = pos.y * 100 + "%"; pin.setAttribute("aria-valuetext", Math.round((pos.x - 0.5) * 360) + "°, " + Math.round((pos.y - 0.5) * -180) + "°"); };
+    const pintarLupa = () => {
+      if (!eq) return;
+      const Z = 3.2, L = 360, sw = L / Z, cx = pos.x * eq.width, cy = pos.y * eq.height;
+      lx.fillStyle = "#111"; lx.fillRect(0, 0, L, L);
+      for (const dx of [-eq.width, 0, eq.width]) lx.drawImage(eq, cx - sw / 2 + dx, cy - sw / 2, sw, sw, 0, 0, L, L); // la costura del 2:1 no corta la lupa
+      const fw = foto.clientWidth, fh = foto.clientHeight, px = pos.x * fw, py = pos.y * fh, t = 170;
+      lupa.style.left = Math.max(0, Math.min(fw - t, px - t / 2)) + "px";
+      lupa.style.top = (py - t - 34 < 0 ? py + 34 : py - t - 34) + "px";
+    };
+    colocar();
+    const mover = (dx, dy) => { if (!eq) return; pos = { x: ((pos.x + dx / eq.width) % 1 + 1) % 1, y: Math.max(0.01, Math.min(0.99, pos.y + dy / eq.height)) }; colocar(); lupa.hidden = false; pintarLupa(); clearTimeout(m._t); m._t = setTimeout(() => (lupa.hidden = true), 1200); };
+    m._mover = mover;
+    const listo = () => {
+      if (!eq) return;
+      const regreso = { yaw: normYaw((pos.x - 0.5) * 2 * Math.PI), pitch: (pos.y - 0.5) * Math.PI };
+      rtCerrar(); conectar(origen, destino, k, { estilo, regreso });
+    };
+    m._listo = listo;
+    m.addEventListener("click", (ev) => { if (ev.target.closest("[data-rt-cancelar]")) { rtCerrar(); return; } if (ev.target.closest("[data-rt-anadir]")) listo(); });
+    // Arrastrar el punto (o tocar la foto para llevarlo ahí); mientras, la lupa
+    const enFoto = (ev) => { const r = foto.getBoundingClientRect(); return { x: Math.max(0, Math.min(0.9999, (ev.clientX - r.left) / r.width)), y: Math.max(0.01, Math.min(0.99, (ev.clientY - r.top) / r.height)) }; };
+    let arr = false;
+    foto.addEventListener("pointerdown", (ev) => { if (!eq || ev.button > 0) return; arr = true; clearTimeout(m._t); foto.setPointerCapture(ev.pointerId); pos = enFoto(ev); colocar(); lupa.hidden = false; pintarLupa(); foto.classList.add("moviendo"); });
+    foto.addEventListener("pointermove", (ev) => { if (!arr) return; pos = enFoto(ev); colocar(); pintarLupa(); });
+    const soltar = () => { if (!arr) return; arr = false; foto.classList.remove("moviendo"); lupa.hidden = true; };
+    foto.addEventListener("pointerup", soltar); foto.addEventListener("pointercancel", soltar);
+    pin.addEventListener("focus", () => { if (eq) { lupa.hidden = false; pintarLupa(); } });
+    pin.addEventListener("blur", () => { if (!arr) lupa.hidden = true; }); // al tocar la foto el punto pierde el foco: la lupa sigue
+    try { eq = await equiLigera(destino, 2048); } catch (e) { if (REG.modal === m) { avisar("No se pudo abrir esa esfera"); rtCerrar(); } return; }
+    if (REG.modal !== m) return;
+    cv.width = eq.width; cv.height = eq.height; cv.getContext("2d").drawImage(eq, 0, 0);
+    m.querySelector(".rt-cargando").remove(); m.querySelector("[data-rt-anadir]").disabled = false;
+    m.classList.add("lista"); pin.focus({ preventScroll: true }); lupa.hidden = false; pintarLupa(); m._t = setTimeout(() => (lupa.hidden = true), 1600);
   }
   $("ed-mas").addEventListener("click", () => { const v = motorEd.view(); v.setFov(v.fov() * 0.7); });
   $("ed-menos").addEventListener("click", () => { const v = motorEd.view(); v.setFov(v.fov() * 1.4); });
@@ -15373,7 +15596,7 @@ void main(){
     if (String(l.vista || "").trim()) filas.push(["Vista", l.vista]);
     const mitad = Math.ceil(filas.length / 2), col = (xs) => "<dl>" + xs.map(([k, v]) => "<div><dt>" + esc(k) + "</dt><dd>" + esc(v) + "</dd></div>").join("") + "</dl>";
     const tabla = filas.length ? '<div class="ft-tabla' + (filas.length < 2 ? " una" : "") + '">' + col(filas.slice(0, mitad)) + (filas.length > 1 ? col(filas.slice(mitad)) : "") + "</div>" : "";
-    const n = (v) => numES(String(v ?? "").replace(/^[$€]|^S\/|^Q|^₡/, "").trim()) || 0;
+    const n = (v) => numES(String(v ?? "").replace(/^\s*(?:[^\p{L}\p{N}\s.,-]{1,3}|\p{L}{1,4}\.?[$\/]?)\s?(?=\d)/u, "").trim()) || 0;
     const si = n(tp && tp.int), se = n(tp && tp.ext), st = si + se || n(l.area);
     const sup = f.superficie && st ? '<div class="ft-sup">' + (si || se ? "<span>" + [si ? "Sup. interior: <b>" + esc(fmtArea(si)) + "</b>" : "", se ? "Sup. exterior: <b>" + esc(fmtArea(se)) + "</b>" : ""].filter(Boolean).join(", ") + "</span>" : "") + "<b>Superficie total: " + esc(fmtArea(st)) + "</b></div>" : "";
     const vendido = e.id === "vendido", base = n(l.precio), extra = n(f.extraM), planes = (f.planes || []).filter((x) => String(x.t || "").trim());

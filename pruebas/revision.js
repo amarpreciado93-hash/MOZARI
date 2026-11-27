@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-ficha-disenos", "nuevo-landing-disenos", "nuevo-rotulo-estilos", "nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto", "nuevo-voz-idiomas", "nuevo-lotes-vendidos", "nuevo-unir-manzanas", "nuevo-equipo", "nuevo-dia-noche"];
+const GUIAS_NUEVAS = ["nuevo-ficha-disenos", "nuevo-landing-disenos", "nuevo-rotulo-estilos", "nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto", "nuevo-voz-idiomas", "nuevo-lotes-vendidos", "nuevo-unir-manzanas", "nuevo-equipo", "nuevo-dia-noche", "nuevo-regreso"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -950,6 +950,63 @@ async function capasPesadas(p) {
       exige(frente.horizonte && frente.horizonte.display !== "none" && frente.horizonte.w > 20, "al mirarlo de frente, el punto del horizonte no regresó: " + JSON.stringify(frente));
       exige(suelo.capas <= MAX_CAPAS_GRANDES && frente.capas <= MAX_CAPAS_GRANDES, "demasiadas capas grandes para un iPhone: " + suelo.capas + " / " + frente.capas);
     });
+    // Reporte de un usuario (27 nov 2026, «no funciona la función rollover»): un polígono normal (sin acción ni lote)
+    // con Rollover no se iluminaba en el tour, porque el tour solo buscaba debajo del mouse los que abren algo.
+    // Ahora se ilumina al pasar el mouse (o al tocarlo en el celular), no pone la mano y tocarlo no abre nada.
+    // «Invisible hasta pasar el mouse» aparece solo al pasar encima.
+    await paso("Rollover en un polígono sin acción: se ilumina al pasar el mouse (y al tocarlo en celular) y no abre nada", async () => {
+      link = link || TOURS + "/" + tour + "/";
+      const leer = () => a.evaluate((id) => fetch("api/tours/" + id).then((r) => r.json()), tour);
+      const guardar = (d) => a.evaluate(([id, d]) => fetch("api/tours/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(d) }).then((r) => r.status), [tour, d]);
+      const publicar = () => a.evaluate((id) => fetch("api/tours/" + id + "/publicar", { method: "POST" }).then((r) => r.status), tour);
+      const original = await leer(), d = JSON.parse(JSON.stringify(original));
+      const esc = d.proyecto.escenaInicial || (d.escenas[0] || {}).id, e = d.escenas.find((x) => x.id === esc);
+      const y = (e.vista || {}).yaw || 0, p = 0.05;
+      e.vista = Object.assign({}, e.vista, { yaw: y, pitch: p, fov: 1.4 }); delete e.piloto;
+      d.proyecto.presentacion = { activa: false };
+      const pol = (id, x0, oculto) => ({ id, tipo: "poligono", nombre: "Polígono", visible: true, puntos: [[y + x0, p - 0.12], [y + x0 + 0.22, p - 0.12], [y + x0 + 0.22, p + 0.12], [y + x0, p + 0.12]],
+        relleno: { color: "#FFFFFF", opacidad: 0.15 }, trazo: { color: "#FFFFFF", grosor: 1.5, opacidad: 1 },
+        rollover: { activo: true, oculto: !!oculto, relleno: { color: "#D5FF40", opacidad: 0.6 }, trazo: { color: "#FFFFFF", grosor: 3, opacidad: 1 } } });
+      d.capas[esc] = (d.capas[esc] || []).filter((c) => c.tipo !== "poligono").concat([pol("ro-normal", -0.3), pol("ro-oculto", 0.08, true)]);
+      exige((await guardar(d)) === 200 && (await publicar()) === 200, "no se pudo preparar el tour de prueba");
+      let r = {}, cel = {};
+      try {
+        const t = await pagina(null); await t.goto(link); await t.waitForTimeout(5000);
+        const cajas = async () => (await t.$$eval("path.cp-pol.con-rollover", (l) => l.map((x) => { const b = x.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2, b.width * b.height]; }))).sort((u, v) => u[0] - v[0]);
+        const estado = () => t.evaluate(() => [...document.querySelectorAll("path.cp-pol.con-rollover")].sort((u, v) => u.getBoundingClientRect().x - v.getBoundingClientRect().x)
+          .map((x) => ({ hov: x.classList.contains("hov"), trazo: +getComputedStyle(x).strokeOpacity, mano: document.querySelector(".sobre-lote") !== null })));
+        const c = await cajas();
+        r.n = c.length;
+        if (c.length === 2 && c[0][2] > 300 && c[1][2] > 300) {
+          r.antes = await estado();
+          await t.mouse.move(c[0][0], c[0][1]); await t.mouse.move(c[0][0] + 3, c[0][1] + 2); await t.waitForTimeout(400); r.normal = await estado();
+          await t.mouse.click(c[0][0] + 3, c[0][1] + 2); await t.waitForTimeout(700); r.abre = await t.isVisible(".pop .pop-caja");
+          await t.mouse.move(c[1][0], c[1][1]); await t.mouse.move(c[1][0] + 3, c[1][1] + 2); await t.waitForTimeout(400); r.oculto = await estado();
+          await t.mouse.move(40, 450); await t.mouse.move(44, 452); await t.waitForTimeout(400); r.fuera = await estado();
+        }
+        exige(!t.errs.length, "errores: " + t.errs.join(" | ").slice(0, 160));
+        await t.context().close();
+        const m = await pagina(null, Object.assign({}, devices["iPhone 13"], { acceptDownloads: false }));
+        await m.goto(link); await m.waitForTimeout(5000);
+        const mc = (await m.$$eval("path.cp-pol.con-rollover", (l) => l.map((x) => { const b = x.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; }))).sort((u, v) => u[0] - v[0]);
+        const hovs = () => m.evaluate(() => [...document.querySelectorAll("path.cp-pol.con-rollover")].sort((u, v) => u.getBoundingClientRect().x - v.getBoundingClientRect().x).map((x) => x.classList.contains("hov")));
+        if (mc.length === 2) {
+          await m.touchscreen.tap(mc[0][0], mc[0][1]); await m.waitForTimeout(500); cel.toque = await hovs(); cel.abre = await m.isVisible(".pop .pop-caja");
+          await m.touchscreen.tap(mc[0][0], 60 + (mc[0][1] - 60) * 0.2); await m.waitForTimeout(500); cel.fuera = await hovs();
+        }
+        exige(!m.errs.length, "errores en celular: " + m.errs.join(" | ").slice(0, 160));
+        await m.context().close();
+      } finally { await guardar(original); await publicar(); } // el tour regresa a como estaba
+      console.log("    rollover: " + JSON.stringify(r) + " · celular: " + JSON.stringify(cel));
+      exige(r.n === 2, "el tour no marcó los 2 polígonos con rollover: " + r.n);
+      exige(r.antes && !r.antes[0].hov && r.antes[1].trazo === 0, "antes de pasar el mouse: " + JSON.stringify(r.antes));
+      exige(r.normal && r.normal[0].hov && !r.normal[0].mano, "al pasar el mouse el polígono no se iluminó (o salió la mano): " + JSON.stringify(r.normal));
+      exige(r.abre === false, "tocar un polígono sin acción abrió algo");
+      exige(r.oculto && r.oculto[1].hov && r.oculto[1].trazo > 0.5 && !r.oculto[0].hov, "«Invisible hasta pasar el mouse» no apareció al pasar encima: " + JSON.stringify(r.oculto));
+      exige(r.fuera && !r.fuera[0].hov && !r.fuera[1].hov && r.fuera[1].trazo === 0, "al salir no se apagó: " + JSON.stringify(r.fuera));
+      exige(cel.toque && cel.toque[0] && !cel.abre, "en celular, tocar el polígono no lo iluminó (o abrió algo): " + JSON.stringify(cel));
+      exige(cel.fuera && !cel.fuera[0], "en celular, tocar fuera no lo apagó: " + JSON.stringify(cel));
+    });
     await paso("Descargar el tour (.zip) para otro hosting", async () => {
       const [dl] = await Promise.all([a.waitForEvent("download", { timeout: 60000 }), a.click("#pub-descargar")]);
       const destino = path.join(DATOS, "tour.zip"); await dl.saveAs(destino);
@@ -965,8 +1022,9 @@ async function capasPesadas(p) {
       const marca = textos.filter(([, t]) => /mozari|r360/i.test(t)).map(([n, t]) => n + ": " + (t.match(/.{0,30}(mozari|r360).{0,30}/i) || [""])[0]);
       exige(!marca.length, "el .zip todavía nombra a la plataforma: " + marca.join(" | ").slice(0, 220));
       exige(!/<link[^>]+href="\//.test(ix) && !/og:image|og:url/.test(ix), "el index.html del zip trae íconos o vista previa de la plataforma");
-      // (compactado pesa cerca de 1 MB y crece con cada función nueva; sin compactar pasa de 1.4 MB)
-      exige(ix.length < 1200000 && !/"cap":\s*"1\. Empezar"/.test(ix) && !/\n\s*\/\/ [A-Za-zÁÉÍÓÚáéíóú¿«]/.test(ix), "el index.html del zip trae el manual o los comentarios del estudio");
+      // (compactado pesa cerca de 1.2 MB y crece con cada función nueva; sin compactar pasa de 1.4 MB.
+      // 27 nov 2026: de 1.2 a 1.25 MB por las monedas de todo el mundo y el hotspot de regreso)
+      exige(ix.length < 1250000 && !/"cap":\s*"1\. Empezar"/.test(ix) && !/\n\s*\/\/ [A-Za-zÁÉÍÓÚáéíóú¿«]/.test(ix), "el index.html del zip trae el manual o los comentarios del estudio");
     }, a);
     // El .zip subido a otro hosting: se descomprime en una carpeta, la sirve un servidor aparte (como el cPanel del
     // cliente) y el tour tiene que abrir completo sin pedirle nada a Mozari
@@ -998,6 +1056,7 @@ async function capasPesadas(p) {
       } finally { srv.close(); }
     }, a);
     await paso("Modo privado: el tour se oculta sin borrarlo y vuelve igual", async () => {
+      await pasarGuias(a); // el mini tutorial del «Link para tu cliente» sale una vez en Publicar y tapa el botón
       exige(await a.$("#pub-privado"), "no está el botón de modo privado");
       await a.click("#pub-privado"); await a.waitForTimeout(1500);
       exige(/Mostrar/.test(await a.textContent("#pub-privado")), "el botón no cambió a Mostrar tour");
@@ -1019,7 +1078,7 @@ async function capasPesadas(p) {
       await t.context().close();
     }, a);
     await paso("Compartir: link, código para insertar y QR que se lee", async () => {
-      await a.click('#subtabs button:has-text("Compartir")'); await a.waitForTimeout(1500);
+      await pasarGuias(a); await a.click('#subtabs button:has-text("Compartir")'); await a.waitForTimeout(1500);
       const url = (await a.textContent(".comp .pub-caja code")).trim();
       exige(url.endsWith("/" + tour + "/"), "el link de Compartir no es el del tour (" + url + ")");
       exige(!(await a.$(".comp-aviso")), "dice que no está publicado y sí lo está");
@@ -4803,6 +4862,11 @@ async function capasPesadas(p) {
         };
         exige(/S\/ 4,850,000/.test(await monedaLd("PEN")), "con el tour en soles la landing no sale en soles (S/)");
         exige(/US\$4,850,000/.test(await monedaLd("USD")), "con el tour en dólares la landing no lo distingue (US$)");
+        exige(/L 4,850,000/.test(await monedaLd("HNL")), "con el tour en lempiras (Honduras) la landing no sale con L"); // pedido de Amar, 27 nov 2026
+        // «agrega todas las monedas existentes» (27 nov 2026): están todas las del mundo; la que no tiene símbolo sale con su clave
+        exige((await n.$$eval("#lx-moneda option", (l) => l.length)) >= 150, "no están todas las monedas del mundo en «Moneda de los precios»");
+        exige(/R\$4,850,000/.test(await monedaLd("BRL")), "con el tour en reales (Brasil) la landing no sale con R$");
+        exige(/AED 4,850,000/.test(await monedaLd("AED")), "con una moneda sin símbolo (AED) la landing no sale con su clave");
         exige(/(^|[^S\/A-Z])\$4,850,000/.test(await monedaLd("MXN")), "al regresar a pesos la landing no sale con $");
         // una cuenta sin la función no ve la pestaña ni puede publicar landing aunque la meta a mano
         await nuevoTour(u, "Sin landing"); const iu = await idTour(u);
@@ -6364,6 +6428,83 @@ async function capasPesadas(p) {
       } finally {
         await api(n, "api/admin/vendedores", J("PUT", { vendedores: [] })).catch(() => {});
         await cl.context().close(); await v.context().close(); await n.context().close();
+      }
+    });
+    // Hotspot de regreso (Amar, 26 nov 2026: «crear un hotspot de retorno… te abre tu imagen equirectangular con un punto…
+    // quisiera que este punto también tenga una lupa»). Vidrio líquido, nada que se parezca a 3DVista.
+    await paso("Hotspot de regreso (Laboratorio, nace Solo yo): al soltar una esfera sale la ventanita de vidrio; el regreso se pone en la otra esfera 2:1 con lupa; sin marcar, no hay regreso", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const tutoriales = async (p) => { const vistos = []; for (let i = 0, quieto = 0; i < 30 && quieto < 4; i++) { await p.waitForTimeout(700); if (await p.isVisible(".guia-tarjeta").catch(() => false)) { quieto = 0; vistos.push(await p.textContent(".guia-tarjeta")); await p.click('.guia-tarjeta [data-guia="seguir"]').catch(() => p.keyboard.press("Escape")); } else quieto++; } return vistos; };
+      // Arrastrar una esfera de la tira y soltarla en la esfera abierta (x, y: fracción del lienzo)
+      const soltar = (p, id, fx, fy) => p.evaluate(([id, fx, fy]) => {
+        const li = document.querySelector('#panos-tira li[data-id="' + id + '"]'), st = document.querySelector("#ed-lienzo"), r = st.getBoundingClientRect(), dt = new DataTransfer();
+        const x = r.left + r.width * fx, y = r.top + r.height * fy;
+        li.dispatchEvent(new DragEvent("dragstart", { bubbles: true, dataTransfer: dt }));
+        st.dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true, clientX: x, clientY: y, dataTransfer: dt }));
+        st.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, clientX: x, clientY: y, dataTransfer: dt }));
+        li.dispatchEvent(new DragEvent("dragend", { bubbles: true, dataTransfer: dt }));
+      }, [id, fx, fy]);
+      const hs = (d, de, a) => (d.capas[de] || []).find((c) => c.tipo === "hotspot" && c.destino === a);
+      const correoU = "regreso@prueba.mx", n = await pagina(DUENO), u = await pagina(correoU);
+      try {
+        await nuevoTour(u, "Regreso"); const id = await idTour(u);
+        await otraEsfera(u, "Calle", "#e95", "#764"); await otraEsfera(u, "Patio", "#bcd", "#876"); await u.waitForTimeout(1500);
+        let d = (await api(u, "api/tours/" + id)).d; const [A, B, C] = d.escenas.map((e) => e.id);
+        // Sin la función: como siempre (ida y vuelta sin preguntar)
+        await irCapas(u); await tutoriales(u); await u.click('#panos-tira li[data-id="' + A + '"]').catch(() => {}); await u.waitForTimeout(1500);
+        await soltar(u, B, 0.6, 0.55); await u.waitForTimeout(2500);
+        exige(!(await u.$(".rt-pop")), "sin la función ya sale la ventanita de regreso");
+        d = (await api(u, "api/tours/" + id)).d;
+        exige(hs(d, A, B) && hs(d, B, A), "sin la función ya no se conecta de ida y vuelta");
+        // Con la función (probador): su mini tutorial y la ventanita
+        exige((await api(n, "api/admin/laboratorio/hotspot-regreso", J("PUT", { modo: "probadores", probadores: [correoU] }))).s === 200, "no se pudo dar la función");
+        await u.reload(); await u.waitForTimeout(2500); await cerrarAnuncio(u); await irCapas(u);
+        const vistos = await tutoriales(u);
+        exige(vistos.some((x) => /hotspot de regreso/i.test(x) && /lupa/.test(x)), "no salió el mini tutorial del hotspot de regreso: " + vistos.map((x) => x.slice(0, 40)).join(" | "));
+        await soltar(u, B, 0.62, 0.55); await u.waitForTimeout(800);
+        exige(await u.isVisible(".rt-pop"), "al soltar la esfera no sale la ventanita");
+        exige(/campo\s*→\s*Calle/.test(await u.textContent(".rt-pop")) && (await u.$$(".rt-pop [data-rt-op]")).length >= 4 && await u.isChecked("[data-rt-regreso]"), "la ventanita no trae los hotspots o «Crear hotspot de regreso» marcado");
+        const vidrio = await u.$eval(".rt-pop", (e) => getComputedStyle(e).backdropFilter || getComputedStyle(e).webkitBackdropFilter);
+        exige(/blur/.test(vidrio), "la ventanita no es de vidrio (sin desenfoque)");
+        await u.click('.rt-pop [data-rt-op="2"]'); // Puerta
+        if (process.env.CAPTURAS) await u.screenshot({ path: path.join(process.env.CAPTURAS, "regreso-ventanita.png") });
+        await u.click(".rt-pop [data-rt-sigue]");
+        await u.waitForSelector(".rt-fondo.lista", { timeout: 20000 });
+        exige(/Hotspot de regreso/.test(await u.textContent(".rt-modal")) && /Calle/.test(await u.textContent(".rt-modal")), "no se abrió la otra esfera para poner el regreso");
+        // La foto 2:1 de la otra esfera trae su color (cielo naranja de «Calle»)
+        const cielo = await u.$eval("#rt-canvas", (c) => { const x = c.getContext("2d").getImageData(Math.round(c.width * 0.3), Math.round(c.height * 0.2), 1, 1).data; return [x[0], x[1], x[2]]; });
+        exige(cielo[0] > 190 && cielo[2] < 140, "la vista 2:1 no es la esfera de destino (cielo " + cielo.join(",") + ")");
+        // Arrastrar el punto: la lupa sale mientras se mueve
+        const caja = await u.$eval("#rt-foto", (e) => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+        await u.mouse.move(caja.x + caja.w * 0.25, caja.y + caja.h * 0.45); await u.mouse.down();
+        await u.mouse.move(caja.x + caja.w * 0.28, caja.y + caja.h * 0.42, { steps: 4 }); await u.mouse.move(caja.x + caja.w * 0.3, caja.y + caja.h * 0.4, { steps: 4 });
+        exige(await u.isVisible("#rt-lupa"), "al arrastrar el punto no sale la lupa");
+        const lupaPinta = await u.$eval("#rt-lupa canvas", (c) => { const x = c.getContext("2d").getImageData(60, 60, 1, 1).data; return x[0] + x[1] + x[2] > 60; });
+        exige(lupaPinta, "la lupa no muestra la esfera");
+        if (process.env.CAPTURAS) await u.screenshot({ path: path.join(process.env.CAPTURAS, "regreso-lupa.png") });
+        await u.mouse.up();
+        await u.click(".rt-modal [data-rt-anadir]"); await u.waitForTimeout(2500);
+        exige(!(await u.$(".rt-fondo")), "al añadir no se cerró la ventana");
+        d = (await api(u, "api/tours/" + id)).d;
+        const v = hs(d, B, A), ida = hs(d, A, B);
+        exige(v && Math.abs(v.yaw - (0.3 - 0.5) * 2 * Math.PI) < 0.03 && Math.abs(v.pitch - (0.4 - 0.5) * Math.PI) < 0.03, "el regreso no quedó donde se soltó el punto: " + JSON.stringify(v && [v.yaw, v.pitch]));
+        exige(v.estilo === "puerta" && ida.estilo === "puerta" && v.par === ida.id && ida.par === v.id && (d.capas[B] || []).filter((c) => c.tipo === "hotspot" && c.destino === A).length === 1, "el regreso no quedó con el hotspot elegido (o se duplicó)");
+        // Sin marcar: solo la ida
+        await soltar(u, C, 0.3, 0.5); await u.waitForTimeout(800);
+        await u.click(".rt-check"); await u.waitForTimeout(300);
+        exige(/Conectar/.test(await u.textContent(".rt-pop [data-rt-sigue]")), "sin regreso el botón no dice Conectar");
+        await u.click(".rt-pop [data-rt-sigue]"); await u.waitForTimeout(2500);
+        d = (await api(u, "api/tours/" + id)).d;
+        exige(hs(d, A, C) && !hs(d, C, A), "sin marcar el regreso igual se creó");
+        // Esc cancela sin tocar nada
+        const antes = JSON.stringify(d.capas);
+        await soltar(u, B, 0.5, 0.5); await u.waitForTimeout(600); await u.keyboard.press("Escape"); await u.waitForTimeout(2000);
+        exige(!(await u.$(".rt-pop")) && JSON.stringify((await api(u, "api/tours/" + id)).d.capas) === antes, "Esc no canceló la conexión");
+        exige(!u.errs.length && !n.errs.length, "errores: " + u.errs.concat(n.errs).join(" | ").slice(0, 200));
+      } finally {
+        await api(n, "api/admin/laboratorio/hotspot-regreso", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
+        await u.context().close(); await n.context().close();
       }
     });
     await paso("Sin errores de JavaScript en el estudio", async () => { exige(!a.errs.length && !g.errs.length, (a.errs.concat(g.errs)).join(" | ").slice(0, 200)); });

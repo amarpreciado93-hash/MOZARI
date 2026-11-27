@@ -312,7 +312,9 @@
   const num = (v) => { const n = parseFloat(String(v == null ? "" : v).replace(/,/g, "").replace(/[^\d.]/g, "")); return isFinite(n) ? n : 0; };
   // La moneda es la del tour (Fichas técnicas → Moneda de los precios). Reporte de Jesús (Perú, 18 nov 2026): la landing
   // salía con «$» aunque su tour estaba en soles. El dólar va como «US$» para no confundirlo con el peso.
-  const SIMBOLO = { PEN: "S/ ", USD: "US$", EUR: "€", GTQ: "Q", CRC: "₡", BOB: "Bs " };
+  const SIMBOLO = { PEN: "S/ ", USD: "US$", EUR: "€", GTQ: "Q", HNL: "L ", CRC: "₡", BOB: "Bs " };
+  // Las demás monedas del mundo (27 nov 2026): el símbolo lo da el navegador; si no tiene, va su clave («AED 4,850,000»)
+  const simboloDe = (m) => { if (SIMBOLO[m] != null) return SIMBOLO[m]; try { const s = new Intl.NumberFormat("es-MX", { style: "currency", currency: m, currencyDisplay: "narrowSymbol" }).formatToParts(0).find((x) => x.type === "currency").value; return s === m ? m + " " : /[\p{L}.]$/u.test(s) ? s + " " : s; } catch (e) { return "$"; } };
   let simbolo = "$";
   const dinero = (n) => simbolo + Math.round(n).toLocaleString("es-MX");
   const corto = (n) => (n >= 1e6 ? simbolo + (n / 1e6).toFixed(n >= 1e7 ? 1 : 2).replace(/\.?0+$/, "") + " M" : n >= 1e4 ? simbolo + Math.round(n / 1000) + " mil" : dinero(n));
@@ -377,7 +379,7 @@
   }
 
   function render(p) {
-    simbolo = SIMBOLO[(p && p.proyecto && p.proyecto.moneda) || "MXN"] || "$";
+    simbolo = simboloDe((p && p.proyecto && p.proyecto.moneda) || "MXN");
     const P = p.proyecto || {}, L = Object.assign({}, P.landing || {}), M = Object.assign({}, L.marca || {});
     const ESTADOS = Array.isArray(p.lotesEstados) && p.lotesEstados.length ? p.lotesEstados : ESTADOS_DEF;
     const T = Object.assign({ lote: "Lote", manzana: "Manzana" }, P.terminos || {});
