@@ -27,7 +27,7 @@ const LIB = {
 const DUENO = "dueno@prueba.mx";
 // Las herramientas que salieron del Laboratorio a Pro y Desarrollos (nov 2026) y sus tutoriales de primera vez
 const LANZADAS = ["manzana-curvas", "estadisticas", "fichas", "referencia", "manzana-desfase", "foto360", "lotes-pdf", "carga-logo"];
-const GUIAS_NUEVAS = ["nuevo-candado", "nuevo-ficha-disenos", "nuevo-landing-disenos", "nuevo-rotulo-estilos", "nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto", "nuevo-voz-idiomas", "nuevo-lotes-vendidos", "nuevo-unir-manzanas", "nuevo-equipo", "nuevo-dia-noche", "nuevo-regreso"];
+const GUIAS_NUEVAS = ["nuevo-vendedores", "nuevo-candado", "nuevo-ficha-disenos", "nuevo-landing-disenos", "nuevo-rotulo-estilos", "nuevo-capas", "nuevo-referencia", "nuevo-curvas", "nuevo-desfase", "nuevo-fichas", "nuevo-estadisticas", "nuevo-carga-logo", "nuevo-mz-modo", "nuevo-copiar", "nuevo-sonido", "nuevo-letra", "nuevo-repetir-piloto", "nuevo-ejemplo", "nuevo-bienvenida", "nuevo-transiciones", "nuevo-tutorial-video", "nuevo-descarga-pdf", "nuevo-icono", "nuevo-norte", "nuevo-mejora", "nuevo-borrar", "nuevo-voz-ia", "nuevo-previa-celular", "nuevo-rotulo-corto", "nuevo-voz-idiomas", "nuevo-lotes-vendidos", "nuevo-unir-manzanas", "nuevo-equipo", "nuevo-dia-noche", "nuevo-regreso"];
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 // ---------- servidores locales (estudio y tours) ----------
@@ -6597,6 +6597,158 @@ async function capasPesadas(p) {
       } finally {
         await api(n, "api/admin/laboratorio/hotspot-regreso", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
         await u.context().close(); await n.context().close();
+      }
+    });
+    // Vendedores en el tour (Amar, 27 nov 2026): «tengo 6 vendedores, a cada uno le vamos a hacer publicidad de Meta Ads y
+    // queremos ponerle a cada uno su tour con sus datos para que atiendan a los leads y cada quien tenga sus leads».
+    // Un solo tour y un link por vendedor (…/?v=lucero). «Únicamente para el plan de Desarrollos».
+    await paso("Vendedores en el tour (Laboratorio, nace Solo yo, únicamente Desarrollos): un link por vendedor; con su link el botón de contacto y las fichas le escriben por WhatsApp con su nombre, el celular lo recuerda, la landing también y Estadísticas cuenta por vendedor", async () => {
+      const api = (p, ruta, op) => p.evaluate(([r, o]) => fetch(r, o).then(async (x) => ({ s: x.status, d: await x.json().catch(() => null) })), [ruta, op || {}]);
+      const J = (m, c) => ({ method: m, headers: { "content-type": "application/json" }, body: JSON.stringify(c) });
+      const tutoriales = async (p) => { const vistos = []; for (let i = 0, quieto = 0; i < 30 && quieto < 4; i++) { await p.waitForTimeout(700); if (await p.isVisible(".guia-tarjeta").catch(() => false)) { quieto = 0; vistos.push(await p.textContent(".guia-tarjeta")); await p.click('.guia-tarjeta [data-guia="seguir"]'); } else quieto++; } return vistos; };
+      const aWeb = async (p) => { await p.click('#nav button:has-text("Publicar")'); await p.waitForTimeout(600); await p.click('#subtabs button:has-text("Web")'); await p.waitForTimeout(1500); };
+      const fila = (i) => '#pub-vend [data-vend-i="' + i + '"]';
+      const linkDe = (p, i) => p.textContent(fila(i) + " .vend-link code").catch(() => "");
+      const publicado = async (id) => (await (await fetch(TOURS + "/" + id + "/proyecto.json?x=" + Date.now())).json()).proyecto;
+      // El botón de contacto del tour (sin el de PDF): su texto y a dónde manda
+      const cta = (p) => p.evaluate(() => { const a = document.querySelector(".sk-cta:not(.sk-pdf)"); return a ? { t: a.textContent.trim(), href: a.getAttribute("href") || "" } : null; });
+      const abrirTour = async (p, ruta) => { await p.goto(TOURS + ruta); await p.waitForSelector("#pv-stage canvas", { timeout: 30000 }); await p.waitForTimeout(3500); };
+      const tocarLote = async (p) => {
+        const c = await p.$$eval("path.cp-pol.con-accion", (l) => l.map((e) => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2, r.width * r.height]; }).filter((x) => x[2] > 200).sort((a, b) => b[2] - a[2])[0]);
+        exige(c, "no hay lote que tocar en el tour"); await p.mouse.click(c[0], c[1]); await p.waitForTimeout(800);
+      };
+      // Una visita: toca contacto (sin abrir WhatsApp) y manda su resumen al salir
+      const visitaConContacto = (p) => p.evaluate(() => { const a = document.querySelector(".sk-cta:not(.sk-pdf)"); a.addEventListener("click", (e) => e.preventDefault()); a.click(); window.dispatchEvent(new Event("pagehide")); });
+      const sello = Date.now(), cDes = "des-vend-" + sello + "@prueba.mx", cPro = "pro-vend-" + sello + "@prueba.mx";
+      const n = await pagina(DUENO), abiertos = [];
+      const nueva = async (op) => { const p = await pagina(null, op); abiertos.push(p); return p; };
+      try {
+        await nuevoTour(n, "Vendedores Tezal"); const id = await idTour(n);
+        // un lote, el contacto de siempre del dueño y una landing con su WhatsApp
+        let d = (await api(n, "api/tours/" + id)).d;
+        const esc = d.proyecto.escenaInicial || d.escenas[0].id, v0 = d.escenas.find((e) => e.id === esc).vista || {}, y = v0.yaw || 0, pt = (v0.pitch || 0) + 0.2;
+        d.capas[esc] = (d.capas[esc] || []).concat([{ id: "lote-9", tipo: "poligono", nombre: "Lote", visible: true, puntos: [[y - 0.25, pt], [y + 0.25, pt], [y + 0.25, pt + 0.3], [y - 0.25, pt + 0.3]],
+          relleno: { color: "#22B573", opacidad: 0.4 }, trazo: { color: "#fff", grosor: 1.5, opacidad: 1 }, lote: { numero: "9", manzana: "3", area: "200", precio: "", lados: [], frente: 0, estado: "disponible" } }]);
+        exige(d.skin && d.skin.cta, "el tour nuevo no trae su botón de contacto");
+        Object.assign(d.skin.cta, { mostrar: true, texto: "Contactar", enlace: "https://wa.me/524770000000" });
+        d.proyecto.landing = Object.assign({}, d.proyecto.landing || {}, { activa: true, contacto: { whatsapp: "4771112233", pais: "52", telefono: "", correo: "", mensaje: "", texto: "" } });
+        exige((await api(n, "api/tours/" + id, J("PUT", d))).s === 200, "no se pudo preparar el tour");
+        await n.goto(ESTUDIO + "/#t=" + id); await n.reload(); await n.waitForTimeout(2500); await cerrarAnuncio(n); await cerrarGuia(n);
+        await aWeb(n); await pasarGuias(n);
+        // 1) La tarjeta en Publicar → Web
+        exige(await n.isVisible("#pub-vend") && /Vendedores del tour/.test(await n.textContent("#pub-vend")), "en Publicar → Web no está «Vendedores del tour»");
+        await n.click('#pub-vend [data-vend="agregar"]'); await n.waitForTimeout(400);
+        exige(/Escribe su nombre/.test(await n.textContent(fila(0))), "sin nombre no pide el nombre para dar su link");
+        await n.fill(fila(0) + ' [data-vend-k="nombre"]', "Lucero Ruiz"); await n.keyboard.press("Tab"); await n.waitForTimeout(500);
+        exige((await linkDe(n, 0)).endsWith("/" + id + "/?v=lucero"), "el link de Lucero no es …/?v=lucero: " + (await linkDe(n, 0)));
+        exige(/Falta su WhatsApp/.test(await n.textContent(fila(0))), "sin WhatsApp no avisa que falta");
+        await n.fill(fila(0) + ' [data-vend-k="whatsapp"]', "477 123 4567"); await n.waitForTimeout(500);
+        exige(!/Falta su WhatsApp/.test(await n.textContent(fila(0))) && /wa\.me\/524771234567\?text=/.test(await n.getAttribute(fila(0) + ' [data-vend="mandar"]', "href")), "con su WhatsApp no sale «Mandárselo» a su número");
+        exige(decodeURIComponent(await n.getAttribute(fila(0) + ' [data-vend="mandar"]', "href")).includes("/" + id + "/?v=lucero"), "«Mandárselo» no lleva su link");
+        // escribir no saca el cursor del campo
+        const foco = await n.evaluate(() => { const a = document.activeElement; return a ? a.tagName + "." + a.className + " " + (a.dataset ? a.dataset.vendK || "" : "") : "nada"; });
+        exige(/whatsapp$/.test(foco), "al escribir el WhatsApp el cursor se salió del campo: " + foco);
+        await n.click('#pub-vend [data-vend="agregar"]'); await n.waitForTimeout(400);
+        await n.fill(fila(1) + ' [data-vend-k="nombre"]', "Juan Pérez"); await n.keyboard.press("Tab"); await n.waitForTimeout(500);
+        await n.selectOption(fila(1) + ' [data-vend-k="pais"]', "57"); await n.waitForTimeout(400);
+        await n.fill(fila(1) + ' [data-vend-k="whatsapp"]', "310 555 1234"); await n.waitForTimeout(500);
+        exige((await linkDe(n, 1)).endsWith("?v=juan") && /wa\.me\/573105551234\?/.test(await n.getAttribute(fila(1) + ' [data-vend="mandar"]', "href")), "Juan (Colombia) no quedó con su link y su +57");
+        // un nombre que se repite no pisa el link del otro, y se puede quitar
+        await n.click('#pub-vend [data-vend="agregar"]'); await n.waitForTimeout(400);
+        await n.fill(fila(2) + ' [data-vend-k="nombre"]', "Lucero Gómez"); await n.keyboard.press("Tab"); await n.waitForTimeout(500);
+        exige((await linkDe(n, 2)).endsWith("?v=lucero2"), "otra Lucero no tiene su propio link: " + (await linkDe(n, 2)));
+        await n.click(fila(2) + ' [data-vend="quitar"]'); await n.waitForTimeout(600);
+        exige((await n.$$("#pub-vend .vend-fila")).length === 2, "no se quitó el vendedor");
+        // corregir el nombre no cambia su link
+        await n.fill(fila(0) + ' [data-vend-k="nombre"]', "Lucero Ruiz Cruz"); await n.keyboard.press("Tab"); await n.waitForTimeout(500);
+        exige((await linkDe(n, 0)).endsWith("?v=lucero"), "al corregir el nombre cambió su link");
+        // con la landing publicada, sus links pueden abrir la landing
+        await n.click('#pub-vend [data-vend-dest="landing"]'); await n.waitForTimeout(400);
+        exige((await linkDe(n, 0)).endsWith("/" + id + "/landing?v=lucero"), "«La landing» no cambió sus links a la landing");
+        await n.click('#pub-vend [data-vend-dest="tour"]'); await n.waitForTimeout(400);
+        exige(/Publica el tour para que sus links funcionen/.test(await n.textContent("#pub-vend")), "no avisa que hay que publicar");
+        await n.waitForTimeout(1500);
+        const dv = (await api(n, "api/tours/" + id)).d.proyecto.vendedores;
+        exige(dv && dv.lista.map((x) => x.id).join() === "lucero,juan" && dv.lista[1].pais === "57", "los vendedores no se guardaron en el tour: " + JSON.stringify(dv).slice(0, 160));
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "vendedores-tarjeta.png") });
+        // 2) Publicar: el tour lleva solo lo que se ve (nombre y WhatsApp)
+        await n.click("#pub-publicar"); await n.waitForTimeout(3500);
+        exige(!(await n.isVisible("#pub-vend .vend-publica")), "después de publicar sigue el aviso de publicar");
+        let pv = (await publicado(id)).vendedores;
+        exige(pv && pv.lista.map((x) => x.id + ":" + x.whatsapp).join() === "lucero:477 123 4567,juan:310 555 1234" && !("cambio" in pv), "el tour publicado no trae a los vendedores como deben ir: " + JSON.stringify(pv).slice(0, 200));
+        // 3) Con el link de Lucero: el botón dice su nombre y le escribe a ella; la ficha del lote también, con el lote escrito
+        const t = await nueva(); await abrirTour(t, "/" + id + "/?v=lucero");
+        let c = await cta(t);
+        exige(c && c.t === "Contactar · Lucero" && c.href.startsWith("https://wa.me/524771234567?text="), "con el link de Lucero el botón no es suyo: " + JSON.stringify(c));
+        exige(decodeURIComponent(c.href).endsWith("Hola Lucero, vi el recorrido de Vendedores Tezal y quiero información."), "el primer mensaje no saluda a Lucero: " + decodeURIComponent(c.href));
+        await tocarLote(t);
+        const fh = await t.getAttribute(".pop .ficha-cta, .pop .fd-cta, .pop a.ft-estado", "href").catch(() => "");
+        exige(/^https:\/\/wa\.me\/524771234567\?text=/.test(fh) && decodeURIComponent(fh).includes("Hola Lucero, me interesa el Lote 9"), "la ficha del lote no le escribe a Lucero con el lote: " + decodeURIComponent(fh || ""));
+        if (process.env.CAPTURAS) await t.screenshot({ path: path.join(process.env.CAPTURAS, "vendedores-tour.png") });
+        await t.keyboard.press("Escape"); await t.waitForTimeout(300);
+        await visitaConContacto(t); await t.waitForTimeout(1200);
+        // el mismo celular vuelve con el link normal: le sigue escribiendo a Lucero
+        await abrirTour(t, "/" + id + "/"); c = await cta(t);
+        exige(c && /Lucero/.test(c.t) && /wa\.me\/524771234567/.test(c.href), "al volver con el link normal ya no le escribe a Lucero: " + JSON.stringify(c));
+        // y con el link de Juan, es de Juan (+57)
+        await abrirTour(t, "/" + id + "/?v=juan"); c = await cta(t);
+        exige(c && c.t === "Contactar · Juan" && /^https:\/\/wa\.me\/573105551234\?/.test(c.href), "con el link de Juan el botón no es suyo: " + JSON.stringify(c));
+        await t.evaluate(() => window.dispatchEvent(new Event("pagehide"))); await t.waitForTimeout(1000);
+        // 4) Otro celular con el link normal, o con un vendedor que no existe: el contacto de siempre
+        const o = await nueva(); await abrirTour(o, "/" + id + "/"); c = await cta(o);
+        exige(c && c.t === "Contactar" && c.href === "https://wa.me/524770000000", "con el link normal el botón no es el del dueño: " + JSON.stringify(c));
+        await o.evaluate(() => window.dispatchEvent(new Event("pagehide"))); await o.waitForTimeout(800);
+        const o2 = await nueva(); await abrirTour(o2, "/" + id + "/?v=nadie"); c = await cta(o2);
+        exige(c && c.href === "https://wa.me/524770000000", "con un vendedor que no existe el botón no es el del dueño: " + JSON.stringify(c));
+        // 5) En el celular: el botón de Lucero cabe en la pantalla
+        const m = await nueva(Object.assign({}, devices["iPhone 13"], { acceptDownloads: false })); await abrirTour(m, "/" + id + "/?v=lucero");
+        const cm = await m.evaluate(() => { const a = document.querySelector(".sk-cta:not(.sk-pdf)"); if (!a) return null; const r = a.getBoundingClientRect(); return { href: a.getAttribute("href"), ve: r.width > 0, izq: r.left, der: r.right, ancho: innerWidth }; });
+        exige(cm && /wa\.me\/524771234567/.test(cm.href) && (!cm.ve || (cm.izq >= 0 && cm.der <= cm.ancho + 0.5)), "en el celular el botón de Lucero no es suyo o se sale de la pantalla: " + JSON.stringify(cm));
+        // 6) La landing con el link de Juan: su WhatsApp, «Escríbele a Juan» y el recorrido se abre con su link
+        const l = await nueva(); await l.goto(TOURS + "/" + id + "/landing?v=juan"); await l.waitForSelector("[data-wa]", { state: "attached", timeout: 15000 }); await l.waitForTimeout(800);
+        const was = await l.$$eval("[data-wa]", (x) => x.map((a) => decodeURIComponent(a.getAttribute("href"))));
+        exige(was.length && was.every((h) => h.startsWith("https://wa.me/573105551234?text=Hola Juan, ")), "la landing con el link de Juan no le escribe a Juan: " + was.slice(0, 2).join(" | "));
+        exige((await l.textContent("#wa-fija-txt")).trim() === "Escríbele a Juan", "el botón fijo de la landing no dice «Escríbele a Juan»");
+        await l.click("#iniciar-360").catch(() => {}); await l.waitForTimeout(600);
+        exige((await l.getAttribute("#visor iframe", "src").catch(() => "")) === "./?v=juan", "el recorrido de la landing no se abre con el link de Juan");
+        const l2 = await nueva(); await l2.goto(TOURS + "/" + id + "/landing"); await l2.waitForSelector("[data-wa]", { state: "attached", timeout: 15000 });
+        exige(/^https:\/\/wa\.me\/524771112233\?/.test(await l2.getAttribute("[data-wa]", "href")), "la landing sin vendedor no usa el WhatsApp de la landing");
+        // 7) Estadísticas por vendedor
+        await n.waitForTimeout(1500);
+        const st = (await api(n, "api/tours/" + id + "/estadisticas?dias=7")).d;
+        exige(st.vendedores && st.vendedores.lucero && st.vendedores.lucero.visitas >= 1 && st.vendedores.lucero.contacto >= 1 && st.vendedores.juan && st.vendedores.juan.visitas >= 1 && st.vendedores._ && st.vendedores._.visitas >= 1, "las estadísticas no cuentan por vendedor: " + JSON.stringify(st.vendedores));
+        await n.click('#subtabs button:has-text("Estadísticas")'); await n.waitForTimeout(2000);
+        const ev = await n.textContent("#est-vend").catch(() => "");
+        if (process.env.CAPTURAS) await n.screenshot({ path: path.join(process.env.CAPTURAS, "vendedores-estadisticas.png") });
+        exige(/Lucero Ruiz Cruz\s*\d+\s*1/.test(ev) && /Juan Pérez\s*\d+\s*0/.test(ev) && /Link normal/.test(ev), "Estadísticas no muestra «Por vendedor»: " + ev.slice(0, 160));
+        // 8) Un cambio después de publicar pide «Publicar cambios»
+        await aWeb(n);
+        await n.fill(fila(1) + ' [data-vend-k="whatsapp"]', "310 555 9999"); await n.waitForTimeout(500);
+        exige(/Publicar cambios/.test(await n.textContent("#pub-vend .vend-publica").catch(() => "")), "un cambio después de publicar no pide «Publicar cambios»");
+        exige(!n.errs.length && !abiertos.some((p) => p.errs.length), "errores: " + n.errs.concat(...abiertos.map((p) => p.errs)).join(" | ").slice(0, 200));
+        // 9) Únicamente Desarrollos: aunque la función se abra a Pro y Desarrollos, en Pro no sale ni se publica
+        exige((await api(n, "api/admin/laboratorio/vendedores-tour", J("PUT", { modo: "pago" }))).s === 200, "no se pudo abrir la función");
+        const pDes = await pagina(cDes), pPro = await pagina(cPro); abiertos.push(pDes, pPro);
+        const cuentas = (await api(n, "api/admin/cuentas")).d.cuentas || [], uidDe = (x) => (cuentas.find((k) => k.email === x) || {}).uid;
+        for (const [k, plan] of [[cDes, "desarrollos"], [cPro, "pro"]]) exige((await api(n, "api/admin/cuentas/" + uidDe(k), J("PUT", { plan }))).s === 200, "no se pudo poner la cuenta en " + plan);
+        const conVend = { lista: [{ id: "ana", nombre: "Ana", pais: "52", whatsapp: "4779998877" }], destino: "tour" };
+        for (const [p, nom, sale] of [[pPro, "Vend Pro", false], [pDes, "Vend Des", true]]) {
+          await p.reload(); await p.waitForTimeout(2000); await cerrarAnuncio(p);
+          await nuevoTour(p, nom); const ip = await idTour(p);
+          await aWeb(p);
+          if (sale && process.env.CAPTURAS) { await p.waitForSelector(".guia-tarjeta", { timeout: 8000 }).catch(() => {}); await p.waitForTimeout(3200); await p.screenshot({ path: path.join(process.env.CAPTURAS, "vendedores-tutorial.png") }); }
+          const vistos = await tutoriales(p);
+          exige((await p.isVisible("#pub-vend")) === sale, (sale ? "en Desarrollos no sale" : "en Pro ya sale") + " «Vendedores del tour»");
+          if (sale) exige(vistos.some((x) => /Nuevo: vendedores en el tour/.test(x)), "en Desarrollos no salió su mini tutorial: " + vistos.map((x) => x.slice(0, 40)).join(" | "));
+          const dp = (await api(p, "api/tours/" + ip)).d; dp.proyecto.vendedores = conVend;
+          exige((await api(p, "api/tours/" + ip, J("PUT", dp))).s === 200 && (await api(p, "api/tours/" + ip + "/publicar", { method: "POST" })).s === 200, "no se pudo publicar en " + nom);
+          exige(!!(await publicado(ip)).vendedores === sale, sale ? "Desarrollos no publicó a sus vendedores" : "Pro publicó vendedores (es solo de Desarrollos)");
+        }
+        exige(!pDes.errs.length && !pPro.errs.length, "errores: " + pDes.errs.concat(pPro.errs).join(" | ").slice(0, 200));
+      } finally {
+        await api(n, "api/admin/laboratorio/vendedores-tour", J("PUT", { modo: "yo", probadores: [] })).catch(() => {});
+        for (const p of abiertos) await p.context().close().catch(() => {});
+        await n.context().close();
       }
     });
     await paso("Sin errores de JavaScript en el estudio", async () => { exige(!a.errs.length && !g.errs.length, (a.errs.concat(g.errs)).join(" | ").slice(0, 200)); });

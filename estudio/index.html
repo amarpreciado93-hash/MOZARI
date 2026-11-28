@@ -1547,6 +1547,34 @@
   .pub-cliente .cli-cambios b { font-size: 12px; color: var(--mz-texto); }
   .pub-cliente .cli-cambios div { font-size: 12.5px; color: var(--mz-tenue); }
   .pub-hosting-aviso { flex-basis: 100%; margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: #F2A900; }
+  /* Vendedores en el tour (Laboratorio «vendedores-tour»): cada vendedor con su nombre, su WhatsApp y su link */
+  .pub-vend > div { min-width: 0; grid-template-columns: minmax(0, 1fr); }
+  .pub-vend .vend-lista { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 8px; }
+  .pub-vend .vend-fila { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 6px; padding: 10px; border-radius: 10px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-negro); }
+  .pub-vend .vend-campos { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) 30px; gap: 6px; align-items: center; }
+  .pub-vend .vend-campos .entrada { padding: 8px 10px; min-width: 0; }
+  .pub-vend .vend-x { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--mz-linea-neutra); background: transparent; color: var(--mz-tenue); font-size: 17px; line-height: 1; cursor: pointer; }
+  .pub-vend .vend-x:hover { color: #FF6B6B; border-color: #FF6B6B; }
+  .pub-vend .vend-info { display: grid; gap: 4px; min-width: 0; }
+  .pub-vend .vend-link { display: flex; gap: 6px; align-items: center; min-width: 0; }
+  .pub-vend .vend-link code { flex: 1; min-width: 0; display: flex; white-space: nowrap; font: 500 12.5px var(--mz-texto-ui); color: var(--mz-tenue); }
+  .pub-vend .vend-link code span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .pub-vend .vend-link code b { flex: none; font-weight: 600; color: var(--mz-lima); }
+  .pub-vend .vend-link .btn-sec { padding: 6px 12px; font-size: 12px; text-decoration: none; white-space: nowrap; }
+  .pub-vend .vend-falta { font-size: 12px; color: #F2A900 !important; }
+  .pub-vend .vend-dest { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+  .pub-vend .vend-dest small { color: var(--mz-tenue); }
+  .pub-vend .vend-dest .estados button { --c: var(--mz-lima); }
+  .pub-vend .vend-acc { margin-top: 8px; }
+  .pub-vend .vend-publica { margin-top: 8px; }
+  @media (max-width: 640px) { .pub-vend .vend-campos { grid-template-columns: minmax(0, 1fr) 30px; } .pub-vend .vend-campos select, .pub-vend .vend-campos [data-vend-k="whatsapp"] { grid-column: 1; } .pub-vend .vend-campos .vend-x { grid-row: 1; grid-column: 2; } }
+  .est-vend { padding: 14px 16px; border-radius: 14px; border: 1px solid var(--mz-linea-neutra); background: var(--mz-superficie); display: grid; gap: 6px; margin-bottom: 12px; }
+  .est-vend h3 { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
+  .est-vend .ev-fila { display: grid; grid-template-columns: minmax(0, 1fr) 90px 120px; gap: 10px; font-size: 13px; align-items: center; }
+  .est-vend .ev-fila span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .est-vend .ev-fila b { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+  .est-vend .ev-cab { color: var(--mz-tenue); font-size: 11.5px; }
+  .est-vend .ev-cab b { font-weight: 500; }
   .comp { text-align: left; display: grid; gap: 18px; }
   /* Landing del desarrollo (Laboratorio «landing») */
   .ld { max-width: 1240px; margin: 2vh auto 0; display: grid; gap: 18px; }
@@ -3584,6 +3612,47 @@
   const urlSegura = (u) => { u = String(u || "").trim(); if (!u) return ""; if (!/^https?:\/\//i.test(u)) u = "https://" + u.replace(/^\/+/, ""); return /^https?:\/\/[^\s"'<>]+$/i.test(u) ? u : ""; };
   // El botón de contacto también acepta teléfono y correo (tel:, mailto:)
   const enlaceCta = (u) => { const v = String(u || "").trim(); return /^(tel|mailto):[^\s"'<>]+$/i.test(v) ? v : urlSegura(v); };
+  // WhatsApp con la lada de su país (igual que en la landing): «0» = otro país, el número va escrito con su lada;
+  // Argentina va con el 9 de los celulares (wa.me/549…). Sin país, 10 dígitos son de México.
+  function numeroWA(c) {
+    const crudo = String((c && c.whatsapp) || ""), p = String((c && c.pais) || "").replace(/\D/g, "");
+    let d = crudo.replace(/\D/g, ""); if (d.length < 7) return "";
+    if (/^\s*\+/.test(crudo) || p === "0") return d;
+    if (!p) return d.length === 10 ? "52" + d : d;
+    const base = p === "549" ? "54" : p;
+    if (d.length > 10 && d.startsWith(base)) return p === "549" && !d.startsWith("549") ? "549" + d.slice(2) : d;
+    d = d.replace(/^0+/, ""); if (p === "549" && d.length === 11 && d[0] === "9") d = d.slice(1);
+    return p + d;
+  }
+  // =================== VENDEDORES EN EL TOUR (Laboratorio «vendedores-tour», pedido de Amar 27 nov 2026) ===================
+  // «Tengo 6 vendedores, a cada uno le vamos a hacer publicidad de Meta Ads y queremos ponerle a cada uno su tour con sus
+  // datos para que atiendan a los leads y cada quien tenga sus leads». En vez de 6 copias (los lotes se tendrían que
+  // cambiar en las 6), un solo tour y un link por vendedor: …/?v=lucero. Con ese link el botón de contacto y el de las
+  // fichas le escriben a ese vendedor por WhatsApp, con su nombre, y la visita cuenta para él en Estadísticas. El celular
+  // lo recuerda 60 días: si el cliente vuelve con el link normal, le sigue escribiendo al mismo vendedor.
+  const vendedoresTour = () => { const v = P().vendedores; return (v && Array.isArray(v.lista) ? v.lista : []).filter((x) => x && x.id && String(x.nombre || "").trim() && numeroWA(x)); };
+  const VEND_DIAS = 60;
+  let vendMemo = null;
+  function vendedorTour() {
+    if (MODO !== "tour") return null;
+    if (vendMemo && vendMemo.p === P()) return vendMemo.v;
+    const lista = vendedoresTour(), clave = "mz-vend-" + (location.pathname.split("/").filter(Boolean)[0] || "tour");
+    let q = ""; try { q = String(new URLSearchParams(location.search).get("v") || "").trim().toLowerCase(); } catch (e) { q = ""; }
+    let v = (q && lista.find((x) => x.id === q)) || null;
+    try {
+      if (v) localStorage.setItem(clave, JSON.stringify({ id: v.id, t: Date.now() }));
+      else { const m = JSON.parse(localStorage.getItem(clave) || "null"); if (m && Date.now() - m.t < VEND_DIAS * 864e5) v = lista.find((x) => x.id === m.id) || null; }
+    } catch (e) { /* sin almacenamiento: solo cuenta el link */ }
+    vendMemo = { p: P(), v };
+    return v;
+  }
+  const nombreCortoVend = (v) => String(v.nombre || "").trim().split(/\s+/)[0].slice(0, 16);
+  // El WhatsApp del vendedor con el primer mensaje listo (desde la ficha de un lote, ya dice cuál)
+  function waVendedor(v, c) {
+    const n = nombreCortoVend(v), proy = String(P().nombre || "").trim();
+    const txt = c ? "Hola " + n + ", me interesa el " + nombreLote(c) + (proy ? " de " + proy : "") + "." : "Hola " + n + ", vi el recorrido" + (proy ? " de " + proy : "") + " y quiero información.";
+    return "https://wa.me/" + numeroWA(v) + "?text=" + encodeURIComponent(txt);
+  }
   // Historial para deshacer (Cmd/Ctrl + Z) y rehacer (Cmd/Ctrl + Shift + Z).
   // Los cambios seguidos (arrastrar, mover un control) cuentan como un solo paso.
   let historial = [], rehechos = [], ultimoEstado = JSON.stringify(est), tHistorial = 0;
@@ -3837,11 +3906,102 @@
         '</span></div><button class="' + (oculto ? "btn-prim" : "btn-sec") + '" id="pub-privado">' + (oculto ? "Mostrar tour" : "Ocultar tour") + "</button></div>" : "") +
       // Link de disponibilidad para el cliente (Laboratorio): licencia Desarrollos y un tour con lotes
       (puedeLinkCliente() ? '<div class="pub-hosting pub-cliente" id="pub-cliente"><div><b>Link para tu cliente</b><span>Cargando…</span></div></div>' : "") +
+      cajaVendedores() +
       (conMarcaPrueba() ? '<div class="pub-revision"><span><b>Se publica con marca de agua.</b> ' + (planT().marca ? "Tu cuenta de prueba es para probar todo; tus clientes verán el tour con la marca de agua «Creado por Mozari»." : "Este tour tiene lotes y la lotificación es del plan Desarrollos.") + '</span><div><button class="btn-prim" data-comprar="' + (tieneLotes() ? "desarrollos" : "pro") + '">' + (tieneLotes() ? "Obtener Desarrollos" : "Quitar la marca") + "</button></div></div>" : "");
     $("v-proximo").hidden = false;
     if ($("pub-cliente")) pintarCliente();
     if (!toursNube) cargarToursNube().then(() => nav.sec === "publicar" && pintarPublicar());
   }
+  // Vendedores en el tour (Laboratorio «vendedores-tour»): aquí se agregan, cada uno con su link para copiar o mandárselo.
+  // El id de su link sale de su nombre («lucero», «lucero2» si se repite) y no cambia aunque se corrija el nombre.
+  const VEND_MAX = 30;
+  const VD = () => { const v = P().vendedores || (P().vendedores = { lista: [], destino: "tour" }); if (!Array.isArray(v.lista)) v.lista = []; return v; };
+  const conLandingVend = () => enLab("landing") && !!(P().landing && P().landing.activa);
+  const linkVend = (v) => (VD().destino === "landing" && conLandingVend() ? linkLanding() : linkTour()) + "?v=" + v.id;
+  function idVend(nombre, lista) {
+    const b = String(nombre || "").trim().split(/\s+/)[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 20) || "vendedor";
+    let id = b, i = 2; while (lista.some((x) => x.id === id)) id = b + i++;
+    return id;
+  }
+  // Lo que depende de lo escrito (su link, «Mandárselo», lo que falta): se repinta solo esto al escribir, sin tocar los campos
+  function infoVend(v) {
+    const lk = v.id ? linkVend(v) : "", wa = numeroWA(v), n = String(v.nombre || "").trim();
+    const msj = "Hola " + (nombreCortoVend(v) || "") + ", este es tu link del tour" + (P().nombre ? " de " + P().nombre : "") + ". Quien entre por él y le dé a contacto, te escribe a ti: " + lk;
+    const corte = lk.lastIndexOf("?v=");
+    return (lk ? '<div class="vend-link"><code><span>' + esc(lk.slice(0, corte)) + "</span><b>" + esc(lk.slice(corte)) + "</b></code>" + '<button type="button" class="btn-sec" data-vend="copiar">Copiar</button>' +
+        (wa ? '<a class="btn-sec" data-vend="mandar" href="https://wa.me/' + wa + "?text=" + encodeURIComponent(msj) + '" target="_blank" rel="noopener">Mandárselo</a>' : "") + "</div>"
+        : '<span class="vend-falta">Escribe su nombre para tener su link.</span>') +
+      (n && !wa ? '<span class="vend-falta">Falta su WhatsApp: mientras, su link usa tu contacto de siempre.</span>' : "");
+  }
+  function avisoVend() {
+    const V = VD(), t = (toursNube || []).concat(toursCompartidos || []).find((x) => x.id === TOUR) || {};
+    const falta = V.lista.some((v) => v.id) && (!t.publicado || (V.cambio && V.cambio > t.publicado));
+    return falta ? '<p class="pub-hosting-aviso vend-publica">' + (t.publicado ? "Cambiaste tus vendedores: dale <b>Publicar cambios</b> para que sus links funcionen." : "Publica el tour para que sus links funcionen.") + "</p>" : "";
+  }
+  function filaVend(v, i) {
+    const n = String(v.nombre || "").trim();
+    return '<div class="vend-fila" data-vend-i="' + i + '"><div class="vend-campos">' +
+      '<input class="entrada" data-vend-k="nombre" maxlength="40" placeholder="Nombre del vendedor" value="' + esc(v.nombre || "") + '">' +
+      '<select class="entrada" data-vend-k="pais" aria-label="País del WhatsApp">' + PAISES_WA.map(([c, nm]) => '<option value="' + c + '"' + (String(v.pais || "52") === c ? " selected" : "") + ">" + esc(nm) + "</option>").join("") + "</select>" +
+      '<input class="entrada" data-vend-k="whatsapp" inputmode="tel" maxlength="24" placeholder="Su WhatsApp" value="' + esc(v.whatsapp || "") + '">' +
+      '<button type="button" class="vend-x" data-vend="quitar" aria-label="Quitar a ' + esc(n || "este vendedor") + '" title="Quitar">×</button></div>' +
+      '<div class="vend-info">' + infoVend(v) + "</div></div>";
+  }
+  // Únicamente del plan Desarrollos (pedido de Amar, 27 nov 2026), aunque la función del Laboratorio se abra a más cuentas
+  const conVendedores = () => MODO === "nube" && enLab("vendedores-tour") && !!(NUBE.admin || (PLAN && PLAN.id === "desarrollos"));
+  function cajaVendedores() {
+    if (!conVendedores()) return "";
+    const V = VD();
+    return '<div class="pub-hosting pub-vend" id="pub-vend"><div><b>Vendedores del tour</b><span>Un link para cada vendedor, para su anuncio o su WhatsApp. Con su link, el botón de contacto y el de las fichas le escriben a él, con su nombre; el tour y los lotes son los mismos. En Estadísticas ves sus visitas y sus contactos.</span>' +
+      (conLandingVend() && V.lista.length ? '<div class="vend-dest"><small>Sus links abren</small><div class="estados">' + [["tour", "El tour 360"], ["landing", "La landing"]].map(([k, tx]) => '<button type="button" data-vend-dest="' + k + '" aria-pressed="' + ((V.destino === "landing" ? "landing" : "tour") === k) + '">' + tx + "</button>").join("") + "</div></div>" : "") +
+      (V.lista.length ? '<div class="vend-lista">' + V.lista.map(filaVend).join("") + "</div>" : "") +
+      '<div class="vend-aviso">' + avisoVend() + "</div>" +
+      (V.lista.length < VEND_MAX ? '<div class="vend-acc"><button type="button" class="btn-sec" data-vend="agregar">' + (V.lista.length ? "Agregar otro vendedor" : "Agregar vendedor") + "</button></div>" : "") + "</div></div>";
+  }
+  // Se repinta solo la tarjeta y se regresa el cursor a donde estaba. Al quitar un campo con el cursor, el navegador
+  // manda su «change»: mientras se repinta no cuenta (si no, se repintaba dos veces y el cursor se perdía)
+  let vendPintando = false;
+  function pintarVend() {
+    const caja = $("pub-vend"); if (!caja) return;
+    const a = document.activeElement, f = a && caja.contains(a) && a.closest("[data-vend-i]"), k = a && a.dataset && a.dataset.vendK, pos = a && typeof a.selectionStart === "number" ? a.selectionStart : null;
+    vendPintando = true; try { caja.outerHTML = cajaVendedores(); } finally { vendPintando = false; }
+    if (f && k) { const el = document.querySelector('#pub-vend [data-vend-i="' + f.dataset.vendI + '"] [data-vend-k="' + k + '"]'); if (el) { el.focus(); if (pos != null && el.setSelectionRange) try { el.setSelectionRange(pos, pos); } catch (e) { /* select */ } } }
+  }
+  const cambioVend = () => { VD().cambio = new Date().toISOString(); guardar(); };
+  function refrescarFila(fila, v) {
+    const info = fila.querySelector(".vend-info"); if (info) info.innerHTML = infoVend(v);
+    const x = fila.querySelector('[data-vend="quitar"]'); if (x) x.setAttribute("aria-label", "Quitar a " + (String(v.nombre || "").trim() || "este vendedor"));
+    const av = document.querySelector("#pub-vend .vend-aviso"); if (av) av.innerHTML = avisoVend();
+  }
+  function editarVend(ev, alSalir) {
+    if (vendPintando) return;
+    const el = ev.target.closest && ev.target.closest("#pub-vend [data-vend-k]"); if (!el) return;
+    const V = VD(), fila = el.closest("[data-vend-i]"), v = V.lista[+fila.dataset.vendI]; if (!v) return;
+    v[el.dataset.vendK] = alSalir && el.dataset.vendK === "nombre" ? el.value.trim() : el.value;
+    // el id de su link sale de su nombre al terminar de escribirlo, y ya no cambia
+    if (alSalir && el.dataset.vendK === "nombre" && !v.id && v.nombre) v.id = idVend(v.nombre, V.lista);
+    cambioVend(); refrescarFila(fila, v);
+  }
+  $("proximo").addEventListener("input", (ev) => editarVend(ev, false));
+  $("proximo").addEventListener("change", (ev) => editarVend(ev, true));
+  $("proximo").addEventListener("click", async (ev) => {
+    const d = ev.target.closest && ev.target.closest("#pub-vend [data-vend-dest]");
+    if (d) { VD().destino = d.dataset.vendDest; cambioVend(); pintarVend(); return; }
+    const b = ev.target.closest && ev.target.closest("#pub-vend [data-vend]"); if (!b) return;
+    const V = VD(), fila = b.closest("[data-vend-i]"), i = fila ? +fila.dataset.vendI : -1, v = V.lista[i];
+    if (b.dataset.vend === "agregar") {
+      const pais = (P().landing && P().landing.contacto && P().landing.contacto.pais) || (V.lista[V.lista.length - 1] || {}).pais || "52";
+      V.lista.push({ id: "", nombre: "", pais: String(pais), whatsapp: "" }); cambioVend(); pintarVend();
+      const el = document.querySelector('#pub-vend [data-vend-i="' + (V.lista.length - 1) + '"] [data-vend-k="nombre"]'); if (el) el.focus();
+      return;
+    }
+    if (!v) return;
+    if (b.dataset.vend === "quitar") {
+      if (v.id && !confirm("¿Quitar a " + (String(v.nombre || "").trim() || "este vendedor") + "? Al publicar, su link ya no le escribirá a él: usará tu contacto de siempre.")) return;
+      V.lista.splice(i, 1); cambioVend(); pintarVend(); return;
+    }
+    if (b.dataset.vend === "copiar") { const lk = linkVend(v); try { await navigator.clipboard.writeText(lk); avisar("Link de " + nombreCortoVend(v) + " copiado"); } catch (e) { avisar(lk, 8000); } }
+  });
   // =================== LINK DE DISPONIBILIDAD PARA EL CLIENTE (Laboratorio «link-cliente», pedido de Amar 21 nov 2026) ===================
   // «Mandarle algo a mi cliente para que él solito modifique su disponibilidad»: un link sin cuenta que solo cambia el
   // estado de los lotes de este tour (borrador y publicado al momento). Aquí se crea, se copia, se manda y se quita.
@@ -4828,6 +4988,30 @@
     h += pieG(t > 4.4 ? "Con candado no se mueve por error" : t > 1.5 ? "Aunque lo arrastres, se queda" : "Toca el candado de la capa", t > 4.4);
     svg.innerHTML = h;
   }
+  // Vendedores en el tour: un link para cada vendedor; con su link el botón de contacto del tour le escribe a él
+  const pasosVend = () => [{ el: "#pub-vend", titulo: "Nuevo: vendedores en el tour", anim: animVend, dur: 7.2,
+    texto: "Agrega a cada vendedor con su nombre y su <b>WhatsApp</b> y copia su link. Es el mismo tour, pero con su link el botón de <b>contacto</b> y el de las fichas le escriben a él. Ponle a cada uno su link en su anuncio; en Estadísticas ves sus visitas y contactos. Publica para que funcionen." }];
+  function animVend(svg, t) {
+    const V = [["Lucero", "lucero"], ["Juan", "juan"], ["Ana", "ana"]], k = Math.min(2, Math.floor(Math.max(0, t - 0.6) / 2.1)), u = ((t - 0.6) % 2.1) / 2.1;
+    let h = '<rect width="360" height="200" fill="#1a2014"/>';
+    // la lista de vendedores con su link
+    h += '<rect x="12" y="10" width="186" height="168" rx="10" fill="#141414" stroke="#2b2b2b"/><text x="24" y="34" fill="#fff" font-size="10" font-weight="700">Vendedores del tour</text>';
+    V.forEach(([n, id], i) => {
+      const y = 44 + i * 42, sel = i === k && t > 0.6;
+      h += '<rect x="20" y="' + y + '" width="170" height="36" rx="7" fill="' + (sel ? "rgba(213,255,64,.12)" : "#0b0b0b") + '" stroke="' + (sel ? "#D5FF40" : "#2b2b2b") + '"/>' +
+        '<text x="30" y="' + (y + 14) + '" fill="#fff" font-size="9.5" font-weight="600">' + n + '</text><text x="30" y="' + (y + 27) + '" fill="#D5FF40" font-size="8">…/?v=' + id + "</text>" +
+        '<rect x="146" y="' + (y + 8) + '" width="36" height="20" rx="6" fill="none" stroke="rgba(255,255,255,.35)"/><text x="164" y="' + (y + 21.5) + '" fill="#fff" font-size="7.5" text-anchor="middle">Copiar</text>';
+    });
+    // el celular con el tour: el botón de contacto lleva el nombre del vendedor de ese link
+    h += '<rect x="226" y="8" width="112" height="172" rx="16" fill="#0b0b0b" stroke="#3a3a3a" stroke-width="2"/><rect x="232" y="16" width="100" height="156" rx="10" fill="#7FA9C9"/><path d="M232 100 Q282 88 332 102 V172 H232Z" fill="#6A8F4E"/>' +
+      '<path d="M252 128 L300 124 L310 150 L258 156Z" fill="rgba(34,181,115,.5)" stroke="#fff" stroke-width="1.2"/>';
+    const nom = t > 0.6 ? V[k][0] : "";
+    h += BTN_G(240, 144, 84, nom ? "Contactar · " + nom : "Contactar", "#D5FF40", "#0b0b0b");
+    // el mensaje que le llega a ese vendedor
+    if (t > 0.6 && u > 0.35) h += '<g opacity="' + Math.min(1, (u - 0.35) * 5).toFixed(2) + '"><rect x="236" y="30" width="92" height="34" rx="8" fill="#1FA855"/><text x="244" y="44" fill="#fff" font-size="7.5" font-weight="700">WhatsApp de ' + nom + '</text><text x="244" y="56" fill="#fff" font-size="7">«Hola ' + nom + ', vi el…»</text></g>';
+    h += pieG(t > 6.6 ? "Cada quien atiende a sus clientes" : t > 0.6 ? "El link de " + nom + " le escribe a " + nom : "Un link para cada vendedor", t > 6.6);
+    svg.innerHTML = h;
+  }
   // Hotspot de regreso: se arrastra una esfera, se elige el hotspot, y en la otra esfera (2:1) se pone el regreso con lupa
   const pasosRegreso = () => [{ el: "#panos-tira", titulo: "Nuevo: hotspot de regreso", anim: animRegreso, dur: 7.4,
     texto: "Arrastra una esfera de esta tira a la que tienes abierta. Elige el hotspot y deja marcado <b>Crear hotspot de regreso</b>. Luego mueve el punto en la otra esfera: la <b>lupa</b> te deja ponerlo exacto. Dale <b>Añadir</b>." }];
@@ -5237,6 +5421,7 @@
   function guiasDeSeccion(clave) {
     if (MODO !== "nube") return;
     if (clave === "panoramas/capas") guiaCapasNuevas();
+    if (clave === "publicar/web" && conVendedores()) guiaNueva("nuevo-vendedores", () => (esVisible("#pub-vend") ? pasosVend() : []), () => nav.sec === "publicar" && !!$("pub-vend"));
     if (clave === "panoramas/capas" && enLab("candado")) guiaNueva("nuevo-candado", () => (esVisible("#lista .candado") || document.querySelector("#lista .candado") ? pasosCandado() : []), () => nav.sub === "capas" && !!document.querySelector("#lista .candado"));
     if (clave === "panoramas/capas" && enLab("hotspot-regreso")) guiaNueva("nuevo-regreso", () => (esVisible("#panos-tira") && est.escenas.length > 1 ? pasosRegreso() : []), () => nav.sub === "capas" && esVisible("#panos-tira"));
     if (clave === "proyecto/musica") guiaNueva("nuevo-sonido", () => [esVisible("#m-preguntar-fila") && { el: "#m-preguntar-fila", titulo: "Nuevo: ¿activar sonido?",
@@ -5403,6 +5588,17 @@
 
   // =================== ESTADÍSTICAS (estudio, Laboratorio) ===================
   const ORIGEN_TXT = { qr: "Código QR", correo: "Correo", directo: "Directo o WhatsApp", whatsapp: "WhatsApp", facebook: "Facebook", instagram: "Instagram", google: "Google", mozari: "Mozari" };
+  // Por vendedor (Laboratorio «vendedores-tour»): visitas y cuántos pidieron contacto con el link de cada uno
+  function porVendedor(d) {
+    if (!conVendedores()) return "";
+    const vs = d.vendedores || {}, lista = (P().vendedores && Array.isArray(P().vendedores.lista) ? P().vendedores.lista : []).filter((v) => v.id);
+    const ids = lista.map((v) => v.id).concat(Object.keys(vs).filter((k) => k !== "_" && !lista.some((v) => v.id === k)));
+    if (!ids.length) return "";
+    const nom = (k) => { const v = lista.find((x) => x.id === k); return v ? String(v.nombre || k) : k + " (ya no está)"; };
+    const fila = (n, x) => '<div class="ev-fila"><span>' + esc(n) + "</span><b>" + ((x && x.visitas) || 0) + "</b><b>" + ((x && x.contacto) || 0) + "</b></div>";
+    return '<section class="est-vend" id="est-vend"><h3>Por vendedor</h3><div class="ev-fila ev-cab"><span></span><b>visitas</b><b>pidieron contacto</b></div>' +
+      ids.slice().sort((a, b) => ((vs[b] || {}).visitas || 0) - ((vs[a] || {}).visitas || 0)).map((k) => fila(nom(k), vs[k])).join("") + fila("Link normal (sin vendedor)", vs._) + "</section>";
+  }
   async function pintarEstadisticas(dias) {
     dias = dias || 30;
     const caja = $("proximo"); $("v-proximo").hidden = false; caja.classList.add("ancho");
@@ -5425,6 +5621,7 @@
       '<div class="est-kpis"><div><b>' + d.total + "</b><span>visitas</span></div><div><b>" + (d.total ? minSeg(d.durTotal / d.total) : "—") + "</b><span>tiempo promedio</span></div>" +
       "<div><b>" + pctCel + "%</b><span>desde celular</span></div><div><b>" + d.conContacto + "</b><span>pidieron contacto</span></div></div>" +
       '<div class="est-dias" title="Visitas por día">' + dd.map(([f, n]) => '<i style="--h:' + ((n / maxDia) * 100).toFixed(1) + '%" title="' + f + ": " + n + '"></i>').join("") + "</div>" +
+      porVendedor(d) +
       '<div class="est-grid"><section><h3>De dónde llegan</h3>' + barras(top(d.origen).map(([k, v]) => [ORIGEN_TXT[k] || k, v])) + "</section>" +
       "<section><h3>Ciudades</h3>" + barras(top(d.ciudades)) + "</section>" +
       "<section><h3>Esferas más vistas <small>tiempo promedio</small></h3>" + barras(esferas, minSeg) + "</section>" +
@@ -15130,11 +15327,14 @@ void main(){
         return '<a class="sk-cta sk-pdf ' + cls + '" href="' + esc(urlArchivo(d.archivo)) + '" target="_blank" rel="noopener" download="' + esc(nombrePdf(d)) + '" aria-label="' + t + '" data-pdf>' + ICO_SK.descargar + '<span class="t">' + t + "</span></a>";
       },
       contacto: (cls) => {
-        if (!sk.cta.mostrar) return "";
+        // Con el link de un vendedor (Laboratorio «vendedores-tour») el botón le escribe a él y lleva su nombre
+        const vd = vendedorTour();
+        if (!sk.cta.mostrar && !vd) return "";
         // Revisión de los tours publicados (nov 2026): 53 de 74 tenían el botón sin enlace y al visitante le salía el
         // aviso que era para el dueño; y 2 tenían «wa.me/…» sin https, que abría una página rota. Ahora el enlace se
         // completa (https://) y, en el tour publicado, sin enlace no hay botón. En el estudio sí sale, para recordarlo.
-        const t = esc(sk.cta.texto || "Contactar"), en = enlaceCta(sk.cta.enlace);
+        const base = String(sk.cta.texto || "").trim() || "Contactar", conV = vd ? (base + " · " + nombreCortoVend(vd)).length <= 30 ? base + " · " + nombreCortoVend(vd) : "Escribe a " + nombreCortoVend(vd) : base;
+        const t = esc(conV), en = vd ? waVendedor(vd) : enlaceCta(sk.cta.enlace);
         if (!en && MODO === "tour") return "";
         return en ? '<a class="sk-cta ' + cls + '" href="' + esc(en) + '" target="_blank" rel="noopener">' + ICO_SK.chat + t + "</a>" : '<button class="sk-cta ' + cls + '" data-sk="cta">' + ICO_SK.chat + t + "</button>";
       },
@@ -15680,10 +15880,10 @@ void main(){
         (planes.length ? '<div class="ft-planes"><div class="ft-cab"><span>Planes de pago</span><span>Descuento</span></div>' + planes.map((x, i) => '<button type="button" class="ft-plan" data-ft-plan="' + i + '" data-ft-d="' + (+x.d || 0) + '" aria-pressed="' + (i === 0) + '"><span>' + esc(x.t) + "</span><b>" + (+x.d || 0) + "%</b></button>").join("") + "</div>" : "");
     }
     const notas = String(f.notas || "").trim() ? '<div class="ft-notas"><div class="ft-cab"><span>Notas</span></div>' + esc(f.notas).split(/\n+/).filter((x) => x.trim()).map((x) => "<p>" + x + "</p>").join("") + "</div>" : "";
-    const cta = sk.cta || {}, enlace = urlSegura(cta.enlace), c360 = tp && tp.esfera && est.escenas.some((x) => x.id === tp.esfera) ? tp.esfera : "";
+    const cta = sk.cta || {}, vd = vendedorTour(), enlace = vd ? waVendedor(vd, c) : urlSegura(cta.enlace), c360 = tp && tp.esfera && est.escenas.some((x) => x.id === tp.esfera) ? tp.esfera : "";
     const colorE = "--c:" + e.color + ";--cs:" + textoSobre(e.color);
     const botones = '<div class="ft-botones">' + (c360 ? '<button type="button" class="ft-btn ft-360" data-ft-ir="' + esc(c360) + '">Recorrido 360</button>' : "") +
-      (f.boton && enlace && !vendido && cta.mostrar !== false ? '<a class="ft-btn ft-estado" style="' + colorE + '" href="' + esc(enlace) + '" target="_blank" rel="noopener">' + esc(e.nombre) + " · " + esc(cta.texto || "Me interesa") + "</a>" : '<span class="ft-btn ft-estado" style="' + colorE + '">' + esc(e.nombre) + "</span>") + "</div>";
+      (f.boton && enlace && !vendido && (cta.mostrar !== false || vd) ? '<a class="ft-btn ft-estado" style="' + colorE + '" href="' + esc(enlace) + '" target="_blank" rel="noopener">' + esc(e.nombre) + " · " + esc(cta.texto || "Me interesa") + "</a>" : '<span class="ft-btn ft-estado" style="' + colorE + '">' + esc(e.nombre) + "</span>") + "</div>";
     const dib = tp && tp.plano ? '<img src="' + esc(urlArchivo(tp.plano)) + '" alt="Plano ' + esc(tp.nombre || "") + '">' : f.plano ? dibujoLote(c, f, 420, 300) : "";
     const izq = dib ? '<div class="ft-plano">' + dib + "</div>" : MODO === "tour" ? "" : '<div class="ft-plano"><p class="ft-sinplano">' + (tp ? "Sube el plano del tipo «" + esc(tp.nombre || "") + "» aquí a la izquierda." : "Elige el tipo de esta unidad para ver su plano.") + "</p></div>";
     return '<div class="pop-caja ficha-d fd-tecnica" role="dialog" aria-label="' + esc(nombreLote(c)) + '" style="--fd-fondo:' + f.fondo + ";--fd-texto:" + f.texto + ";--fd-acento:" + f.acento + ";--fd-sobre:" + textoSobre(f.acento) + (f.fuente ? ";--fd-fuente:'" + f.fuente + "'" : "") + '"><button class="pop-x" aria-label="Cerrar">×</button>' +
@@ -15709,8 +15909,8 @@ void main(){
     const precio = e.id === "vendido" ? "" : fmtPrecio(l.precio);
     const pie2 = f.logo2 ? '<div class="fd-pie"><img class="fd-logo2" src="' + esc(urlArchivo(f.logo2)) + '" alt=""></div>' : "";
     const parrafos = (txt) => esc(txt).split(/\n+/).filter((x) => x.trim()).map((x) => "<p>" + x + "</p>").join("");
-    const cta = sk.cta || {}, enlace = urlSegura(cta.enlace);
-    const boton = f.boton && cta.mostrar !== false && enlace && e.id !== "vendido" ? '<a class="fd-cta" href="' + esc(enlace) + '" target="_blank" rel="noopener">' + esc(cta.texto || "Me interesa") + "</a>" : "";
+    const cta = sk.cta || {}, vd = vendedorTour(), enlace = vd ? waVendedor(vd, c) : urlSegura(cta.enlace);
+    const boton = f.boton && (cta.mostrar !== false || vd) && enlace && e.id !== "vendido" ? '<a class="fd-cta" href="' + esc(enlace) + '" target="_blank" rel="noopener">' + esc(cta.texto || "Me interesa") + "</a>" : "";
     const estado = '<span class="fd-estado" style="--c:' + e.color + '"><i></i>' + esc(e.nombre) + "</span>";
     const plano = f.plano ? dibujoLote(c, f, 420, 300) : "";
     const textos = (f.textoA || f.textoB) ? '<div class="fd-textos">' + (f.textoA ? "<div>" + (f.tituloA ? "<h4>" + esc(f.tituloA) + "</h4>" : "") + parrafos(f.textoA) + "</div>" : "") + (f.textoB ? "<div>" + (f.tituloB ? "<h4>" + esc(f.tituloB) + "</h4>" : "") + parrafos(f.textoB) + "</div>" : "") + "</div>" : "";
@@ -15760,12 +15960,12 @@ void main(){
     const l = loteDe(c), e = estadoDe(c), lados = (l.lados || []).map(fmtLado);
     const fila = (k, v) => (v ? '<div><dt>' + k + "</dt><dd>" + esc(v) + "</dd></div>" : "");
     const otros = lados.filter((v, i) => v && i !== +l.frente);
-    const cta = est.skin.cta, enlace = urlSegura(cta.enlace);
+    const cta = est.skin.cta, vd = vendedorTour(), enlace = vd ? waVendedor(vd, c) : urlSegura(cta.enlace);
     return '<div class="pop-caja ficha" role="dialog" aria-label="' + esc(nombreLote(c)) + '"><button class="pop-x" aria-label="Cerrar">×</button>' +
       '<span class="ficha-estado" style="--c:' + e.color + '"><i></i>' + esc(e.nombre) + "</span>" +
       "<h3>" + esc(terminos().lote) + " " + esc(l.numero || "—") + "</h3>" + (l.manzana ? '<p class="ficha-mz">' + esc(terminos().manzana) + " " + esc(l.manzana) + "</p>" : "") +
       '<dl class="ficha-datos">' + fila("Superficie", fmtArea(l.area)) + fila("Frente", lados[+l.frente] || "") + fila(otros.length > 1 ? "Otros lados" : "Otro lado", otros.join(" · ")) + fila("Precio", e.id === "vendido" ? "" : fmtPrecio(l.precio)) + "</dl>" +
-      (cta.mostrar && enlace && e.id !== "vendido" ? '<a class="ficha-cta" href="' + esc(enlace) + '" target="_blank" rel="noopener" style="background:' + est.skin.acento + ";color:" + textoSobre(est.skin.acento) + '">' + esc(cta.texto || "Me interesa") + "</a>" : "") +
+      ((cta.mostrar || vd) && enlace && e.id !== "vendido" ? '<a class="ficha-cta" href="' + esc(enlace) + '" target="_blank" rel="noopener" style="background:' + est.skin.acento + ";color:" + textoSobre(est.skin.acento) + '">' + esc(cta.texto || "Me interesa") + "</a>" : "") +
       "</div>";
   }
   // =================== ESTADÍSTICAS (lado del tour publicado) ===================
@@ -15796,7 +15996,7 @@ void main(){
     const destino = location.protocol + "//" + host + "/v/" + location.pathname.split("/").filter(Boolean)[0];
     const enviar = () => {
       statsEsfera(STATS.esfera);
-      const d = { v: STATS.v, dur: (Date.now() - STATS.inicio) / 1000, disp, ref, esferas: STATS.esferas, lotes: STATS.lotes, contacto: STATS.contacto };
+      const vd = vendedorTour(), d = { v: STATS.v, dur: (Date.now() - STATS.inicio) / 1000, disp, ref, esferas: STATS.esferas, lotes: STATS.lotes, contacto: STATS.contacto, vend: vd ? vd.id : "" };
       try { navigator.sendBeacon(destino, new Blob([JSON.stringify(d)], { type: "text/plain" })); } catch (e) { /* sin red */ }
     };
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") enviar(); });

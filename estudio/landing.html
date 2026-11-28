@@ -378,6 +378,19 @@
     return out.slice(0, 8);
   }
 
+  // El vendedor de este link (?v=lucero) o el que el celular recuerda de este tour (60 días, la misma marca que el tour)
+  function vendedorDe(P) {
+    const lista = (P.vendedores && Array.isArray(P.vendedores.lista) ? P.vendedores.lista : []).filter((x) => x && x.id && String(x.nombre || "").trim() && String(x.whatsapp || "").replace(/\D/g, "").length >= 7);
+    if (!lista.length) return null;
+    const clave = "mz-vend-" + (location.pathname.split("/").filter(Boolean)[0] || "tour");
+    let q = ""; try { q = String(new URLSearchParams(location.search).get("v") || "").trim().toLowerCase(); } catch (e) { q = ""; }
+    let v = (q && lista.find((x) => x.id === q)) || null;
+    try {
+      if (v) localStorage.setItem(clave, JSON.stringify({ id: v.id, t: Date.now() }));
+      else { const m = JSON.parse(localStorage.getItem(clave) || "null"); if (m && Date.now() - m.t < 60 * 864e5) v = lista.find((x) => x.id === m.id) || null; }
+    } catch (e) { /* sin almacenamiento: solo cuenta el link */ }
+    return v;
+  }
   function render(p) {
     simbolo = simboloDe((p && p.proyecto && p.proyecto.moneda) || "MXN");
     const P = p.proyecto || {}, L = Object.assign({}, P.landing || {}), M = Object.assign({}, L.marca || {});
@@ -423,7 +436,10 @@
       d = d.replace(/^0+/, ""); if (p === "549" && d.length === 11 && d[0] === "9") d = d.slice(1);
       return p + d;
     };
-    const portada = L.portada || {}, proy = L.proyecto || {}, ubi = L.ubicacion || {}, con = L.contacto || {}, pagos = Object.assign({ mostrar: true }, L.pagos || {});
+    // Vendedores en el tour (Laboratorio «vendedores-tour»): con el link de un vendedor (…/landing?v=lucero) el WhatsApp
+    // de la landing es el suyo y el recorrido se abre con su link. El celular lo recuerda 60 días (igual que el tour).
+    const vend = previa ? null : vendedorDe(P);
+    const portada = L.portada || {}, proy = L.proyecto || {}, ubi = L.ubicacion || {}, con = vend ? Object.assign({}, L.contacto || {}, { whatsapp: vend.whatsapp, pais: vend.pais }) : L.contacto || {}, pagos = Object.assign({ mostrar: true }, L.pagos || {});
     const planes = (Array.isArray(pagos.planes) && pagos.planes.length ? pagos.planes : PLANES_DEF).map((x) => ({ t: String(x.t || (x.meses ? x.meses + " meses" : "Contado")), meses: Math.max(0, Math.round(num(x.meses))), ajuste: Number(x.ajuste) || 0 })).slice(0, 4);
     const engMin = Math.min(90, Math.max(0, Math.round(num(pagos.engMin) || 20))), engMax = Math.max(engMin, Math.min(95, Math.round(num(pagos.engMax) || 60)));
     const archivo = (a) => (!a ? "" : /^(https?:|data:|blob:)/.test(a) ? a : base + a);
@@ -431,7 +447,9 @@
     const foto0 = archivo(portada.foto) || archivo(P.thumbnail) || (fotos[0] && archivo(fotos[0].archivo)) || (P.escenaInicial ? base + "escenas/" + P.escenaInicial + "/1/f/0/0.jpg" : "");
     const telWA = numeroWA(con);
     const wa = (t) => (telWA ? "https://wa.me/" + telWA + "?text=" + encodeURIComponent(t) : "#visita");
-    const saludo = String(con.mensaje || "").trim() || "Hola, quiero información de " + nombre + ".";
+    const nVend = vend ? String(vend.nombre).trim().split(/\s+/)[0].slice(0, 16) : "", hola = vend ? "Hola " + nVend + ", " : "Hola, ";
+    const saludo = vend ? hola + "quiero información de " + nombre + "." : String(con.mensaje || "").trim() || "Hola, quiero información de " + nombre + ".";
+    const escribe = vend ? "Escríbele a " + nVend : "Escríbenos por WhatsApp", conV = vend ? "?v=" + encodeURIComponent(vend.id) : "";
     const lotes = plantilla === "lotes" && S.lotes ? lotesDe(p) : [];
     // Plantilla «Propiedad» con precio: una sola ficha (la casa) con la misma calculadora que los lotes
     const casa = plantilla === "propiedad" && num(pagos.precio) > 0 ? { k: "casa", num: "", mz: "", area: num(pagos.m2), terreno: num(pagos.terreno), precio: num(pagos.precio), estado: "disponible", eNombre: "En venta", eColor: "#22B573", lados: [] } : null;
@@ -487,7 +505,7 @@
       const n = (p.escenas || []).length;
       h += '<section class="recorrido" id="recorrido"><div class="ancho"><div class="intro"><span class="ojo">Recorrido virtual</span><h2>Camina ' + esc(nombre) + ' desde donde estés</h2><p>Recórrelo en 360°: muévete entre las vistas' + (lotes.length ? " y mira cada " + esc(T.lote.toLowerCase()) + " con sus medidas" : "") + ".</p></div>" +
         '<div class="visor" id="visor">' + (foto0 ? '<img src="' + esc(foto0) + '" alt="">' : "") + '<span class="chip-360">360°</span><div class="visor-capa"><button class="btn" type="button" id="iniciar-360">' + ICO.play + "Iniciar recorrido</button><small>" + ICO.mirar + "Desliza para mirar alrededor</small></div></div>" +
-        '<div class="pie-visor"><span>' + n + (n === 1 ? " vista" : " vistas") + " en 360°</span>" + (previa ? "" : '<a href="./" target="_blank" rel="noopener">Abrir en pantalla completa ↗</a>') + "</div></div></section>";
+        '<div class="pie-visor"><span>' + n + (n === 1 ? " vista" : " vistas") + " en 360°</span>" + (previa ? "" : '<a href="./' + conV + '" target="_blank" rel="noopener">Abrir en pantalla completa ↗</a>') + "</div></div></section>";
     }
     if (S.proyecto && (proy.texto || proy.titulo || (proy.cifras || []).length || (proy.amenidades || []).length)) {
       const fp = archivo(proy.foto) || (fotos[1] && archivo(fotos[1].archivo)) || (fotos[0] && archivo(fotos[0].archivo)) || "";
@@ -513,11 +531,11 @@
     }
     if (S.visita) {
       h += '<section class="visita" id="visita">' + (foto0 ? '<img src="' + esc(foto0) + '" alt="" aria-hidden="true" loading="lazy">' : "") + '<div class="ancho"><span class="ojo">Agenda tu visita</span><h2>Conócelo en persona</h2><p>' + esc(con.texto || "Te llevamos a recorrerlo. Escríbenos y te damos día y hora.") + "</p>" +
-        (telWA ? '<a class="btn btn-wa" data-wa href="' + esc(wa(saludo)) + '" target="_blank" rel="noopener">' + ICO.wa + "Escríbenos por WhatsApp</a>" : "") +
+        (telWA ? '<a class="btn btn-wa" data-wa href="' + esc(wa(saludo)) + '" target="_blank" rel="noopener">' + ICO.wa + esc(escribe) + "</a>" : "") +
         (con.telefono ? '<span class="tel">' + esc(con.telefono) + "</span>" : "") + (con.correo ? '<span>' + esc(con.correo) + "</span>" : "") + "</div></section>";
     }
     h += "</main><footer><div class=\"ancho\">" + marcaHtml(true) + (portada.lugar ? "<p>" + esc(portada.lugar) + "</p>" : "") + (lotes.length && conPrecio ? "<p>Precios sujetos a cambio sin previo aviso.</p>" : "") + (P.marcaMozari ? '<p><a href="https://mozari.app" target="_blank" rel="noopener">Recorrido 360 hecho con Mozari</a></p>' : "") + "</div></footer>";
-    h += '<div class="fija"' + (telWA ? "" : " hidden") + '><a class="btn btn-wa" id="wa-fija" data-wa href="' + esc(wa(saludo)) + '" target="_blank" rel="noopener">' + ICO.wa + '<span id="wa-fija-txt">Escríbenos por WhatsApp</span></a></div>';
+    h += '<div class="fija"' + (telWA ? "" : " hidden") + '><a class="btn btn-wa" id="wa-fija" data-wa href="' + esc(wa(saludo)) + '" target="_blank" rel="noopener">' + ICO.wa + '<span id="wa-fija-txt">' + esc(escribe) + "</span></a></div>";
     $("raiz").innerHTML = h;
 
     // ---- Lotes y su calculadora ----
@@ -530,8 +548,8 @@
       const mensaje = () => {
         if (!actual) return saludo;
         const como = !conPrecio || !actual.precio ? "" : plan.meses ? ", a " + plan.meses + " mensualidades con " + Math.round(eng * 100) + "% de enganche" : ", de contado";
-        if (actual === casa) return "Hola, me interesa " + nombre + como + ". ¿Me dan más información?";
-        return "Hola, me interesa el " + T.lote + " " + actual.num + (actual.mz ? " de la " + T.manzana + " " + actual.mz : "") + " de " + nombre + (actual.area ? " (" + actual.area.toLocaleString("es-MX") + " m²)" : "") + como + ". ¿Me dan más información?";
+        if (actual === casa) return hola + "me interesa " + nombre + como + ". ¿Me dan más información?";
+        return hola + "me interesa el " + T.lote + " " + actual.num + (actual.mz ? " de la " + T.manzana + " " + actual.mz : "") + " de " + nombre + (actual.area ? " (" + actual.area.toLocaleString("es-MX") + " m²)" : "") + como + ". ¿Me dan más información?";
       };
       const pintar = () => {
         const l = actual, f = $("ficha");
@@ -559,7 +577,7 @@
           '<div class="datos">' + (l.area ? "<span><b>" + esc(l.area.toLocaleString("es-MX")) + " m²</b> de " + (l === casa ? "construcción" : "terreno") + "</span>" : "") + (l.terreno ? "<span><b>" + esc(l.terreno.toLocaleString("es-MX")) + " m²</b> de terreno</span>" : "") + (medidas ? "<span><b>" + esc(medidas) + "</b></span>" : "") + (conPrecio && l.precio && l.area && l.estado !== "vendido" && l !== casa ? "<span><b>" + dinero(l.precio / l.area) + "</b> por m²</span>" : "") + "</div>" + cuerpo;
         const link = wa(tocado ? mensaje() : saludo);
         document.querySelectorAll("[data-wa]").forEach((a) => { if (!f.contains(a)) a.href = link; });
-        $("wa-fija-txt").textContent = tocado && l.estado !== "vendido" ? (l === casa ? "Me interesa " + nombre : "Me interesa el " + nombreL(l)) : "Escríbenos por WhatsApp";
+        $("wa-fija-txt").textContent = tocado && l.estado !== "vendido" ? (l === casa ? "Me interesa " + nombre : "Me interesa el " + nombreL(l)) : escribe;
       };
       const elegir = (l, porUsuario) => { actual = l; if (porUsuario) tocado = true; pintar(); };
       $("ficha").addEventListener("change", (ev) => {
@@ -606,7 +624,7 @@
     const ini = $("iniciar-360");
     if (ini) ini.addEventListener("click", () => {
       if (previa) { ini.textContent = "El recorrido se ve en la Vista previa del tour"; return; }
-      const v = $("visor"); v.innerHTML = '<iframe src="./" title="Recorrido 360 de ' + esc(nombre) + '" allow="fullscreen; gyroscope; accelerometer; autoplay; screen-wake-lock; xr-spatial-tracking" allowfullscreen></iframe>';
+      const v = $("visor"); v.innerHTML = '<iframe src="./' + conV + '" title="Recorrido 360 de ' + esc(nombre) + '" allow="fullscreen; gyroscope; accelerometer; autoplay; screen-wake-lock; xr-spatial-tracking" allowfullscreen></iframe>';
     });
     const barra = $("barra"), solida = () => barra && barra.classList.toggle("solida", scrollY > 40);
     removeEventListener("scroll", window.__lfScroll || (() => {}));

@@ -275,6 +275,7 @@ export const LABORATORIO = {
   "cotas": { nombre: "Cotas en paredes", texto: "En Capas → «Cota»: tocas el inicio y el final de un muro (en el piso) y Mozari calcula su largo con la altura de la cámara; un punto en el piso y otro arriba da la altura. Si tienes la medida del plano, la escribes y manda esa. Salen en el tour como en un plano." },
   "dia-noche": { nombre: "Día y noche", texto: "En Capas, sin nada elegido: «Día y noche». Subes la misma vista tomada desde el mismo punto al atardecer y de noche (como otras esferas) y las agregas a la principal, con un giro para que empaten. En el tour salen «Día · Atardecer · Noche» y el paso del día: se funden despacio, como un timelapse, con los lotes y puntos encima. Esas esferas no salen aparte en el tour." },
   "candado": { nombre: "Candado en las capas", texto: "En Capas, junto al ojo de cada capa: el candado. Una capa con candado se puede elegir y cambiar en Propiedades, pero no se mueve ni se deforma al arrastrar en la esfera, ni se borra con la tecla, como en Photoshop o Affinity. El candado de una manzana cuida también sus lotes. Se quita con el mismo botón." },
+  "vendedores-tour": { nombre: "Vendedores en el tour", texto: "Solo Desarrollos. Publicar → Web → «Vendedores del tour»: agregas a cada vendedor con su nombre y su WhatsApp y te da su link (…/?v=lucero). Quien abre ese link ve el mismo tour, pero el botón de contacto y el de las fichas le escriben a ese vendedor, con su nombre; el celular lo recuerda aunque después entre con el link normal. Ideal para darle a cada vendedor su anuncio. En Estadísticas ves las visitas y los contactos de cada uno. Se ve al volver a publicar." },
   "hotspot-regreso": { nombre: "Hotspot de regreso", texto: "En Capas: al arrastrar una esfera a la otra sale una ventanita de vidrio para elegir el hotspot y «Crear hotspot de regreso». Si va, se abre la otra esfera completa (2:1) con un punto que arrastras a donde debe quedar el regreso, con una lupa para ponerlo exacto. «Añadir» lo deja ahí." },
 };
 // "pago": las cuentas Pro y Desarrollos (con su plan vigente); "desarrollos": solo Desarrollos (pedido de Amar,
@@ -457,6 +458,15 @@ async function apiNovedades(request, env, partes, yo, plan) {
 // llegó, qué esferas y lotes vio y si le dio a contacto. País y ciudad los pone Cloudflare. Se guarda una pieza por
 // visita en stats/<tour>/<día>/<visita>.json: si la misma visita vuelve a mandar (sale y regresa), se reemplaza.
 const num = (v, max) => Math.max(0, Math.min(max, Math.round(+v || 0)));
+// Vendedores en el tour (Laboratorio «vendedores-tour», pedido de Amar 27 nov 2026 para darle a cada uno de sus 6 vendedores su
+// anuncio): un solo tour y un link por vendedor (…/?v=lucero). El id sale de su nombre y no cambia aunque se corrija el nombre.
+const ID_VEND = /^[a-z0-9-]{1,30}$/;
+function vendedoresPublicos(v) {
+  const vistos = new Set(), lista = (Array.isArray(v.lista) ? v.lista : []).filter((x) => x && typeof x === "object" && ID_VEND.test(x.id || "") && !vistos.has(x.id) && vistos.add(x.id))
+    .slice(0, 50).map((x) => ({ id: x.id, nombre: String(x.nombre || "").trim().slice(0, 40), pais: String(x.pais || "").replace(/\D/g, "").slice(0, 4), whatsapp: String(x.whatsapp || "").slice(0, 24) }))
+    .filter((x) => x.nombre && x.whatsapp.replace(/\D/g, "").length >= 7);
+  return { lista, destino: v.destino === "landing" ? "landing" : "tour" };
+}
 function mapa(o, maxK, maxV) {
   const r = {};
   if (o && typeof o === "object") Object.entries(o).slice(0, maxK).forEach(([k, v]) => { const kk = String(k).slice(0, 60); if (kk) r[kk] = num(v, maxV); });
@@ -479,6 +489,9 @@ async function registrarVisita(request, env, id) {
     ref: String(d.ref || "directo").slice(0, 40), pais: String(cf.country || "").slice(0, 2), ciudad: String(cf.city || "").slice(0, 60),
     esferas: mapa(d.esferas, 60, 4 * 3600), lotes: mapa(d.lotes, 150, 100), contacto: num(d.contacto, 50),
   };
+  // Con el link de un vendedor (Laboratorio «vendedores-tour») la visita es suya, si ese vendedor está en el tour publicado
+  const vend = typeof d.vend === "string" && ID_VEND.test(d.vend) && ((p.proyecto.vendedores || {}).lista || []).some((x) => x && x.id === d.vend) ? d.vend : "";
+  if (vend) reg.vend = vend;
   await env.R2.put("stats/" + id + "/" + ahora.toISOString().slice(0, 10) + "/" + d.v + ".json", JSON.stringify(reg), { httpMetadata: { contentType: "application/json" } });
   return ok;
 }
@@ -539,7 +552,7 @@ async function resumenVisitas(env, id, dias, tope = 5000) {
   const regs = [];
   for (let i = 0; i < leer.length; i += 50) regs.push(...(await Promise.all(leer.slice(i, i + 50).map(async (k) => (await env.R2.get(k))?.json().catch(() => null)))).filter(Boolean));
   const suma = (o, k, n = 1) => { o[k] = (o[k] || 0) + n; };
-  const r = { dias, total: paso > 1 ? claves.length : regs.length, muestra: regs.length, porDia: {}, disp: {}, origen: {}, ciudades: {}, esferas: {}, esferasVisitas: {}, lotes: {}, contacto: 0, conContacto: 0, durTotal: 0 };
+  const r = { dias, total: paso > 1 ? claves.length : regs.length, muestra: regs.length, porDia: {}, disp: {}, origen: {}, ciudades: {}, esferas: {}, esferasVisitas: {}, lotes: {}, contacto: 0, conContacto: 0, durTotal: 0, vendedores: {} };
   if (paso > 1) claves.forEach((k) => suma(r.porDia, k.split("/")[2]));
   regs.forEach((x) => {
     if (paso === 1) suma(r.porDia, x.t.slice(0, 10)); suma(r.disp, x.disp); suma(r.origen, x.ref);
@@ -547,6 +560,8 @@ async function resumenVisitas(env, id, dias, tope = 5000) {
     Object.entries(x.esferas || {}).forEach(([k, s]) => { suma(r.esferas, k, s); suma(r.esferasVisitas, k); });
     Object.entries(x.lotes || {}).forEach(([k, n]) => suma(r.lotes, k, n));
     r.contacto += x.contacto || 0; if (x.contacto) r.conContacto++; r.durTotal += x.dur || 0;
+    // Por vendedor (Laboratorio «vendedores-tour»): «_» son las visitas con el link normal
+    const v = r.vendedores[x.vend || "_"] || (r.vendedores[x.vend || "_"] = { visitas: 0, contacto: 0 }); v.visitas++; if (x.contacto) v.contacto++;
   });
   return r;
 }
@@ -1520,6 +1535,11 @@ async function apiTour(request, env, partes, yo, id, miembro) {
     }
     // Pantalla de bienvenida (Laboratorio): solo sale publicada si su dueño tiene la función
     if (!lab.includes("bienvenida")) delete p.proyecto.bienvenida;
+    // Vendedores en el tour (Laboratorio «vendedores-tour»): únicamente del plan Desarrollos (pedido de Amar), aunque la
+    // función se abra a más cuentas. Sin ella el tour publicado no los trae; con ella va solo lo que se ve en el tour
+    // (nombre y WhatsApp de cada uno) y a dónde lleva su link
+    if (!lab.includes("vendedores-tour") || !(yo.admin || plan.id === "desarrollos")) delete p.proyecto.vendedores;
+    else if (p.proyecto.vendedores && typeof p.proyecto.vendedores === "object") p.proyecto.vendedores = vendedoresPublicos(p.proyecto.vendedores);
     await env.R2.put("publicado/" + id + "/proyecto.json", JSON.stringify(p), { httpMetadata: { contentType: tipoDe("x.json"), cacheControl: "no-cache" } });
     await guardarIndice(env, uid, id, { publicado: new Date().toISOString() });
     return json({ ok: true });

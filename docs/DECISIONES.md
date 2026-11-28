@@ -805,3 +805,25 @@
   no salen sus esquinas y no se borra con la tecla; sin candado vuelve a moverse.
 - Revisión completa: todas las pruebas pasan (se corrió por partes porque la nube se reinició a medias).
   «Anuncios → web» a veces fallaba porque el registro de correos tarda; ahora la prueba espera el segundo correo.
+
+## 27 nov 2026 · Vendedores en el tour (Laboratorio «vendedores-tour», nace Solo yo, únicamente Desarrollos)
+
+- Amar: «tengo 6 vendedores, a cada uno le vamos a hacer publicidad de Meta Ads y queremos ponerle a cada uno su tour
+  con sus datos para que atiendan a los leads y cada quien tenga sus leads registrados». Y: «únicamente para el plan de
+  Desarrollos». En vez de 6 copias del tour (los lotes se tendrían que cambiar en las 6), un solo tour y un link por
+  vendedor: …/<tour>/?v=lucero.
+- Publicar → Web → «Vendedores del tour»: nombre, país y WhatsApp de cada uno (hasta 30). El id del link sale de su
+  nombre al terminar de escribirlo («lucero», «lucero2» si se repite) y no cambia aunque se corrija el nombre. Cada uno
+  con «Copiar» y «Mandárselo» (le manda su link por WhatsApp). Con la landing publicada, sus links pueden abrir la
+  landing. Avisa cuando falta publicar.
+- En el tour con su link: el botón de contacto dice «Contactar · Lucero» y le escribe a su WhatsApp («Hola Lucero, vi el
+  recorrido de …»); las fichas de los lotes también («Hola Lucero, me interesa el Lote 9 · M3 de …»). Sale aunque el
+  dueño no haya puesto enlace de contacto. Un vendedor que no existe usa el contacto de siempre.
+- El celular recuerda al vendedor 60 días (localStorage por tour): si el cliente vuelve con el link normal, le sigue
+  escribiendo al mismo. Un link de otro vendedor lo cambia.
+- La landing con ?v= usa el WhatsApp del vendedor («Escríbele a Juan») y abre el recorrido con su link.
+- Estadísticas → «Por vendedor»: visitas y cuántos pidieron contacto de cada uno, y el link normal aparte.
+- Únicamente Desarrollos: el servidor solo publica los vendedores si la cuenta es Desarrollos (o el dueño), aunque la
+  función del Laboratorio se abra a Pro. Se publica solo nombre, país y WhatsApp.
+- Prueba nueva «Vendedores en el tour»: tarjeta, links, publicar, tour con cada link, ficha, recuerdo, celular, landing,
+  estadísticas, y que en Pro no sale ni se publica. Revisión completa: 136 de 136.
